@@ -142,15 +142,60 @@ async function handleMessage(msgObj, salon) {
   const msgText = msgObj.text?.body?.trim() || '';
 
   // ─── ADMIN FLOW ───────────────────────────────────────────
-  if (isAdmin && msgText) {
-    try {
-      const reply = await askAdminAI(msgText, salon.id);
-      await wa.send(phoneId, token, wa.textMsg(from, reply));
-    } catch (e) {
-      console.error('AI admin error:', e.message);
-      await wa.send(phoneId, token, wa.textMsg(from, `Napaka AI: ${e.message}`));
+  if (isAdmin) {
+    // Admin pritisne gumb Potrdi
+    if (iId.startsWith('admin_confirm_')) {
+      const ref = iId.replace('admin_confirm_', '');
+      const booking = await db.getBooking(ref);
+      if (booking) {
+        await db.updateBookingStatus(booking.id, 'confirmed');
+        await wa.send(phoneId, token, wa.textMsg(from, `✅ Rezervacija *${ref}* potrjena za ${booking.customer_name || booking.customer_phone}.`));
+        // Obvesti stranko
+        if (booking.customer_phone && booking.customer_phone !== 'manual') {
+          try {
+            await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+              `✅ Vaša rezervacija je potrjena!\n\n📅 ${booking.booking_date} ob ${(booking.booking_time || '').substring(0, 5)}\n\nHvala, vidimo se! 💆`
+            ));
+          } catch (e) { console.error('Notify customer err:', e.message); }
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`));
+      }
+      return;
     }
-    return;
+
+    // Admin pritisne gumb Zavrni
+    if (iId.startsWith('admin_cancel_')) {
+      const ref = iId.replace('admin_cancel_', '');
+      const booking = await db.getBooking(ref);
+      if (booking) {
+        await db.updateBookingStatus(booking.id, 'cancelled');
+        await wa.send(phoneId, token, wa.textMsg(from, `❌ Rezervacija *${ref}* zavrnjena.`));
+        // Obvesti stranko
+        if (booking.customer_phone && booking.customer_phone !== 'manual') {
+          try {
+            await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+              `❌ Žal vaša rezervacija za ${booking.booking_date} ob ${(booking.booking_time || '').substring(0, 5)} ni bila potrjena.\n\nZa novo rezervacijo nam pišite. 🙏`
+            ));
+          } catch (e) { console.error('Notify customer err:', e.message); }
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`));
+      }
+      return;
+    }
+
+    // Admin piše besedilo → AI
+    if (msgText) {
+      try {
+        const reply = await askAdminAI(msgText, salon.id);
+        await wa.send(phoneId, token, wa.textMsg(from, reply));
+      } catch (e) {
+        console.error('AI admin error:', e.message);
+        await wa.send(phoneId, token, wa.textMsg(from, `Napaka AI: ${e.message}`));
+      }
+      return;
+    }
   }
 
   // ─── CUSTOMER FLOW ────────────────────────────────────────
@@ -185,17 +230,17 @@ async function handleMessage(msgObj, salon) {
 
     if (ADMIN_PHONE) {
       try {
-        const adminMsg =
-          `📩 *Nova rezervacija*\n\n` +
-          `👤 ${customerName}\n` +
-          `📞 +${from}\n` +
-          `📅 ${s.selectedDate} ob ${s.selectedTime}\n` +
-          `🔑 Ref: *${ref6}*\n\n` +
-          `✅ Potrdi: *#potrdi ${ref6}*\n` +
-          `❌ Zavrni: *#zavrni ${ref6}*`;
-        await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE, adminMsg));
+        await wa.send(phoneId, token,
+          wa.adminBookingNotif(ADMIN_PHONE, customerName, from, s.selectedDate, s.selectedTime, ref6)
+        );
       } catch (e) {
+        // Fallback na besedilo če ni aktivne seje z adminom
         console.error('Admin notify error:', e.response?.data || e.message);
+        try {
+          await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
+            `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*`
+          ));
+        } catch (e2) { console.error('Admin fallback err:', e2.message); }
       }
     }
     return;
