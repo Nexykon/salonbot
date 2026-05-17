@@ -229,7 +229,7 @@ async function handleMessage(msgObj, salon) {
     const ref6 = (booking.id || '').slice(-6);
 
     await wa.send(phoneId, token, wa.textMsg(from,
-      `✅ Rezervacija sprejeta!\n\n👤 ${customerName}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nČaka na potrditev salona. Obvestili vas bomo. Hvala! 💆`
+      `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev salona. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
     ));
 
     if (ADMIN_PHONE) {
