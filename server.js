@@ -58,6 +58,7 @@ app.post('/webhook', async (req, res) => {
     await handleMessage(msgObj, salon);
   } catch (err) {
     console.error('Handler error:', err.message);
+    try { await db.logError(salon?.id, 'handler', err.message, err.stack); } catch(_) {}
   }
 });
 
@@ -229,6 +230,54 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Welcome error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Update salon plan (admin dashboard) ─────────────────────
+app.patch('/api/salons/:id/plan', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  const { id } = req.params;
+  const { plan } = req.body;
+  if (!['starter', 'pro'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
+  try {
+    const axios = require('axios');
+    const BASE = process.env.SUPABASE_URL + '/rest/v1';
+    const HEADERS = {
+      apikey: process.env.SUPABASE_KEY,
+      Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    };
+    await axios.patch(`${BASE}/sb_salons?id=eq.${id}`, { subscription_plan: plan }, { headers: HEADERS });
+    console.log(`Salon ${id} plan → ${plan}`);
+    res.json({ success: true, plan });
+  } catch (err) {
+    console.error('Plan update error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Error log (admin dashboard) ─────────────────────────────
+app.get('/api/errors', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const errors = await db.getRecentErrors(100);
+    res.json(errors);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/errors', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    await db.clearErrors();
+    res.json({ success: true });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

@@ -257,11 +257,41 @@ async function getBookedTimesForDate(salonId, date) {
   return r.data.map(b => (b.booking_time || '').substring(0, 5));
 }
 
+async function logError(salonId, type, message, details, customerPhone) {
+  try {
+    await axios.post(`${BASE}/sb_errors`, {
+      salon_id: salonId || null,
+      type,
+      message: String(message).substring(0, 500),
+      details: details ? String(details).substring(0, 1000) : null,
+      customer_phone: customerPhone || null
+    }, { headers: { ...HEADERS, Prefer: 'return=minimal' } });
+  } catch (e) {
+    console.error('logError failed:', e.message);
+  }
+}
+
+async function getRecentErrors(limit = 50) {
+  const r = await axios.get(
+    `${BASE}/sb_errors?order=created_at.desc&limit=${limit}`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
+async function clearErrors() {
+  await axios.delete(
+    `${BASE}/sb_errors?created_at=lt.${new Date().toISOString()}`,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+}
+
 module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
   getBooking, updateBookingStatus, getTodayBookings,
   getBookingsByDate, getSlotsByDate, addManualBooking, getBookingByName,
   markSlotFree, updateService, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
   getKnowledge, addKnowledge, deleteKnowledge,
-  getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice
+  getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
+  logError, getRecentErrors, clearErrors
 };

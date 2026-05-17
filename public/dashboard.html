@@ -123,11 +123,18 @@
   .badge.inactive { background: rgba(239,68,68,0.15); color: var(--red); }
   .badge.inactive::before { background: var(--red); }
 
-  .plan-tag {
-    padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  .plan-select {
+    padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; outline: none; transition: all 0.2s; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 8px center;
+    padding-right: 24px;
   }
-  .plan-tag.pro { background: rgba(124,58,237,0.2); color: var(--accent2); border: 1px solid rgba(124,58,237,0.3); }
-  .plan-tag.starter { background: rgba(148,163,184,0.1); color: var(--text2); border: 1px solid var(--border); }
+  .plan-select.pro { background-color: rgba(124,58,237,0.2); color: var(--accent2); border: 1px solid rgba(124,58,237,0.3); }
+  .plan-select.pro:hover { background-color: rgba(124,58,237,0.3); }
+  .plan-select.starter { background-color: rgba(148,163,184,0.1); color: var(--text2); border: 1px solid var(--border); }
+  .plan-select.starter:hover { background-color: rgba(148,163,184,0.15); }
+  .plan-select option { background: var(--bg3); color: var(--text); font-weight: 600; }
 
   .actions { display: flex; gap: 8px; }
   .btn-action {
@@ -213,6 +220,15 @@
 
   .loading-row td { text-align: center; padding: 40px; color: var(--text2); }
 
+  .error-type {
+    padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.2);
+    white-space: nowrap;
+  }
+  .error-msg { font-size: 13px; color: var(--text); word-break: break-word; max-width: 400px; }
+  .error-time { font-size: 12px; color: var(--text3); white-space: nowrap; }
+  .error-phone { font-size: 12px; color: var(--text2); }
+
   @media (max-width: 768px) {
     main { padding: 16px; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -295,6 +311,29 @@
         </thead>
         <tbody id="salons-table">
           <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Nalagam...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ERRORS -->
+    <div class="section-header" style="margin-top:40px">
+      <div class="section-title">⚠️ Napake <span id="error-count-badge" style="display:none;background:rgba(239,68,68,0.2);color:var(--red);font-size:13px;padding:2px 10px;border-radius:20px;margin-left:10px;font-weight:600;"></span></div>
+      <button class="btn-add" style="background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3);" onclick="clearAllErrors()">
+        🗑 Počisti napake
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Čas</th>
+            <th>Tip</th>
+            <th>Sporočilo</th>
+            <th>Stranka</th>
+          </tr>
+        </thead>
+        <tbody id="errors-table">
+          <tr class="loading-row"><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Ni napak ✅</td></tr>
         </tbody>
       </table>
     </div>
@@ -402,6 +441,9 @@ async function loadApp() {
     document.getElementById('login-error').style.display = 'none';
     salonsData = await res.json();
     renderAll();
+    loadErrors();
+    // Auto-refresh vsako 1h
+    setInterval(loadErrors, 3600000);
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
   }
@@ -467,7 +509,12 @@ function renderTable() {
         <div style="font-size:13px">${s.owner_email || '—'}</div>
         <div style="font-size:12px;color:var(--text2)">+${s.admin_phone || '—'}</div>
       </td>
-      <td><span class="plan-tag ${planClass}">${planLabel}</span></td>
+      <td>
+        <select class="plan-select ${planClass}" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
+          <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>Starter €79</option>
+          <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>Pro €160</option>
+        </select>
+      </td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
       <td style="color:var(--text2);font-size:13px">${date}</td>
       <td>
@@ -601,6 +648,77 @@ function showToast(msg, type = 'info') {
   t.className = `show ${type}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = ''; }, 3500);
+}
+
+// ── CHANGE PLAN ───────────────────────────────────────────
+async function changePlan(id, plan) {
+  try {
+    const res = await apiFetch(`/api/salons/${id}/plan`, {
+      method: 'PATCH',
+      body: JSON.stringify({ plan })
+    });
+    if (res.ok) {
+      const salon = salonsData.find(s => s.id === id);
+      if (salon) salon.subscription_plan = plan;
+      renderStats(); // posodobi revenue
+      showToast(`Paket spremenjen → ${plan === 'pro' ? 'Pro €160' : 'Starter €79'}`, 'success');
+    } else {
+      showToast('Napaka pri menjavi paketa', 'error');
+      renderTable(); // povrni staro vrednost
+    }
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+    renderTable();
+  }
+}
+
+// ── ERRORS ────────────────────────────────────────────────
+let errorsData = [];
+
+async function loadErrors() {
+  try {
+    const res = await apiFetch('/api/errors');
+    if (!res.ok) return;
+    errorsData = await res.json();
+    renderErrors();
+  } catch (e) { console.warn('Errors load failed:', e.message); }
+}
+
+function renderErrors() {
+  const tbody = document.getElementById('errors-table');
+  const badge = document.getElementById('error-count-badge');
+
+  if (!errorsData.length) {
+    badge.style.display = 'none';
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Ni napak ✅</td></tr>`;
+    return;
+  }
+
+  badge.style.display = 'inline';
+  badge.textContent = errorsData.length;
+
+  tbody.innerHTML = errorsData.map(e => {
+    const d = new Date(e.created_at);
+    const time = d.toLocaleDateString('sl-SI') + ' ' + d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+    return `<tr>
+      <td class="error-time">${time}</td>
+      <td><span class="error-type">${e.type || '?'}</span></td>
+      <td class="error-msg">${e.message || ''}</td>
+      <td class="error-phone">${e.customer_phone ? '+' + e.customer_phone : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function clearAllErrors() {
+  if (!confirm('Izbriši vse napake?')) return;
+  try {
+    const res = await apiFetch('/api/errors', { method: 'DELETE' });
+    if (res.ok) {
+      errorsData = [];
+      renderErrors();
+      showToast('Napake izbrisane', 'success');
+    }
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
 
 // ── INIT ──────────────────────────────────────────────────

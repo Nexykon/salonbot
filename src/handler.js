@@ -159,6 +159,7 @@ async function handleMessage(msgObj, salon) {
       }
     } catch (e) {
       console.error('Whisper error:', e.message);
+      await db.logError(salon.id, 'whisper', e.message, null, from);
       await wa.send(phoneId, token, wa.textMsg(from, '🎙️ Napaka pri obdelavi glasovnega sporočila. Prosimo, napišite besedilo.'));
       return;
     }
@@ -202,6 +203,7 @@ async function handleMessage(msgObj, salon) {
               const errData = e2.response?.data?.error || e2.response?.data || e2.message;
               const errMsg = typeof errData === 'object' ? JSON.stringify(errData) : errData;
               console.error('Notify customer err:', errMsg);
+              await db.logError(salon.id, 'customer_notify', errMsg, 'Potrditev stranke ni uspela', booking.customer_phone);
               await wa.send(phoneId, token, wa.textMsg(from, `⚠️ Stranka (${booking.customer_phone}) NI obveščena.\nNapaka: ${errMsg}`));
             }
           }
@@ -384,7 +386,10 @@ async function handleMessage(msgObj, salon) {
             await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
               `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n💡 Napišite botu karkoli (npr. "termini") za prikaz gumbov za potrditev.`
             ));
-          } catch (e3) { console.error('Text notify err:', e3.message); }
+          } catch (e3) {
+            console.error('Text notify err:', e3.message);
+            await db.logError(salon.id, 'admin_notify', e3.message, 'Admin obvestilo ni uspelo — vse metode neuspešne', from);
+          }
         }
       }
     }
