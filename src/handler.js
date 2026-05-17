@@ -7,7 +7,7 @@ const ADMIN_PHONE = process.env.ADMIN_PHONE; // e.g. 38640599185
 async function handleMessage(msgObj, salon) {
   const from = msgObj.from;
   const msgType = msgObj.type;
-  const phoneId = salon.wa_phone_number_id;
+  const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
   const token = process.env.WA_TOKEN;
 
   // Parse interactive reply ID
