@@ -137,6 +137,10 @@ async function handleMessage(msgObj, salon) {
     const ir = msgObj.interactive;
     iId = ir.type === 'button_reply' ? ir.button_reply.id : (ir.list_reply?.id || '');
   }
+  // Template quick reply gumb (admin potrdi/zavrni prek template sporočila)
+  if (msgType === 'button' && msgObj.button?.payload) {
+    iId = msgObj.button.payload;
+  }
 
   const isAdmin = from === ADMIN_PHONE;
   const msgText = msgObj.text?.body?.trim() || '';
@@ -230,17 +234,26 @@ async function handleMessage(msgObj, salon) {
 
     if (ADMIN_PHONE) {
       try {
+        // Poskusi template (24/7) — zahteva odobren Meta template
         await wa.send(phoneId, token,
           wa.adminBookingNotif(ADMIN_PHONE, customerName, from, s.selectedDate, s.selectedTime, ref6)
         );
       } catch (e) {
-        // Fallback na besedilo če ni aktivne seje z adminom
-        console.error('Admin notify error:', e.response?.data || e.message);
+        console.error('Template notify err:', e.response?.data?.error?.message || e.message);
         try {
-          await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
-            `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*`
-          ));
-        } catch (e2) { console.error('Admin fallback err:', e2.message); }
+          // Fallback: interactive gumbi (samo v 24h seji)
+          await wa.send(phoneId, token,
+            wa.adminBookingNotifSession(ADMIN_PHONE, customerName, from, s.selectedDate, s.selectedTime, ref6)
+          );
+        } catch (e2) {
+          console.error('Session notify err:', e2.response?.data?.error?.message || e2.message);
+          try {
+            // Zadnji fallback: čisto besedilo (vedno deluje)
+            await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
+              `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*\nZavrni: *#zavrni ${ref6}*`
+            ));
+          } catch (e3) { console.error('Text notify err:', e3.message); }
+        }
       }
     }
     return;

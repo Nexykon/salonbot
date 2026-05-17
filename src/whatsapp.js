@@ -96,7 +96,39 @@ function confirmButtons(to, date, time) {
   };
 }
 
+// Template sporočilo — deluje 24/7, ne glede na sejo
+// Zahteva odobren Meta template "salon_nova_rezervacija"
 function adminBookingNotif(to, customerName, phone, date, time, ref6) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'template',
+    template: {
+      name: 'salon_nova_rezervacija',
+      language: { code: 'sl' },
+      components: [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: customerName },
+            { type: 'text', text: phone },
+            { type: 'text', text: `${date} ob ${time}` },
+            { type: 'text', text: ref6 }
+          ]
+        },
+        {
+          type: 'button', sub_type: 'quick_reply', index: '0',
+          parameters: [{ type: 'payload', payload: 'admin_confirm_' + ref6 }]
+        },
+        {
+          type: 'button', sub_type: 'quick_reply', index: '1',
+          parameters: [{ type: 'payload', payload: 'admin_cancel_' + ref6 }]
+        }
+      ]
+    }
+  };
+}
+
+// Fallback: interactive gumbi (samo znotraj 24h seje)
+function adminBookingNotifSession(to, customerName, phone, date, time, ref6) {
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
@@ -106,12 +138,12 @@ function adminBookingNotif(to, customerName, phone, date, time, ref6) {
       },
       action: {
         buttons: [
-          { type: 'reply', reply: { id: 'admin_confirm_' + ref6, title: 'Potrdi ✅' } },
-          { type: 'reply', reply: { id: 'admin_cancel_' + ref6, title: 'Zavrni ❌' } }
+          { type: 'reply', reply: { id: 'admin_confirm_' + ref6, title: 'Potrdi' } },
+          { type: 'reply', reply: { id: 'admin_cancel_' + ref6, title: 'Zavrni' } }
         ]
       }
     }
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, adminBookingNotif };
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, adminBookingNotif, adminBookingNotifSession };
