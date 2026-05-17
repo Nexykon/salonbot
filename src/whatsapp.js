@@ -147,4 +147,47 @@ function adminBookingNotifSession(to, customerName, phone, date, time, ref6) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, adminBookingNotif, adminBookingNotifSession };
+function adminPendingButtons(to, booking) {
+  const ref6 = (booking.id || '').slice(-6);
+  const d = new Date((booking.booking_date || '').substring(0, 10) + 'T12:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const time = (booking.booking_time || '').substring(0, 5);
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: `📩 *Čakajoča rezervacija*\n\n👤 ${booking.customer_name || '?'}\n📞 +${booking.customer_phone}\n📅 ${dd}.${mm}.${yyyy} ob ${time}\n🔑 Ref: *${ref6}*`
+      },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'admin_confirm_' + ref6, title: 'Potrdi ✅' } },
+          { type: 'reply', reply: { id: 'admin_cancel_' + ref6, title: 'Zavrni ❌' } }
+        ]
+      }
+    }
+  };
+}
+
+// Template za stranko — potrjena rezervacija (24/7, ne glede na sejo)
+// Zahteva odobren Meta template "salon_rezervacija_potrjena" (en_US)
+function customerConfirmTemplate(to, date, time) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'template',
+    template: {
+      name: 'salon_rezervacija_potrjena',
+      language: { code: 'en_US' },
+      components: [{
+        type: 'body',
+        parameters: [
+          { type: 'text', text: date },
+          { type: 'text', text: time }
+        ]
+      }]
+    }
+  };
+}
+
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate };

@@ -1,4 +1,5 @@
 const axios = require('axios');
+const FormData = require('form-data');
 const db = require('./supabase');
 
 // ─── OpenAI API via axios (brez SDK) ─────────────────────────
@@ -292,6 +293,35 @@ async function executeTool(name, input, salonId, today) {
   }
 }
 
+// ─── Customer AI — odgovarja na vprašanja z upoštevanjem znanja ─
+async function askCustomerAI(message, salonId) {
+  const knowledge = await db.getKnowledge(salonId);
+  let knowledgeSection = '';
+  if (knowledge.length > 0) {
+    knowledgeSection = `\n\nZnanje o salonu:\n${knowledge.map(k => `- ${k.content}`).join('\n')}`;
+  }
+
+  const systemPrompt = `Si prijazen WhatsApp asistent frizerskega salona "Salon Vita".
+Odgovarjaj kratko in prijazno v slovenščini.
+Če ne veš odgovora, reci da se obrnejo na salon.${knowledgeSection}`;
+
+  const r = await axios.post('https://api.openai.com/v1/chat/completions', {
+    model: 'gpt-4o-mini',
+    max_tokens: 256,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: message }
+    ]
+  }, {
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 20000
+  });
+  return r.data.choices[0].message.content?.trim() || null;
+}
+
 // ─── Main AI handler ─────────────────────────────────────────
 async function askAdminAI(message, salonId) {
   const now = new Date();
@@ -332,4 +362,36 @@ Ko admin reče "danes" → ${today}, "jutri" → naslednji dan.`;
   return response.choices[0].message.content || 'Opravljeno.';
 }
 
-module.exports = { askAdminAI };
+// ─── Whisper — glasovno sporočilo → besedilo ─────────────────
+async function transcribeAudio(mediaId, waToken) {
+  // 1. Pridobi URL od Meta
+  const metaRes = await axios.get(`https://graph.facebook.com/v19.0/${mediaId}`, {
+    headers: { Authorization: `Bearer ${waToken}` }
+  });
+  const audioUrl = metaRes.data.url;
+
+  // 2. Prenesi audio kot buffer
+  const audioRes = await axios.get(audioUrl, {
+    headers: { Authorization: `Bearer ${waToken}` },
+    responseType: 'arraybuffer'
+  });
+  const audioBuffer = Buffer.from(audioRes.data);
+
+  // 3. Pošlji Whisper API
+  const form = new FormData();
+  form.append('file', audioBuffer, { filename: 'voice.ogg', contentType: 'audio/ogg' });
+  form.append('model', 'whisper-1');
+  form.append('language', 'sl');
+
+  const whisperRes = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      ...form.getHeaders()
+    },
+    timeout: 30000
+  });
+
+  return whisperRes.data.text?.trim() || null;
+}
+
+module.exports = { askAdminAI, askCustomerAI, transcribeAudio };

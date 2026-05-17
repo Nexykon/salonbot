@@ -13,6 +13,52 @@ async function getSalon() {
   return r.data[0];
 }
 
+// Multi-salon: najdi salon po WhatsApp phone number ID
+async function getSalonByPhoneId(phoneNumberId) {
+  const r = await axios.get(
+    `${BASE}/sb_salons?whatsapp_phone_number_id=eq.${phoneNumberId}&limit=1`,
+    { headers: HEADERS }
+  );
+  return r.data[0] || null;
+}
+
+async function getAllSalons() {
+  const r = await axios.get(`${BASE}/sb_salons?order=created_at`, { headers: HEADERS });
+  return r.data;
+}
+
+async function createSalon(data) {
+  const r = await axios.post(`${BASE}/sb_salons`, data, { headers: HEADERS });
+  return r.data[0];
+}
+
+async function updateSalonStripe(salonId, stripeCustomerId, stripeSubId, status, plan) {
+  const r = await axios.patch(
+    `${BASE}/sb_salons?id=eq.${salonId}`,
+    { stripe_customer_id: stripeCustomerId, stripe_subscription_id: stripeSubId, subscription_status: status, subscription_plan: plan },
+    { headers: HEADERS }
+  );
+  return r.data[0];
+}
+
+async function updateSubscriptionStatus(stripeSubId, status) {
+  await axios.patch(
+    `${BASE}/sb_salons?stripe_subscription_id=eq.${stripeSubId}`,
+    { subscription_status: status },
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+}
+
+async function logInvoice(salonId, stripeInvoiceId, amountEur, status) {
+  await axios.post(`${BASE}/sb_invoices`, {
+    salon_id: salonId,
+    stripe_invoice_id: stripeInvoiceId,
+    amount_eur: amountEur,
+    status,
+    paid_at: status === 'paid' ? new Date().toISOString() : null
+  }, { headers: { ...HEADERS, Prefer: 'return=minimal' } });
+}
+
 async function getServices(salonId) {
   const r = await axios.get(`${BASE}/sb_services?salon_id=eq.${salonId}&is_active=eq.true&order=sort_order`, { headers: HEADERS });
   return r.data;
@@ -155,6 +201,54 @@ async function removeSlot(salonId, date, time) {
   );
 }
 
+async function getPendingBookings(salonId) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&status=eq.pending&order=created_at.asc`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
+// ─── Knowledge Base ──────────────────────────────────────────
+
+async function getKnowledge(salonId) {
+  const r = await axios.get(
+    `${BASE}/sb_knowledge?salon_id=eq.${salonId}&order=created_at.asc`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
+async function addKnowledge(salonId, content) {
+  const r = await axios.post(`${BASE}/sb_knowledge`, {
+    salon_id: salonId,
+    content: content.trim()
+  }, { headers: HEADERS });
+  return r.data[0];
+}
+
+async function deleteKnowledge(salonId, keyword) {
+  await axios.delete(
+    `${BASE}/sb_knowledge?salon_id=eq.${salonId}&content=ilike.*${encodeURIComponent(keyword)}*`,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+}
+
+async function getDailyStats(salonId, date) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date}&order=booking_time`,
+    { headers: HEADERS }
+  );
+  const bookings = r.data;
+  return {
+    total: bookings.length,
+    confirmed: bookings.filter(b => b.status === 'confirmed').length,
+    pending: bookings.filter(b => b.status === 'pending').length,
+    cancelled: bookings.filter(b => b.status === 'cancelled').length,
+    list: bookings.filter(b => b.status !== 'cancelled')
+  };
+}
+
 async function getBookedTimesForDate(salonId, date) {
   const r = await axios.get(
     `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date}&status=neq.cancelled&select=booking_time`,
@@ -167,5 +261,7 @@ module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
   getBooking, updateBookingStatus, getTodayBookings,
   getBookingsByDate, getSlotsByDate, addManualBooking, getBookingByName,
-  markSlotFree, updateService, addSlot, removeSlot, getBookedTimesForDate
+  markSlotFree, updateService, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
+  getKnowledge, addKnowledge, deleteKnowledge,
+  getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice
 };
