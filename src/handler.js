@@ -52,7 +52,6 @@ async function handleMessage(msgObj, salon) {
       customer_phone: from,
       customer_name: customerName,
       salon_id: salon.id,
-      slot_id: s.selectedSlotId,
       service_id: s.serviceId,
       booking_date: s.selectedDate,
       booking_time: s.selectedTime ? s.selectedTime + ':00' : null,
@@ -68,19 +67,23 @@ async function handleMessage(msgObj, salon) {
       `✅ Rezervacija sprejeta!\n\n👤 ${customerName}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nČaka na potrditev salona. Obvestili vas bomo. Hvala! 💆`
     ));
 
-    // Notify admin
+    // Notify admin (wrapped in try/catch so customer flow never breaks)
     if (ADMIN_PHONE) {
-      const slot = slots.find(sl => sl.id === s.selectedSlotId);
-      const slotInfo = slot || { slot_date: s.selectedDate || '?', slot_time: s.selectedTime || '?' };
-      const adminMsg =
-        `📩 *Nova rezervacija*\n\n` +
-        `👤 ${customerName}\n` +
-        `📞 +${from}\n` +
-        `📅 ${slotInfo.slot_date} ob ${(slotInfo.slot_time || '').substring(0, 5)}\n` +
-        `🔑 Ref: *${ref6}*\n\n` +
-        `✅ Potrdi: *#potrdi ${ref6}*\n` +
-        `❌ Zavrni: *#zavrni ${ref6}*`;
-      await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE, adminMsg));
+      try {
+        const slot = slots.find(sl => sl.id === s.selectedSlotId);
+        const slotInfo = slot || { slot_date: s.selectedDate || '?', slot_time: s.selectedTime || '?' };
+        const adminMsg =
+          `📩 *Nova rezervacija*\n\n` +
+          `👤 ${customerName}\n` +
+          `📞 +${from}\n` +
+          `📅 ${slotInfo.slot_date} ob ${(slotInfo.slot_time || '').substring(0, 5)}\n` +
+          `🔑 Ref: *${ref6}*\n\n` +
+          `✅ Potrdi: *#potrdi ${ref6}*\n` +
+          `❌ Zavrni: *#zavrni ${ref6}*`;
+        await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE, adminMsg));
+      } catch (e) {
+        console.error('Admin notify error:', e.response?.data || e.message);
+      }
     }
     return;
   }
