@@ -22,7 +22,7 @@ async function handleMessage(msgObj, salon) {
   const msgText = msgObj.text?.body?.trim() || '';
 
   // ─── ADMIN FLOW ───────────────────────────────────────────
-  if (isAdmin && (msgText.startsWith('#') || iId.startsWith('aconf_') || iId.startsWith('arej_') || iId.startsWith('adate_'))) {
+  if (isAdmin && msgText.startsWith('#')) {
     await handleAdmin(from, msgText, iId, salon, phoneId, token);
     return;
   }
@@ -135,10 +135,34 @@ async function handleAdmin(from, text, iId, salon, phoneId, token) {
     return;
   }
 
+  // Confirm booking via text command
+  if (cmd === '#potrdi') {
+    const ref = param;
+    if (!ref) { await wa.send(phoneId, token, wa.textMsg(from, 'Uporaba: #potrdi REF')); return; }
+    const booking = await db.getBooking(ref);
+    if (!booking) { await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`)); return; }
+    await db.updateBookingStatus(booking.id, 'confirmed');
+    await wa.send(phoneId, token, wa.textMsg(from, `✅ Rezervacija ${ref} potrjena.`));
+    await wa.send(phoneId, token, wa.textMsg(booking.customer_phone, `🎉 Vaša rezervacija je potrjena!\n\nDo takrat! 💆`));
+    return;
+  }
+
+  // Reject booking via text command
+  if (cmd === '#zavrni') {
+    const ref = param;
+    if (!ref) { await wa.send(phoneId, token, wa.textMsg(from, 'Uporaba: #zavrni REF')); return; }
+    const booking = await db.getBooking(ref);
+    if (!booking) { await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`)); return; }
+    await db.updateBookingStatus(booking.id, 'cancelled');
+    await wa.send(phoneId, token, wa.textMsg(from, `❌ Rezervacija ${ref} zavrnjena.`));
+    await wa.send(phoneId, token, wa.textMsg(booking.customer_phone, `❌ Žal vaša rezervacija ni bila potrjena.\n\nKontaktirajte nas za nov termin.`));
+    return;
+  }
+
   // Text commands
   if (cmd === '#pomoc') {
     await wa.send(phoneId, token, wa.textMsg(from,
-      `Admin ukazi:\n\n#narocila - danes naročeni\n#urnik - urnik (izberi datum)\n#storitve - storitve\n#zapri - zapri dan\n#odpri - odpri dan\n\nZa rezervacije: tapni gumb v obvestilu.`
+      `Admin ukazi:\n\n#narocila - danes naročeni\n#storitve - storitve\n#potrdi REF - potrdi rezervacijo\n#zavrni REF - zavrni rezervacijo`
     ));
     return;
   }

@@ -99,19 +99,14 @@ function confirmButtons(to, date, time) {
 }
 
 function adminBookingNotif(to, booking, slot, ref6) {
-  return {
-    messaging_product: 'whatsapp', to, type: 'interactive',
-    interactive: {
-      type: 'button',
-      body: { text: `📩 *Nova rezervacija*\n\n📅 ${slot.slot_date} ob ${slot.slot_time.substring(0,5)}\n📞 +${booking.customer_phone}\n🔑 Ref: ${ref6}` },
-      action: {
-        buttons: [
-          { type: 'reply', reply: { id: 'aconf_' + ref6, title: 'Potrdi ✅' } },
-          { type: 'reply', reply: { id: 'arej_' + ref6, title: 'Zavrni ❌' } }
-        ]
-      }
-    }
-  };
+  const body =
+    `📩 *Nova rezervacija*\n\n` +
+    `📅 ${slot.slot_date} ob ${(slot.slot_time || '').substring(0, 5)}\n` +
+    `📞 +${booking.customer_phone}\n` +
+    `🔑 Ref: *${ref6}*\n\n` +
+    `✅ Potrdi: *#potrdi ${ref6}*\n` +
+    `❌ Zavrni: *#zavrni ${ref6}*`;
+  return textMsg(to, body);
 }
 
 module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, adminBookingNotif };
