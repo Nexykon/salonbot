@@ -1,9 +1,25 @@
-const OpenAI = require('openai');
+const axios = require('axios');
 const db = require('./supabase');
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// ─── OpenAI API via axios (brez SDK) ─────────────────────────
+async function openaiChat(messages, tools) {
+  const r = await axios.post('https://api.openai.com/v1/chat/completions', {
+    model: 'gpt-4o-mini',
+    max_tokens: 512,
+    tools,
+    tool_choice: 'auto',
+    messages
+  }, {
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    timeout: 30000
+  });
+  return r.data;
+}
 
-// ─── Tools available to the AI ───────────────────────────────
+// ─── Tools ───────────────────────────────────────────────────
 const TOOLS = [
   {
     type: 'function',
@@ -138,7 +154,6 @@ const TOOLS = [
 async function executeTool(name, input, salonId, today) {
   try {
     switch (name) {
-
       case 'list_bookings': {
         const date = input.date || today;
         const bookings = await db.getBookingsByDate(salonId, date);
@@ -151,13 +166,11 @@ async function executeTool(name, input, salonId, today) {
         });
         return `Naročila za ${date}:\n${lines.join('\n')}`;
       }
-
       case 'list_services': {
         const services = await db.getServices(salonId);
         if (!services.length) return 'Ni storitev.';
         return services.map(s => `• ${s.name}: ${s.duration_minutes} min, ${s.price} €`).join('\n');
       }
-
       case 'list_free_slots': {
         const date = input.date || today;
         const slots = await db.getSlotsByDate(salonId, date);
@@ -165,20 +178,17 @@ async function executeTool(name, input, salonId, today) {
         if (!free.length) return `Ni prostih terminov za ${date}.`;
         return `Prosti termini (${date}):\n${free.map(s => `• ${s.slot_time.substring(0, 5)}`).join('\n')}`;
       }
-
       case 'add_booking': {
         const result = await db.addManualBooking(salonId, input);
         if (!result) return 'Napaka pri dodajanju rezervacije.';
         return `✅ Rezervacija dodana:\n👤 ${input.customer_name}\n📅 ${input.date} ob ${input.time}${input.service_name ? '\n✂️ ' + input.service_name : ''}`;
       }
-
       case 'confirm_booking': {
         const booking = await db.getBooking(input.ref);
         if (!booking) return `Rezervacija ${input.ref} ni najdena.`;
         await db.updateBookingStatus(booking.id, 'confirmed');
         return `✅ Rezervacija ${input.ref} potrjena.`;
       }
-
       case 'cancel_booking': {
         let booking = null;
         if (input.ref) {
@@ -192,7 +202,6 @@ async function executeTool(name, input, salonId, today) {
         const who = booking.customer_name || booking.customer_phone || (input.ref || '');
         return `❌ Rezervacija za ${who} preklicana.`;
       }
-
       case 'update_service': {
         const result = await db.updateService(salonId, input.service_name, input.price, input.duration_minutes);
         if (!result) return `Storitev '${input.service_name}' ni najdena.`;
@@ -201,17 +210,14 @@ async function executeTool(name, input, salonId, today) {
         if (input.duration_minutes !== undefined) changes.push(`trajanje: ${input.duration_minutes} min`);
         return `✅ Storitev '${result.name}' posodobljena – ${changes.join(', ')}.`;
       }
-
       case 'add_slot': {
         await db.addSlot(salonId, input.date, input.time);
         return `✅ Termin dodan: ${input.date} ob ${input.time}.`;
       }
-
       case 'remove_slot': {
         await db.removeSlot(salonId, input.date, input.time);
         return `✅ Termin odstranjen: ${input.date} ob ${input.time}.`;
       }
-
       default:
         return 'Neznano orodje.';
     }
@@ -229,34 +235,18 @@ async function askAdminAI(message, salonId) {
 
   const systemPrompt = `Si inteligentni WhatsApp asistent za frizerski salon "Salon Vita".
 Danes je ${dayName}, ${today}.
-
-Pomagaš lastniku salona z:
-- Pregledom naročil in terminov
-- Ročnim dodajanjem rezervacij
-- Potrjevanjem in preklicevanjem rezervacij
-- Urejanjem storitev (cene, trajanje)
-- Dodajanjem/odstranjevanjem terminov iz urnika
-
-Pravila:
-- Odgovarjaj kratko in jasno v slovenščini
-- Vedno potrdi kar si naredil z emojiji
-- Če nimaš dovolj info (npr. manjka datum ali ime), vprašaj
-- Ko admin reče "danes" → ${today}, "jutri" → naslednji dan`;
+Pomagaš lastniku salona z naročili, storitvami in termini.
+Odgovarjaj kratko, jasno, v slovenščini. Vedno potrdi kar si naredil z emojiji.
+Ko admin reče "danes" → ${today}, "jutri" → naslednji dan.`;
 
   const messages = [
     { role: 'system', content: systemPrompt },
     { role: 'user', content: message }
   ];
 
-  let response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    max_tokens: 512,
-    tools: TOOLS,
-    tool_choice: 'auto',
-    messages
-  });
+  let response = await openaiChat(messages, TOOLS);
 
-  // Agentic loop – execute tools until final answer
+  // Agentic loop
   while (response.choices[0].finish_reason === 'tool_calls') {
     const assistantMsg = response.choices[0].message;
     messages.push(assistantMsg);
@@ -271,13 +261,7 @@ Pravila:
       });
     }
 
-    response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      max_tokens: 512,
-      tools: TOOLS,
-      tool_choice: 'auto',
-      messages
-    });
+    response = await openaiChat(messages, TOOLS);
   }
 
   return response.choices[0].message.content || 'Opravljeno.';
