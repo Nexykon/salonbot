@@ -1,6 +1,7 @@
 const db = require('./supabase');
 const wa = require('./whatsapp');
 const session = require('./session');
+const { askAdminAI } = require('./ai');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE; // e.g. 38640599185
 
@@ -22,8 +23,14 @@ async function handleMessage(msgObj, salon) {
   const msgText = msgObj.text?.body?.trim() || '';
 
   // ─── ADMIN FLOW ───────────────────────────────────────────
-  if (isAdmin && msgText.startsWith('#')) {
-    await handleAdmin(from, msgText, iId, salon, phoneId, token);
+  if (isAdmin && msgText) {
+    try {
+      const reply = await askAdminAI(msgText, salon.id);
+      await wa.send(phoneId, token, wa.textMsg(from, reply));
+    } catch (e) {
+      console.error('AI admin error:', e.message);
+      await wa.send(phoneId, token, wa.textMsg(from, `Napaka AI: ${e.message}`));
+    }
     return;
   }
 
