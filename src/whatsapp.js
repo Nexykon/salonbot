@@ -81,11 +81,12 @@ function confirmButtons(to, date, time) {
   const d = new Date(date + 'T12:00:00');
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'button',
-      body: { text: `Potrdite rezervacijo:\n📅 ${dd}.${mm}. ob ${time}` },
+      body: { text: `Potrdite rezervacijo:\n📅 ${dd}.${mm}.${yyyy} ob ${time}` },
       action: {
         buttons: [
           { type: 'reply', reply: { id: 'confirm_yes', title: 'Potrdi ✅' } },

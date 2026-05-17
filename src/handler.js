@@ -5,6 +5,16 @@ const { askAdminAI } = require('./ai');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
+// ─── Date formatter ───────────────────────────────────────────
+function fmtDate(dateStr) {
+  if (!dateStr) return '?';
+  const d = new Date(dateStr.substring(0, 10) + 'T12:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
+}
+
 // ─── Calendar helpers ─────────────────────────────────────────
 
 function generateWorkingTimes(startTime, endTime, intervalMin = 60) {
@@ -158,9 +168,12 @@ async function handleMessage(msgObj, salon) {
         if (booking.customer_phone && booking.customer_phone !== 'manual') {
           try {
             await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
-              `✅ Vaša rezervacija je potrjena!\n\n📅 ${booking.booking_date} ob ${(booking.booking_time || '').substring(0, 5)}\n\nHvala, vidimo se! 💆`
+              `✅ Vaša rezervacija je potrjena!\n\n📅 ${fmtDate(booking.booking_date)} ob ${(booking.booking_time || '').substring(0, 5)}\n\nHvala, vidimo se! 💆`
             ));
-          } catch (e) { console.error('Notify customer err:', e.message); }
+          } catch (e) {
+            console.error('Notify customer err:', e.response?.data || e.message);
+            await wa.send(phoneId, token, wa.textMsg(from, `⚠️ Ni uspelo obvestiti stranke (${booking.customer_phone}): ${e.message}`));
+          }
         }
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`));
@@ -179,9 +192,12 @@ async function handleMessage(msgObj, salon) {
         if (booking.customer_phone && booking.customer_phone !== 'manual') {
           try {
             await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
-              `❌ Žal vaša rezervacija za ${booking.booking_date} ob ${(booking.booking_time || '').substring(0, 5)} ni bila potrjena.\n\nZa novo rezervacijo nam pišite. 🙏`
+              `❌ Žal vaša rezervacija za ${fmtDate(booking.booking_date)} ob ${(booking.booking_time || '').substring(0, 5)} ni bila potrjena.\n\nZa novo rezervacijo nam pišite. 🙏`
             ));
-          } catch (e) { console.error('Notify customer err:', e.message); }
+          } catch (e) {
+            console.error('Notify customer err:', e.response?.data || e.message);
+            await wa.send(phoneId, token, wa.textMsg(from, `⚠️ Ni uspelo obvestiti stranke (${booking.customer_phone}): ${e.message}`));
+          }
         }
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`));
@@ -229,14 +245,14 @@ async function handleMessage(msgObj, salon) {
     const ref6 = (booking.id || '').slice(-6);
 
     await wa.send(phoneId, token, wa.textMsg(from,
-      `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev salona. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
+      `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev salona. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
     ));
 
     if (ADMIN_PHONE) {
       try {
         // Poskusi template (24/7) — zahteva odobren Meta template
         await wa.send(phoneId, token,
-          wa.adminBookingNotif(ADMIN_PHONE, customerName, from, s.selectedDate, s.selectedTime, ref6)
+          wa.adminBookingNotif(ADMIN_PHONE, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6)
         );
       } catch (e) {
         console.error('Template notify err:', e.response?.data?.error?.message || e.message);
@@ -250,7 +266,7 @@ async function handleMessage(msgObj, salon) {
           try {
             // Zadnji fallback: čisto besedilo (vedno deluje)
             await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
-              `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${s.selectedDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*\nZavrni: *#zavrni ${ref6}*`
+              `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*\nZavrni: *#zavrni ${ref6}*`
             ));
           } catch (e3) { console.error('Text notify err:', e3.message); }
         }
