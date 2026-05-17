@@ -155,9 +155,17 @@ async function removeSlot(salonId, date, time) {
   );
 }
 
+async function getBookedTimesForDate(salonId, date) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date}&status=neq.cancelled&select=booking_time`,
+    { headers: HEADERS }
+  );
+  return r.data.map(b => (b.booking_time || '').substring(0, 5));
+}
+
 module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
   getBooking, updateBookingStatus, getTodayBookings,
   getBookingsByDate, getSlotsByDate, addManualBooking, getBookingByName,
-  markSlotFree, updateService, addSlot, removeSlot
+  markSlotFree, updateService, addSlot, removeSlot, getBookedTimesForDate
 };

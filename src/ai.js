@@ -121,8 +121,27 @@ const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'generate_slots',
+      description: 'Generiraj termine za cel dan ali več dni naenkrat. Uporabi za "dodaj termine za cel teden", "dodaj termine od 8h do 22h", "nastavi urnik za naslednji mesec" ipd.',
+      parameters: {
+        type: 'object',
+        properties: {
+          start_date: { type: 'string', description: 'Začetni datum YYYY-MM-DD' },
+          end_date: { type: 'string', description: 'Končni datum YYYY-MM-DD (opcijsko, privzeto = start_date)' },
+          start_time: { type: 'string', description: 'Začetna ura HH:MM, npr 08:00' },
+          end_time: { type: 'string', description: 'Končna ura HH:MM, npr 22:00' },
+          interval_minutes: { type: 'number', description: 'Interval med termini v minutah (privzeto 60)' },
+          skip_days: { type: 'array', items: { type: 'string' }, description: 'Dnevi za preskok: "monday","tuesday","wednesday","thursday","friday","saturday","sunday"' }
+        },
+        required: ['start_date', 'start_time', 'end_time']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
       name: 'add_slot',
-      description: 'Dodaj prosti termin v urnik',
+      description: 'Dodaj EN prosti termin v urnik',
       parameters: {
         type: 'object',
         properties: {
@@ -210,6 +229,52 @@ async function executeTool(name, input, salonId, today) {
         if (input.duration_minutes !== undefined) changes.push(`trajanje: ${input.duration_minutes} min`);
         return `✅ Storitev '${result.name}' posodobljena – ${changes.join(', ')}.`;
       }
+      case 'generate_slots': {
+        const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        const skipDays = (input.skip_days || []).map(d => d.toLowerCase());
+        const interval = input.interval_minutes || 60;
+        const endDate = input.end_date || input.start_date;
+
+        // Build list of dates
+        const dates = [];
+        const cur = new Date(input.start_date + 'T12:00:00');
+        const end = new Date(endDate + 'T12:00:00');
+        while (cur <= end) {
+          const dayName = dayNames[cur.getDay()];
+          if (!skipDays.includes(dayName)) {
+            dates.push(cur.toISOString().split('T')[0]);
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        // Build list of times
+        const times = [];
+        const [sh, sm] = input.start_time.split(':').map(Number);
+        const [eh, em] = input.end_time.split(':').map(Number);
+        let mins = sh * 60 + sm;
+        const endMins = eh * 60 + em;
+        while (mins < endMins) {
+          const hh = String(Math.floor(mins / 60)).padStart(2, '0');
+          const mm = String(mins % 60).padStart(2, '0');
+          times.push(`${hh}:${mm}`);
+          mins += interval;
+        }
+
+        // Insert all slots
+        let count = 0;
+        for (const date of dates) {
+          for (const time of times) {
+            try {
+              await db.addSlot(salonId, date, time);
+              count++;
+            } catch (e) {
+              // Skip duplicates silently
+            }
+          }
+        }
+        return `✅ Dodanih ${count} terminov na ${dates.length} ${dates.length === 1 ? 'dan' : 'dni'} (${input.start_time}–${input.end_time}, vsakih ${interval} min).`;
+      }
+
       case 'add_slot': {
         await db.addSlot(salonId, input.date, input.time);
         return `✅ Termin dodan: ${input.date} ob ${input.time}.`;

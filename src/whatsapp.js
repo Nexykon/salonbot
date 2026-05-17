@@ -38,43 +38,41 @@ function serviceList(to, services) {
   };
 }
 
-function dateList(to, slots) {
+function dateList(to, freeDates) {
   const days = ['ned', 'pon', 'tor', 'sre', 'čet', 'pet', 'sob'];
-  const seen = new Set();
-  const rows = [];
-  for (const s of slots) {
-    if (seen.has(s.slot_date)) continue;
-    seen.add(s.slot_date);
-    const d = new Date(s.slot_date + 'T12:00:00');
+  if (!freeDates.length) return textMsg(to, 'Ni prostih terminov v naslednjih 14 dneh. Za rezervacijo nas pokličite.');
+  const rows = freeDates.slice(0, 10).map(({ date, count }) => {
+    const d = new Date(date + 'T12:00:00');
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
-    rows.push({ id: 'date_' + s.slot_date, title: `${dd}.${mm}. (${days[d.getDay()]})` });
-    if (rows.length >= 10) break;
-  }
-  if (!rows.length) return textMsg(to, 'Ni prostih terminov v naslednjih 14 dneh. Kontaktirajte nas.');
+    return {
+      id: 'date_' + date,
+      title: `${dd}.${mm}. (${days[d.getDay()]})`,
+      description: `${count} prostih terminov`
+    };
+  });
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
-      body: { text: 'Izberite datum:' },
-      action: { button: 'Izberi datum', sections: [{ title: 'Datumi', rows }] }
+      body: { text: 'Izberite datum ali napišite kdaj bi radi prišli (npr. "jutri ob 14h"):' },
+      action: { button: 'Izberi datum', sections: [{ title: 'Razpoložljivi datumi', rows }] }
     }
   };
 }
 
-function timeList(to, slots, date) {
-  const daySlots = slots.filter(s => s.slot_date === date);
-  const rows = daySlots.map(s => ({
-    id: 'time_' + s.id + '_' + s.slot_time.substring(0, 5).replace(':', 'h'),
-    title: s.slot_time.substring(0, 5)
-  })).slice(0, 10);
-  if (!rows.length) return textMsg(to, 'Na ta dan ni prostih terminov. Izberite drug datum.');
+function timeList(to, freeTimes, date) {
+  if (!freeTimes.length) return textMsg(to, 'Na ta dan ni več prostih terminov. Izberite drug datum.');
+  const rows = freeTimes.slice(0, 10).map(time => ({
+    id: 'time_' + date + '_' + time.replace(':', 'h'),
+    title: time
+  }));
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
       body: { text: 'Izberite uro:' },
-      action: { button: 'Izberi uro', sections: [{ title: 'Termini', rows }] }
+      action: { button: 'Izberi uro', sections: [{ title: 'Prosti termini', rows }] }
     }
   };
 }
