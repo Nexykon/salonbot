@@ -1,108 +1,135 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const OpenAI = require('openai');
 const db = require('./supabase');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // ─── Tools available to the AI ───────────────────────────────
 const TOOLS = [
   {
-    name: 'list_bookings',
-    description: 'Prikaži naročila za določen datum (privzeto danes)',
-    input_schema: {
-      type: 'object',
-      properties: {
-        date: { type: 'string', description: 'Datum YYYY-MM-DD, npr 2026-05-17. Privzeto danes.' }
+    type: 'function',
+    function: {
+      name: 'list_bookings',
+      description: 'Prikaži naročila za določen datum (privzeto danes)',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: 'Datum YYYY-MM-DD. Privzeto danes.' }
+        }
       }
     }
   },
   {
-    name: 'list_services',
-    description: 'Prikaži vse storitve s cenami in trajanjem',
-    input_schema: { type: 'object', properties: {} }
+    type: 'function',
+    function: {
+      name: 'list_services',
+      description: 'Prikaži vse storitve s cenami in trajanjem',
+      parameters: { type: 'object', properties: {} }
+    }
   },
   {
-    name: 'list_free_slots',
-    description: 'Prikaži proste termine za določen datum',
-    input_schema: {
-      type: 'object',
-      properties: {
-        date: { type: 'string', description: 'Datum YYYY-MM-DD. Privzeto danes.' }
+    type: 'function',
+    function: {
+      name: 'list_free_slots',
+      description: 'Prikaži proste termine za določen datum',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: 'Datum YYYY-MM-DD. Privzeto danes.' }
+        }
       }
     }
   },
   {
-    name: 'add_booking',
-    description: 'Ročno dodaj rezervacijo za stranko',
-    input_schema: {
-      type: 'object',
-      properties: {
-        customer_name: { type: 'string', description: 'Ime stranke' },
-        customer_phone: { type: 'string', description: 'Telefonska številka stranke (opcijsko)' },
-        date: { type: 'string', description: 'Datum YYYY-MM-DD' },
-        time: { type: 'string', description: 'Ura v formatu HH:MM, npr 12:00' },
-        service_name: { type: 'string', description: 'Ime ali del imena storitve (opcijsko)' }
-      },
-      required: ['customer_name', 'date', 'time']
-    }
-  },
-  {
-    name: 'confirm_booking',
-    description: 'Potrdi rezervacijo stranke po ref kodi',
-    input_schema: {
-      type: 'object',
-      properties: {
-        ref: { type: 'string', description: 'Referenčna koda (zadnjih 6 znakov ID-ja)' }
-      },
-      required: ['ref']
-    }
-  },
-  {
-    name: 'cancel_booking',
-    description: 'Prekliči rezervacijo po ref kodi ali imenu stranke in datumu',
-    input_schema: {
-      type: 'object',
-      properties: {
-        ref: { type: 'string', description: 'Referenčna koda rezervacije (opcijsko)' },
-        customer_name: { type: 'string', description: 'Ime stranke (opcijsko, alternativa ref)' },
-        date: { type: 'string', description: 'Datum YYYY-MM-DD (opcijsko, za iskanje po imenu)' }
+    type: 'function',
+    function: {
+      name: 'add_booking',
+      description: 'Ročno dodaj rezervacijo za stranko',
+      parameters: {
+        type: 'object',
+        properties: {
+          customer_name: { type: 'string', description: 'Ime stranke' },
+          customer_phone: { type: 'string', description: 'Telefon stranke (opcijsko)' },
+          date: { type: 'string', description: 'Datum YYYY-MM-DD' },
+          time: { type: 'string', description: 'Ura HH:MM, npr 12:00' },
+          service_name: { type: 'string', description: 'Ime storitve (opcijsko)' }
+        },
+        required: ['customer_name', 'date', 'time']
       }
     }
   },
   {
-    name: 'update_service',
-    description: 'Posodobi ceno ali trajanje storitve',
-    input_schema: {
-      type: 'object',
-      properties: {
-        service_name: { type: 'string', description: 'Del imena storitve za iskanje' },
-        price: { type: 'number', description: 'Nova cena v € (opcijsko)' },
-        duration_minutes: { type: 'number', description: 'Novo trajanje v minutah (opcijsko)' }
-      },
-      required: ['service_name']
+    type: 'function',
+    function: {
+      name: 'confirm_booking',
+      description: 'Potrdi rezervacijo stranke po ref kodi',
+      parameters: {
+        type: 'object',
+        properties: {
+          ref: { type: 'string', description: 'Referenčna koda (6 znakov)' }
+        },
+        required: ['ref']
+      }
     }
   },
   {
-    name: 'add_slot',
-    description: 'Dodaj prosti termin v urnik',
-    input_schema: {
-      type: 'object',
-      properties: {
-        date: { type: 'string', description: 'Datum YYYY-MM-DD' },
-        time: { type: 'string', description: 'Ura HH:MM' }
-      },
-      required: ['date', 'time']
+    type: 'function',
+    function: {
+      name: 'cancel_booking',
+      description: 'Prekliči rezervacijo po ref kodi ali imenu stranke',
+      parameters: {
+        type: 'object',
+        properties: {
+          ref: { type: 'string', description: 'Referenčna koda (opcijsko)' },
+          customer_name: { type: 'string', description: 'Ime stranke (opcijsko)' },
+          date: { type: 'string', description: 'Datum YYYY-MM-DD (opcijsko)' }
+        }
+      }
     }
   },
   {
-    name: 'remove_slot',
-    description: 'Odstrani prosti termin iz urnika (zapri termin)',
-    input_schema: {
-      type: 'object',
-      properties: {
-        date: { type: 'string', description: 'Datum YYYY-MM-DD' },
-        time: { type: 'string', description: 'Ura HH:MM' }
-      },
-      required: ['date', 'time']
+    type: 'function',
+    function: {
+      name: 'update_service',
+      description: 'Posodobi ceno ali trajanje storitve',
+      parameters: {
+        type: 'object',
+        properties: {
+          service_name: { type: 'string', description: 'Del imena storitve' },
+          price: { type: 'number', description: 'Nova cena v € (opcijsko)' },
+          duration_minutes: { type: 'number', description: 'Trajanje v minutah (opcijsko)' }
+        },
+        required: ['service_name']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_slot',
+      description: 'Dodaj prosti termin v urnik',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: 'Datum YYYY-MM-DD' },
+          time: { type: 'string', description: 'Ura HH:MM' }
+        },
+        required: ['date', 'time']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remove_slot',
+      description: 'Odstrani prosti termin iz urnika',
+      parameters: {
+        type: 'object',
+        properties: {
+          date: { type: 'string', description: 'Datum YYYY-MM-DD' },
+          time: { type: 'string', description: 'Ura HH:MM' }
+        },
+        required: ['date', 'time']
+      }
     }
   }
 ];
@@ -117,7 +144,7 @@ async function executeTool(name, input, salonId, today) {
         const bookings = await db.getBookingsByDate(salonId, date);
         if (!bookings.length) return `Ni naročil za ${date}.`;
         const lines = bookings.map(b => {
-          const time = (b.booking_time || b.slot_time || '?').substring(0, 5);
+          const time = (b.booking_time || '?').substring(0, 5);
           const who = b.customer_name || b.customer_phone || '?';
           const ref = (b.id || '').slice(-6);
           return `• ${time} – ${who} (${b.status}) [${ref}]`;
@@ -159,7 +186,7 @@ async function executeTool(name, input, salonId, today) {
         } else if (input.customer_name) {
           booking = await db.getBookingByName(salonId, input.customer_name, input.date);
         }
-        if (!booking) return `Rezervacija ni najdena.`;
+        if (!booking) return 'Rezervacija ni najdena.';
         await db.updateBookingStatus(booking.id, 'cancelled');
         if (booking.slot_id) await db.markSlotFree(booking.slot_id);
         const who = booking.customer_name || booking.customer_phone || (input.ref || '');
@@ -211,51 +238,49 @@ Pomagaš lastniku salona z:
 - Dodajanjem/odstranjevanjem terminov iz urnika
 
 Pravila:
-- Odgovarjaj kratko, jasno, v slovenščini
+- Odgovarjaj kratko in jasno v slovenščini
 - Vedno potrdi kar si naredil z emojiji
 - Če nimaš dovolj info (npr. manjka datum ali ime), vprašaj
-- Ko admin reče "danes" → uporabi ${today}
-- Ko admin reče "jutri" → uporabi naslednji dan
-- Dnevi: pon, tor, sre, čet, pet, sob, ned`;
+- Ko admin reče "danes" → ${today}, "jutri" → naslednji dan`;
 
-  const messages = [{ role: 'user', content: message }];
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: message }
+  ];
 
-  let response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
+  let response = await client.chat.completions.create({
+    model: 'gpt-4o-mini',
     max_tokens: 512,
-    system: systemPrompt,
     tools: TOOLS,
+    tool_choice: 'auto',
     messages
   });
 
   // Agentic loop – execute tools until final answer
-  while (response.stop_reason === 'tool_use') {
-    const toolResults = [];
+  while (response.choices[0].finish_reason === 'tool_calls') {
+    const assistantMsg = response.choices[0].message;
+    messages.push(assistantMsg);
 
-    for (const block of response.content) {
-      if (block.type === 'tool_use') {
-        const result = await executeTool(block.name, block.input, salonId, today);
-        toolResults.push({
-          type: 'tool_result',
-          tool_use_id: block.id,
-          content: result
-        });
-      }
+    for (const toolCall of assistantMsg.tool_calls) {
+      const input = JSON.parse(toolCall.function.arguments);
+      const result = await executeTool(toolCall.function.name, input, salonId, today);
+      messages.push({
+        role: 'tool',
+        tool_call_id: toolCall.id,
+        content: result
+      });
     }
 
-    messages.push({ role: 'assistant', content: response.content });
-    messages.push({ role: 'user', content: toolResults });
-
-    response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+    response = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
       max_tokens: 512,
-      system: systemPrompt,
       tools: TOOLS,
+      tool_choice: 'auto',
       messages
     });
   }
 
-  return response.content.find(b => b.type === 'text')?.text || 'Opravljeno.';
+  return response.choices[0].message.content || 'Opravljeno.';
 }
 
 module.exports = { askAdminAI };
