@@ -24,8 +24,7 @@ function cleanPhone(phone) {
 function masterAdminPhones() {
   return new Set([
     process.env.MASTER_ADMIN_PHONES,
-    process.env.ADMIN_PHONE,
-    '38640599185'
+    process.env.ADMIN_PHONE
   ].filter(Boolean).join(',')
     .split(',')
     .map(cleanPhone)
