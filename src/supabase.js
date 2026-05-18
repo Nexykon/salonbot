@@ -421,6 +421,13 @@ async function getSalonByAdminPhone(phone) {
   return r.data[0] || null;
 }
 
+async function getSalonByOwnerEmail(email) {
+  const clean = String(email || '').trim();
+  if (!clean) return null;
+  const r = await axios.get(`${BASE}/sb_salons?owner_email=ilike.${encodeURIComponent(clean)}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
 async function getSalonByToken(token) {
   const r = await axios.get(`${BASE}/sb_salons?salon_token=eq.${token}&limit=1`, { headers: HEADERS });
   return r.data[0] || null;
@@ -444,5 +451,5 @@ module.exports = {
   getKnowledge, addKnowledge, deleteKnowledge,
   getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
   logError, getRecentErrors, getRecentLogs, clearErrors,
-  getSalonByAdminPhone, getSalonByToken, updateSalonSettings
+  getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken, updateSalonSettings
 };

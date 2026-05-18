@@ -1,10 +1,9 @@
 const db = require('./supabase');
 const wa = require('./whatsapp');
+const mail = require('./email');
 const session = require('./session');
 const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
-
-const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
 // ─── Date formatter ───────────────────────────────────────────
 function fmtDate(dateStr) {
@@ -169,7 +168,7 @@ async function handleMessage(msgObj, salon) {
     iId = msgObj.button.payload;
   }
 
-  const salonAdminPhone = String(salon.admin_phone || ADMIN_PHONE || '').replace(/[^\d]/g, '');
+  const salonAdminPhone = String(salon.admin_phone || '').replace(/[^\d]/g, '');
   const isAdmin = from === salonAdminPhone;
   const msgText = msgObj.text?.body?.trim() || '';
 
@@ -419,6 +418,11 @@ async function handleMessage(msgObj, salon) {
             await db.logError(salon.id, 'admin_notify', e3.message, 'Admin obvestilo ni uspelo — vse metode neuspešne', from);
           }
         }
+      }
+    } else {
+      const sent = await mail.sendBookingNotification(salon, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6, 'WhatsApp rezervacija');
+      if (!sent) {
+        await db.logError(salon.id, 'admin_notify_email', 'Email provider ni nastavljen', 'Admin telefon ni nastavljen in email ni bil poslan', from);
       }
     }
     return;

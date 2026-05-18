@@ -4,6 +4,7 @@ const path = require('path');
 const { handleMessage } = require('./src/handler');
 const db = require('./src/supabase');
 const wa = require('./src/whatsapp');
+const mail = require('./src/email');
 const { startScheduler } = require('./src/scheduler');
 const ownerAuth = require('./src/auth');
 const { getPreset, listBusinessTypes, normalizeBusinessType, slugify } = require('./src/presets');
@@ -39,6 +40,7 @@ function publicSalon(salon) {
   return {
     id: salon.id,
     name: salon.name,
+    owner_email: salon.owner_email || '',
     business_type: salon.business_type || 'hair',
     business_label: salon.business_label || getPreset(salon.business_type || 'hair').label,
     business_slug: salon.business_slug,
@@ -109,8 +111,12 @@ async function settingsSalonAuth(req, res) {
 }
 
 async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, sourceLabel) {
-  const to = cleanPhone(salon.admin_phone || process.env.ADMIN_PHONE);
-  if (!to) return;
+  const to = cleanPhone(salon.admin_phone);
+  if (!to) {
+    const sent = await mail.sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel);
+    if (!sent) console.warn('No admin phone and email provider not configured for booking notification:', salon.id);
+    return;
+  }
   const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
   const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
   try {
@@ -234,9 +240,9 @@ app.get('/api/business-types', (req, res) => {
 app.post('/onboard', async (req, res) => {
   if (!adminAuth(req, res)) return;
 
-  const { name, owner_name, owner_email, admin_phone, whatsapp_phone_number_id, plan, business_type, business_slug, bot_phone_display } = req.body;
-  if (!name || !owner_email || !admin_phone) {
-    return res.status(400).json({ error: 'name, owner_email, admin_phone required' });
+  const { name, owner_name, owner_email, owner_password, admin_phone, whatsapp_phone_number_id, plan, business_type, business_slug, bot_phone_display } = req.body;
+  if (!name || !owner_email || !owner_password) {
+    return res.status(400).json({ error: 'name, owner_email, owner_password required' });
   }
 
   try {
@@ -249,7 +255,9 @@ app.post('/onboard', async (req, res) => {
     const salon = await db.createSalon({
       name,
       owner_name: owner_name || '',
-      owner_email,
+      owner_email: String(owner_email).trim().toLowerCase(),
+      owner_password_hash: ownerAuth.hashPassword(owner_password),
+      owner_password_set_at: new Date().toISOString(),
       admin_phone: cleanPhone(admin_phone),
       whatsapp_phone_number_id: whatsapp_phone_number_id || process.env.WA_PHONE_ID,
       bot_phone_display: bot_phone_display || '',
@@ -288,6 +296,7 @@ app.get('/salons', async (req, res) => {
       whatsapp_phone_number_id: s.whatsapp_phone_number_id || '',
       owner_name: s.owner_name,
       owner_email: s.owner_email,
+      owner_password_configured: !!s.owner_password_hash,
       subscription_status: s.subscription_status,
       subscription_plan: s.subscription_plan,
       admin_phone: s.admin_phone,
@@ -389,7 +398,12 @@ app.get('/api/admin/salons/:id/settings', async (req, res) => {
   try {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
-    res.json(publicSalon(salon));
+    res.json({
+      ...publicSalon(salon),
+      owner_name: salon.owner_name || '',
+      owner_email: salon.owner_email || '',
+      owner_password_configured: !!salon.owner_password_hash
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -430,6 +444,15 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
   try {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    if (req.body.owner_email !== undefined) {
+      const email = String(req.body.owner_email || '').trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Email ni veljaven' });
+      updates.owner_email = email;
+    }
+    if (req.body.owner_password) {
+      updates.owner_password_hash = ownerAuth.hashPassword(req.body.owner_password);
+      updates.owner_password_set_at = new Date().toISOString();
+    }
     await db.updateSalonSettings(salon.id, updates);
     res.json({ success: true });
   } catch (err) {
@@ -566,6 +589,27 @@ app.get('/api/logs', async (req, res) => {
 });
 
 // ─── Owner WhatsApp OTP auth ─────────────────────────────────
+app.post('/api/auth/login', async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  const password = String(req.body.password || '');
+  if (!email || !password) return res.status(400).json({ error: 'Email in geslo sta obvezna' });
+  try {
+    const salon = await db.getSalonByOwnerEmail(email);
+    if (!salon || salon.subscription_status === 'inactive' || !salon.owner_password_hash) {
+      return res.status(401).json({ error: 'Napacen email ali geslo' });
+    }
+    if (!ownerAuth.verifyPassword(password, salon.owner_password_hash)) {
+      return res.status(401).json({ error: 'Napacen email ali geslo' });
+    }
+    const token = ownerAuth.createSession(salon.id, 'owner', { email });
+    await db.updateSalonSettings(salon.id, { owner_last_login_at: new Date().toISOString() });
+    res.json({ success: true, token, role: 'owner', salon: publicSalon(salon) });
+  } catch (err) {
+    console.error('Owner login error:', err.message);
+    res.status(500).json({ error: 'Prijava trenutno ni uspela' });
+  }
+});
+
 app.post('/api/auth/start', async (req, res) => {
   const phone = cleanPhone(req.body.phone);
   if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska stevilka' });
@@ -895,6 +939,26 @@ app.patch('/api/settings', async (req, res) => {
 
 // ─── Services Portal (auth: salon token/phone) ───────────────
 // Get all services for this salon
+app.patch('/api/settings/password', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  const currentPassword = String(req.body.current_password || '');
+  const newPassword = String(req.body.new_password || '');
+  if (newPassword.length < 8) return res.status(400).json({ error: 'Novo geslo mora imeti vsaj 8 znakov' });
+  try {
+    const session = ownerAuth.getSession(req.headers.authorization || req.headers['x-owner-token']);
+    const isMaster = session?.role === 'master';
+    if (!isMaster && salon.owner_password_hash && !ownerAuth.verifyPassword(currentPassword, salon.owner_password_hash)) {
+      return res.status(401).json({ error: 'Trenutno geslo ni pravilno' });
+    }
+    await db.updateSalonSettings(salon.id, {
+      owner_password_hash: ownerAuth.hashPassword(newPassword),
+      owner_password_set_at: new Date().toISOString()
+    });
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/settings/services', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;

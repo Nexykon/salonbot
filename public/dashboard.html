@@ -744,7 +744,13 @@
     </div>
 
     <div class="form-group">
-      <label>Admin WhatsApp telefon *</label>
+      <label>Začetno geslo za dashboard *</label>
+      <input type="password" id="f-password" placeholder="Najmanj 8 znakov" autocomplete="new-password">
+      <div class="form-hint">To geslo dobi lastnik za prvi vstop v svoj dashboard.</div>
+    </div>
+
+    <div class="form-group">
+        <label>Kontakt WhatsApp telefon</label>
       <input type="text" id="f-phone" placeholder="38641123456">
       <div class="form-hint">Format: koda države + številka, brez + (npr. 38641123456)</div>
     </div>
@@ -821,6 +827,21 @@
           <div class="form-group">
             <label>Pozdravno sporocilo stranki</label>
             <textarea id="bs-greeting" oninput="updateBotStudioPreview()"></textarea>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Dostop lastnika</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email za prijavo</label>
+              <input type="email" id="bs-owner-email" placeholder="ana@salon.si">
+            </div>
+            <div class="form-group">
+              <label>Novo geslo</label>
+              <input type="password" id="bs-owner-password" placeholder="Pusti prazno, če ne menjaš" autocomplete="new-password">
+              <div class="form-hint">Vpiši samo, ko želiš lastniku resetirati geslo.</div>
+            </div>
           </div>
         </div>
 
@@ -1194,6 +1215,8 @@ async function openManageSalon(id) {
     document.getElementById('bs-business-type').value = settings.business_type || 'custom';
     document.getElementById('bs-slug').value = settings.business_slug || '';
     document.getElementById('bs-bot-phone').value = settings.bot_phone_display || '';
+    document.getElementById('bs-owner-email').value = settings.owner_email || '';
+    document.getElementById('bs-owner-password').value = '';
     document.getElementById('bs-greeting').value = settings.greeting_message || '';
     document.getElementById('bs-start').value = (settings.working_hours_start || '08:00').substring(0,5);
     document.getElementById('bs-end').value = (settings.working_hours_end || '19:00').substring(0,5);
@@ -1319,19 +1342,24 @@ async function saveBotStudio() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
   try {
+    const ownerPassword = document.getElementById('bs-owner-password').value;
+    if (ownerPassword && ownerPassword.length < 8) return showToast('Geslo mora imeti vsaj 8 znakov', 'error');
+    const settingsPayload = {
+      name: document.getElementById('bs-name').value.trim(),
+      owner_email: document.getElementById('bs-owner-email').value.trim(),
+      business_type: document.getElementById('bs-business-type').value,
+      business_slug: document.getElementById('bs-slug').value.trim(),
+      bot_phone_display: document.getElementById('bs-bot-phone').value.trim(),
+      greeting_message: document.getElementById('bs-greeting').value.trim(),
+      working_hours_start: document.getElementById('bs-start').value,
+      working_hours_end: document.getElementById('bs-end').value,
+      booking_interval_minutes: parseInt(document.getElementById('bs-interval').value),
+      max_advance_days: parseInt(document.getElementById('bs-max-days').value)
+    };
+    if (ownerPassword) settingsPayload.owner_password = ownerPassword;
     await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/settings`, {
       method: 'PATCH',
-      body: JSON.stringify({
-        name: document.getElementById('bs-name').value.trim(),
-        business_type: document.getElementById('bs-business-type').value,
-        business_slug: document.getElementById('bs-slug').value.trim(),
-        bot_phone_display: document.getElementById('bs-bot-phone').value.trim(),
-        greeting_message: document.getElementById('bs-greeting').value.trim(),
-        working_hours_start: document.getElementById('bs-start').value,
-        working_hours_end: document.getElementById('bs-end').value,
-        booking_interval_minutes: parseInt(document.getElementById('bs-interval').value),
-        max_advance_days: parseInt(document.getElementById('bs-max-days').value)
-      })
+      body: JSON.stringify(settingsPayload)
     }));
 
     for (const id of botStudio.deletedServiceIds) {
@@ -1372,7 +1400,7 @@ function openAddModal() {
 }
 function closeModal() {
   document.getElementById('add-modal').classList.remove('open');
-  ['f-name','f-owner','f-email','f-phone','f-waid','f-botnum','f-slug'].forEach(id => {
+  ['f-name','f-owner','f-email','f-password','f-phone','f-waid','f-botnum','f-slug'].forEach(id => {
     document.getElementById(id).value = '';
   });
 }
@@ -1386,6 +1414,7 @@ document.getElementById('bot-studio-modal').addEventListener('click', e => {
 async function saveSalon() {
   const name = document.getElementById('f-name').value.trim();
   const email = document.getElementById('f-email').value.trim();
+  const password = document.getElementById('f-password').value;
   const phone = document.getElementById('f-phone').value.trim();
   const plan = document.getElementById('f-plan').value;
   const businessType = document.getElementById('f-business-type').value;
@@ -1394,7 +1423,7 @@ async function saveSalon() {
   const waid = document.getElementById('f-waid').value.trim();
   const botnum = document.getElementById('f-botnum').value.trim();
 
-  if (!name || !email || !phone) {
+  if (!name || !email || password.length < 8) {
     showToast('Izpolnite vsa obvezna polja', 'error'); return;
   }
 
@@ -1406,7 +1435,7 @@ async function saveSalon() {
     const res = await apiFetch('/onboard', {
       method: 'POST',
       body: JSON.stringify({
-        name, owner_name: owner, owner_email: email, admin_phone: phone,
+        name, owner_name: owner, owner_email: email, owner_password: password, admin_phone: phone,
         plan, business_type: businessType, business_slug: slug || undefined,
         whatsapp_phone_number_id: waid || undefined,
         bot_phone_display: botnum || undefined

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 
 const otpStore = new Map();
 const sessions = new Map();
+const PASSWORD_PREFIX = 'scrypt';
 
 function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
@@ -20,6 +21,38 @@ function createOtp(phone, salonId, role = 'owner') {
   return code;
 }
 
+function hashPassword(password) {
+  const clean = String(password || '');
+  if (clean.length < 8) {
+    const err = new Error('Geslo mora imeti vsaj 8 znakov');
+    err.code = 'WEAK_PASSWORD';
+    throw err;
+  }
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(clean, salt, 64).toString('hex');
+  return `${PASSWORD_PREFIX}$${salt}$${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+  const parts = String(storedHash || '').split('$');
+  if (parts.length !== 3 || parts[0] !== PASSWORD_PREFIX) return false;
+  const [, salt, expectedHex] = parts;
+  const expected = Buffer.from(expectedHex, 'hex');
+  const actual = crypto.scryptSync(String(password || ''), salt, expected.length);
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+}
+
+function createSession(salonId, role = 'owner', identity = {}) {
+  const token = crypto.randomBytes(32).toString('hex');
+  sessions.set(token, {
+    salonId,
+    role,
+    ...identity,
+    expiresAt: Date.now() + 12 * 60 * 60 * 1000
+  });
+  return token;
+}
+
 function verifyOtp(phone, code) {
   const clean = cleanPhone(phone);
   const record = otpStore.get(clean);
@@ -35,14 +68,7 @@ function verifyOtp(phone, code) {
   }
   if (String(code || '').trim() !== record.code) return null;
   otpStore.delete(clean);
-  const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, {
-    salonId: record.salonId,
-    role: record.role || 'owner',
-    phone: clean,
-    expiresAt: Date.now() + 12 * 60 * 60 * 1000
-  });
-  return token;
+  return createSession(record.salonId, record.role || 'owner', { phone: clean });
 }
 
 function getSession(token) {
@@ -60,4 +86,13 @@ function clearSession(token) {
   sessions.delete(String(token || '').replace(/^Bearer\s+/i, '').trim());
 }
 
-module.exports = { cleanPhone, createOtp, verifyOtp, getSession, clearSession };
+module.exports = {
+  cleanPhone,
+  createOtp,
+  verifyOtp,
+  getSession,
+  clearSession,
+  hashPassword,
+  verifyPassword,
+  createSession
+};
