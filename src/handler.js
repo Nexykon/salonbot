@@ -16,6 +16,58 @@ function fmtDate(dateStr) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
+// ─── Time validation — 5-minutna natančnost ───────────────────
+// Zaokroži na najbližjih 5 minut
+function roundTo5Min(timeStr) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const rounded = Math.round(m / 5) * 5;
+  const fM = rounded >= 60 ? 0 : rounded;
+  const fH = rounded >= 60 ? h + 1 : h;
+  if (fH > 23) return null;
+  return String(fH).padStart(2, '0') + ':' + String(fM).padStart(2, '0');
+}
+
+// Preveri ali je tipkana ura prosta — direktno v bazi (ne v generirani listi)
+// Sprejme vsak 5-minutni interval znotraj delovnega časa
+async function resolveCustomTime(salon, date, requestedTime) {
+  const start = (salon.working_hours_start || '08:00').substring(0, 5);
+  const end   = (salon.working_hours_end   || '19:00').substring(0, 5);
+  const bookedTimes = await db.getBookedTimesForDate(salon.id, date);
+
+  const rounded = roundTo5Min(requestedTime);
+  if (!rounded) return null;
+
+  // Preizkusi zaokroženi čas in bližnje 5-minutne intervale (±30 min)
+  const toMins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const fromMins = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
+  const baseMins = toMins(rounded);
+
+  for (let delta = 0; delta <= 30; delta += 5) {
+    for (const d of (delta === 0 ? [0] : [delta, -delta])) {
+      const tryMins = baseMins + d;
+      const tryTime = fromMins(tryMins);
+      if (tryTime >= start && tryTime < end && !bookedTimes.includes(tryTime)) {
+        return tryTime;
+      }
+    }
+  }
+  return null; // ni prostega termina v bližini
+}
+
+// Stara funkcija za seznam (ko stranka klikne na seznam)
+function findNearestTime(freeTimes, requestedTime) {
+  if (!freeTimes.length) return null;
+  if (freeTimes.includes(requestedTime)) return requestedTime;
+  const toMins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const reqMins = toMins(requestedTime);
+  let best = null, bestDiff = Infinity;
+  for (const t of freeTimes) {
+    const diff = Math.abs(toMins(t) - reqMins);
+    if (diff < bestDiff) { bestDiff = diff; best = t; }
+  }
+  return best;
+}
+
 // ─── Natural language date parser (Slovenian) ─────────────────
 
 function parseCustomerDateTime(text) {
@@ -392,19 +444,69 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.dateList(from, freeDates));
         return;
       }
-      const freeTimes = await getFreeTimesForDate(salon, date);
-      if (freeTimes.includes(time)) {
-        session.set(from, { ...sess, step: 3, selectedDate: date, selectedTime: time });
-        await wa.send(phoneId, token, wa.confirmButtons(from, date, time));
+      // Preveri tipkano uro z 5-minutno natančnostjo
+      const bestTime = await resolveCustomTime(salon, date, time);
+      if (bestTime) {
+        session.set(from, { ...sess, step: 3, selectedDate: date, selectedTime: bestTime });
+        await wa.send(phoneId, token, wa.confirmButtons(from, date, bestTime));
       } else {
-        await wa.send(phoneId, token, wa.textMsg(from, `Žal termin ${date} ob ${time} ni prost. Izberite drug datum:`));
+        await wa.send(phoneId, token, wa.textMsg(from, `Na ta dan ni prostih terminov ob ${time}. Izberite drug datum:`));
         const freeDates = await getFreeDates(salon);
         await wa.send(phoneId, token, wa.dateList(from, freeDates));
       }
+    } else if (date) {
+      // Got date but no time — go straight to time picker
+      const d = new Date(date + 'T12:00:00');
+      const workingDays = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
+      if (!workingDays.includes(d.getDay())) {
+        const freeDates = await getFreeDates(salon);
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+        await wa.send(phoneId, token, wa.dateList(from, freeDates));
+        return;
+      }
+      session.set(from, { ...sess, step: 2, selectedDate: date });
+      const freeTimes = await getFreeTimesForDate(salon, date);
+      await wa.send(phoneId, token, wa.timeList(from, freeTimes, date));
     } else {
       // Couldn't parse — show date list again
       const freeDates = await getFreeDates(salon);
       await wa.send(phoneId, token, wa.dateList(from, freeDates));
+    }
+    return;
+  }
+
+  // ── Natural language time input (step 2 — datum že izbran) ──
+  if (sess.step === 2 && msgText) {
+    const { date: parsedDate, time: parsedTime } = parseCustomerDateTime(msgText);
+    // Če stranka navede nov datum in uro, zamenjamo datum
+    const useDate = parsedDate || sess.selectedDate;
+
+    if (!useDate) {
+      // Ni shranjenega datuma — začni znova
+      session.clear(from);
+      const freeDates = await getFreeDates(salon);
+      await wa.send(phoneId, token, wa.dateList(from, freeDates));
+      return;
+    }
+
+    const freeTimes = await getFreeTimesForDate(salon, useDate);
+
+    if (parsedTime) {
+      // 5-minutna natančnost — preveri direktno v bazi
+      const bestTime = await resolveCustomTime(salon, useDate, parsedTime);
+      if (bestTime) {
+        session.set(from, { ...sess, step: 3, selectedDate: useDate, selectedTime: bestTime });
+        await wa.send(phoneId, token, wa.confirmButtons(from, useDate, bestTime));
+      } else {
+        const freeTimes2 = await getFreeTimesForDate(salon, useDate);
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `Ob ${parsedTime} ni prostega termina. Izberite eno od prostih ur:`));
+        await wa.send(phoneId, token, wa.timeList(from, freeTimes2, useDate));
+      }
+    } else {
+      // Ni razbrali časa — pokaži ure znova
+      const freeTimes2 = await getFreeTimesForDate(salon, useDate);
+      await wa.send(phoneId, token, wa.timeList(from, freeTimes2, useDate));
     }
     return;
   }
@@ -449,19 +551,8 @@ async function handleMessage(msgObj, salon) {
     return;
   }
 
-  // ── Default: če je vprašanje → AI z knowledge base, sicer service list ──
+  // ── Default: pokaži seznam storitev (brez AI za stranke) ──
   session.clear(from);
-  if (msgText && msgText.length > 3 && !/^(hi|hej|zdravo|pozdravljeni|bok|čao)$/i.test(msgText.trim())) {
-    try {
-      const aiReply = await askCustomerAI(msgText, salon.id);
-      if (aiReply) {
-        await wa.send(phoneId, token, wa.textMsg(from, aiReply));
-        return;
-      }
-    } catch (e) {
-      console.error('Customer AI error:', e.message);
-    }
-  }
   await wa.send(phoneId, token, wa.serviceList(from, services));
 }
 

@@ -458,8 +458,141 @@ app.get('/api/calendar', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── Admin booking management ─────────────────────────────────
+function adminAuth(req, res) {
+  if (req.headers['x-api-key'] !== process.env.ADMIN_API_KEY) {
+    res.status(401).json({ error: 'Unauthorized' }); return false;
+  }
+  return true;
+}
+
+// Confirm booking (admin dashboard)
+app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const booking = await db.getBooking(req.params.ref);
+    if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
+    await db.updateBookingStatus(booking.id, 'confirmed');
+    // Notify customer via WA
+    const phoneId = process.env.WA_PHONE_ID;
+    const token = process.env.WA_TOKEN;
+    if (booking.customer_phone && booking.customer_phone !== 'manual') {
+      const custDate = `${(booking.booking_date||'').substring(8,10)}.${(booking.booking_date||'').substring(5,7)}.${(booking.booking_date||'').substring(0,4)}`;
+      const custTime = (booking.booking_time || '').substring(0, 5);
+      const salon = await db.getSalon();
+      try {
+        await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime, salon?.name));
+      } catch (e) {
+        try {
+          await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+            `✅ Vaša rezervacija je potrjena!\n\n📅 ${custDate} ob ${custTime}\n\nHvala, vidimo se! 💆`));
+        } catch (_) {}
+      }
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Cancel booking (admin dashboard)
+app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const booking = await db.getBooking(req.params.ref);
+    if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
+    await db.updateBookingStatus(booking.id, 'cancelled');
+    // Notify customer
+    const phoneId = process.env.WA_PHONE_ID;
+    const token = process.env.WA_TOKEN;
+    if (booking.customer_phone && booking.customer_phone !== 'manual') {
+      const custDate = `${(booking.booking_date||'').substring(8,10)}.${(booking.booking_date||'').substring(5,7)}.${(booking.booking_date||'').substring(0,4)}`;
+      const custTime = (booking.booking_time || '').substring(0, 5);
+      try {
+        await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+          `❌ Žal vaša rezervacija za ${custDate} ob ${custTime} ni bila potrjena.\n\nZa novo rezervacijo nas kontaktirajte. 🙏`));
+      } catch (_) {}
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Manual add booking (admin dashboard)
+app.post('/api/admin/bookings', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const { date, time, customerName, customerPhone, serviceId } = req.body;
+  if (!date || !time || !customerName) return res.status(400).json({ error: 'Manjkajo podatki' });
+  try {
+    const salon = await db.getSalon();
+    const booking = await db.createBooking({
+      salon_id: salon.id,
+      customer_name: customerName.trim(),
+      customer_phone: customerPhone ? String(customerPhone).replace(/[^\d]/g,'') : 'manual',
+      booking_date: date,
+      booking_time: time + ':00',
+      service_id: serviceId || null,
+      status: 'confirmed'
+    });
+    res.json({ success: true, ref: (booking.id||'').slice(-6) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── Salon Settings Portal ────────────────────────────────────
+// Auth: salon_token (iz DB) ali admin_phone
+async function salonAuth(req, res) {
+  const token = req.headers['x-salon-token'] || req.query.token;
+  const phone = req.headers['x-salon-phone'] || req.query.phone;
+  if (token) {
+    const salon = await db.getSalonByToken(token);
+    if (salon) return salon;
+  }
+  if (phone) {
+    const salon = await db.getSalonByAdminPhone(phone);
+    if (salon) return salon;
+  }
+  res.status(401).json({ error: 'Neveljavna prijava' });
+  return null;
+}
+
+// Get salon settings
+app.get('/api/settings', async (req, res) => {
+  const salon = await salonAuth(req, res);
+  if (!salon) return;
+  res.json({
+    id: salon.id,
+    name: salon.name,
+    working_days: salon.working_days || '1,2,3,4,5,6',
+    working_hours_start: salon.working_hours_start || '08:00',
+    working_hours_end: salon.working_hours_end || '19:00',
+    booking_interval_minutes: salon.booking_interval_minutes || 30,
+    break_between_minutes: salon.break_between_minutes || 0,
+    max_advance_days: salon.max_advance_days || 30,
+    salon_token: salon.salon_token
+  });
+});
+
+// Update salon settings
+app.patch('/api/settings', async (req, res) => {
+  const salon = await salonAuth(req, res);
+  if (!salon) return;
+  const allowed = ['working_days','working_hours_start','working_hours_end',
+    'booking_interval_minutes','break_between_minutes','max_advance_days','name'];
+  const updates = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+  // Validate interval
+  if (updates.booking_interval_minutes) {
+    const v = parseInt(updates.booking_interval_minutes);
+    if (![5,10,15,20,30,45,60].includes(v)) return res.status(400).json({ error: 'Neveljaven interval' });
+    updates.booking_interval_minutes = v;
+  }
+  try {
+    await db.updateSalonSettings(salon.id, updates);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── Health check ─────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'ok', bot: 'SalonBot v3', version: '4.0' }));
+app.get('/', (req, res) => res.json({ status: 'ok', bot: 'FlowTiq SalonBot', version: '4.1' }));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

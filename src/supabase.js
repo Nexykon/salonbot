@@ -286,6 +286,25 @@ async function clearErrors() {
   );
 }
 
+async function getSalonByAdminPhone(phone) {
+  const clean = String(phone).replace(/[^\d]/g, '');
+  const r = await axios.get(`${BASE}/sb_salons?admin_phone=eq.${clean}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+async function getSalonByToken(token) {
+  const r = await axios.get(`${BASE}/sb_salons?salon_token=eq.${token}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+async function updateSalonSettings(salonId, settings) {
+  await axios.patch(
+    `${BASE}/sb_salons?id=eq.${salonId}`,
+    settings,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+}
+
 module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
   getBooking, updateBookingStatus, getTodayBookings,
@@ -293,5 +312,6 @@ module.exports = {
   markSlotFree, updateService, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
   getKnowledge, addKnowledge, deleteKnowledge,
   getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
-  logError, getRecentErrors, clearErrors
+  logError, getRecentErrors, clearErrors,
+  getSalonByAdminPhone, getSalonByToken, updateSalonSettings
 };

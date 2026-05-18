@@ -71,7 +71,7 @@ function timeList(to, freeTimes, date) {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
-      body: { text: 'Izberite uro:' },
+      body: { text: 'Izberite uro iz seznama ali napišite svojo (npr. "14:35"):' },
       action: { button: 'Izberi uro', sections: [{ title: 'Prosti termini', rows }] }
     }
   };
