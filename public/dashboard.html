@@ -136,7 +136,7 @@
   .plan-select.starter:hover { background-color: rgba(148,163,184,0.15); }
   .plan-select option { background: var(--bg3); color: var(--text); font-weight: 600; }
 
-  .actions { display: flex; gap: 8px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
   .btn-action {
     padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
     transition: all 0.2s; border: 1px solid transparent;
@@ -178,11 +178,13 @@
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .form-group { margin-bottom: 20px; }
   .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
-  .form-group input, .form-group select {
+  .form-group input, .form-group select, .form-group textarea {
     width: 100%; padding: 12px 14px; background: var(--bg3); border: 1px solid var(--border);
     border-radius: 10px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.2s;
+    font-family: inherit;
   }
-  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+  .form-group textarea { min-height: 92px; resize: vertical; line-height: 1.45; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
   .form-group select option { background: var(--bg3); }
   .form-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
 
@@ -198,6 +200,145 @@
   }
   .btn-save:hover { background: var(--accent2); box-shadow: 0 4px 16px rgba(124,58,237,0.3); }
   .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* BOT STUDIO */
+  .studio-modal {
+    width: min(1180px, 96vw);
+    padding: 0;
+    overflow: hidden;
+  }
+  .studio-shell { display: grid; grid-template-columns: minmax(0, 1fr) 390px; min-height: 720px; max-height: 92vh; }
+  .studio-editor { padding: 28px; overflow-y: auto; }
+  .studio-preview {
+    border-left: 1px solid var(--border);
+    background: radial-gradient(circle at 50% 0%, rgba(16,185,129,0.12), transparent 32%), #08110f;
+    padding: 28px 24px;
+    overflow-y: auto;
+  }
+  .studio-kicker { font-size: 12px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .studio-subtitle { color: var(--text2); font-size: 13px; margin-top: 4px; }
+  .studio-section {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    border-radius: 14px;
+    padding: 18px;
+    margin-top: 18px;
+  }
+  .studio-section-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; }
+  .studio-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .service-editor-list { display: flex; flex-direction: column; gap: 10px; }
+  .service-row {
+    display: grid; grid-template-columns: minmax(180px, 1fr) 96px 110px 42px;
+    gap: 10px; align-items: center;
+  }
+  .service-row input {
+    width: 100%; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--bg3); color: var(--text); outline: none;
+  }
+  .service-row input:focus { border-color: var(--accent); }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.25);
+    background: rgba(239,68,68,0.08); color: var(--red); cursor: pointer; font-size: 18px;
+  }
+  .icon-btn:hover { background: rgba(239,68,68,0.16); }
+  .btn-soft {
+    padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(124,58,237,0.3);
+    background: rgba(124,58,237,0.12); color: var(--accent2); font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .btn-soft:hover { background: rgba(124,58,237,0.2); }
+  .btn-danger-soft {
+    border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); color: var(--red);
+  }
+  .phone-preview {
+    width: 100%; max-width: 340px; margin: 0 auto;
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 34px;
+    background: #07110e; box-shadow: 0 24px 70px rgba(0,0,0,0.45);
+    padding: 14px;
+  }
+  .phone-top {
+    height: 34px; display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.42); font-size: 11px;
+  }
+  .wa-header {
+    display: flex; align-items: center; gap: 10px; padding: 10px 8px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .wa-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #22d3ee);
+    display: flex; align-items: center; justify-content: center; color: #04110d; font-weight: 900;
+  }
+  .wa-name { font-size: 13px; font-weight: 800; }
+  .wa-status { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+  .wa-chat { padding: 16px 6px 8px; min-height: 460px; }
+  .wa-bubble {
+    background: #12372d; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px 16px 16px 5px; padding: 12px; font-size: 13px; line-height: 1.45;
+    color: #e8fff5; box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+  }
+  .wa-list {
+    margin-top: 10px; background: rgba(255,255,255,0.04); border-radius: 14px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .wa-list-title { padding: 10px 12px; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .wa-list-row { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .wa-list-row:last-child { border-bottom: none; }
+  .wa-service-name { font-size: 13px; font-weight: 800; color: #fff; }
+  .wa-service-meta { font-size: 11px; color: rgba(255,255,255,0.58); margin-top: 3px; }
+  .wa-button {
+    margin-top: 10px; border-radius: 999px; padding: 9px 12px; text-align: center;
+    background: rgba(34,211,238,0.12); color: #67e8f9; font-size: 12px; font-weight: 800;
+  }
+
+  /* MODERN FLOWTIQ REFRESH */
+  body {
+    background:
+      radial-gradient(circle at 12% 0%, rgba(124,58,237,0.22), transparent 34%),
+      radial-gradient(circle at 88% 6%, rgba(6,182,212,0.14), transparent 30%),
+      linear-gradient(180deg, #05060c 0%, #080912 48%, #06070d 100%);
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent 70%);
+  }
+  #login-screen, #app { position: relative; z-index: 1; }
+  header {
+    background: rgba(8,10,20,0.72);
+    backdrop-filter: blur(22px) saturate(160%);
+    border-bottom-color: rgba(255,255,255,0.07);
+  }
+  main { max-width: 1360px; }
+  .stat-card, .table-wrap, .cal-wrap, .day-detail, .modal, .studio-section {
+    background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+    border-color: rgba(255,255,255,0.085);
+    box-shadow: 0 20px 70px rgba(0,0,0,0.22);
+  }
+  .stat-card { border-radius: 18px; }
+  .stat-card::before { height: 1px; background: linear-gradient(90deg, transparent, rgba(167,139,250,0.85), rgba(34,211,238,0.75), transparent); }
+  thead { background: rgba(255,255,255,0.035); }
+  td { border-top-color: rgba(255,255,255,0.06); }
+  tr:hover td { background: rgba(124,58,237,0.07); }
+  .btn-add, .btn-save, .btn-primary {
+    background: linear-gradient(135deg, #7c3aed, #06b6d4);
+    box-shadow: 0 12px 28px rgba(124,58,237,0.22);
+  }
+  .btn-add:hover, .btn-save:hover, .btn-primary:hover {
+    background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+  }
+  .btn-action, .btn-soft, .btn-cancel, .btn-logout, .plan-select {
+    backdrop-filter: blur(12px);
+  }
+  .form-group input, .form-group select, .form-group textarea, .service-row input {
+    background: rgba(5,7,14,0.72);
+    border-color: rgba(255,255,255,0.09);
+  }
+  .modal-overlay {
+    background: rgba(1,2,8,0.76);
+    backdrop-filter: blur(12px);
+  }
 
   /* TOAST */
   #toast {
@@ -343,6 +484,9 @@
     .cal-cell { min-height: 60px; }
     .cal-event { display: none; }
     .cal-legend { display: none; }
+    .studio-shell { grid-template-columns: 1fr; }
+    .studio-preview { border-left: none; border-top: 1px solid var(--border); }
+    .service-row { grid-template-columns: 1fr 80px 90px 40px; }
   }
 </style>
 </head>
@@ -589,6 +733,136 @@
   </div>
 </div>
 
+<!-- BOT STUDIO MODAL -->
+<div class="modal-overlay" id="bot-studio-modal">
+  <div class="modal studio-modal">
+    <div class="studio-shell">
+      <div class="studio-editor">
+        <div class="modal-header">
+          <div>
+            <div class="studio-kicker">Bot Studio</div>
+            <div class="modal-title" id="bs-title">Uredi bota</div>
+            <div class="studio-subtitle">Uredi podatke, storitve in sporocilo, predogled se sproti posodablja.</div>
+          </div>
+          <button class="modal-close" onclick="closeBotStudio()">×</button>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Podjetje in panoga</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Ime podjetja</label>
+              <input type="text" id="bs-name" oninput="updateBotStudioPreview()">
+            </div>
+            <div class="form-group">
+              <label>Panoga</label>
+              <select id="bs-business-type" onchange="updateBotStudioPreview()">
+                <option value="cosmetics">Kozmeticni studii</option>
+                <option value="hair">Frizerji</option>
+                <option value="beauty">Nohti / Beauty</option>
+                <option value="dentist">Zobozdravniki</option>
+                <option value="massage">Masazni saloni</option>
+                <option value="fitness">Fitness & trenerji</option>
+                <option value="wellness">Wellness centri</option>
+                <option value="veterinary">Veterinarji</option>
+                <option value="optical">Optiki</option>
+                <option value="physiotherapy">Fizioterapevti</option>
+                <option value="tattoo">Tattoo studio</option>
+                <option value="photography">Fotografi</option>
+                <option value="custom">+ vasa dejavnost</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Booking slug</label>
+              <input type="text" id="bs-slug" oninput="updateBotStudioPreview()">
+            </div>
+            <div class="form-group">
+              <label>Bot stevilka za prikaz</label>
+              <input type="text" id="bs-bot-phone" placeholder="+386 XX XXX XXX" oninput="updateBotStudioPreview()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Pozdravno sporocilo stranki</label>
+            <textarea id="bs-greeting" oninput="updateBotStudioPreview()"></textarea>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Koledar</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Zacetek delovnika</label>
+              <input type="time" id="bs-start">
+            </div>
+            <div class="form-group">
+              <label>Konec delovnika</label>
+              <input type="time" id="bs-end">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Osnovni interval</label>
+              <select id="bs-interval">
+                <option value="5">5 min</option>
+                <option value="10">10 min</option>
+                <option value="15">15 min</option>
+                <option value="20">20 min</option>
+                <option value="30">30 min</option>
+                <option value="45">45 min</option>
+                <option value="60">60 min</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Narocanje dni vnaprej</label>
+              <input type="number" id="bs-max-days" min="1" max="365">
+            </div>
+          </div>
+        </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Storitve, ki jih vidi stranka</div>
+          <div class="service-editor-list" id="bs-services"></div>
+          <div class="studio-actions" style="margin-top:14px">
+            <button class="btn-soft" onclick="addBotStudioService()">+ Dodaj storitev</button>
+            <button class="btn-soft" onclick="applyBotStudioPreset()">Uporabi preset panoge</button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" onclick="closeBotStudio()">Preklici</button>
+          <button class="btn-save" id="bs-save-btn" onclick="saveBotStudio()">Shrani spremembe</button>
+        </div>
+      </div>
+
+      <div class="studio-preview">
+        <div class="studio-kicker">Predogled za stranko</div>
+        <div class="phone-preview">
+          <div class="phone-top">WhatsApp</div>
+          <div class="wa-header">
+            <div class="wa-avatar">F</div>
+            <div>
+              <div class="wa-name" id="bs-preview-name">FlowTiq bot</div>
+              <div class="wa-status" id="bs-preview-phone">online</div>
+            </div>
+          </div>
+          <div class="wa-chat">
+            <div class="wa-bubble">
+              <div id="bs-preview-greeting">Pozdravljeni! Izberite storitev:</div>
+              <div class="wa-list">
+                <div class="wa-list-title">Storitve</div>
+                <div id="bs-preview-services"></div>
+              </div>
+              <div class="wa-button">Izberi storitev</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -798,135 +1072,188 @@ async function readApiJson(res) {
   return data;
 }
 
+let botStudio = { salonId: null, settings: null, services: [], deletedServiceIds: new Set() };
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function localId() {
+  return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 async function openManageSalon(id) {
   try {
-    const settings = await readApiJson(await apiFetch(`/api/admin/salons/${id}/settings`));
-    const updates = {};
-
-    const name = prompt('Ime podjetja:', settings.name || '');
-    if (name === null) return;
-    updates.name = name.trim();
-
-    const type = prompt(`Panoga:\n${businessTypeHelp()}`, settings.business_type || 'custom');
-    if (type === null) return;
-    updates.business_type = type.trim();
-
-    const slug = prompt('Booking slug za javno povezavo:', settings.business_slug || '');
-    if (slug === null) return;
-    updates.business_slug = slug.trim();
-
-    const botPhone = prompt('Prikazana WhatsApp bot stevilka:', settings.bot_phone_display || '');
-    if (botPhone === null) return;
-    updates.bot_phone_display = botPhone.trim();
-
-    const greeting = prompt('Pozdravno sporocilo bota:', settings.greeting_message || '');
-    if (greeting === null) return;
-    updates.greeting_message = greeting.trim();
-
-    const start = prompt('Zacetek delovnika (HH:MM):', settings.working_hours_start || '08:00');
-    if (start === null) return;
-    updates.working_hours_start = start.trim();
-
-    const end = prompt('Konec delovnika (HH:MM):', settings.working_hours_end || '19:00');
-    if (end === null) return;
-    updates.working_hours_end = end.trim();
-
-    const interval = prompt('Osnovni interval koledarja v minutah:', settings.booking_interval_minutes || 30);
-    if (interval === null) return;
-    updates.booking_interval_minutes = parseInt(interval);
-
-    const maxDays = prompt('Koliko dni naprej se lahko stranka naroci:', settings.max_advance_days || 30);
-    if (maxDays === null) return;
-    updates.max_advance_days = parseInt(maxDays);
-
-    await readApiJson(await apiFetch(`/api/admin/salons/${id}/settings`, {
-      method: 'PATCH',
-      body: JSON.stringify(updates)
-    }));
-
-    if (updates.business_type !== settings.business_type && confirm('Zelis za to panogo na novo nastaviti privzete storitve? To skrije trenutne aktivne storitve in doda preset.')) {
-      await readApiJson(await apiFetch(`/api/admin/salons/${id}/apply-preset`, {
-        method: 'POST',
-        body: JSON.stringify({ business_type: updates.business_type })
-      }));
-    }
-
-    await refreshSalons();
-    showToast('Bot nastavitve so posodobljene', 'success');
+    const [settings, services] = await Promise.all([
+      readApiJson(await apiFetch(`/api/admin/salons/${id}/settings`)),
+      readApiJson(await apiFetch(`/api/admin/salons/${id}/services`))
+    ]);
+    botStudio = {
+      salonId: id,
+      settings,
+      services: services.map(s => ({ ...s, _localId: s.id || localId() })),
+      deletedServiceIds: new Set()
+    };
+    document.getElementById('bs-title').textContent = settings.name || 'Uredi bota';
+    document.getElementById('bs-name').value = settings.name || '';
+    document.getElementById('bs-business-type').value = settings.business_type || 'custom';
+    document.getElementById('bs-slug').value = settings.business_slug || '';
+    document.getElementById('bs-bot-phone').value = settings.bot_phone_display || '';
+    document.getElementById('bs-greeting').value = settings.greeting_message || '';
+    document.getElementById('bs-start').value = (settings.working_hours_start || '08:00').substring(0,5);
+    document.getElementById('bs-end').value = (settings.working_hours_end || '19:00').substring(0,5);
+    document.getElementById('bs-interval').value = String(settings.booking_interval_minutes || 30);
+    document.getElementById('bs-max-days').value = settings.max_advance_days || 30;
+    renderBotStudioServices();
+    updateBotStudioPreview();
+    document.getElementById('bot-studio-modal').classList.add('open');
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
   }
 }
 
-async function manageSalonServices(id) {
+function manageSalonServices(id) {
+  openManageSalon(id);
+}
+
+function closeBotStudio() {
+  document.getElementById('bot-studio-modal').classList.remove('open');
+}
+
+function collectBotStudioServices() {
+  return [...document.querySelectorAll('.service-row')].map(row => ({
+    id: row.dataset.id || null,
+    name: row.querySelector('[data-field="name"]').value.trim(),
+    price: parseFloat(row.querySelector('[data-field="price"]').value || 0),
+    duration_minutes: parseInt(row.querySelector('[data-field="duration"]').value || 0)
+  })).filter(s => s.name);
+}
+
+function renderBotStudioServices() {
+  const wrap = document.getElementById('bs-services');
+  if (!botStudio.services.length) {
+    wrap.innerHTML = '<div class="form-hint">Ni storitev. Dodaj prvo storitev ali uporabi preset panoge.</div>';
+    return;
+  }
+  wrap.innerHTML = botStudio.services.map(s => `
+    <div class="service-row" data-id="${esc(s.id || '')}" data-local-id="${esc(s._localId)}">
+      <input data-field="name" type="text" value="${esc(s.name)}" placeholder="Storitev" oninput="updateBotStudioPreview()">
+      <input data-field="price" type="number" min="0" step="1" value="${esc(s.price ?? 0)}" placeholder="EUR" oninput="updateBotStudioPreview()">
+      <input data-field="duration" type="number" min="5" max="480" step="5" value="${esc(s.duration_minutes ?? 60)}" placeholder="min" oninput="updateBotStudioPreview()">
+      <button class="icon-btn" title="Skrij storitev" onclick="removeBotStudioService('${esc(s._localId)}')">×</button>
+    </div>
+  `).join('');
+}
+
+function addBotStudioService() {
+  botStudio.services.push({ _localId: localId(), name: 'Nova storitev', price: 0, duration_minutes: 60 });
+  renderBotStudioServices();
+  updateBotStudioPreview();
+}
+
+function removeBotStudioService(localId) {
+  const service = botStudio.services.find(s => s._localId === localId);
+  if (service?.id) botStudio.deletedServiceIds.add(service.id);
+  botStudio.services = botStudio.services.filter(s => s._localId !== localId);
+  renderBotStudioServices();
+  updateBotStudioPreview();
+}
+
+async function applyBotStudioPreset() {
+  const type = document.getElementById('bs-business-type').value || 'custom';
+  if (!confirm('To bo zamenjalo aktivne storitve s presetom izbrane panoge. Nadaljujem?')) return;
   try {
-    const salon = salonsData.find(s => s.id === id);
-    const services = await readApiJson(await apiFetch(`/api/admin/salons/${id}/services`));
-    const list = services.length
-      ? services.map((s, i) => `${i + 1}. ${s.name} - ${s.price} EUR - ${s.duration_minutes} min`).join('\n')
-      : 'Ni aktivnih storitev.';
-    const action = prompt(
-      `${salon?.name || 'Bot'} - storitve, ki jih vidi stranka:\n\n${list}\n\nVnesi: add, preset, stevilko za urejanje, ali off 1`,
-      'add'
-    );
-    if (!action) return;
-
-    const normalized = action.trim().toLowerCase();
-    if (normalized === 'preset') {
-      const type = prompt(`Katero panogo uporabim?\n${businessTypeHelp()}`, salon?.business_type || 'custom');
-      if (!type) return;
-      if (!confirm('Preset bo skril trenutne aktivne storitve in dodal nove za izbrano panogo. Nadaljujem?')) return;
-      await readApiJson(await apiFetch(`/api/admin/salons/${id}/apply-preset`, {
-        method: 'POST',
-        body: JSON.stringify({ business_type: type.trim() })
-      }));
-      await refreshSalons();
-      showToast('Preset storitve so nastavljene', 'success');
-      return;
-    }
-
-    if (normalized === 'add') {
-      const name = prompt('Ime nove storitve:', '');
-      if (!name) return;
-      const price = prompt('Cena v EUR:', '0');
-      if (price === null) return;
-      const duration = prompt('Trajanje v minutah:', '60');
-      if (duration === null) return;
-      await readApiJson(await apiFetch(`/api/admin/salons/${id}/services`, {
-        method: 'POST',
-        body: JSON.stringify({ name: name.trim(), price: parseFloat(price), duration_minutes: parseInt(duration) })
-      }));
-      showToast('Storitev dodana', 'success');
-      return manageSalonServices(id);
-    }
-
-    if (normalized.startsWith('off ')) {
-      const index = parseInt(normalized.replace('off ', ''), 10) - 1;
-      const service = services[index];
-      if (!service) return showToast('Storitev ni najdena', 'error');
-      if (!confirm(`Skrijem storitev "${service.name}"?`)) return;
-      await readApiJson(await apiFetch(`/api/admin/salons/${id}/services/${service.id}`, { method: 'DELETE' }));
-      showToast('Storitev skrita', 'success');
-      return manageSalonServices(id);
-    }
-
-    const index = parseInt(normalized, 10) - 1;
-    const service = services[index];
-    if (!service) return showToast('Neveljavna izbira', 'error');
-    const name = prompt('Ime storitve:', service.name);
-    if (!name) return;
-    const price = prompt('Cena v EUR:', service.price);
-    if (price === null) return;
-    const duration = prompt('Trajanje v minutah:', service.duration_minutes);
-    if (duration === null) return;
-    await readApiJson(await apiFetch(`/api/admin/salons/${id}/services/${service.id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ name: name.trim(), price: parseFloat(price), duration_minutes: parseInt(duration) })
+    await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/apply-preset`, {
+      method: 'POST',
+      body: JSON.stringify({ business_type: type })
     }));
-    showToast('Storitev posodobljena', 'success');
-    return manageSalonServices(id);
+    await openManageSalon(botStudio.salonId);
+    showToast('Preset je nastavljen', 'success');
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
+function updateBotStudioPreview() {
+  const name = document.getElementById('bs-name')?.value || 'FlowTiq bot';
+  const phone = document.getElementById('bs-bot-phone')?.value || 'online';
+  const greeting = document.getElementById('bs-greeting')?.value || 'Pozdravljeni! Izberite storitev:';
+  const services = collectBotStudioServices();
+
+  document.getElementById('bs-preview-name').textContent = name;
+  document.getElementById('bs-preview-phone').textContent = phone;
+  document.getElementById('bs-preview-greeting').textContent = greeting;
+  document.getElementById('bs-preview-services').innerHTML = services.length
+    ? services.slice(0, 10).map(s => `
+      <div class="wa-list-row">
+        <div class="wa-service-name">${esc(s.name).substring(0, 28)}</div>
+        <div class="wa-service-meta">${Number.isFinite(s.duration_minutes) ? s.duration_minutes : 0} min · ${Number.isFinite(s.price) ? s.price : 0} EUR</div>
+      </div>
+    `).join('')
+    : '<div class="wa-list-row"><div class="wa-service-meta">Dodaj storitve, da se prikazejo tukaj.</div></div>';
+}
+
+async function saveBotStudio() {
+  const btn = document.getElementById('bs-save-btn');
+  const services = collectBotStudioServices();
+  if (!document.getElementById('bs-name').value.trim()) return showToast('Ime podjetja je obvezno', 'error');
+  if (!services.length) return showToast('Dodaj vsaj eno storitev', 'error');
+  for (const service of services) {
+    if (!Number.isFinite(service.price) || service.price < 0) return showToast('Cena storitve ni veljavna', 'error');
+    if (!Number.isFinite(service.duration_minutes) || service.duration_minutes < 5 || service.duration_minutes > 480) {
+      return showToast('Trajanje storitve mora biti med 5 in 480 minut', 'error');
+    }
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: document.getElementById('bs-name').value.trim(),
+        business_type: document.getElementById('bs-business-type').value,
+        business_slug: document.getElementById('bs-slug').value.trim(),
+        bot_phone_display: document.getElementById('bs-bot-phone').value.trim(),
+        greeting_message: document.getElementById('bs-greeting').value.trim(),
+        working_hours_start: document.getElementById('bs-start').value,
+        working_hours_end: document.getElementById('bs-end').value,
+        booking_interval_minutes: parseInt(document.getElementById('bs-interval').value),
+        max_advance_days: parseInt(document.getElementById('bs-max-days').value)
+      })
+    }));
+
+    for (const id of botStudio.deletedServiceIds) {
+      await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/services/${id}`, { method: 'DELETE' }));
+    }
+    for (const service of services) {
+      const payload = JSON.stringify({
+        name: service.name,
+        price: service.price,
+        duration_minutes: service.duration_minutes
+      });
+      if (service.id) {
+        await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/services/${service.id}`, {
+          method: 'PATCH',
+          body: payload
+        }));
+      } else {
+        await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/services`, {
+          method: 'POST',
+          body: payload
+        }));
+      }
+    }
+
+    closeBotStudio();
+    await refreshSalons();
+    showToast('Bot je posodobljen', 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Shrani spremembe';
   }
 }
 
@@ -941,6 +1268,9 @@ function closeModal() {
 }
 document.getElementById('add-modal').addEventListener('click', e => {
   if (e.target === document.getElementById('add-modal')) closeModal();
+});
+document.getElementById('bot-studio-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('bot-studio-modal')) closeBotStudio();
 });
 
 async function saveSalon() {

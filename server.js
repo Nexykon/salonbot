@@ -30,6 +30,7 @@ function publicSalon(salon) {
     business_slug: salon.business_slug,
     bot_phone_display: salon.bot_phone_display || '',
     greeting_message: salon.greeting_message || getPreset(salon.business_type || 'hair').greeting,
+    working_days: salon.working_days || '1,2,3,4,5,6',
     working_hours_start: salon.working_hours_start,
     working_hours_end: salon.working_hours_end,
     booking_interval_minutes: salon.booking_interval_minutes || 30,
