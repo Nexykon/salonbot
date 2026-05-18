@@ -311,12 +311,33 @@ async function handleMessage(msgObj, salon) {
 
     // Admin piše besedilo
     if (msgText) {
-      const asksPending = /termini|pending|rezervaci|čakaj|potrdi|zavrni/i.test(msgText);
+      const today = new Date().toISOString().split('T')[0];
 
-      // Pokaži pending rezervacije SAMO ko admin vpraša o njih
+      // ── Počisti stare pending rezervacije ──
+      const wantsClear = /po[cč]isti|odstrani\s+star|zavrni\s+star|izbri[sš]\s+star/i.test(msgText);
+      if (wantsClear) {
+        try {
+          const pending = await db.getPendingBookings(salon.id);
+          const pastPending = pending.filter(b => (b.booking_date || '').substring(0, 10) < today);
+          if (pastPending.length === 0) {
+            await wa.send(phoneId, token, wa.textMsg(from, '✅ Ni starih čakajočih rezervacij za počistiti.'));
+          } else {
+            for (const b of pastPending) {
+              await db.updateBookingStatus(b.id, 'cancelled');
+            }
+            await wa.send(phoneId, token, wa.textMsg(from, `🗑️ Počiščeno: ${pastPending.length} pretečenih rezervacij preklicanih.`));
+          }
+        } catch (e) {
+          console.error('Clear old pending err:', e.message);
+          await wa.send(phoneId, token, wa.textMsg(from, `Napaka: ${e.message}`));
+        }
+        return;
+      }
+
+      // ── Pokaži pending rezervacije ──
+      const asksPending = /termini|pending|rezervaci|čakaj/i.test(msgText);
       if (asksPending) {
         try {
-          const today = new Date().toISOString().split('T')[0];
           const pending = await db.getPendingBookings(salon.id);
           // Samo prihodnje ali današnje
           const futurePending = pending.filter(b => (b.booking_date || '').substring(0, 10) >= today);
