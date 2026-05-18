@@ -528,6 +528,26 @@
 
     <div class="form-row">
       <div class="form-group">
+        <label>Panoga *</label>
+        <select id="f-business-type">
+          <option value="hair">Frizer</option>
+          <option value="beauty">Nohti / Beauty</option>
+          <option value="massage">Masaže</option>
+          <option value="tattoo">Tattoo studio</option>
+          <option value="dentist">Zobozdravstvo</option>
+          <option value="custom">Custom</option>
+        </select>
+        <div class="form-hint">Panoga napolni prave začetne storitve in besedila bota.</div>
+      </div>
+      <div class="form-group">
+        <label>Booking slug</label>
+        <input type="text" id="f-slug" placeholder="salon-vita">
+        <div class="form-hint">Pusti prazno za samodejno povezavo iz imena.</div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
         <label>Ime lastnika</label>
         <input type="text" id="f-owner" placeholder="Ana Novak">
       </div>
@@ -668,11 +688,13 @@ function renderTable() {
     return `<tr>
       <td>
         <div class="salon-name">${s.name || '—'}</div>
+        <div class="salon-owner">${s.business_label || s.business_type || '—'} · ${s.business_slug || 'brez-sluga'}</div>
         <div class="salon-owner">${s.owner_name || ''}</div>
       </td>
       <td>
         <div style="font-size:13px">${s.owner_email || '—'}</div>
         <div style="font-size:12px;color:var(--text2)">+${s.admin_phone || '—'}</div>
+        <div style="font-size:12px;color:var(--text3)">WA ID: ${s.whatsapp_phone_number_id || '—'}</div>
       </td>
       <td>
         <select class="plan-select ${planClass}" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
@@ -746,7 +768,7 @@ function openAddModal() {
 }
 function closeModal() {
   document.getElementById('add-modal').classList.remove('open');
-  ['f-name','f-owner','f-email','f-phone','f-waid','f-botnum'].forEach(id => {
+  ['f-name','f-owner','f-email','f-phone','f-waid','f-botnum','f-slug'].forEach(id => {
     document.getElementById(id).value = '';
   });
 }
@@ -759,6 +781,8 @@ async function saveSalon() {
   const email = document.getElementById('f-email').value.trim();
   const phone = document.getElementById('f-phone').value.trim();
   const plan = document.getElementById('f-plan').value;
+  const businessType = document.getElementById('f-business-type').value;
+  const slug = document.getElementById('f-slug').value.trim();
   const owner = document.getElementById('f-owner').value.trim();
   const waid = document.getElementById('f-waid').value.trim();
   const botnum = document.getElementById('f-botnum').value.trim();
@@ -776,7 +800,8 @@ async function saveSalon() {
       method: 'POST',
       body: JSON.stringify({
         name, owner_name: owner, owner_email: email, admin_phone: phone,
-        plan, whatsapp_phone_number_id: waid || undefined,
+        plan, business_type: businessType, business_slug: slug || undefined,
+        whatsapp_phone_number_id: waid || undefined,
         bot_phone_display: botnum || undefined
       })
     });

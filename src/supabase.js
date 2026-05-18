@@ -1,4 +1,5 @@
 const axios = require('axios');
+const { slugify } = require('./presets');
 
 const BASE = process.env.SUPABASE_URL + '/rest/v1';
 const HEADERS = {
@@ -11,6 +12,23 @@ const HEADERS = {
 async function getSalon() {
   const r = await axios.get(`${BASE}/sb_salons?limit=1`, { headers: HEADERS });
   return r.data[0];
+}
+
+async function getSalonById(salonId) {
+  const r = await axios.get(`${BASE}/sb_salons?id=eq.${salonId}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+async function getSalonBySlug(slug) {
+  const r = await axios.get(`${BASE}/sb_salons?business_slug=eq.${encodeURIComponent(slug)}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+async function resolveSalon(ref) {
+  if (!ref) return getSalon();
+  const clean = String(ref).trim();
+  if (/^[0-9a-f-]{36}$/i.test(clean)) return getSalonById(clean);
+  return getSalonBySlug(slugify(clean));
 }
 
 // Multi-salon: najdi salon po WhatsApp phone number ID
@@ -30,6 +48,27 @@ async function getAllSalons() {
 async function createSalon(data) {
   const r = await axios.post(`${BASE}/sb_salons`, data, { headers: HEADERS });
   return r.data[0];
+}
+
+async function createService(salonId, service) {
+  const r = await axios.post(`${BASE}/sb_services`, {
+    salon_id: salonId,
+    name: service.name,
+    price: Math.round(Number(service.price || 0)),
+    duration_minutes: Math.round(Number(service.duration_minutes || 60)),
+    description: service.description || '',
+    sort_order: service.sort_order || 0,
+    is_active: service.is_active !== false
+  }, { headers: HEADERS });
+  return r.data[0];
+}
+
+async function createServicesFromPreset(salonId, services) {
+  const created = [];
+  for (const service of services || []) {
+    created.push(await createService(salonId, service));
+  }
+  return created;
 }
 
 async function updateSalonStripe(salonId, stripeCustomerId, stripeSubId, status, plan) {
@@ -64,6 +103,12 @@ async function getServices(salonId) {
   return r.data;
 }
 
+async function getServiceById(salonId, serviceId) {
+  if (!serviceId) return null;
+  const r = await axios.get(`${BASE}/sb_services?salon_id=eq.${salonId}&id=eq.${serviceId}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
 async function getAvailableSlots(salonId) {
   const today = new Date().toISOString().split('T')[0];
   const r = await axios.get(
@@ -78,6 +123,29 @@ async function createBooking(data) {
   return r.data[0];
 }
 
+async function createBookingIfFree(data) {
+  const booked = await getBookedTimesForDate(data.salon_id, data.booking_date);
+  const start = String(data.booking_time || '').substring(0, 5);
+  const duration = data.duration_minutes || 60;
+  const toMins = t => {
+    const [h, m] = String(t || '00:00').substring(0, 5).split(':').map(Number);
+    return h * 60 + m;
+  };
+  const newStart = toMins(start);
+  const newEnd = newStart + duration;
+  const overlaps = booked.some(slot => {
+    const slotStart = toMins(slot.time);
+    const slotEnd = slotStart + (slot.duration || 60);
+    return slotStart < newEnd && slotEnd > newStart;
+  });
+  if (overlaps) {
+    const err = new Error('Termin je ze zaseden.');
+    err.code = 'SLOT_TAKEN';
+    throw err;
+  }
+  return createBooking(data);
+}
+
 async function markSlotBooked(slotId) {
   await axios.patch(
     `${BASE}/sb_available_slots?id=eq.${slotId}`,
@@ -89,6 +157,14 @@ async function markSlotBooked(slotId) {
 async function getBooking(ref) {
   // ref = last 6 chars of booking ID
   const r = await axios.get(`${BASE}/sb_bookings?id=like.*${ref}&order=created_at.desc&limit=1`, { headers: HEADERS });
+  return r.data[0];
+}
+
+async function getBookingForSalon(salonId, ref) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&id=like.*${ref}&order=created_at.desc&limit=1`,
+    { headers: HEADERS }
+  );
   return r.data[0];
 }
 
@@ -120,6 +196,21 @@ async function getBookingsByDate(salonId, date) {
   return r.data;
 }
 
+async function getBookingsForRange(salonId, from, to) {
+  let url = `${BASE}/sb_bookings?booking_date=gte.${from}&booking_date=lte.${to}&order=booking_date,booking_time`;
+  if (salonId) url = `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=gte.${from}&booking_date=lte.${to}&order=booking_date,booking_time`;
+  const r = await axios.get(url, { headers: HEADERS });
+  return r.data;
+}
+
+async function getBookingsByPhone(salonId, phone, today) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&booking_date=gte.${today}&order=booking_date,booking_time`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
 async function getSlotsByDate(salonId, date) {
   const r = await axios.get(
     `${BASE}/sb_available_slots?salon_id=eq.${salonId}&slot_date=eq.${date}&order=slot_time`,
@@ -131,9 +222,13 @@ async function getSlotsByDate(salonId, date) {
 async function addManualBooking(salonId, data) {
   const services = await getServices(salonId);
   let serviceId = null;
+  let durationMinutes = data.duration_minutes || null;
   if (data.service_name) {
     const svc = services.find(s => s.name.toLowerCase().includes(data.service_name.toLowerCase()));
-    if (svc) serviceId = svc.id;
+    if (svc) {
+      serviceId = svc.id;
+      durationMinutes = svc.duration_minutes || durationMinutes;
+    }
   }
   const booking = {
     salon_id: salonId,
@@ -141,12 +236,12 @@ async function addManualBooking(salonId, data) {
     customer_phone: data.customer_phone || 'manual',
     booking_date: data.date,
     booking_time: data.time.length === 5 ? data.time + ':00' : data.time,
+    duration_minutes: durationMinutes || 60,
     status: 'confirmed',
     notes: 'Ročno dodano'
   };
   if (serviceId) booking.service_id = serviceId;
-  const r = await axios.post(`${BASE}/sb_bookings`, booking, { headers: HEADERS });
-  return r.data[0];
+  return createBookingIfFree(booking);
 }
 
 async function getBookingByName(salonId, name, date) {
@@ -164,8 +259,9 @@ async function markSlotFree(slotId) {
   );
 }
 
-async function updateServiceById(serviceId, price, durationMinutes) {
+async function updateServiceById(serviceId, price, durationMinutes, name) {
   const updates = {};
+  if (name !== undefined && name !== null) updates.name = String(name).trim();
   if (price !== undefined && price !== null) updates.price = Math.round(price);
   if (durationMinutes !== undefined && durationMinutes !== null) updates.duration_minutes = Math.round(durationMinutes);
   if (!Object.keys(updates).length) return null;
@@ -175,6 +271,14 @@ async function updateServiceById(serviceId, price, durationMinutes) {
     { headers: { ...HEADERS, Prefer: 'return=minimal' } }
   );
   return updates;
+}
+
+async function setServiceActive(serviceId, isActive) {
+  await axios.patch(
+    `${BASE}/sb_services?id=eq.${serviceId}`,
+    { is_active: Boolean(isActive) },
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
 }
 
 async function updateService(salonId, serviceName, price, durationMinutes) {
@@ -296,6 +400,14 @@ async function getRecentErrors(limit = 50) {
   return r.data;
 }
 
+async function getRecentLogs(limit = 50) {
+  const r = await axios.get(
+    `${BASE}/sb_logs?select=*,sb_salons(name)&order=created_at.desc&limit=${limit}`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
 async function clearErrors() {
   await axios.delete(
     `${BASE}/sb_errors?created_at=lt.${new Date().toISOString()}`,
@@ -324,11 +436,13 @@ async function updateSalonSettings(salonId, settings) {
 
 module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
-  getBooking, updateBookingStatus, getTodayBookings,
-  getBookingsByDate, getSlotsByDate, addManualBooking, getBookingByName,
-  markSlotFree, updateService, updateServiceById, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
+  getSalonById, getSalonBySlug, resolveSalon, getServiceById, createBookingIfFree,
+  createService, createServicesFromPreset,
+  getBooking, getBookingForSalon, updateBookingStatus, getTodayBookings,
+  getBookingsByDate, getBookingsForRange, getBookingsByPhone, getSlotsByDate, addManualBooking, getBookingByName,
+  markSlotFree, updateService, updateServiceById, setServiceActive, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
   getKnowledge, addKnowledge, deleteKnowledge,
   getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
-  logError, getRecentErrors, clearErrors,
+  logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByToken, updateSalonSettings
 };

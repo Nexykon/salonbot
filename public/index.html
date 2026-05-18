@@ -46,15 +46,26 @@ nav {
   border-bottom: 1px solid rgba(255,255,255,0.04);
 }
 .nav-logo {
-  display:flex; align-items:center; gap:10px;
-  font-size:17px; font-weight:800; letter-spacing:-0.5px; text-decoration:none; color:#fff;
+  display:flex; align-items:center; gap:11px;
+  font-size:18px; font-weight:800; letter-spacing:-0.6px; text-decoration:none; color:#fff;
+  line-height:1;
 }
 .logo-icon {
-  width:32px; height:32px; border-radius:10px;
-  background:linear-gradient(135deg, #7c3aed, #06b6d4);
+  width:36px; height:36px; border-radius:11px;
   display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 4px 16px rgba(124,58,237,0.4);
 }
-.logo-icon svg { width:18px; height:18px; }
+.logo-text-flow { color:#fff; }
+.logo-text-tiq {
+  background:linear-gradient(90deg, #a78bfa, #06b6d4);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.btn-nav.login {
+  background:transparent; border:1px solid rgba(124,58,237,.4);
+  color:var(--purple-l); display:flex; align-items:center; gap:6px;
+}
+.btn-nav.login:hover { background:rgba(124,58,237,.12); border-color:rgba(124,58,237,.7); color:#fff; }
 .nav-links { display:flex; gap:32px; }
 .nav-links a { font-size:14px; color:var(--text2); text-decoration:none; cursor:pointer; transition:color .2s; }
 .nav-links a:hover { color:#fff; }
@@ -373,11 +384,24 @@ footer {
 <nav>
   <a href="/" class="nav-logo">
     <div class="logo-icon">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 2L4.5 13.5H11.5L11 22L19.5 10.5H12.5L13 2Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="navbg" x1="0" y1="0" x2="36" y2="36" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#6d28d9"/>
+            <stop offset="100%" stop-color="#0891b2"/>
+          </linearGradient>
+          <linearGradient id="navshine" x1="0" y1="0" x2="0" y2="20" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+            <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+          </linearGradient>
+        </defs>
+        <rect width="36" height="36" rx="11" fill="url(#navbg)"/>
+        <rect width="36" height="20" rx="11" fill="url(#navshine)" opacity="0.6"/>
+        <!-- Bold F-bolt mark: vertical spine + 3 bars with flowing diagonal -->
+        <path d="M22 7H13.5C12.7 7 12.2 7.9 12.6 8.6L17 17H13C12.2 17 11.7 17.9 12.1 18.6L18 29C18.6 30.1 20.2 29.5 20 28.2L18.8 21H22.5C23.4 21 23.9 20 23.4 19.2L20.5 14H24C24.9 14 25.4 13 24.9 12.2L22.9 8.5C22.6 7.9 22.4 7 22 7Z" fill="white" opacity="0.95"/>
       </svg>
     </div>
-    FlowTiq
+    <span><span class="logo-text-flow">Flow</span><span class="logo-text-tiq">Tiq</span></span>
   </a>
   <div class="nav-links">
     <a href="#kako-deluje">Kako deluje</a>
@@ -385,6 +409,7 @@ footer {
     <a href="#cenik">Cenik</a>
   </div>
   <div class="nav-actions">
+    <a href="/settings.html" class="btn-nav login">🔐 Prijava</a>
     <a href="/dashboard.html" class="btn-nav ghost">Admin</a>
     <a href="#cenik" class="btn-nav solid">Začni →</a>
   </div>
@@ -416,8 +441,10 @@ footer {
       <div class="phone-notch"></div>
       <div class="phone-header-bar">
         <div class="ph-avatar">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M13 2L4.5 13.5H11.5L11 22L19.5 10.5H12.5L13 2Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+          <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs><linearGradient id="phabg" x1="0" y1="0" x2="38" y2="38" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+            <rect width="38" height="38" rx="50%" fill="url(#phabg)"/>
+            <path d="M23 8H15C14.2 8 13.7 8.9 14.1 9.6L18.5 18H14.5C13.7 18 13.2 18.9 13.6 19.6L19 30C19.6 31.1 21.2 30.5 21 29.2L19.8 22H23.5C24.4 22 24.9 21 24.4 20.2L21.5 15H25C25.9 15 26.4 14 25.9 13.2L23.9 9.5C23.6 8.9 23.3 8 23 8Z" fill="white" opacity="0.95"/>
           </svg>
         </div>
         <div>
@@ -643,8 +670,10 @@ footer {
 <footer>
   <div class="footer-logo">
     <div class="footer-logo-icon">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 2L4.5 13.5H11.5L11 22L19.5 10.5H12.5L13 2Z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="ftbg" x1="0" y1="0" x2="22" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs>
+        <rect width="22" height="22" rx="6" fill="url(#ftbg)"/>
+        <path d="M13.5 4.5H8.5C8 4.5 7.7 5.1 8 5.5L11 11H8C7.5 11 7.2 11.6 7.5 12L11 18C11.4 18.7 12.4 18.3 12.3 17.5L11.5 13H14C14.6 13 14.9 12.4 14.5 11.9L12.5 8.5H15C15.6 8.5 15.9 7.9 15.5 7.4L14 5C13.8 4.7 13.7 4.5 13.5 4.5Z" fill="white" opacity="0.9"/>
       </svg>
     </div>
     FlowTiq

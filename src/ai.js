@@ -204,7 +204,7 @@ async function executeTool(name, input, salonId, today) {
         return `✅ Rezervacija dodana:\n👤 ${input.customer_name}\n📅 ${input.date} ob ${input.time}${input.service_name ? '\n✂️ ' + input.service_name : ''}`;
       }
       case 'confirm_booking': {
-        const booking = await db.getBooking(input.ref);
+        const booking = await db.getBookingForSalon(salonId, input.ref);
         if (!booking) return `Rezervacija ${input.ref} ni najdena.`;
         await db.updateBookingStatus(booking.id, 'confirmed');
         return `✅ Rezervacija ${input.ref} potrjena.`;
@@ -212,7 +212,7 @@ async function executeTool(name, input, salonId, today) {
       case 'cancel_booking': {
         let booking = null;
         if (input.ref) {
-          booking = await db.getBooking(input.ref);
+          booking = await db.getBookingForSalon(salonId, input.ref);
         } else if (input.customer_name) {
           booking = await db.getBookingByName(salonId, input.customer_name, input.date);
         }

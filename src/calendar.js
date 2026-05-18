@@ -15,6 +15,10 @@ function generateWorkingTimes(startTime, endTime, intervalMin = 30) {
 
 const toMins = t => { const [h, m] = (t || '00:00').split(':').map(Number); return h * 60 + m; };
 
+function fitsBeforeEnd(candidateTime, candidateDuration, endTime) {
+  return toMins(candidateTime) + candidateDuration <= toMins(endTime);
+}
+
 // Preveri ali se kandidatni termin (čas + trajanje) ne prekriva z obstoječimi
 function isSlotFree(candidateTime, candidateDuration, bookedSlots) {
   const candStart = toMins(candidateTime);
@@ -53,6 +57,7 @@ async function getFreeDates(salon, maxDays = 30, serviceDuration = null) {
       const bookedSlots = await db.getBookedTimesForDate(salon.id, dateStr);
       let freeTimes = allTimes.filter(t => {
         if (dateStr === todayStr && t <= currentTime) return false;
+        if (!fitsBeforeEnd(t, duration, endTime)) return false;
         return isSlotFree(t, duration, bookedSlots);
       });
       if (freeTimes.length > 0) freeDates.push({ date: dateStr, count: freeTimes.length });
@@ -76,8 +81,9 @@ async function getFreeTimesForDate(salon, date, serviceDuration = null) {
   const bookedSlots = await db.getBookedTimesForDate(salon.id, date);
   return allTimes.filter(t => {
     if (date === todayStr && t <= currentTime) return false;
+    if (!fitsBeforeEnd(t, duration, endTime)) return false;
     return isSlotFree(t, duration, bookedSlots);
   });
 }
 
-module.exports = { getFreeDates, getFreeTimesForDate, generateWorkingTimes, isSlotFree, toMins };
+module.exports = { getFreeDates, getFreeTimesForDate, generateWorkingTimes, isSlotFree, fitsBeforeEnd, toMins };

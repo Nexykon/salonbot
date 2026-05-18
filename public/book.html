@@ -447,13 +447,24 @@ let state = {
   calYear: null, calMonth: null
 };
 
+const businessRef = new URLSearchParams(location.search).get('b') || new URLSearchParams(location.search).get('salon') || '';
+const tenantQuery = () => businessRef ? `b=${encodeURIComponent(businessRef)}` : '';
+const apiUrl = (path, params = {}) => {
+  const q = new URLSearchParams();
+  if (businessRef) q.set('b', businessRef);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') q.set(k, v);
+  });
+  return path + (q.toString() ? '?' + q.toString() : '');
+};
+
 const MONTHS_SL = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
 const DAYS_SL = ['Ned','Pon','Tor','Sre','Čet','Pet','Sob'];
 
 // ── Init ───────────────────────────────────────────────────────
 (async () => {
   try {
-    const r = await fetch('/api/book/info');
+    const r = await fetch(apiUrl('/api/book/info'));
     const data = await r.json();
     document.getElementById('salon-title').textContent = data.salon.name || 'Naročanje';
     document.getElementById('salon-subtitle').textContent = data.salon.name || '';
@@ -468,7 +479,7 @@ const DAYS_SL = ['Ned','Pon','Tor','Sre','Čet','Pet','Sob'];
 
 async function loadDates() {
   try {
-    const r = await fetch('/api/book/dates');
+    const r = await fetch(apiUrl('/api/book/dates', { serviceId: state.serviceId }));
     state.availableDates = await r.json();
   } catch (e) { state.availableDates = []; }
 }
@@ -493,6 +504,7 @@ function selectService(id, name, price, duration) {
   document.getElementById('svc-' + id)?.classList.add('selected');
   state.serviceId = id; state.serviceName = name;
   state.servicePrice = price; state.serviceDuration = duration;
+  loadDates();
   setTimeout(() => goStep(2), 250);
 }
 
@@ -579,7 +591,7 @@ async function selectDate(dateStr) {
     `${d.getDate()}. ${MONTHS_SL[d.getMonth()]} ${d.getFullYear()}`;
   goStep(3);
   try {
-    const r = await fetch(`/api/book/times?date=${dateStr}`);
+    const r = await fetch(apiUrl('/api/book/times', { date: dateStr, serviceId: state.serviceId }));
     const times = await r.json();
     if (!times.length) {
       document.getElementById('times-list').innerHTML = '<p style="color:var(--muted)">Na ta dan ni več prostih terminov.</p>';
@@ -628,6 +640,7 @@ async function submitBooking() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         serviceId: state.serviceId,
+        business_slug: businessRef,
         date: state.date,
         time: state.time,
         customerName: name,
@@ -673,7 +686,7 @@ async function loadMyBookings() {
   el.innerHTML = '<div class="loader">Iščem rezervacije</div>';
 
   try {
-    const r = await fetch(`/api/book/my?phone=${phone}`);
+    const r = await fetch(apiUrl('/api/book/my', { phone }));
     const bookings = await r.json();
     if (!r.ok) throw new Error(bookings.error || 'Napaka');
 
@@ -711,7 +724,7 @@ async function cancelBooking(ref, phone) {
     const r = await fetch('/api/book/cancel', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ref, phone })
+      body: JSON.stringify({ ref, phone, business_slug: businessRef })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Napaka');

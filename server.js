@@ -5,6 +5,8 @@ const { handleMessage } = require('./src/handler');
 const db = require('./src/supabase');
 const wa = require('./src/whatsapp');
 const { startScheduler } = require('./src/scheduler');
+const ownerAuth = require('./src/auth');
+const { getPreset, listBusinessTypes, normalizeBusinessType, slugify } = require('./src/presets');
 
 const app = express();
 
@@ -14,6 +16,75 @@ app.use(express.json());
 
 // ─── Static files (dashboard) ─────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
+
+function cleanPhone(phone) {
+  return String(phone || '').replace(/[^\d]/g, '');
+}
+
+function publicSalon(salon) {
+  return {
+    id: salon.id,
+    name: salon.name,
+    business_type: salon.business_type || 'hair',
+    business_label: salon.business_label || getPreset(salon.business_type || 'hair').label,
+    business_slug: salon.business_slug,
+    bot_phone_display: salon.bot_phone_display || '',
+    working_hours_start: salon.working_hours_start,
+    working_hours_end: salon.working_hours_end,
+    booking_interval_minutes: salon.booking_interval_minutes || 30,
+    break_between_minutes: salon.break_between_minutes || 0,
+    max_advance_days: salon.max_advance_days || 30
+  };
+}
+
+async function resolveBookSalon(req) {
+  const ref = req.query.b || req.query.salon || req.body?.business_slug || req.body?.salonId;
+  const salon = await db.resolveSalon(ref);
+  if (!salon || salon.subscription_status === 'inactive' || salon.is_active === false) return null;
+  return salon;
+}
+
+function adminAuth(req, res) {
+  if (req.headers['x-api-key'] !== process.env.ADMIN_API_KEY) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return false;
+  }
+  return true;
+}
+
+async function salonAuth(req, res) {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  if (session) {
+    const salon = await db.getSalonById(session.salonId);
+    if (salon) return salon;
+  }
+  const token = req.headers['x-salon-token'] || req.query.token;
+  if (token) {
+    const salon = await db.getSalonByToken(token);
+    if (salon) return salon;
+  }
+  res.status(401).json({ error: 'Neveljavna prijava' });
+  return null;
+}
+
+async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, sourceLabel) {
+  const to = cleanPhone(salon.admin_phone || process.env.ADMIN_PHONE);
+  if (!to) return;
+  const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+  const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
+  try {
+    await wa.send(phoneId, token, wa.adminBookingNotif(to, customerName, phone, date, time, ref6));
+  } catch (e) {
+    try {
+      await wa.send(phoneId, token, wa.adminBookingNotifSession(to, customerName, phone, date, time, ref6));
+    } catch (e2) {
+      await wa.send(phoneId, token, wa.textMsg(to,
+        `Nova ${sourceLabel || 'rezervacija'}\n\n${customerName}\n+${phone}\n${date} ob ${time}\nRef: ${ref6}`
+      ));
+    }
+  }
+}
 
 // ─── Webhook verification (Meta GET request) ──────────────────
 app.get('/webhook', (req, res) => {
@@ -32,6 +103,7 @@ app.get('/webhook', (req, res) => {
 app.post('/webhook', async (req, res) => {
   res.sendStatus(200); // Always respond 200 immediately
 
+  let salon = null;
   try {
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     if (!entry?.messages?.length) return;
@@ -40,7 +112,7 @@ app.post('/webhook', async (req, res) => {
     const phoneNumberId = entry.metadata?.phone_number_id;
 
     // Multi-salon: najdi pravi salon po WhatsApp phone number ID
-    let salon = phoneNumberId
+    salon = phoneNumberId
       ? await db.getSalonByPhoneId(phoneNumberId)
       : await db.getSalon();
 
@@ -115,33 +187,49 @@ app.post('/stripe/webhook', async (req, res) => {
 });
 
 // ─── Onboarding API — registracija novega salona ──────────────
+app.get('/api/business-types', (req, res) => {
+  res.json(listBusinessTypes());
+});
+
 app.post('/onboard', async (req, res) => {
   const apiKey = req.headers['x-api-key'];
   if (apiKey !== process.env.ADMIN_API_KEY) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { name, owner_name, owner_email, admin_phone, whatsapp_phone_number_id, plan } = req.body;
+  const { name, owner_name, owner_email, admin_phone, whatsapp_phone_number_id, plan, business_type, business_slug, bot_phone_display } = req.body;
   if (!name || !owner_email || !admin_phone) {
     return res.status(400).json({ error: 'name, owner_email, admin_phone required' });
   }
 
   try {
+    const type = normalizeBusinessType(business_type || 'hair');
+    const preset = getPreset(type);
+    const slugBase = slugify(business_slug || name);
+    let slug = slugBase;
+    let n = 2;
+    while (await db.getSalonBySlug(slug)) slug = `${slugBase}-${n++}`;
     const salon = await db.createSalon({
       name,
       owner_name: owner_name || '',
       owner_email,
-      admin_phone,
+      admin_phone: cleanPhone(admin_phone),
       whatsapp_phone_number_id: whatsapp_phone_number_id || process.env.WA_PHONE_ID,
+      bot_phone_display: bot_phone_display || '',
+      business_type: type,
+      business_label: preset.label,
+      business_slug: slug,
+      greeting_message: preset.greeting,
       subscription_status: 'trial',
       subscription_plan: plan || 'starter',
       working_days: '1,2,3,4,5,6',
       working_hours_start: '08:00',
       working_hours_end: '19:00'
     });
+    await db.createServicesFromPreset(salon.id, preset.services);
 
     console.log('New salon onboarded:', salon.id, name);
-    res.json({ success: true, salon_id: salon.id, message: `Salon "${name}" ustvarjen.` });
+    res.json({ success: true, salon_id: salon.id, business_slug: slug, message: `Podjetje "${name}" ustvarjeno.` });
   } catch (err) {
     console.error('Onboard error:', err.message);
     res.status(500).json({ error: err.message });
@@ -158,6 +246,11 @@ app.get('/salons', async (req, res) => {
   res.json(salons.map(s => ({
     id: s.id,
     name: s.name,
+    business_type: s.business_type || 'hair',
+    business_label: s.business_label || getPreset(s.business_type || 'hair').label,
+    business_slug: s.business_slug || '',
+    bot_phone_display: s.bot_phone_display || '',
+    whatsapp_phone_number_id: s.whatsapp_phone_number_id || '',
     owner_name: s.owner_name,
     owner_email: s.owner_email,
     subscription_status: s.subscription_status,
@@ -207,8 +300,8 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
     const salon = (await db.getAllSalons()).find(s => s.id === id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
 
-    const phoneId = process.env.WA_PHONE_ID;
-    const token = process.env.WA_TOKEN;
+    const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+    const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
     const to = salon.admin_phone;
 
     const salonName = salon.name || 'Salon';
@@ -282,17 +375,60 @@ app.delete('/api/errors', async (req, res) => {
   }
 });
 
+app.get('/api/logs', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    res.json(await db.getRecentLogs(100));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Owner WhatsApp OTP auth ─────────────────────────────────
+app.post('/api/auth/start', async (req, res) => {
+  const phone = cleanPhone(req.body.phone);
+  if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska stevilka' });
+  try {
+    const salon = await db.getSalonByAdminPhone(phone);
+    if (!salon || salon.subscription_status === 'inactive') {
+      return res.status(404).json({ error: 'Podjetje s to stevilko ni najdeno' });
+    }
+    const code = ownerAuth.createOtp(phone, salon.id);
+    const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+    const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
+    await wa.send(phoneId, token, wa.textMsg(phone, `FlowTiq prijavna koda: ${code}\nVelja 10 minut.`));
+    res.json({ success: true, message: 'Koda poslana na WhatsApp.' });
+  } catch (err) {
+    console.error('OTP start error:', err.response?.data || err.message);
+    res.status(500).json({ error: 'Kode ni bilo mogoce poslati.' });
+  }
+});
+
+app.post('/api/auth/verify', async (req, res) => {
+  const phone = cleanPhone(req.body.phone);
+  const token = ownerAuth.verifyOtp(phone, req.body.code);
+  if (!token) return res.status(401).json({ error: 'Napacna ali potekla koda' });
+  const session = ownerAuth.getSession(token);
+  const salon = await db.getSalonById(session.salonId);
+  res.json({ success: true, token, salon: publicSalon(salon) });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  ownerAuth.clearSession(req.headers.authorization || req.headers['x-owner-token']);
+  res.json({ success: true });
+});
+
 // ─── Public Booking API ───────────────────────────────────────
 const cal = require('./src/calendar');
 
 // Salon info + services (public)
 app.get('/api/book/info', async (req, res) => {
   try {
-    const salon = await db.getSalon();
+    const salon = await resolveBookSalon(req);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
     const services = await db.getServices(salon.id);
     res.json({
-      salon: { name: salon.name, working_hours_start: salon.working_hours_start, working_hours_end: salon.working_hours_end },
+      salon: publicSalon(salon),
       services: services.map(s => ({ id: s.id, name: s.name, duration_minutes: s.duration_minutes, price: s.price }))
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -301,9 +437,10 @@ app.get('/api/book/info', async (req, res) => {
 // Available dates (public)
 app.get('/api/book/dates', async (req, res) => {
   try {
-    const salon = await db.getSalon();
+    const salon = await resolveBookSalon(req);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
-    const dates = await cal.getFreeDates(salon, 45);
+    const svc = await db.getServiceById(salon.id, req.query.serviceId);
+    const dates = await cal.getFreeDates(salon, 45, svc?.duration_minutes || null);
     res.json(dates);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -313,9 +450,10 @@ app.get('/api/book/times', async (req, res) => {
   const { date } = req.query;
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'Invalid date' });
   try {
-    const salon = await db.getSalon();
+    const salon = await resolveBookSalon(req);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
-    const times = await cal.getFreeTimesForDate(salon, date);
+    const svc = await db.getServiceById(salon.id, req.query.serviceId);
+    const times = await cal.getFreeTimesForDate(salon, date, svc?.duration_minutes || null);
     res.json(times);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -331,56 +469,37 @@ app.post('/api/book', async (req, res) => {
   if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska številka' });
 
   try {
-    const salon = await db.getSalon();
+    const salon = await resolveBookSalon(req);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const svc = await db.getServiceById(salon.id, serviceId);
+    const duration = svc?.duration_minutes || salon.booking_interval_minutes || 30;
 
     // Double-check slot is still free
-    const freeTimes = await cal.getFreeTimesForDate(salon, date);
+    const freeTimes = await cal.getFreeTimesForDate(salon, date, duration);
     if (!freeTimes.includes(time)) {
       return res.status(409).json({ error: 'Ta termin je žal že zaseden. Izberite drugega.' });
     }
 
-    const booking = await db.createBooking({
+    const booking = await db.createBookingIfFree({
       customer_phone: phone,
       customer_name: customerName.trim(),
       salon_id: salon.id,
-      service_id: serviceId || null,
+      service_id: svc?.id || null,
       booking_date: date,
       booking_time: time + ':00',
+      duration_minutes: duration,
       status: 'pending'
     });
 
     const ref6 = (booking.id || '').slice(-6);
     const fmtD = `${date.substring(8,10)}.${date.substring(5,7)}.${date.substring(0,4)}`;
 
-    // Notify admin via WA
-    const ADMIN_PHONE = process.env.ADMIN_PHONE;
-    if (ADMIN_PHONE) {
-      const phoneId = process.env.WA_PHONE_ID;
-      const token = process.env.WA_TOKEN;
-      try {
-        await wa.send(phoneId, token,
-          wa.adminBookingNotif(ADMIN_PHONE, customerName.trim(), phone, fmtD, time, ref6)
-        );
-      } catch (e) {
-        try {
-          await wa.send(phoneId, token,
-            wa.adminBookingNotifSession(ADMIN_PHONE, customerName.trim(), phone, date, time, ref6)
-          );
-        } catch (e2) {
-          try {
-            await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
-              `📩 *Nova WEB rezervacija*\n\n👤 ${customerName.trim()}\n📞 +${phone}\n📅 ${fmtD} ob ${time}\n🔑 Ref: *${ref6}*`
-            ));
-          } catch (_) {}
-        }
-      }
-    }
+    await notifyBookingAdmin(salon, customerName.trim(), phone, fmtD, time, ref6, 'WEB rezervacija');
 
     res.json({ success: true, ref: ref6, date: fmtD, time, customerName: customerName.trim() });
   } catch (err) {
     console.error('Web booking error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(err.code === 'SLOT_TAKEN' ? 409 : 500).json({ error: err.code === 'SLOT_TAKEN' ? 'Ta termin je zal ze zaseden. Izberite drugega.' : err.message });
   }
 });
 
@@ -389,21 +508,11 @@ app.get('/api/book/my', async (req, res) => {
   let phone = String(req.query.phone || '').replace(/[^\d]/g, '');
   if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska številka' });
   try {
-    const salon = await db.getSalon();
+    const salon = await resolveBookSalon(req);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
-    const axios = require('axios');
-    const BASE = process.env.SUPABASE_URL + '/rest/v1';
-    const HEADERS = {
-      apikey: process.env.SUPABASE_KEY,
-      Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
-      'Content-Type': 'application/json'
-    };
     const today = new Date().toISOString().split('T')[0];
-    const r = await axios.get(
-      `${BASE}/sb_bookings?salon_id=eq.${salon.id}&customer_phone=eq.${phone}&booking_date=gte.${today}&order=booking_date,booking_time`,
-      { headers: HEADERS }
-    );
-    const bookings = r.data.map(b => ({
+    const rows = await db.getBookingsByPhone(salon.id, phone, today);
+    const bookings = rows.map(b => ({
       ref: (b.id || '').slice(-6),
       date: b.booking_date,
       time: (b.booking_time || '').substring(0, 5),
@@ -420,7 +529,9 @@ app.post('/api/book/cancel', async (req, res) => {
   if (!ref || !phone) return res.status(400).json({ error: 'Manjkajo podatki' });
   const cleanPhone = String(phone).replace(/[^\d]/g, '');
   try {
-    const booking = await db.getBooking(ref);
+    const salon = await resolveBookSalon(req);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const booking = await db.getBookingForSalon(salon.id, ref);
     if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
     // Verify phone matches
     const bookingPhone = String(booking.customer_phone || '').replace(/[^\d]/g, '');
@@ -437,49 +548,52 @@ app.post('/api/book/cancel', async (req, res) => {
 
 // All bookings for a month (dashboard calendar)
 app.get('/api/calendar', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
-  const { year, month } = req.query;
+  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  let ownerSalon = null;
+  if (!isMaster) {
+    ownerSalon = await salonAuth(req, res);
+    if (!ownerSalon) return;
+  }
+  const { year, month, salonId } = req.query;
   try {
-    const salon = await db.getSalon();
-    const axios = require('axios');
-    const BASE = process.env.SUPABASE_URL + '/rest/v1';
-    const HEADERS = { apikey: process.env.SUPABASE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_KEY };
     const y = parseInt(year) || new Date().getFullYear();
     const m = parseInt(month) || (new Date().getMonth() + 1);
     const from = `${y}-${String(m).padStart(2,'0')}-01`;
     const toDate = new Date(y, m, 0);
     const to = `${y}-${String(m).padStart(2,'0')}-${String(toDate.getDate()).padStart(2,'0')}`;
-    const r = await axios.get(
-      `${BASE}/sb_bookings?salon_id=eq.${salon.id}&booking_date=gte.${from}&booking_date=lte.${to}&order=booking_date,booking_time`,
-      { headers: HEADERS }
-    );
-    res.json(r.data);
+    const scopedSalonId = isMaster ? (salonId || null) : ownerSalon.id;
+    res.json(await db.getBookingsForRange(scopedSalonId, from, to));
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── Admin booking management ─────────────────────────────────
-function adminAuth(req, res) {
-  if (req.headers['x-api-key'] !== process.env.ADMIN_API_KEY) {
-    res.status(401).json({ error: 'Unauthorized' }); return false;
+
+async function bookingActionSalon(req, res) {
+  if (req.headers['x-api-key'] === process.env.ADMIN_API_KEY) {
+    const salonId = req.body?.salonId || req.query.salonId;
+    return salonId ? db.getSalonById(salonId) : null;
   }
-  return true;
+  return salonAuth(req, res);
 }
 
 // Confirm booking (admin dashboard)
 app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
-  if (!adminAuth(req, res)) return;
+  const actionSalon = await bookingActionSalon(req, res);
+  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  if (!isMaster && !actionSalon) return;
   try {
-    const booking = await db.getBooking(req.params.ref);
+    const booking = actionSalon
+      ? await db.getBookingForSalon(actionSalon.id, req.params.ref)
+      : await db.getBooking(req.params.ref);
     if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
     await db.updateBookingStatus(booking.id, 'confirmed');
     // Notify customer via WA
-    const phoneId = process.env.WA_PHONE_ID;
-    const token = process.env.WA_TOKEN;
+    const salon = actionSalon || await db.getSalonById(booking.salon_id);
+    const phoneId = salon?.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+    const token = salon?.whatsapp_access_token || process.env.WA_TOKEN;
     if (booking.customer_phone && booking.customer_phone !== 'manual') {
       const custDate = `${(booking.booking_date||'').substring(8,10)}.${(booking.booking_date||'').substring(5,7)}.${(booking.booking_date||'').substring(0,4)}`;
       const custTime = (booking.booking_time || '').substring(0, 5);
-      const salon = await db.getSalon();
       try {
         await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime, salon?.name));
       } catch (e) {
@@ -495,14 +609,19 @@ app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
 
 // Cancel booking (admin dashboard)
 app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
-  if (!adminAuth(req, res)) return;
+  const actionSalon = await bookingActionSalon(req, res);
+  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  if (!isMaster && !actionSalon) return;
   try {
-    const booking = await db.getBooking(req.params.ref);
+    const booking = actionSalon
+      ? await db.getBookingForSalon(actionSalon.id, req.params.ref)
+      : await db.getBooking(req.params.ref);
     if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
     await db.updateBookingStatus(booking.id, 'cancelled');
     // Notify customer
-    const phoneId = process.env.WA_PHONE_ID;
-    const token = process.env.WA_TOKEN;
+    const salon = actionSalon || await db.getSalonById(booking.salon_id);
+    const phoneId = salon?.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+    const token = salon?.whatsapp_access_token || process.env.WA_TOKEN;
     if (booking.customer_phone && booking.customer_phone !== 'manual') {
       const custDate = `${(booking.booking_date||'').substring(8,10)}.${(booking.booking_date||'').substring(5,7)}.${(booking.booking_date||'').substring(0,4)}`;
       const custTime = (booking.booking_time || '').substring(0, 5);
@@ -517,18 +636,23 @@ app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
 
 // Manual add booking (admin dashboard)
 app.post('/api/admin/bookings', async (req, res) => {
-  if (!adminAuth(req, res)) return;
+  const actionSalon = await bookingActionSalon(req, res);
+  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  if (!isMaster && !actionSalon) return;
   const { date, time, customerName, customerPhone, serviceId } = req.body;
   if (!date || !time || !customerName) return res.status(400).json({ error: 'Manjkajo podatki' });
   try {
-    const salon = await db.getSalon();
-    const booking = await db.createBooking({
+    const salon = actionSalon || await db.getSalon();
+    const svc = await db.getServiceById(salon.id, serviceId);
+    const duration = svc?.duration_minutes || salon.booking_interval_minutes || 30;
+    const booking = await db.createBookingIfFree({
       salon_id: salon.id,
       customer_name: customerName.trim(),
       customer_phone: customerPhone ? String(customerPhone).replace(/[^\d]/g,'') : 'manual',
       booking_date: date,
       booking_time: time + ':00',
-      service_id: serviceId || null,
+      service_id: svc?.id || null,
+      duration_minutes: duration,
       status: 'confirmed'
     });
     res.json({ success: true, ref: (booking.id||'').slice(-6) });
@@ -536,22 +660,6 @@ app.post('/api/admin/bookings', async (req, res) => {
 });
 
 // ─── Salon Settings Portal ────────────────────────────────────
-// Auth: salon_token (iz DB) ali admin_phone
-async function salonAuth(req, res) {
-  const token = req.headers['x-salon-token'] || req.query.token;
-  const phone = req.headers['x-salon-phone'] || req.query.phone;
-  if (token) {
-    const salon = await db.getSalonByToken(token);
-    if (salon) return salon;
-  }
-  if (phone) {
-    const salon = await db.getSalonByAdminPhone(phone);
-    if (salon) return salon;
-  }
-  res.status(401).json({ error: 'Neveljavna prijava' });
-  return null;
-}
-
 // Get salon settings
 app.get('/api/settings', async (req, res) => {
   const salon = await salonAuth(req, res);
@@ -559,6 +667,10 @@ app.get('/api/settings', async (req, res) => {
   res.json({
     id: salon.id,
     name: salon.name,
+    business_type: salon.business_type || 'hair',
+    business_label: salon.business_label || getPreset(salon.business_type || 'hair').label,
+    business_slug: salon.business_slug || '',
+    bot_phone_display: salon.bot_phone_display || '',
     working_days: salon.working_days || '1,2,3,4,5,6',
     working_hours_start: salon.working_hours_start || '08:00',
     working_hours_end: salon.working_hours_end || '19:00',
@@ -574,7 +686,7 @@ app.patch('/api/settings', async (req, res) => {
   const salon = await salonAuth(req, res);
   if (!salon) return;
   const allowed = ['working_days','working_hours_start','working_hours_end',
-    'booking_interval_minutes','break_between_minutes','max_advance_days','name'];
+    'booking_interval_minutes','break_between_minutes','max_advance_days','name','bot_phone_display'];
   const updates = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
@@ -603,11 +715,33 @@ app.get('/api/settings/services', async (req, res) => {
 });
 
 // Update single service (price + duration)
+app.post('/api/settings/services', async (req, res) => {
+  const salon = await salonAuth(req, res);
+  if (!salon) return;
+  const { name, price, duration_minutes } = req.body;
+  const serviceName = String(name || '').trim();
+  const dur = parseInt(duration_minutes);
+  const servicePrice = parseFloat(price);
+  if (!serviceName) return res.status(400).json({ error: 'Ime storitve je obvezno' });
+  if (isNaN(servicePrice) || servicePrice < 0 || servicePrice > 10000) return res.status(400).json({ error: 'Cena ni veljavna' });
+  if (isNaN(dur) || dur < 5 || dur > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
+  try {
+    const existing = await db.getServices(salon.id);
+    const service = await db.createService(salon.id, {
+      name: serviceName,
+      price: servicePrice,
+      duration_minutes: dur,
+      sort_order: existing.length + 1
+    });
+    res.json(service);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.patch('/api/settings/services/:id', async (req, res) => {
   const salon = await salonAuth(req, res);
   if (!salon) return;
   const { id } = req.params;
-  const { price, duration_minutes } = req.body;
+  const { name, price, duration_minutes } = req.body;
   // Validate the service belongs to this salon
   try {
     const services = await db.getServices(salon.id);
@@ -617,10 +751,29 @@ app.patch('/api/settings/services/:id', async (req, res) => {
       const dur = parseInt(duration_minutes);
       if (isNaN(dur) || dur < 5 || dur > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
     }
+    if (price !== undefined) {
+      const p = parseFloat(price);
+      if (isNaN(p) || p < 0 || p > 10000) return res.status(400).json({ error: 'Cena ni veljavna' });
+    }
+    if (name !== undefined && !String(name).trim()) return res.status(400).json({ error: 'Ime storitve je obvezno' });
     await db.updateServiceById(id,
       price !== undefined ? parseFloat(price) : undefined,
-      duration_minutes !== undefined ? parseInt(duration_minutes) : undefined
+      duration_minutes !== undefined ? parseInt(duration_minutes) : undefined,
+      name !== undefined ? String(name).trim() : undefined
     );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/settings/services/:id', async (req, res) => {
+  const salon = await salonAuth(req, res);
+  if (!salon) return;
+  const { id } = req.params;
+  try {
+    const services = await db.getServices(salon.id);
+    const svc = services.find(s => s.id === id);
+    if (!svc) return res.status(404).json({ error: 'Storitev ni najdena' });
+    await db.setServiceActive(id, false);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });

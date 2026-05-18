@@ -224,7 +224,12 @@
       <input type="tel" id="login-phone" placeholder="npr. 38641123456" style="margin-bottom:12px">
       <div class="form-hint">Format: koda države + številka brez + (npr. 38641123456)</div>
     </div>
-    <button class="btn btn-primary" onclick="doLogin()" style="margin-top:8px">Vstopi →</button>
+    <button class="btn btn-primary" onclick="requestOtp()" style="margin-top:8px">Pošlji WhatsApp kodo</button>
+    <div class="form-group" id="otp-group" style="text-align:left;display:none;margin-top:16px">
+      <label>6-mestna koda</label>
+      <input type="text" id="login-code" placeholder="123456" inputmode="numeric" maxlength="6">
+    </div>
+    <button class="btn btn-primary" onclick="verifyOtp()" id="otp-verify-btn" style="display:none;margin-top:8px">Vstopi</button>
     <div id="login-error" style="color:var(--red);font-size:0.85rem;margin-top:12px;display:none">Salon s to številko ni najden.</div>
   </div>
 </div>
@@ -340,37 +345,70 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let salonToken = localStorage.getItem('ft_salon_token') || '';
+let ownerToken = localStorage.getItem('ft_owner_token') || '';
 let salonPhone = localStorage.getItem('ft_salon_phone') || '';
 let selectedDays = new Set();
 let selectedInterval = 30;
 
 // ── Login ──────────────────────────────────────────────────
 document.getElementById('login-phone').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
+  if (e.key === 'Enter') requestOtp();
+});
+document.getElementById('login-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') verifyOtp();
 });
 
-async function doLogin() {
+async function requestOtp() {
   const phone = document.getElementById('login-phone').value.trim().replace(/[^\d]/g, '');
   if (phone.length < 8) { showToast('Vnesite veljavno telefonsko številko', 'error'); return; }
   try {
-    const r = await fetch(`/api/settings?phone=${phone}`);
+    const r = await fetch('/api/auth/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
     if (!r.ok) { document.getElementById('login-error').style.display = 'block'; return; }
-    const data = await r.json();
     salonPhone = phone;
-    salonToken = data.salon_token || '';
     localStorage.setItem('ft_salon_phone', phone);
-    localStorage.setItem('ft_salon_token', salonToken);
-    loadUI(data);
+    document.getElementById('otp-group').style.display = 'block';
+    document.getElementById('otp-verify-btn').style.display = 'block';
+    document.getElementById('login-code').focus();
+    showToast('Koda je poslana na WhatsApp.', 'success');
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
   }
 }
 
+async function verifyOtp() {
+  const phone = document.getElementById('login-phone').value.trim().replace(/[^\d]/g, '');
+  const code = document.getElementById('login-code').value.trim();
+  if (code.length !== 6) { showToast('Vnesite 6-mestno kodo', 'error'); return; }
+  try {
+    const r = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Napacna koda');
+    ownerToken = data.token;
+    localStorage.setItem('ft_owner_token', ownerToken);
+    loadUI(await loadSettings());
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function loadSettings() {
+  const r = await fetch('/api/settings', { headers: { Authorization: 'Bearer ' + ownerToken } });
+  if (!r.ok) throw new Error('Prijava ni uspela');
+  return r.json();
+}
+
 function doLogout() {
-  localStorage.removeItem('ft_salon_token');
+  localStorage.removeItem('ft_owner_token');
   localStorage.removeItem('ft_salon_phone');
-  salonToken = ''; salonPhone = '';
+  ownerToken = ''; salonPhone = '';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-wrap').style.display = 'flex';
 }
@@ -460,8 +498,7 @@ async function saveSettings() {
 
   try {
     const headers = { 'Content-Type': 'application/json' };
-    if (salonToken) headers['x-salon-token'] = salonToken;
-    else headers['x-salon-phone'] = salonPhone;
+    if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
 
     const r = await fetch('/api/settings', { method: 'PATCH', headers, body: JSON.stringify(body) });
     const data = await r.json();
@@ -485,8 +522,7 @@ function showToast(msg, type='') {
 // ── Services ───────────────────────────────────────────────
 async function loadServices() {
   const headers = {};
-  if (salonToken) headers['x-salon-token'] = salonToken;
-  else if (salonPhone) headers['x-salon-phone'] = salonPhone;
+  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
   try {
     const r = await fetch('/api/settings/services', { headers });
     if (!r.ok) { document.getElementById('services-list').innerHTML = '<div class="service-empty">Napaka pri nalaganju storitev.</div>'; return; }
@@ -531,8 +567,7 @@ async function saveDuration(svcId) {
 
   btn.textContent = '…';
   const headers = { 'Content-Type': 'application/json' };
-  if (salonToken) headers['x-salon-token'] = salonToken;
-  else if (salonPhone) headers['x-salon-phone'] = salonPhone;
+  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
 
   try {
     const r = await fetch(`/api/settings/services/${svcId}`, {
@@ -551,15 +586,98 @@ async function saveDuration(svcId) {
 }
 
 // ── Auto-login if token saved ──────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderServices(services) {
+  const el = document.getElementById('services-list');
+  const addBox = `
+    <div class="form-row" style="margin-bottom:12px">
+      <div class="form-group"><label>Nova storitev</label><input type="text" id="new-service-name" placeholder="npr. Striženje"></div>
+      <div class="form-group"><label>Cena (€)</label><input type="number" id="new-service-price" min="0" step="1" placeholder="40"></div>
+    </div>
+    <div class="form-group"><label>Trajanje (minute)</label><input type="number" id="new-service-duration" min="5" max="480" step="5" placeholder="60"></div>
+    <button class="btn btn-secondary" onclick="addService()" style="margin-bottom:16px">Dodaj storitev</button>
+  `;
+  if (!services.length) {
+    el.innerHTML = addBox + '<div class="service-empty">Ni storitev. Dodajte prvo storitev.</div>';
+    return;
+  }
+  el.innerHTML = addBox + services.map(svc => `
+    <div class="service-row" id="srow-${svc.id}">
+      <div class="service-info">
+        <input class="dur-input" style="width:180px;text-align:left" type="text" id="name-${svc.id}" value="${escHtml(svc.name || '')}">
+        <input class="dur-input" style="width:86px;margin-top:6px" type="number" min="0" step="1" id="price-${svc.id}" value="${svc.price || 0}"> €
+      </div>
+      <div class="dur-input-wrap">
+        <input class="dur-input" type="number" min="5" max="480" step="5" value="${svc.duration_minutes || ''}" placeholder="min" id="dur-${svc.id}" onkeydown="if(event.key==='Enter') saveService('${svc.id}')">
+        <span class="dur-label">min</span>
+        <button class="dur-save-btn" id="dbtn-${svc.id}" onclick="saveService('${svc.id}')">Shrani</button>
+        <button class="dur-save-btn" onclick="deleteService('${svc.id}')">Izklopi</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addService() {
+  const name = document.getElementById('new-service-name').value.trim();
+  const price = parseFloat(document.getElementById('new-service-price').value);
+  const dur = parseInt(document.getElementById('new-service-duration').value);
+  if (!name) { showToast('Vpišite ime storitve', 'error'); return; }
+  if (isNaN(price) || price < 0) { showToast('Vpišite veljavno ceno', 'error'); return; }
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+  const headers = { 'Content-Type': 'application/json' };
+  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  try {
+    const r = await fetch('/api/settings/services', { method: 'POST', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    showToast('Storitev dodana', 'success');
+    loadServices();
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+async function saveService(svcId) {
+  const dur = parseInt(document.getElementById('dur-' + svcId).value);
+  const price = parseFloat(document.getElementById('price-' + svcId).value);
+  const name = document.getElementById('name-' + svcId).value.trim();
+  const btn = document.getElementById('dbtn-' + svcId);
+  if (!name) { showToast('Ime storitve je obvezno', 'error'); return; }
+  if (isNaN(price) || price < 0) { showToast('Cena ni veljavna', 'error'); return; }
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+  btn.textContent = '…';
+  const headers = { 'Content-Type': 'application/json' };
+  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  try {
+    const r = await fetch(`/api/settings/services/${svcId}`, { method: 'PATCH', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    btn.textContent = '✓ Shranjeno';
+    btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2000);
+  } catch (e) {
+    btn.textContent = 'Shrani';
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
+async function deleteService(svcId) {
+  if (!confirm('Izklopiti to storitev? Stranke je ne bodo več videle.')) return;
+  const headers = {};
+  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  try {
+    const r = await fetch(`/api/settings/services/${svcId}`, { method: 'DELETE', headers });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    showToast('Storitev izklopljena', 'success');
+    loadServices();
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
 (async () => {
-  if (salonToken || salonPhone) {
+  if (ownerToken) {
     try {
-      const h = salonToken ? { 'x-salon-token': salonToken } : {};
-      const q = salonPhone && !salonToken ? `?phone=${salonPhone}` : '';
-      const r = await fetch('/api/settings' + q, { headers: h });
-      if (r.ok) { loadUI(await r.json()); return; }
+      loadUI(await loadSettings()); return;
     } catch (_) {}
-    localStorage.removeItem('ft_salon_token');
+    localStorage.removeItem('ft_owner_token');
     localStorage.removeItem('ft_salon_phone');
   }
 })();

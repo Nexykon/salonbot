@@ -2,7 +2,7 @@ const db = require('./supabase');
 const wa = require('./whatsapp');
 const session = require('./session');
 const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
-const { getFreeDates, getFreeTimesForDate, isSlotFree, toMins } = require('./calendar');
+const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
@@ -45,7 +45,7 @@ async function resolveCustomTime(salon, date, requestedTime, serviceDuration = n
       const tryMins = baseMins + d;
       if (tryMins < 0) continue;
       const tryTime = fromMins(tryMins);
-      if (tryTime >= start && tryTime < end && isSlotFree(tryTime, duration, bookedSlots)) {
+      if (tryTime >= start && tryTime < end && fitsBeforeEnd(tryTime, duration, end) && isSlotFree(tryTime, duration, bookedSlots)) {
         return tryTime;
       }
     }
@@ -169,7 +169,8 @@ async function handleMessage(msgObj, salon) {
     iId = msgObj.button.payload;
   }
 
-  const isAdmin = from === ADMIN_PHONE;
+  const salonAdminPhone = String(salon.admin_phone || ADMIN_PHONE || '').replace(/[^\d]/g, '');
+  const isAdmin = from === salonAdminPhone;
   const msgText = msgObj.text?.body?.trim() || '';
 
   // ─── ADMIN FLOW ───────────────────────────────────────────
@@ -177,7 +178,7 @@ async function handleMessage(msgObj, salon) {
     // Admin pritisne gumb Potrdi
     if (iId.startsWith('admin_confirm_')) {
       const ref = iId.replace('admin_confirm_', '');
-      const booking = await db.getBooking(ref);
+      const booking = await db.getBookingForSalon(salon.id, ref);
       if (booking) {
         await db.updateBookingStatus(booking.id, 'confirmed');
         await wa.send(phoneId, token, wa.textMsg(from, `✅ Rezervacija *${ref}* potrjena za ${booking.customer_name || booking.customer_phone}.`));
@@ -211,7 +212,7 @@ async function handleMessage(msgObj, salon) {
     // Admin pritisne gumb Zavrni
     if (iId.startsWith('admin_cancel_')) {
       const ref = iId.replace('admin_cancel_', '');
-      const booking = await db.getBooking(ref);
+      const booking = await db.getBookingForSalon(salon.id, ref);
       if (booking) {
         await db.updateBookingStatus(booking.id, 'cancelled');
         await wa.send(phoneId, token, wa.textMsg(from, `❌ Rezervacija *${ref}* zavrnjena.`));
@@ -240,7 +241,7 @@ async function handleMessage(msgObj, salon) {
       const ref = parts[1];
       const isConfirm = lowerText.startsWith('#potrdi');
       if (ref) {
-        const booking = await db.getBooking(ref);
+        const booking = await db.getBookingForSalon(salon.id, ref);
         if (booking) {
           const newStatus = isConfirm ? 'confirmed' : 'cancelled';
           await db.updateBookingStatus(booking.id, newStatus);
@@ -384,7 +385,7 @@ async function handleMessage(msgObj, salon) {
       status: 'pending'
     };
     if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
-    const booking = await db.createBooking(bookingData);
+    const booking = await db.createBookingIfFree(bookingData);
     session.clear(from);
 
     const ref6 = (booking.id || '').slice(-6);
@@ -393,24 +394,24 @@ async function handleMessage(msgObj, salon) {
       `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
     ));
 
-    if (ADMIN_PHONE) {
+    if (salonAdminPhone) {
       try {
         // Poskusi template (24/7) — zahteva odobren Meta template
         await wa.send(phoneId, token,
-          wa.adminBookingNotif(ADMIN_PHONE, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6)
+          wa.adminBookingNotif(salonAdminPhone, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6)
         );
       } catch (e) {
         console.error('Template notify err:', e.response?.data?.error?.message || e.message);
         try {
           // Fallback: interactive gumbi (samo v 24h seji)
           await wa.send(phoneId, token,
-            wa.adminBookingNotifSession(ADMIN_PHONE, customerName, from, s.selectedDate, s.selectedTime, ref6)
+            wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6)
           );
         } catch (e2) {
           console.error('Session notify err:', e2.response?.data?.error?.message || e2.message);
           try {
             // Zadnji fallback: čisto besedilo (vedno deluje)
-            await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
+            await wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
               `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n💡 Napišite botu karkoli (npr. "termini") za prikaz gumbov za potrditev.`
             ));
           } catch (e3) {
