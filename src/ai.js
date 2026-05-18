@@ -298,12 +298,12 @@ async function askCustomerAI(message, salonId) {
   const knowledge = await db.getKnowledge(salonId);
   let knowledgeSection = '';
   if (knowledge.length > 0) {
-    knowledgeSection = `\n\nZnanje o salonu:\n${knowledge.map(k => `- ${k.content}`).join('\n')}`;
+    knowledgeSection = `\n\nZnanje o podjetju:\n${knowledge.map(k => `- ${k.content}`).join('\n')}`;
   }
 
-  const systemPrompt = `Si prijazen WhatsApp asistent frizerskega salona "Salon Vita".
+  const systemPrompt = `Si prijazen WhatsApp asistent za naročanje "FlowTiq".
 Odgovarjaj kratko in prijazno v slovenščini.
-Če ne veš odgovora, reci da se obrnejo na salon.${knowledgeSection}`;
+Če ne veš odgovora, reci da se obrnejo na ponudnika storitev.${knowledgeSection}`;
 
   const r = await axios.post('https://api.openai.com/v1/chat/completions', {
     model: 'gpt-4o-mini',
@@ -328,9 +328,9 @@ async function askAdminAI(message, salonId) {
   const today = now.toISOString().split('T')[0];
   const dayName = now.toLocaleDateString('sl-SI', { weekday: 'long' });
 
-  const systemPrompt = `Si inteligentni WhatsApp asistent za frizerski salon "Salon Vita".
+  const systemPrompt = `Si inteligentni WhatsApp asistent FlowTiq za upravljanje naročil.
 Danes je ${dayName}, ${today}.
-Pomagaš lastniku salona z naročili, storitvami in termini.
+Pomagaš lastniku podjetja z naročili, storitvami in termini.
 Odgovarjaj kratko, jasno, v slovenščini. Vedno potrdi kar si naredil z emojiji.
 Ko admin reče "danes" → ${today}, "jutri" → naslednji dan.`;
 

@@ -2,7 +2,7 @@ const db = require('./supabase');
 const wa = require('./whatsapp');
 const session = require('./session');
 const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
-const { getFreeDates, getFreeTimesForDate } = require('./calendar');
+const { getFreeDates, getFreeTimesForDate, isSlotFree, toMins } = require('./calendar');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
@@ -27,31 +27,30 @@ function roundTo5Min(timeStr) {
   return String(fH).padStart(2, '0') + ':' + String(fM).padStart(2, '0');
 }
 
-// Preveri ali je tipkana ura prosta — direktno v bazi (ne v generirani listi)
-// Sprejme vsak 5-minutni interval znotraj delovnega časa
-async function resolveCustomTime(salon, date, requestedTime) {
+// Preveri ali je tipkana ura prosta — 5-minutna natančnost + overlap check
+async function resolveCustomTime(salon, date, requestedTime, serviceDuration = null) {
   const start = (salon.working_hours_start || '08:00').substring(0, 5);
   const end   = (salon.working_hours_end   || '19:00').substring(0, 5);
-  const bookedTimes = await db.getBookedTimesForDate(salon.id, date);
+  const duration = serviceDuration || salon.booking_interval_minutes || 30;
+  const bookedSlots = await db.getBookedTimesForDate(salon.id, date);
 
   const rounded = roundTo5Min(requestedTime);
   if (!rounded) return null;
 
-  // Preizkusi zaokroženi čas in bližnje 5-minutne intervale (±30 min)
-  const toMins = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
   const fromMins = m => String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0');
   const baseMins = toMins(rounded);
 
-  for (let delta = 0; delta <= 30; delta += 5) {
+  for (let delta = 0; delta <= 60; delta += 5) {
     for (const d of (delta === 0 ? [0] : [delta, -delta])) {
       const tryMins = baseMins + d;
+      if (tryMins < 0) continue;
       const tryTime = fromMins(tryMins);
-      if (tryTime >= start && tryTime < end && !bookedTimes.includes(tryTime)) {
+      if (tryTime >= start && tryTime < end && isSlotFree(tryTime, duration, bookedSlots)) {
         return tryTime;
       }
     }
   }
-  return null; // ni prostega termina v bližini
+  return null;
 }
 
 // Stara funkcija za seznam (ko stranka klikne na seznam)
@@ -375,7 +374,7 @@ async function handleMessage(msgObj, salon) {
       return;
     }
     const customerName = msgText;
-    const booking = await db.createBooking({
+    const bookingData = {
       customer_phone: from,
       customer_name: customerName,
       salon_id: salon.id,
@@ -383,13 +382,15 @@ async function handleMessage(msgObj, salon) {
       booking_date: s.selectedDate,
       booking_time: s.selectedTime + ':00',
       status: 'pending'
-    });
+    };
+    if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
+    const booking = await db.createBooking(bookingData);
     session.clear(from);
 
     const ref6 = (booking.id || '').slice(-6);
 
     await wa.send(phoneId, token, wa.textMsg(from,
-      `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev salona. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
+      `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
     ));
 
     if (ADMIN_PHONE) {
@@ -425,8 +426,10 @@ async function handleMessage(msgObj, salon) {
   // ── Service selection ──
   if (iId.startsWith('svc_')) {
     const svcId = iId.replace('svc_', '');
-    session.set(from, { step: 1, serviceId: svcId });
-    const freeDates = await getFreeDates(salon);
+    const svc = services.find(s => s.id === svcId);
+    const serviceDuration = svc?.duration_minutes || null;
+    session.set(from, { step: 1, serviceId: svcId, serviceDuration });
+    const freeDates = await getFreeDates(salon, 30, serviceDuration);
     await wa.send(phoneId, token, wa.dateList(from, freeDates));
     return;
   }
@@ -439,37 +442,37 @@ async function handleMessage(msgObj, salon) {
     if (date && time) {
       const d = new Date(date + 'T12:00:00');
       if (!workingDays.includes(d.getDay())) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Delamo od ponedeljka do sobote. Izberite drug dan:'));
-        const freeDates = await getFreeDates(salon);
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+        const freeDates = await getFreeDates(salon, 30, sess.serviceDuration);
         await wa.send(phoneId, token, wa.dateList(from, freeDates));
         return;
       }
       // Preveri tipkano uro z 5-minutno natančnostjo
-      const bestTime = await resolveCustomTime(salon, date, time);
+      const bestTime = await resolveCustomTime(salon, date, time, sess.serviceDuration);
       if (bestTime) {
         session.set(from, { ...sess, step: 3, selectedDate: date, selectedTime: bestTime });
         await wa.send(phoneId, token, wa.confirmButtons(from, date, bestTime));
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Na ta dan ni prostih terminov ob ${time}. Izberite drug datum:`));
-        const freeDates = await getFreeDates(salon);
+        const freeDates = await getFreeDates(salon, 30, sess.serviceDuration);
         await wa.send(phoneId, token, wa.dateList(from, freeDates));
       }
     } else if (date) {
       // Got date but no time — go straight to time picker
       const d = new Date(date + 'T12:00:00');
-      const workingDays = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
-      if (!workingDays.includes(d.getDay())) {
-        const freeDates = await getFreeDates(salon);
+      const workingDays2 = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
+      if (!workingDays2.includes(d.getDay())) {
+        const freeDates = await getFreeDates(salon, 30, sess.serviceDuration);
         await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
         await wa.send(phoneId, token, wa.dateList(from, freeDates));
         return;
       }
       session.set(from, { ...sess, step: 2, selectedDate: date });
-      const freeTimes = await getFreeTimesForDate(salon, date);
+      const freeTimes = await getFreeTimesForDate(salon, date, sess.serviceDuration);
       await wa.send(phoneId, token, wa.timeList(from, freeTimes, date));
     } else {
       // Couldn't parse — show date list again
-      const freeDates = await getFreeDates(salon);
+      const freeDates = await getFreeDates(salon, 30, sess.serviceDuration);
       await wa.send(phoneId, token, wa.dateList(from, freeDates));
     }
     return;
@@ -489,23 +492,23 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    const freeTimes = await getFreeTimesForDate(salon, useDate);
+    const freeTimes = await getFreeTimesForDate(salon, useDate, sess.serviceDuration);
 
     if (parsedTime) {
       // 5-minutna natančnost — preveri direktno v bazi
-      const bestTime = await resolveCustomTime(salon, useDate, parsedTime);
+      const bestTime = await resolveCustomTime(salon, useDate, parsedTime, sess.serviceDuration);
       if (bestTime) {
         session.set(from, { ...sess, step: 3, selectedDate: useDate, selectedTime: bestTime });
         await wa.send(phoneId, token, wa.confirmButtons(from, useDate, bestTime));
       } else {
-        const freeTimes2 = await getFreeTimesForDate(salon, useDate);
+        const freeTimes2 = await getFreeTimesForDate(salon, useDate, sess.serviceDuration);
         await wa.send(phoneId, token, wa.textMsg(from,
           `Ob ${parsedTime} ni prostega termina. Izberite eno od prostih ur:`));
         await wa.send(phoneId, token, wa.timeList(from, freeTimes2, useDate));
       }
     } else {
       // Ni razbrali časa — pokaži ure znova
-      const freeTimes2 = await getFreeTimesForDate(salon, useDate);
+      const freeTimes2 = await getFreeTimesForDate(salon, useDate, sess.serviceDuration);
       await wa.send(phoneId, token, wa.timeList(from, freeTimes2, useDate));
     }
     return;
@@ -515,7 +518,7 @@ async function handleMessage(msgObj, salon) {
   if (iId.startsWith('date_')) {
     const date = iId.replace('date_', '');
     session.set(from, { ...sess, step: 2, selectedDate: date });
-    const freeTimes = await getFreeTimesForDate(salon, date);
+    const freeTimes = await getFreeTimesForDate(salon, date, sess.serviceDuration);
     await wa.send(phoneId, token, wa.timeList(from, freeTimes, date));
     return;
   }

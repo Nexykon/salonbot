@@ -251,10 +251,14 @@ async function getDailyStats(salonId, date) {
 
 async function getBookedTimesForDate(salonId, date) {
   const r = await axios.get(
-    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date}&status=neq.cancelled&select=booking_time`,
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date}&status=neq.cancelled&select=booking_time,duration_minutes`,
     { headers: HEADERS }
   );
-  return r.data.map(b => (b.booking_time || '').substring(0, 5));
+  // Vrne [{time, duration}] za overlap preverjanje
+  return r.data.map(b => ({
+    time: (b.booking_time || '').substring(0, 5),
+    duration: b.duration_minutes || 60  // default 60 min če ni nastavljeno
+  }));
 }
 
 async function logError(salonId, type, message, details, customerPhone) {
