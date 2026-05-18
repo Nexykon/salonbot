@@ -229,11 +229,96 @@
   .error-time { font-size: 12px; color: var(--text3); white-space: nowrap; }
   .error-phone { font-size: 12px; color: var(--text2); }
 
+  /* ── CALENDAR ── */
+  .cal-wrap {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  }
+  .cal-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 24px; border-bottom: 1px solid var(--border);
+  }
+  .cal-nav-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); cursor: pointer; font-size: 18px; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-nav-btn:hover { background: var(--accent); border-color: var(--accent); }
+  .cal-month-title { font-size: 16px; font-weight: 700; }
+  .cal-legend { display: flex; gap: 16px; }
+  .cal-leg-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .cal-leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-left: 1px solid var(--border);
+  }
+  .cal-header-cell {
+    padding: 10px; text-align: center;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    color: var(--text2); letter-spacing: 0.5px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    background: var(--bg3);
+  }
+  .cal-cell {
+    min-height: 90px; padding: 8px;
+    border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s; position: relative;
+  }
+  .cal-cell:hover { background: rgba(124,58,237,0.06); }
+  .cal-cell.today { background: rgba(124,58,237,0.06); }
+  .cal-cell.today .cal-day-num { color: var(--accent2); font-weight: 800; }
+  .cal-cell.other-month { opacity: 0.3; cursor: default; }
+  .cal-cell.other-month:hover { background: none; }
+  .cal-cell.selected { background: rgba(124,58,237,0.12); outline: 1px solid var(--accent); }
+  .cal-day-num {
+    font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px;
+    width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+  }
+  .cal-event {
+    padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 600;
+    margin-bottom: 2px; cursor: pointer; white-space: nowrap; overflow: hidden;
+    text-overflow: ellipsis; display: block;
+  }
+  .cal-event.confirmed { background: rgba(16,185,129,0.2); color: var(--green); }
+  .cal-event.pending { background: rgba(245,158,11,0.2); color: var(--yellow); }
+  .cal-event.cancelled { background: rgba(239,68,68,0.1); color: var(--red); opacity: 0.6; }
+  .cal-more { font-size: 11px; color: var(--text3); padding: 2px 4px; cursor: pointer; }
+
+  /* Day detail panel */
+  .day-detail {
+    background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+    margin-top: 16px; overflow: hidden; display: none;
+  }
+  .day-detail.open { display: block; }
+  .day-detail-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .day-detail-title { font-size: 15px; font-weight: 700; }
+  .btn-close-detail {
+    background: none; border: none; color: var(--text2);
+    font-size: 20px; cursor: pointer;
+  }
+  .day-booking-item {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .day-booking-item:last-child { border-bottom: none; }
+  .day-booking-time { font-size: 14px; font-weight: 700; min-width: 48px; }
+  .day-booking-info { flex: 1; }
+  .day-booking-name { font-size: 14px; font-weight: 600; }
+  .day-booking-phone { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
   @media (max-width: 768px) {
     main { padding: 16px; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
     .form-row { grid-template-columns: 1fr; }
     header { padding: 0 16px; }
+    .cal-cell { min-height: 60px; }
+    .cal-event { display: none; }
+    .cal-legend { display: none; }
   }
 </style>
 </head>
@@ -313,6 +398,41 @@
           <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Nalagam...</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="section-header" style="margin-top:40px">
+      <div class="section-title">📅 Kalendar rezervacij</div>
+      <a href="/book" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:10px;color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.25)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
+        🔗 Booking stran
+      </a>
+    </div>
+
+    <div class="cal-wrap">
+      <div class="cal-toolbar">
+        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
+        <div>
+          <span class="cal-month-title" id="cal-title">—</span>
+          <div class="cal-legend" style="margin-top:6px;justify-content:center;">
+            <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--green)"></div>Potrjeno</div>
+            <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--yellow)"></div>V čakanju</div>
+            <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--red)"></div>Odpovedano</div>
+          </div>
+        </div>
+        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
+      </div>
+      <div id="cal-grid" class="cal-grid">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Day detail panel -->
+    <div class="day-detail" id="day-detail">
+      <div class="day-detail-header">
+        <span class="day-detail-title" id="day-detail-title">—</span>
+        <button class="btn-close-detail" onclick="document.getElementById('day-detail').classList.remove('open')">×</button>
+      </div>
+      <div id="day-detail-list"></div>
     </div>
 
     <!-- ERRORS -->
@@ -442,6 +562,7 @@ async function loadApp() {
     salonsData = await res.json();
     renderAll();
     loadErrors();
+    loadCalendar();
     // Auto-refresh vsako 1h
     setInterval(loadErrors, 3600000);
   } catch (e) {
@@ -719,6 +840,122 @@ async function clearAllErrors() {
       showToast('Napake izbrisane', 'success');
     }
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+// ── CALENDAR ──────────────────────────────────────────────
+const MONTHS_SL = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+const DAYS_SL = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
+
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calBookings = [];
+
+async function loadCalendar() {
+  try {
+    const res = await apiFetch(`/api/calendar?year=${calYear}&month=${calMonth + 1}`);
+    if (!res.ok) return;
+    calBookings = await res.json();
+    renderCalendar();
+  } catch (e) { console.warn('Cal load failed:', e.message); }
+}
+
+function calChangeMonth(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  loadCalendar();
+}
+
+function renderCalendar() {
+  const y = calYear, m = calMonth;
+  document.getElementById('cal-title').textContent = `${MONTHS_SL[m]} ${y}`;
+
+  const firstDay = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  // Monday-first: Mon=0 ... Sun=6
+  const startOffset = (firstDay + 6) % 7;
+  const today = new Date().toISOString().split('T')[0];
+
+  // Group bookings by date
+  const byDate = {};
+  calBookings.forEach(b => {
+    const d = (b.booking_date || '').substring(0, 10);
+    if (!byDate[d]) byDate[d] = [];
+    byDate[d].push(b);
+  });
+
+  let html = DAYS_SL.map(d => `<div class="cal-header-cell">${d}</div>`).join('');
+
+  // Prev month days
+  for (let i = startOffset - 1; i >= 0; i--) {
+    html += `<div class="cal-cell other-month"><div class="cal-day-num">${prevDays - i}</div></div>`;
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday = dateStr === today;
+    const events = byDate[dateStr] || [];
+    const confirmedN = events.filter(b => b.status === 'confirmed').length;
+    const pendingN = events.filter(b => b.status === 'pending').length;
+
+    const eventHtml = events.slice(0, 3).map(b => {
+      const t = (b.booking_time || '').substring(0, 5);
+      const name = (b.customer_name || b.customer_phone || '?').split(' ')[0];
+      return `<span class="cal-event ${b.status}" title="${b.customer_name || ''}">${t} ${name}</span>`;
+    }).join('') + (events.length > 3 ? `<span class="cal-more">+${events.length - 3} več</span>` : '');
+
+    html += `<div class="cal-cell${isToday?' today':''}" onclick="showDayDetail('${dateStr}')">
+      <div class="cal-day-num">${d}</div>
+      ${eventHtml}
+    </div>`;
+  }
+
+  // Fill remaining cells
+  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+  let next = 1;
+  for (let i = startOffset + daysInMonth; i < totalCells; i++) {
+    html += `<div class="cal-cell other-month"><div class="cal-day-num">${next++}</div></div>`;
+  }
+
+  document.getElementById('cal-grid').innerHTML = html;
+}
+
+function showDayDetail(dateStr) {
+  // Highlight selected
+  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
+  event.currentTarget?.classList.add('selected');
+
+  const events = calBookings.filter(b => (b.booking_date || '').substring(0,10) === dateStr);
+  const d = new Date(dateStr + 'T12:00:00');
+  const label = `${d.getDate()}. ${MONTHS_SL[d.getMonth()]} ${d.getFullYear()}`;
+  document.getElementById('day-detail-title').textContent = `📅 ${label} — ${events.length} rezervacij`;
+
+  const detail = document.getElementById('day-detail');
+  detail.classList.add('open');
+
+  if (!events.length) {
+    document.getElementById('day-detail-list').innerHTML =
+      '<div style="text-align:center;padding:30px;color:var(--text3)">Na ta dan ni rezervacij</div>';
+    return;
+  }
+
+  const statusLabel = s => s === 'confirmed' ? '<span class="badge active">Potrjeno</span>' : s === 'pending' ? '<span class="badge trial">V čakanju</span>' : '<span class="badge inactive">Odpovedano</span>';
+
+  document.getElementById('day-detail-list').innerHTML = events
+    .sort((a,b) => (a.booking_time||'').localeCompare(b.booking_time||''))
+    .map(b => `
+      <div class="day-booking-item">
+        <div class="day-booking-time">${(b.booking_time||'').substring(0,5)}</div>
+        <div class="day-booking-info">
+          <div class="day-booking-name">${b.customer_name || '—'}</div>
+          <div class="day-booking-phone">📞 +${b.customer_phone || '—'}</div>
+        </div>
+        <div>${statusLabel(b.status)}</div>
+      </div>
+    `).join('');
+
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 // ── INIT ──────────────────────────────────────────────────

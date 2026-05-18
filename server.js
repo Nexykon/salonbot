@@ -282,6 +282,182 @@ app.delete('/api/errors', async (req, res) => {
   }
 });
 
+// ─── Public Booking API ───────────────────────────────────────
+const cal = require('./src/calendar');
+
+// Salon info + services (public)
+app.get('/api/book/info', async (req, res) => {
+  try {
+    const salon = await db.getSalon();
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const services = await db.getServices(salon.id);
+    res.json({
+      salon: { name: salon.name, working_hours_start: salon.working_hours_start, working_hours_end: salon.working_hours_end },
+      services: services.map(s => ({ id: s.id, name: s.name, duration_minutes: s.duration_minutes, price: s.price }))
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Available dates (public)
+app.get('/api/book/dates', async (req, res) => {
+  try {
+    const salon = await db.getSalon();
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const dates = await cal.getFreeDates(salon, 45);
+    res.json(dates);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Available times for a date (public)
+app.get('/api/book/times', async (req, res) => {
+  const { date } = req.query;
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ error: 'Invalid date' });
+  try {
+    const salon = await db.getSalon();
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const times = await cal.getFreeTimesForDate(salon, date);
+    res.json(times);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Create booking (public)
+app.post('/api/book', async (req, res) => {
+  const { serviceId, date, time, customerName, customerPhone } = req.body;
+  if (!date || !time || !customerName || !customerPhone) {
+    return res.status(400).json({ error: 'Manjkajo podatki' });
+  }
+  // Normalize phone: strip + and spaces
+  const phone = String(customerPhone).replace(/[^\d]/g, '');
+  if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska številka' });
+
+  try {
+    const salon = await db.getSalon();
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+
+    // Double-check slot is still free
+    const freeTimes = await cal.getFreeTimesForDate(salon, date);
+    if (!freeTimes.includes(time)) {
+      return res.status(409).json({ error: 'Ta termin je žal že zaseden. Izberite drugega.' });
+    }
+
+    const booking = await db.createBooking({
+      customer_phone: phone,
+      customer_name: customerName.trim(),
+      salon_id: salon.id,
+      service_id: serviceId || null,
+      booking_date: date,
+      booking_time: time + ':00',
+      status: 'pending'
+    });
+
+    const ref6 = (booking.id || '').slice(-6);
+    const fmtD = `${date.substring(8,10)}.${date.substring(5,7)}.${date.substring(0,4)}`;
+
+    // Notify admin via WA
+    const ADMIN_PHONE = process.env.ADMIN_PHONE;
+    if (ADMIN_PHONE) {
+      const phoneId = process.env.WA_PHONE_ID;
+      const token = process.env.WA_TOKEN;
+      try {
+        await wa.send(phoneId, token,
+          wa.adminBookingNotif(ADMIN_PHONE, customerName.trim(), phone, fmtD, time, ref6)
+        );
+      } catch (e) {
+        try {
+          await wa.send(phoneId, token,
+            wa.adminBookingNotifSession(ADMIN_PHONE, customerName.trim(), phone, date, time, ref6)
+          );
+        } catch (e2) {
+          try {
+            await wa.send(phoneId, token, wa.textMsg(ADMIN_PHONE,
+              `📩 *Nova WEB rezervacija*\n\n👤 ${customerName.trim()}\n📞 +${phone}\n📅 ${fmtD} ob ${time}\n🔑 Ref: *${ref6}*`
+            ));
+          } catch (_) {}
+        }
+      }
+    }
+
+    res.json({ success: true, ref: ref6, date: fmtD, time, customerName: customerName.trim() });
+  } catch (err) {
+    console.error('Web booking error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get customer's bookings by phone (public)
+app.get('/api/book/my', async (req, res) => {
+  let phone = String(req.query.phone || '').replace(/[^\d]/g, '');
+  if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska številka' });
+  try {
+    const salon = await db.getSalon();
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const axios = require('axios');
+    const BASE = process.env.SUPABASE_URL + '/rest/v1';
+    const HEADERS = {
+      apikey: process.env.SUPABASE_KEY,
+      Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    };
+    const today = new Date().toISOString().split('T')[0];
+    const r = await axios.get(
+      `${BASE}/sb_bookings?salon_id=eq.${salon.id}&customer_phone=eq.${phone}&booking_date=gte.${today}&order=booking_date,booking_time`,
+      { headers: HEADERS }
+    );
+    const bookings = r.data.map(b => ({
+      ref: (b.id || '').slice(-6),
+      date: b.booking_date,
+      time: (b.booking_time || '').substring(0, 5),
+      status: b.status,
+      service_id: b.service_id
+    }));
+    res.json(bookings);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Cancel booking by ref + phone verification (public)
+app.post('/api/book/cancel', async (req, res) => {
+  const { ref, phone } = req.body;
+  if (!ref || !phone) return res.status(400).json({ error: 'Manjkajo podatki' });
+  const cleanPhone = String(phone).replace(/[^\d]/g, '');
+  try {
+    const booking = await db.getBooking(ref);
+    if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
+    // Verify phone matches
+    const bookingPhone = String(booking.customer_phone || '').replace(/[^\d]/g, '');
+    if (bookingPhone !== cleanPhone) return res.status(403).json({ error: 'Napačna telefonska številka' });
+    // Only allow cancelling future bookings
+    const today = new Date().toISOString().split('T')[0];
+    if ((booking.booking_date || '').substring(0, 10) < today) {
+      return res.status(400).json({ error: 'Pretečenih rezervacij ni mogoče odpovedati' });
+    }
+    await db.updateBookingStatus(booking.id, 'cancelled');
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// All bookings for a month (dashboard calendar)
+app.get('/api/calendar', async (req, res) => {
+  const apiKey = req.headers['x-api-key'];
+  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  const { year, month } = req.query;
+  try {
+    const salon = await db.getSalon();
+    const axios = require('axios');
+    const BASE = process.env.SUPABASE_URL + '/rest/v1';
+    const HEADERS = { apikey: process.env.SUPABASE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_KEY };
+    const y = parseInt(year) || new Date().getFullYear();
+    const m = parseInt(month) || (new Date().getMonth() + 1);
+    const from = `${y}-${String(m).padStart(2,'0')}-01`;
+    const toDate = new Date(y, m, 0);
+    const to = `${y}-${String(m).padStart(2,'0')}-${String(toDate.getDate()).padStart(2,'0')}`;
+    const r = await axios.get(
+      `${BASE}/sb_bookings?salon_id=eq.${salon.id}&booking_date=gte.${from}&booking_date=lte.${to}&order=booking_date,booking_time`,
+      { headers: HEADERS }
+    );
+    res.json(r.data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── Health check ─────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', bot: 'SalonBot v3', version: '4.0' }));
 
