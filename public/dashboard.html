@@ -240,6 +240,11 @@
   .studio-section-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; }
   .studio-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .service-editor-list { display: flex; flex-direction: column; gap: 10px; }
+  .service-grid-head {
+    display: grid; grid-template-columns: minmax(180px, 1fr) 96px 110px 42px;
+    gap: 10px; margin-bottom: 8px; color: var(--text2);
+    font-size: 12px; font-weight: 800;
+  }
   .service-row {
     display: grid; grid-template-columns: minmax(180px, 1fr) 96px 110px 42px;
     gap: 10px; align-items: center;
@@ -504,6 +509,7 @@
     }
     .studio-editor { overflow: visible; }
     .studio-preview { border-left: none; border-top: 1px solid var(--border); }
+    .service-grid-head { grid-template-columns: 1fr 80px 90px 40px; }
     .service-row { grid-template-columns: 1fr 80px 90px 40px; }
   }
 </style>
@@ -841,6 +847,12 @@
 
         <div class="studio-section">
           <div class="studio-section-title">Storitve, ki jih vidi stranka</div>
+          <div class="service-grid-head">
+            <div>Ime storitve</div>
+            <div>Cena EUR</div>
+            <div>Trajanje min</div>
+            <div></div>
+          </div>
           <div class="service-editor-list" id="bs-services"></div>
           <div class="studio-actions" style="margin-top:14px">
             <button class="btn-soft" onclick="addBotStudioService()">+ Dodaj storitev</button>
@@ -1158,8 +1170,8 @@ function renderBotStudioServices() {
   wrap.innerHTML = botStudio.services.map(s => `
     <div class="service-row" data-id="${esc(s.id || '')}" data-local-id="${esc(s._localId)}">
       <input data-field="name" type="text" value="${esc(s.name)}" placeholder="Storitev" oninput="updateBotStudioPreview()">
-      <input data-field="price" type="number" min="0" step="1" value="${esc(s.price ?? 0)}" placeholder="EUR" oninput="updateBotStudioPreview()">
-      <input data-field="duration" type="number" min="5" max="480" step="5" value="${esc(s.duration_minutes ?? 60)}" placeholder="min" oninput="updateBotStudioPreview()">
+      <input data-field="price" type="number" min="0" step="1" value="${esc(s.price ?? 0)}" placeholder="Cena EUR" title="Cena v EUR" oninput="updateBotStudioPreview()">
+      <input data-field="duration" type="number" min="5" max="480" step="5" value="${esc(s.duration_minutes ?? 60)}" placeholder="Trajanje min" title="Trajanje storitve v minutah" oninput="updateBotStudioPreview()">
       <button class="icon-btn" title="Skrij storitev" onclick="removeBotStudioService('${esc(s._localId)}')">×</button>
     </div>
   `).join('');
