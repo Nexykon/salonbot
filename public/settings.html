@@ -391,10 +391,32 @@
 <div class="toast" id="toast"></div>
 
 <script>
-let ownerToken = localStorage.getItem('ft_owner_token') || '';
-let salonPhone = localStorage.getItem('ft_salon_phone') || '';
+const settingsParams = new URLSearchParams(window.location.search);
+const previewSalonId = settingsParams.get('salonId') || '';
+let ownerToken = sessionStorage.getItem('ft_owner_token') || '';
+let masterToken = settingsParams.get('master_token') || sessionStorage.getItem('ft_master_token') || '';
+let salonPhone = '';
 let selectedDays = new Set();
 let selectedInterval = 30;
+
+if (masterToken) sessionStorage.setItem('ft_master_token', masterToken);
+if (settingsParams.get('master_token')) {
+  const cleanUrl = previewSalonId ? `/settings.html?salonId=${encodeURIComponent(previewSalonId)}` : '/settings.html';
+  history.replaceState(null, '', cleanUrl);
+}
+localStorage.removeItem('ft_owner_token');
+localStorage.removeItem('ft_master_token');
+localStorage.removeItem('ft_salon_phone');
+
+function authHeaders(extra = {}) {
+  const token = masterToken || ownerToken;
+  return token ? { ...extra, Authorization: 'Bearer ' + token } : extra;
+}
+
+function scopedPath(path) {
+  if (!masterToken || !previewSalonId) return path;
+  return path + (path.includes('?') ? '&' : '?') + 'salonId=' + encodeURIComponent(previewSalonId);
+}
 
 // ── Login ──────────────────────────────────────────────────
 document.getElementById('login-phone').addEventListener('keydown', e => {
@@ -415,7 +437,6 @@ async function requestOtp() {
     });
     if (!r.ok) { document.getElementById('login-error').style.display = 'block'; return; }
     salonPhone = phone;
-    localStorage.setItem('ft_salon_phone', phone);
     document.getElementById('otp-group').style.display = 'block';
     document.getElementById('otp-verify-btn').style.display = 'block';
     document.getElementById('login-code').focus();
@@ -437,8 +458,13 @@ async function verifyOtp() {
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Napacna koda');
+    if (data.role === 'master') {
+      sessionStorage.setItem('ft_master_token', data.token);
+      window.location.href = '/dashboard.html';
+      return;
+    }
     ownerToken = data.token;
-    localStorage.setItem('ft_owner_token', ownerToken);
+    sessionStorage.setItem('ft_owner_token', ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     showToast(e.message, 'error');
@@ -446,15 +472,18 @@ async function verifyOtp() {
 }
 
 async function loadSettings() {
-  const r = await fetch('/api/settings', { headers: { Authorization: 'Bearer ' + ownerToken } });
+  const r = await fetch(scopedPath('/api/settings'), { headers: authHeaders() });
   if (!r.ok) throw new Error('Prijava ni uspela');
   return r.json();
 }
 
 function doLogout() {
+  sessionStorage.removeItem('ft_owner_token');
+  sessionStorage.removeItem('ft_master_token');
   localStorage.removeItem('ft_owner_token');
+  localStorage.removeItem('ft_master_token');
   localStorage.removeItem('ft_salon_phone');
-  ownerToken = ''; salonPhone = '';
+  ownerToken = ''; masterToken = ''; salonPhone = '';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-wrap').style.display = 'flex';
 }
@@ -543,10 +572,9 @@ async function saveSettings() {
   if (body.working_hours_start >= body.working_hours_end) { showToast('Začetek mora biti pred koncem delovnika', 'error'); btn.disabled=false; btn.textContent='💾 Shrani nastavitve'; return; }
 
   try {
-    const headers = { 'Content-Type': 'application/json' };
-    if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+    const headers = authHeaders({ 'Content-Type': 'application/json' });
 
-    const r = await fetch('/api/settings', { method: 'PATCH', headers, body: JSON.stringify(body) });
+    const r = await fetch(scopedPath('/api/settings'), { method: 'PATCH', headers, body: JSON.stringify(body) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
     document.getElementById('salon-display-name').textContent = body.name || 'Salon';
@@ -567,10 +595,9 @@ function showToast(msg, type='') {
 
 // ── Services ───────────────────────────────────────────────
 async function loadServices() {
-  const headers = {};
-  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  const headers = authHeaders();
   try {
-    const r = await fetch('/api/settings/services', { headers });
+    const r = await fetch(scopedPath('/api/settings/services'), { headers });
     if (!r.ok) { document.getElementById('services-list').innerHTML = '<div class="service-empty">Napaka pri nalaganju storitev.</div>'; return; }
     const services = await r.json();
     renderServices(services);
@@ -613,10 +640,10 @@ async function saveDuration(svcId) {
 
   btn.textContent = '…';
   const headers = { 'Content-Type': 'application/json' };
-  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  Object.assign(headers, authHeaders());
 
   try {
-    const r = await fetch(`/api/settings/services/${svcId}`, {
+    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), {
       method: 'PATCH', headers,
       body: JSON.stringify({ duration_minutes: dur })
     });
@@ -671,9 +698,9 @@ async function addService() {
   if (isNaN(price) || price < 0) { showToast('Vpišite veljavno ceno', 'error'); return; }
   if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
   const headers = { 'Content-Type': 'application/json' };
-  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  Object.assign(headers, authHeaders());
   try {
-    const r = await fetch('/api/settings/services', { method: 'POST', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const r = await fetch(scopedPath('/api/settings/services'), { method: 'POST', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
     showToast('Storitev dodana', 'success');
@@ -691,9 +718,9 @@ async function saveService(svcId) {
   if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
   btn.textContent = '…';
   const headers = { 'Content-Type': 'application/json' };
-  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  Object.assign(headers, authHeaders());
   try {
-    const r = await fetch(`/api/settings/services/${svcId}`, { method: 'PATCH', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), { method: 'PATCH', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
     btn.textContent = '✓ Shranjeno';
@@ -708,9 +735,9 @@ async function saveService(svcId) {
 async function deleteService(svcId) {
   if (!confirm('Izklopiti to storitev? Stranke je ne bodo več videle.')) return;
   const headers = {};
-  if (ownerToken) headers['Authorization'] = 'Bearer ' + ownerToken;
+  Object.assign(headers, authHeaders());
   try {
-    const r = await fetch(`/api/settings/services/${svcId}`, { method: 'DELETE', headers });
+    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), { method: 'DELETE', headers });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error);
     showToast('Storitev izklopljena', 'success');
@@ -719,10 +746,12 @@ async function deleteService(svcId) {
 }
 
 (async () => {
-  if (ownerToken) {
+  if (ownerToken || (masterToken && previewSalonId)) {
     try {
       loadUI(await loadSettings()); return;
     } catch (_) {}
+    sessionStorage.removeItem('ft_owner_token');
+    if (!previewSalonId) sessionStorage.removeItem('ft_master_token');
     localStorage.removeItem('ft_owner_token');
     localStorage.removeItem('ft_salon_phone');
   }

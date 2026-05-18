@@ -22,7 +22,7 @@ if ($LASTEXITCODE -ne 0) { Write-Host "auth.js check failed" -ForegroundColor Re
 
 Write-Host "=== Committing FlowTiq changes ===" -ForegroundColor Cyan
 
-git add server.js package.json push_fix.ps1 public/index.html public/dashboard.html public/book.html public/settings.html src/handler.js src/whatsapp.js src/supabase.js src/scheduler.js src/ai.js src/calendar.js src/auth.js src/presets.js
+git add .env.example server.js package.json package-lock.json push_fix.ps1 public/index.html public/dashboard.html public/book.html public/settings.html src/handler.js src/whatsapp.js src/supabase.js src/scheduler.js src/ai.js src/calendar.js src/auth.js src/presets.js
 
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {

@@ -21,6 +21,21 @@ function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
 }
 
+function masterAdminPhones() {
+  return new Set([
+    process.env.MASTER_ADMIN_PHONES,
+    process.env.ADMIN_PHONE,
+    '38640599185'
+  ].filter(Boolean).join(',')
+    .split(',')
+    .map(cleanPhone)
+    .filter(Boolean));
+}
+
+function isMasterAdminPhone(phone) {
+  return masterAdminPhones().has(cleanPhone(phone));
+}
+
 function publicSalon(salon) {
   return {
     id: salon.id,
@@ -46,8 +61,15 @@ async function resolveBookSalon(req) {
   return salon;
 }
 
+function isMasterRequest(req) {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  const configuredApiKey = process.env.ADMIN_API_KEY;
+  return session?.role === 'master' || (!!configuredApiKey && req.headers['x-api-key'] === configuredApiKey);
+}
+
 function adminAuth(req, res) {
-  if (req.headers['x-api-key'] !== process.env.ADMIN_API_KEY) {
+  if (!isMasterRequest(req)) {
     res.status(401).json({ error: 'Unauthorized' });
     return false;
   }
@@ -68,6 +90,23 @@ async function salonAuth(req, res) {
   }
   res.status(401).json({ error: 'Neveljavna prijava' });
   return null;
+}
+
+async function settingsSalonAuth(req, res) {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  if (session?.role === 'master') {
+    const salonId = req.query.salonId || req.body?.salonId;
+    if (!salonId) {
+      res.status(400).json({ error: 'Manjka salonId za master pogled' });
+      return null;
+    }
+    const salon = await db.getSalonById(salonId);
+    if (salon) return salon;
+    res.status(404).json({ error: 'Salon not found' });
+    return null;
+  }
+  return salonAuth(req, res);
 }
 
 async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, sourceLabel) {
@@ -194,10 +233,7 @@ app.get('/api/business-types', (req, res) => {
 });
 
 app.post('/onboard', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!adminAuth(req, res)) return;
 
   const { name, owner_name, owner_email, admin_phone, whatsapp_phone_number_id, plan, business_type, business_slug, bot_phone_display } = req.body;
   if (!name || !owner_email || !admin_phone) {
@@ -240,34 +276,32 @@ app.post('/onboard', async (req, res) => {
 
 // ─── Salons list (admin) ──────────────────────────────────────
 app.get('/salons', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  if (!adminAuth(req, res)) return;
+  try {
+    const salons = await db.getAllSalons();
+    res.json(salons.map(s => ({
+      id: s.id,
+      name: s.name,
+      business_type: s.business_type || 'hair',
+      business_label: s.business_label || getPreset(s.business_type || 'hair').label,
+      business_slug: s.business_slug || '',
+      bot_phone_display: s.bot_phone_display || '',
+      whatsapp_phone_number_id: s.whatsapp_phone_number_id || '',
+      owner_name: s.owner_name,
+      owner_email: s.owner_email,
+      subscription_status: s.subscription_status,
+      subscription_plan: s.subscription_plan,
+      admin_phone: s.admin_phone,
+      created_at: s.created_at
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  const salons = await db.getAllSalons();
-  res.json(salons.map(s => ({
-    id: s.id,
-    name: s.name,
-    business_type: s.business_type || 'hair',
-    business_label: s.business_label || getPreset(s.business_type || 'hair').label,
-    business_slug: s.business_slug || '',
-    bot_phone_display: s.bot_phone_display || '',
-    whatsapp_phone_number_id: s.whatsapp_phone_number_id || '',
-    owner_name: s.owner_name,
-    owner_email: s.owner_email,
-    subscription_status: s.subscription_status,
-    subscription_plan: s.subscription_plan,
-    admin_phone: s.admin_phone,
-    created_at: s.created_at
-  })));
 });
 
 // ─── Update salon status (admin dashboard) ───────────────────
 app.patch('/api/salons/:id/status', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!adminAuth(req, res)) return;
   const { id } = req.params;
   const { status } = req.body;
   if (!['active', 'inactive', 'trial'].includes(status)) {
@@ -293,10 +327,7 @@ app.patch('/api/salons/:id/status', async (req, res) => {
 
 // ─── Send welcome WA message to salon admin ───────────────────
 app.post('/api/salons/:id/welcome', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!adminAuth(req, res)) return;
   const { id } = req.params;
   try {
     const salon = (await db.getAllSalons()).find(s => s.id === id);
@@ -331,8 +362,7 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
 
 // ─── Update salon plan (admin dashboard) ─────────────────────
 app.patch('/api/salons/:id/plan', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  if (!adminAuth(req, res)) return;
   const { id } = req.params;
   const { plan } = req.body;
   if (!['starter', 'pro'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
@@ -508,8 +538,7 @@ app.post('/api/admin/salons/:id/apply-preset', async (req, res) => {
 });
 
 app.get('/api/errors', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  if (!adminAuth(req, res)) return;
   try {
     const errors = await db.getRecentErrors(100);
     res.json(errors);
@@ -519,8 +548,7 @@ app.get('/api/errors', async (req, res) => {
 });
 
 app.delete('/api/errors', async (req, res) => {
-  const apiKey = req.headers['x-api-key'];
-  if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  if (!adminAuth(req, res)) return;
   try {
     await db.clearErrors();
     res.json({ success: true });
@@ -543,11 +571,17 @@ app.post('/api/auth/start', async (req, res) => {
   const phone = cleanPhone(req.body.phone);
   if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska stevilka' });
   try {
+    if (isMasterAdminPhone(phone)) {
+      const code = ownerAuth.createOtp(phone, null, 'master');
+      await wa.send(process.env.WA_PHONE_ID, process.env.WA_TOKEN, wa.textMsg(phone, `FlowTiq master admin koda: ${code}\nVelja 10 minut.`));
+      return res.json({ success: true, role: 'master', message: 'Master admin koda poslana na WhatsApp.' });
+    }
+
     const salon = await db.getSalonByAdminPhone(phone);
     if (!salon || salon.subscription_status === 'inactive') {
       return res.status(404).json({ error: 'Podjetje s to stevilko ni najdeno' });
     }
-    const code = ownerAuth.createOtp(phone, salon.id);
+    const code = ownerAuth.createOtp(phone, salon.id, 'owner');
     const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
     const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
     await wa.send(phoneId, token, wa.textMsg(phone, `FlowTiq prijavna koda: ${code}\nVelja 10 minut.`));
@@ -563,8 +597,11 @@ app.post('/api/auth/verify', async (req, res) => {
   const token = ownerAuth.verifyOtp(phone, req.body.code);
   if (!token) return res.status(401).json({ error: 'Napacna ali potekla koda' });
   const session = ownerAuth.getSession(token);
+  if (session?.role === 'master') {
+    return res.json({ success: true, token, role: 'master', redirect: '/dashboard.html' });
+  }
   const salon = await db.getSalonById(session.salonId);
-  res.json({ success: true, token, salon: publicSalon(salon) });
+  res.json({ success: true, token, role: 'owner', salon: publicSalon(salon) });
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -702,7 +739,7 @@ app.post('/api/book/cancel', async (req, res) => {
 
 // All bookings for a month (dashboard calendar)
 app.get('/api/calendar', async (req, res) => {
-  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  const isMaster = isMasterRequest(req);
   let ownerSalon = null;
   if (!isMaster) {
     ownerSalon = await salonAuth(req, res);
@@ -723,7 +760,7 @@ app.get('/api/calendar', async (req, res) => {
 // ─── Admin booking management ─────────────────────────────────
 
 async function bookingActionSalon(req, res) {
-  if (req.headers['x-api-key'] === process.env.ADMIN_API_KEY) {
+  if (isMasterRequest(req)) {
     const salonId = req.body?.salonId || req.query.salonId;
     return salonId ? db.getSalonById(salonId) : null;
   }
@@ -733,7 +770,7 @@ async function bookingActionSalon(req, res) {
 // Confirm booking (admin dashboard)
 app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
   const actionSalon = await bookingActionSalon(req, res);
-  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  const isMaster = isMasterRequest(req);
   if (!isMaster && !actionSalon) return;
   try {
     const booking = actionSalon
@@ -764,7 +801,7 @@ app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
 // Cancel booking (admin dashboard)
 app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
   const actionSalon = await bookingActionSalon(req, res);
-  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  const isMaster = isMasterRequest(req);
   if (!isMaster && !actionSalon) return;
   try {
     const booking = actionSalon
@@ -791,7 +828,7 @@ app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
 // Manual add booking (admin dashboard)
 app.post('/api/admin/bookings', async (req, res) => {
   const actionSalon = await bookingActionSalon(req, res);
-  const isMaster = req.headers['x-api-key'] === process.env.ADMIN_API_KEY;
+  const isMaster = isMasterRequest(req);
   if (!isMaster && !actionSalon) return;
   const { date, time, customerName, customerPhone, serviceId } = req.body;
   if (!date || !time || !customerName) return res.status(400).json({ error: 'Manjkajo podatki' });
@@ -816,7 +853,7 @@ app.post('/api/admin/bookings', async (req, res) => {
 // ─── Salon Settings Portal ────────────────────────────────────
 // Get salon settings
 app.get('/api/settings', async (req, res) => {
-  const salon = await salonAuth(req, res);
+  const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   res.json({
     id: salon.id,
@@ -837,7 +874,7 @@ app.get('/api/settings', async (req, res) => {
 
 // Update salon settings
 app.patch('/api/settings', async (req, res) => {
-  const salon = await salonAuth(req, res);
+  const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   const allowed = ['working_days','working_hours_start','working_hours_end',
     'booking_interval_minutes','break_between_minutes','max_advance_days','name','bot_phone_display'];
@@ -860,7 +897,7 @@ app.patch('/api/settings', async (req, res) => {
 // ─── Services Portal (auth: salon token/phone) ───────────────
 // Get all services for this salon
 app.get('/api/settings/services', async (req, res) => {
-  const salon = await salonAuth(req, res);
+  const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   try {
     const services = await db.getServices(salon.id);
@@ -870,7 +907,7 @@ app.get('/api/settings/services', async (req, res) => {
 
 // Update single service (price + duration)
 app.post('/api/settings/services', async (req, res) => {
-  const salon = await salonAuth(req, res);
+  const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   const { name, price, duration_minutes } = req.body;
   const serviceName = String(name || '').trim();
@@ -892,7 +929,7 @@ app.post('/api/settings/services', async (req, res) => {
 });
 
 app.patch('/api/settings/services/:id', async (req, res) => {
-  const salon = await salonAuth(req, res);
+  const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   const { id } = req.params;
   const { name, price, duration_minutes } = req.body;
@@ -920,7 +957,7 @@ app.patch('/api/settings/services/:id', async (req, res) => {
 });
 
 app.delete('/api/settings/services/:id', async (req, res) => {
-  const salon = await salonAuth(req, res);
+  const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   const { id } = req.params;
   try {

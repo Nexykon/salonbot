@@ -7,11 +7,12 @@ function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
 }
 
-function createOtp(phone, salonId) {
+function createOtp(phone, salonId, role = 'owner') {
   const clean = cleanPhone(phone);
   const code = String(crypto.randomInt(100000, 1000000));
   otpStore.set(clean, {
     salonId,
+    role,
     code,
     expiresAt: Date.now() + 10 * 60 * 1000,
     attempts: 0
@@ -37,8 +38,9 @@ function verifyOtp(phone, code) {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, {
     salonId: record.salonId,
+    role: record.role || 'owner',
     phone: clean,
-    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000
+    expiresAt: Date.now() + 12 * 60 * 60 * 1000
   });
   return token;
 }

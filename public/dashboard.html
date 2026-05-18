@@ -532,10 +532,14 @@
       </svg>
     </div>
     <h1 style="background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">FlowTiq</h1>
-    <p>Vstopite z admin API ključem</p>
-    <input type="password" id="api-key-input" placeholder="API ključ..." autofocus>
-    <button class="btn-primary" onclick="login()">Vstopi →</button>
-    <div class="login-error" id="login-error">Napačen API ključ</div>
+    <p>Vstopite z master WhatsApp telefonsko stevilko.</p>
+    <input type="tel" id="admin-phone-input" placeholder="38640599185" autofocus>
+    <button class="btn-primary" onclick="requestAdminOtp()">Poslji WhatsApp kodo</button>
+    <div id="admin-otp-wrap" style="display:none;margin-top:12px">
+      <input type="text" id="admin-code-input" placeholder="6-mestna koda" maxlength="6" inputmode="numeric">
+      <button class="btn-primary" onclick="verifyAdminOtp()">Vstopi v admin</button>
+    </div>
+    <div class="login-error" id="login-error">Prijava ni uspela</div>
   </div>
 </div>
 
@@ -862,6 +866,7 @@
 
         <div class="modal-footer">
           <button class="btn-cancel" onclick="closeBotStudio()">Preklici</button>
+          <button class="btn-soft" onclick="openOwnerDashboard(botStudio.salonId)">Poglej dashboard</button>
           <button class="btn-save" id="bs-save-btn" onclick="saveBotStudio()">Shrani spremembe</button>
         </div>
       </div>
@@ -899,29 +904,72 @@
 <script>
 const API_BASE = window.location.origin;
 let apiKey = '';
+let masterToken = '';
 let salonsData = [];
 
 const PLAN_PRICES = { starter: 79, pro: 160 };
 
 // ── AUTH ──────────────────────────────────────────────────
-function login() {
-  const key = document.getElementById('api-key-input').value.trim();
-  if (!key) return;
-  apiKey = key;
-  localStorage.setItem('sb_api_key', key);
-  loadApp();
+async function requestAdminOtp() {
+  const phone = document.getElementById('admin-phone-input').value.trim().replace(/[^\d]/g, '');
+  if (phone.length < 8) return;
+  try {
+    const res = await fetch('/api/auth/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Prijava ni uspela');
+    document.getElementById('admin-otp-wrap').style.display = 'block';
+    document.getElementById('admin-code-input').focus();
+    document.getElementById('login-error').style.display = 'none';
+  } catch (e) {
+    document.getElementById('login-error').textContent = e.message;
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function verifyAdminOtp() {
+  const phone = document.getElementById('admin-phone-input').value.trim().replace(/[^\d]/g, '');
+  const code = document.getElementById('admin-code-input').value.trim();
+  if (code.length !== 6) return;
+  try {
+    const res = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.role !== 'master') throw new Error(data.error || 'Ta stevilka ni master admin.');
+    masterToken = data.token;
+    sessionStorage.setItem('ft_master_token', masterToken);
+    document.getElementById('login-error').style.display = 'none';
+    loadApp();
+  } catch (e) {
+    document.getElementById('login-error').textContent = e.message;
+    document.getElementById('login-error').style.display = 'block';
+  }
 }
 
 function logout() {
+  sessionStorage.removeItem('ft_master_token');
   localStorage.removeItem('sb_api_key');
+  localStorage.removeItem('ft_master_token');
+  localStorage.removeItem('ft_master_phone');
   apiKey = '';
+  masterToken = '';
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('api-key-input').value = '';
+  document.getElementById('admin-code-input').value = '';
+  document.getElementById('admin-otp-wrap').style.display = 'none';
 }
 
-document.getElementById('api-key-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') login();
+document.getElementById('admin-phone-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') requestAdminOtp();
+});
+document.getElementById('admin-code-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') verifyAdminOtp();
 });
 
 async function loadApp() {
@@ -947,9 +995,10 @@ async function loadApp() {
 
 // ── API ───────────────────────────────────────────────────
 function apiFetch(path, options = {}) {
+  const authHeaders = masterToken ? { Authorization: 'Bearer ' + masterToken } : { 'x-api-key': apiKey };
   return fetch(API_BASE + path, {
     ...options,
-    headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json', ...(options.headers || {}) }
+    headers: { ...authHeaders, 'Content-Type': 'application/json', ...(options.headers || {}) }
   });
 }
 
@@ -1021,6 +1070,7 @@ function renderTable() {
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
+          <button class="btn-action btn-msg" onclick="openOwnerDashboard('${s.id}')">Dashboard</button>
           <button class="btn-action btn-msg" onclick="manageSalonServices('${s.id}')">Storitve</button>
         </div>
       </td>
@@ -1146,6 +1196,14 @@ async function openManageSalon(id) {
 
 function manageSalonServices(id) {
   openManageSalon(id);
+}
+
+function openOwnerDashboard(id) {
+  if (!masterToken) {
+    showToast('Najprej se prijavite z master WhatsApp OTP.', 'error');
+    return;
+  }
+  window.open(`/settings.html?salonId=${encodeURIComponent(id)}&master_token=${encodeURIComponent(masterToken)}`, '_blank', 'noopener');
 }
 
 function closeBotStudio() {
@@ -1656,8 +1714,24 @@ async function saveAddBooking() {
 }
 
 // ── INIT ──────────────────────────────────────────────────
-const savedKey = localStorage.getItem('sb_api_key');
-if (savedKey) { apiKey = savedKey; loadApp(); }
+const urlToken = new URLSearchParams(window.location.search).get('master_token');
+if (urlToken) {
+  masterToken = urlToken;
+  sessionStorage.setItem('ft_master_token', masterToken);
+  history.replaceState(null, '', '/dashboard.html');
+}
+localStorage.removeItem('ft_master_token');
+localStorage.removeItem('ft_master_phone');
+localStorage.removeItem('sb_api_key');
+const savedMasterToken = sessionStorage.getItem('ft_master_token');
+const savedKey = '';
+if (savedMasterToken) {
+  masterToken = savedMasterToken;
+  loadApp();
+} else if (savedKey) {
+  apiKey = savedKey;
+  loadApp();
+}
 </script>
 </body>
 </html>
