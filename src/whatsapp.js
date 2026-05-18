@@ -173,17 +173,18 @@ function adminPendingButtons(to, booking) {
 
 // Template za stranko — potrjena rezervacija (24/7, ne glede na sejo)
 // Zahteva odobren Meta template "salon_rezervacija_potrjena" (en_US)
-function customerConfirmTemplate(to, date, time) {
+function customerConfirmTemplate(to, date, time, salonName) {
   return {
     messaging_product: 'whatsapp', to, type: 'template',
     template: {
       name: 'salon_rezervacija_potrjena',
-      language: { code: 'en_US' },
+      language: { code: 'sl' },
       components: [{
         type: 'body',
         parameters: [
           { type: 'text', text: date },
-          { type: 'text', text: time }
+          { type: 'text', text: time },
+          { type: 'text', text: salonName || 'Salon' }
         ]
       }]
     }

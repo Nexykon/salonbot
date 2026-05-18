@@ -192,7 +192,7 @@ async function handleMessage(msgObj, salon) {
           const custDate = fmtDate(booking.booking_date);
           const custTime = (booking.booking_time || '').substring(0, 5);
           try {
-            await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime));
+            await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime, salon.name));
           } catch (e) {
             // Template ni odobren → plain text fallback
             try {
