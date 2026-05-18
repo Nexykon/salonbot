@@ -63,6 +63,11 @@
   .header-title span { color: var(--accent2); }
   .header-right { display: flex; align-items: center; gap: 16px; }
   .header-user { font-size: 13px; color: var(--text2); }
+  .preview-select {
+    max-width: 180px; padding: 8px 10px; border-radius: 8px;
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+    color: var(--text); font-size: 13px; outline: none;
+  }
   .btn-logout {
     padding: 8px 16px; background: transparent; border: 1px solid var(--border);
     border-radius: 8px; color: var(--text2); font-size: 13px; cursor: pointer; transition: all 0.2s;
@@ -560,6 +565,8 @@
       <div class="header-title" style="background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Flow<span style="-webkit-text-fill-color:transparent;">Tiq</span> <span style="font-size:13px;font-weight:400;-webkit-text-fill-color:var(--text2);">Admin</span></div>
     </div>
     <div class="header-right">
+      <select class="preview-select" id="preview-salon-select" title="Izberi salon za predogled"></select>
+      <button class="btn-logout" onclick="openSelectedDashboard()">Predogled dashboarda</button>
       <span class="header-user" id="header-user">Tomaž</span>
       <button class="btn-logout" onclick="logout()">Odjava</button>
     </div>
@@ -616,15 +623,15 @@
       </table>
     </div>
 
-    <!-- CALENDAR -->
-    <div class="section-header" style="margin-top:40px">
+    <!-- CALENDAR moved to owner dashboard -->
+    <div class="section-header" style="margin-top:40px;display:none">
       <div class="section-title">📅 Kalendar rezervacij</div>
       <a href="/book" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);border-radius:10px;color:var(--accent2);font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='rgba(124,58,237,0.25)'" onmouseout="this.style.background='rgba(124,58,237,0.15)'">
         🔗 Booking stran
       </a>
     </div>
 
-    <div class="cal-wrap">
+    <div class="cal-wrap" style="display:none">
       <div class="cal-toolbar">
         <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
         <div>
@@ -643,7 +650,7 @@
     </div>
 
     <!-- Day detail panel -->
-    <div class="day-detail" id="day-detail">
+    <div class="day-detail" id="day-detail" style="display:none">
       <div class="day-detail-header">
         <span class="day-detail-title" id="day-detail-title">—</span>
         <button class="btn-close-detail" onclick="document.getElementById('day-detail').classList.remove('open')">×</button>
@@ -866,7 +873,6 @@
 
         <div class="modal-footer">
           <button class="btn-cancel" onclick="closeBotStudio()">Preklici</button>
-          <button class="btn-soft" onclick="openOwnerDashboard(botStudio.salonId)">Poglej dashboard</button>
           <button class="btn-save" id="bs-save-btn" onclick="saveBotStudio()">Shrani spremembe</button>
         </div>
       </div>
@@ -985,7 +991,6 @@ async function loadApp() {
     salonsData = await res.json();
     renderAll();
     loadErrors();
-    loadCalendar();
     // Auto-refresh vsako 1h
     setInterval(loadErrors, 3600000);
   } catch (e) {
@@ -1005,7 +1010,16 @@ function apiFetch(path, options = {}) {
 // ── RENDER ────────────────────────────────────────────────
 function renderAll() {
   renderStats();
+  renderPreviewSelect();
   renderTable();
+}
+
+function renderPreviewSelect() {
+  const select = document.getElementById('preview-salon-select');
+  if (!select) return;
+  select.innerHTML = salonsData.length
+    ? salonsData.map(s => `<option value="${s.id}">${s.name || 'Podjetje'}</option>`).join('')
+    : '<option value="">Ni podjetij</option>';
 }
 
 function renderStats() {
@@ -1070,7 +1084,6 @@ function renderTable() {
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
-          <button class="btn-action btn-msg" onclick="openOwnerDashboard('${s.id}')">Dashboard</button>
           <button class="btn-action btn-msg" onclick="manageSalonServices('${s.id}')">Storitve</button>
         </div>
       </td>
@@ -1204,6 +1217,15 @@ function openOwnerDashboard(id) {
     return;
   }
   window.open(`/settings.html?salonId=${encodeURIComponent(id)}&master_token=${encodeURIComponent(masterToken)}`, '_blank', 'noopener');
+}
+
+function openSelectedDashboard() {
+  const id = document.getElementById('preview-salon-select')?.value;
+  if (!id) {
+    showToast('Najprej dodajte ali izberite podjetje.', 'error');
+    return;
+  }
+  openOwnerDashboard(id);
 }
 
 function closeBotStudio() {
