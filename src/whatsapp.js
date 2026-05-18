@@ -22,7 +22,7 @@ function textMsg(to, body) {
   return { messaging_product: 'whatsapp', to, type: 'text', text: { body } };
 }
 
-function serviceList(to, services) {
+function serviceList(to, services, salon = {}) {
   const rows = services.map(s => ({
     id: 'svc_' + s.id,
     title: s.name.substring(0, 24),
@@ -32,7 +32,7 @@ function serviceList(to, services) {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
-      body: { text: 'Pozdravljeni! Izberite storitev:' },
+      body: { text: salon.greeting_message || 'Pozdravljeni! Izberite storitev:' },
       action: { button: 'Izberi storitev', sections: [{ title: 'Storitve', rows }] }
     }
   };

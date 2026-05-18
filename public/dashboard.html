@@ -530,6 +530,13 @@
       <div class="form-group">
         <label>Panoga *</label>
         <select id="f-business-type">
+          <option value="cosmetics">Kozmeticni studii</option>
+          <option value="fitness">Fitness & trenerji</option>
+          <option value="wellness">Wellness centri</option>
+          <option value="veterinary">Veterinarji</option>
+          <option value="optical">Optiki</option>
+          <option value="physiotherapy">Fizioterapevti</option>
+          <option value="photography">Fotografi</option>
           <option value="hair">Frizer</option>
           <option value="beauty">Nohti / Beauty</option>
           <option value="massage">Masaže</option>
@@ -709,6 +716,8 @@ function renderTable() {
           ${canActivate ? `<button class="btn-action btn-activate" onclick="activateSalon('${s.id}')">✅ Aktiviraj</button>` : ''}
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
+          <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
+          <button class="btn-action btn-msg" onclick="manageSalonServices('${s.id}')">Storitve</button>
         </div>
       </td>
     </tr>`;
@@ -763,6 +772,164 @@ async function sendWelcome(id) {
 }
 
 // ── ADD SALON ─────────────────────────────────────────────
+const BUSINESS_TYPE_LABELS = {
+  cosmetics: 'Kozmeticni studio',
+  hair: 'Frizerji',
+  beauty: 'Nohti / Beauty',
+  dentist: 'Zobozdravniki',
+  massage: 'Masazni saloni',
+  fitness: 'Fitness & trenerji',
+  wellness: 'Wellness centri',
+  veterinary: 'Veterinarji',
+  optical: 'Optiki',
+  physiotherapy: 'Fizioterapevti',
+  tattoo: 'Tattoo studio',
+  photography: 'Fotografi',
+  custom: '+ vasa dejavnost'
+};
+
+function businessTypeHelp() {
+  return Object.entries(BUSINESS_TYPE_LABELS).map(([value, label]) => `${value} = ${label}`).join('\n');
+}
+
+async function readApiJson(res) {
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Napaka na strezniku');
+  return data;
+}
+
+async function openManageSalon(id) {
+  try {
+    const settings = await readApiJson(await apiFetch(`/api/admin/salons/${id}/settings`));
+    const updates = {};
+
+    const name = prompt('Ime podjetja:', settings.name || '');
+    if (name === null) return;
+    updates.name = name.trim();
+
+    const type = prompt(`Panoga:\n${businessTypeHelp()}`, settings.business_type || 'custom');
+    if (type === null) return;
+    updates.business_type = type.trim();
+
+    const slug = prompt('Booking slug za javno povezavo:', settings.business_slug || '');
+    if (slug === null) return;
+    updates.business_slug = slug.trim();
+
+    const botPhone = prompt('Prikazana WhatsApp bot stevilka:', settings.bot_phone_display || '');
+    if (botPhone === null) return;
+    updates.bot_phone_display = botPhone.trim();
+
+    const greeting = prompt('Pozdravno sporocilo bota:', settings.greeting_message || '');
+    if (greeting === null) return;
+    updates.greeting_message = greeting.trim();
+
+    const start = prompt('Zacetek delovnika (HH:MM):', settings.working_hours_start || '08:00');
+    if (start === null) return;
+    updates.working_hours_start = start.trim();
+
+    const end = prompt('Konec delovnika (HH:MM):', settings.working_hours_end || '19:00');
+    if (end === null) return;
+    updates.working_hours_end = end.trim();
+
+    const interval = prompt('Osnovni interval koledarja v minutah:', settings.booking_interval_minutes || 30);
+    if (interval === null) return;
+    updates.booking_interval_minutes = parseInt(interval);
+
+    const maxDays = prompt('Koliko dni naprej se lahko stranka naroci:', settings.max_advance_days || 30);
+    if (maxDays === null) return;
+    updates.max_advance_days = parseInt(maxDays);
+
+    await readApiJson(await apiFetch(`/api/admin/salons/${id}/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates)
+    }));
+
+    if (updates.business_type !== settings.business_type && confirm('Zelis za to panogo na novo nastaviti privzete storitve? To skrije trenutne aktivne storitve in doda preset.')) {
+      await readApiJson(await apiFetch(`/api/admin/salons/${id}/apply-preset`, {
+        method: 'POST',
+        body: JSON.stringify({ business_type: updates.business_type })
+      }));
+    }
+
+    await refreshSalons();
+    showToast('Bot nastavitve so posodobljene', 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
+async function manageSalonServices(id) {
+  try {
+    const salon = salonsData.find(s => s.id === id);
+    const services = await readApiJson(await apiFetch(`/api/admin/salons/${id}/services`));
+    const list = services.length
+      ? services.map((s, i) => `${i + 1}. ${s.name} - ${s.price} EUR - ${s.duration_minutes} min`).join('\n')
+      : 'Ni aktivnih storitev.';
+    const action = prompt(
+      `${salon?.name || 'Bot'} - storitve, ki jih vidi stranka:\n\n${list}\n\nVnesi: add, preset, stevilko za urejanje, ali off 1`,
+      'add'
+    );
+    if (!action) return;
+
+    const normalized = action.trim().toLowerCase();
+    if (normalized === 'preset') {
+      const type = prompt(`Katero panogo uporabim?\n${businessTypeHelp()}`, salon?.business_type || 'custom');
+      if (!type) return;
+      if (!confirm('Preset bo skril trenutne aktivne storitve in dodal nove za izbrano panogo. Nadaljujem?')) return;
+      await readApiJson(await apiFetch(`/api/admin/salons/${id}/apply-preset`, {
+        method: 'POST',
+        body: JSON.stringify({ business_type: type.trim() })
+      }));
+      await refreshSalons();
+      showToast('Preset storitve so nastavljene', 'success');
+      return;
+    }
+
+    if (normalized === 'add') {
+      const name = prompt('Ime nove storitve:', '');
+      if (!name) return;
+      const price = prompt('Cena v EUR:', '0');
+      if (price === null) return;
+      const duration = prompt('Trajanje v minutah:', '60');
+      if (duration === null) return;
+      await readApiJson(await apiFetch(`/api/admin/salons/${id}/services`, {
+        method: 'POST',
+        body: JSON.stringify({ name: name.trim(), price: parseFloat(price), duration_minutes: parseInt(duration) })
+      }));
+      showToast('Storitev dodana', 'success');
+      return manageSalonServices(id);
+    }
+
+    if (normalized.startsWith('off ')) {
+      const index = parseInt(normalized.replace('off ', ''), 10) - 1;
+      const service = services[index];
+      if (!service) return showToast('Storitev ni najdena', 'error');
+      if (!confirm(`Skrijem storitev "${service.name}"?`)) return;
+      await readApiJson(await apiFetch(`/api/admin/salons/${id}/services/${service.id}`, { method: 'DELETE' }));
+      showToast('Storitev skrita', 'success');
+      return manageSalonServices(id);
+    }
+
+    const index = parseInt(normalized, 10) - 1;
+    const service = services[index];
+    if (!service) return showToast('Neveljavna izbira', 'error');
+    const name = prompt('Ime storitve:', service.name);
+    if (!name) return;
+    const price = prompt('Cena v EUR:', service.price);
+    if (price === null) return;
+    const duration = prompt('Trajanje v minutah:', service.duration_minutes);
+    if (duration === null) return;
+    await readApiJson(await apiFetch(`/api/admin/salons/${id}/services/${service.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name: name.trim(), price: parseFloat(price), duration_minutes: parseInt(duration) })
+    }));
+    showToast('Storitev posodobljena', 'success');
+    return manageSalonServices(id);
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
 function openAddModal() {
   document.getElementById('add-modal').classList.add('open');
 }

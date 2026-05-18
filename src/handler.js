@@ -557,7 +557,7 @@ async function handleMessage(msgObj, salon) {
 
   // ── Default: pokaži seznam storitev (brez AI za stranke) ──
   session.clear(from);
-  await wa.send(phoneId, token, wa.serviceList(from, services));
+  await wa.send(phoneId, token, wa.serviceList(from, services, salon));
 }
 
 module.exports = { handleMessage };

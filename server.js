@@ -29,6 +29,7 @@ function publicSalon(salon) {
     business_label: salon.business_label || getPreset(salon.business_type || 'hair').label,
     business_slug: salon.business_slug,
     bot_phone_display: salon.bot_phone_display || '',
+    greeting_message: salon.greeting_message || getPreset(salon.business_type || 'hair').greeting,
     working_hours_start: salon.working_hours_start,
     working_hours_end: salon.working_hours_end,
     booking_interval_minutes: salon.booking_interval_minutes || 30,
@@ -353,6 +354,158 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
 });
 
 // ─── Error log (admin dashboard) ─────────────────────────────
+app.get('/api/admin/salons/:id/settings', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    res.json(publicSalon(salon));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/admin/salons/:id/settings', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const allowed = [
+    'name',
+    'business_slug',
+    'business_type',
+    'bot_phone_display',
+    'greeting_message',
+    'working_days',
+    'working_hours_start',
+    'working_hours_end',
+    'booking_interval_minutes',
+    'break_between_minutes',
+    'max_advance_days'
+  ];
+  const updates = {};
+  for (const key of allowed) {
+    if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+  if (updates.business_slug) updates.business_slug = slugify(updates.business_slug);
+  if (updates.business_type) {
+    updates.business_type = normalizeBusinessType(updates.business_type);
+    updates.business_label = getPreset(updates.business_type).label;
+    if (!updates.greeting_message) updates.greeting_message = getPreset(updates.business_type).greeting;
+  }
+  if (updates.booking_interval_minutes !== undefined) {
+    const v = parseInt(updates.booking_interval_minutes);
+    if (![5,10,15,20,30,45,60].includes(v)) return res.status(400).json({ error: 'Neveljaven interval' });
+    updates.booking_interval_minutes = v;
+  }
+  if (updates.break_between_minutes !== undefined) updates.break_between_minutes = parseInt(updates.break_between_minutes) || 0;
+  if (updates.max_advance_days !== undefined) updates.max_advance_days = parseInt(updates.max_advance_days) || 30;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    await db.updateSalonSettings(salon.id, updates);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/salons/:id/services', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    res.json(await db.getServices(salon.id));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/salons/:id/services', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const serviceName = String(req.body.name || '').trim();
+  const price = parseFloat(req.body.price);
+  const duration = parseInt(req.body.duration_minutes);
+  if (!serviceName) return res.status(400).json({ error: 'Ime storitve je obvezno' });
+  if (isNaN(price) || price < 0 || price > 10000) return res.status(400).json({ error: 'Cena ni veljavna' });
+  if (isNaN(duration) || duration < 5 || duration > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const existing = await db.getServices(salon.id);
+    const service = await db.createService(salon.id, {
+      name: serviceName,
+      price,
+      duration_minutes: duration,
+      sort_order: existing.length + 1
+    });
+    res.json(service);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/admin/salons/:id/services/:serviceId', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const { name, price, duration_minutes } = req.body;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const service = await db.getServiceById(salon.id, req.params.serviceId);
+    if (!service) return res.status(404).json({ error: 'Storitev ni najdena' });
+    if (name !== undefined && !String(name).trim()) return res.status(400).json({ error: 'Ime storitve je obvezno' });
+    if (price !== undefined) {
+      const p = parseFloat(price);
+      if (isNaN(p) || p < 0 || p > 10000) return res.status(400).json({ error: 'Cena ni veljavna' });
+    }
+    if (duration_minutes !== undefined) {
+      const d = parseInt(duration_minutes);
+      if (isNaN(d) || d < 5 || d > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
+    }
+    await db.updateServiceById(
+      service.id,
+      price !== undefined ? parseFloat(price) : undefined,
+      duration_minutes !== undefined ? parseInt(duration_minutes) : undefined,
+      name !== undefined ? String(name).trim() : undefined
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/salons/:id/services/:serviceId', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const service = await db.getServiceById(salon.id, req.params.serviceId);
+    if (!service) return res.status(404).json({ error: 'Storitev ni najdena' });
+    await db.setServiceActive(service.id, false);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/salons/:id/apply-preset', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const type = normalizeBusinessType(req.body.business_type);
+  const preset = getPreset(type);
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon not found' });
+    const existing = await db.getServices(salon.id);
+    for (const service of existing) await db.setServiceActive(service.id, false);
+    await db.updateSalonSettings(salon.id, {
+      business_type: type,
+      business_label: preset.label,
+      greeting_message: preset.greeting
+    });
+    const services = await db.createServicesFromPreset(salon.id, preset.services);
+    res.json({ success: true, services });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/errors', async (req, res) => {
   const apiKey = req.headers['x-api-key'];
   if (apiKey !== process.env.ADMIN_API_KEY) return res.status(401).json({ error: 'Unauthorized' });
