@@ -164,6 +164,19 @@ async function markSlotFree(slotId) {
   );
 }
 
+async function updateServiceById(serviceId, price, durationMinutes) {
+  const updates = {};
+  if (price !== undefined && price !== null) updates.price = Math.round(price);
+  if (durationMinutes !== undefined && durationMinutes !== null) updates.duration_minutes = Math.round(durationMinutes);
+  if (!Object.keys(updates).length) return null;
+  await axios.patch(
+    `${BASE}/sb_services?id=eq.${serviceId}`,
+    updates,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+  return updates;
+}
+
 async function updateService(salonId, serviceName, price, durationMinutes) {
   const r = await axios.get(
     `${BASE}/sb_services?salon_id=eq.${salonId}&name=ilike.*${encodeURIComponent(serviceName)}*&limit=1`,
@@ -313,7 +326,7 @@ module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
   getBooking, updateBookingStatus, getTodayBookings,
   getBookingsByDate, getSlotsByDate, addManualBooking, getBookingByName,
-  markSlotFree, updateService, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
+  markSlotFree, updateService, updateServiceById, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
   getKnowledge, addKnowledge, deleteKnowledge,
   getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
   logError, getRecentErrors, clearErrors,

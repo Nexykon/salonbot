@@ -591,6 +591,40 @@ app.patch('/api/settings', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── Services Portal (auth: salon token/phone) ───────────────
+// Get all services for this salon
+app.get('/api/settings/services', async (req, res) => {
+  const salon = await salonAuth(req, res);
+  if (!salon) return;
+  try {
+    const services = await db.getServices(salon.id);
+    res.json(services);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Update single service (price + duration)
+app.patch('/api/settings/services/:id', async (req, res) => {
+  const salon = await salonAuth(req, res);
+  if (!salon) return;
+  const { id } = req.params;
+  const { price, duration_minutes } = req.body;
+  // Validate the service belongs to this salon
+  try {
+    const services = await db.getServices(salon.id);
+    const svc = services.find(s => s.id === id);
+    if (!svc) return res.status(404).json({ error: 'Storitev ni najdena' });
+    if (duration_minutes !== undefined) {
+      const dur = parseInt(duration_minutes);
+      if (isNaN(dur) || dur < 5 || dur > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
+    }
+    await db.updateServiceById(id,
+      price !== undefined ? parseFloat(price) : undefined,
+      duration_minutes !== undefined ? parseInt(duration_minutes) : undefined
+    );
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── Health check ─────────────────────────────────────────────
 app.get('/', (req, res) => res.json({ status: 'ok', bot: 'FlowTiq SalonBot', version: '4.1' }));
 

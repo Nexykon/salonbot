@@ -150,6 +150,33 @@
   .toast.success { border-color: var(--green); color: var(--green); }
   .toast.error { border-color: var(--red); color: var(--red); }
 
+  /* Services list */
+  .service-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
+  }
+  .service-row:last-child { border-bottom: none; }
+  .service-info { flex: 1; min-width: 0; }
+  .service-name { font-size: 0.95rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .service-price { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .dur-input-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .dur-input {
+    width: 72px; padding: 9px 10px; text-align: center;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 0.9rem; font-weight: 600;
+    outline: none; transition: border-color 0.2s;
+  }
+  .dur-input:focus { border-color: var(--purple); }
+  .dur-label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
+  .dur-save-btn {
+    padding: 8px 14px; border-radius: 9px; font-size: 0.8rem; font-weight: 700;
+    background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.35);
+    color: var(--purple-light); cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .dur-save-btn:hover { background: rgba(124,58,237,0.35); }
+  .dur-save-btn.saved { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); color: var(--green); }
+  .service-empty { color: var(--muted); font-size: 0.9rem; padding: 16px 0; text-align: center; }
+
   /* Salon name bar */
   .salon-bar {
     background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.25);
@@ -296,6 +323,15 @@
       </div>
     </div>
 
+    <!-- Storitve & trajanje -->
+    <div class="card" id="services-card">
+      <div class="card-title">⏱️ Storitve &amp; trajanje
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Trajanje določa zasedenost v koledarju</span>
+      </div>
+      <div id="services-list"><div class="service-empty">Nalagam storitve…</div></div>
+      <div class="form-hint" style="margin-top:14px">💡 Bot bo pri rezervaciji avtomatsko blokiral točno toliko časa kot traja storitev — npr. barvanje 2h zapolni 10:00–12:00.</div>
+    </div>
+
     <button class="btn btn-primary" onclick="saveSettings()" id="save-btn">💾 Shrani nastavitve</button>
     <button class="btn btn-secondary" onclick="doLogout()">Odjava</button>
   </div>
@@ -382,6 +418,7 @@ function loadUI(data) {
   );
 
   updatePreview();
+  loadServices();
 }
 
 // ── Preview ────────────────────────────────────────────────
@@ -443,6 +480,74 @@ function showToast(msg, type='') {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast ' + type + ' show';
   setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Services ───────────────────────────────────────────────
+async function loadServices() {
+  const headers = {};
+  if (salonToken) headers['x-salon-token'] = salonToken;
+  else if (salonPhone) headers['x-salon-phone'] = salonPhone;
+  try {
+    const r = await fetch('/api/settings/services', { headers });
+    if (!r.ok) { document.getElementById('services-list').innerHTML = '<div class="service-empty">Napaka pri nalaganju storitev.</div>'; return; }
+    const services = await r.json();
+    renderServices(services);
+  } catch (e) {
+    document.getElementById('services-list').innerHTML = '<div class="service-empty">Napaka pri nalaganju storitev.</div>';
+  }
+}
+
+function renderServices(services) {
+  const el = document.getElementById('services-list');
+  if (!services.length) {
+    el.innerHTML = '<div class="service-empty">Ni storitev. Dodajte jih v admin panelu.</div>';
+    return;
+  }
+  el.innerHTML = services.map(svc => {
+    const dur = svc.duration_minutes || '';
+    const price = svc.price ? `${svc.price} €` : '';
+    return `
+      <div class="service-row" id="srow-${svc.id}">
+        <div class="service-info">
+          <div class="service-name">${svc.name || '—'}</div>
+          ${price ? `<div class="service-price">${price}</div>` : ''}
+        </div>
+        <div class="dur-input-wrap">
+          <input class="dur-input" type="number" min="5" max="480" step="5"
+            value="${dur}" placeholder="min" id="dur-${svc.id}"
+            onkeydown="if(event.key==='Enter') saveDuration('${svc.id}')">
+          <span class="dur-label">min</span>
+          <button class="dur-save-btn" id="dbtn-${svc.id}" onclick="saveDuration('${svc.id}')">Shrani</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function saveDuration(svcId) {
+  const input = document.getElementById('dur-' + svcId);
+  const btn = document.getElementById('dbtn-' + svcId);
+  const dur = parseInt(input.value);
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+
+  btn.textContent = '…';
+  const headers = { 'Content-Type': 'application/json' };
+  if (salonToken) headers['x-salon-token'] = salonToken;
+  else if (salonPhone) headers['x-salon-phone'] = salonPhone;
+
+  try {
+    const r = await fetch(`/api/settings/services/${svcId}`, {
+      method: 'PATCH', headers,
+      body: JSON.stringify({ duration_minutes: dur })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    btn.textContent = '✓ Shranjeno';
+    btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2500);
+  } catch (e) {
+    btn.textContent = 'Shrani';
+    showToast('Napaka: ' + e.message, 'error');
+  }
 }
 
 // ── Auto-login if token saved ──────────────────────────────
