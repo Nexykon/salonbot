@@ -309,19 +309,29 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // Admin piše besedilo → najprej pokaži pending rezervacije z gumbi, potem AI
+    // Admin piše besedilo
     if (msgText) {
-      // Prikaži čakajoče rezervacije z gumbi Potrdi/Zavrni
-      try {
-        const pending = await db.getPendingBookings(salon.id);
-        if (pending.length > 0) {
-          for (const b of pending) {
-            await wa.send(phoneId, token, wa.adminPendingButtons(from, b));
+      const asksPending = /termini|pending|rezervaci|čakaj|potrdi|zavrni/i.test(msgText);
+
+      // Pokaži pending rezervacije SAMO ko admin vpraša o njih
+      if (asksPending) {
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const pending = await db.getPendingBookings(salon.id);
+          // Samo prihodnje ali današnje
+          const futurePending = pending.filter(b => (b.booking_date || '').substring(0, 10) >= today);
+          if (futurePending.length > 0) {
+            await wa.send(phoneId, token, wa.textMsg(from, `📋 *${futurePending.length} čakajočih rezervacij:*`));
+            for (const b of futurePending) {
+              await wa.send(phoneId, token, wa.adminPendingButtons(from, b));
+            }
+          } else {
+            await wa.send(phoneId, token, wa.textMsg(from, '✅ Ni čakajočih rezervacij.'));
           }
-          if (/termini|pending|rezervaci/i.test(msgText)) return;
+        } catch (e) {
+          console.error('Pending bookings err:', e.message);
         }
-      } catch (e) {
-        console.error('Pending bookings err:', e.message);
+        return;
       }
 
       // AI za vse ostale admin ukaze
