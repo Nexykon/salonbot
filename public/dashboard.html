@@ -744,9 +744,9 @@
     </div>
 
     <div class="form-group">
-      <label>Začetno geslo za dashboard *</label>
-      <input type="password" id="f-password" placeholder="Najmanj 8 znakov" autocomplete="new-password">
-      <div class="form-hint">To geslo dobi lastnik za prvi vstop v svoj dashboard.</div>
+      <label>Začetno geslo za dashboard <span style="color:var(--text3);font-weight:400">(opcijsko)</span></label>
+      <input type="password" id="f-password" placeholder="Pusti prazno — lastnik dobi email z linkom" autocomplete="new-password">
+      <div class="form-hint">Če pustiš prazno, lastnik samodejno dobi welcome email z linkom za nastavitev gesla.</div>
     </div>
 
     <div class="form-group">
@@ -1423,8 +1423,11 @@ async function saveSalon() {
   const waid = document.getElementById('f-waid').value.trim();
   const botnum = document.getElementById('f-botnum').value.trim();
 
-  if (!name || !email || password.length < 8) {
-    showToast('Izpolnite vsa obvezna polja', 'error'); return;
+  if (!name || !email) {
+    showToast('Ime salona in email sta obvezna', 'error'); return;
+  }
+  if (password && password.length < 8) {
+    showToast('Geslo mora imeti vsaj 8 znakov', 'error'); return;
   }
 
   const btn = document.getElementById('save-btn');
@@ -1446,7 +1449,12 @@ async function saveSalon() {
     if (res.ok) {
       closeModal();
       await refreshSalons();
-      showToast(`🎉 ${name} dodan!`, 'success');
+      if (data.email_sent) {
+        showToast(`🎉 ${name} dodan! Welcome email poslan.`, 'success');
+      } else {
+        showToast(`✅ ${name} dodan! Email ni bil poslan — link: ${data.setup_url}`, 'success');
+        console.log('Setup URL:', data.setup_url);
+      }
     } else {
       showToast(data.error || 'Napaka', 'error');
     }

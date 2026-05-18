@@ -241,8 +241,8 @@ app.post('/onboard', async (req, res) => {
   if (!adminAuth(req, res)) return;
 
   const { name, owner_name, owner_email, owner_password, admin_phone, whatsapp_phone_number_id, plan, business_type, business_slug, bot_phone_display } = req.body;
-  if (!name || !owner_email || !owner_password) {
-    return res.status(400).json({ error: 'name, owner_email, owner_password required' });
+  if (!name || !owner_email) {
+    return res.status(400).json({ error: 'name in owner_email sta obvezna' });
   }
 
   try {
@@ -252,12 +252,11 @@ app.post('/onboard', async (req, res) => {
     let slug = slugBase;
     let n = 2;
     while (await db.getSalonBySlug(slug)) slug = `${slugBase}-${n++}`;
-    const salon = await db.createSalon({
+
+    const salonData = {
       name,
       owner_name: owner_name || '',
       owner_email: String(owner_email).trim().toLowerCase(),
-      owner_password_hash: ownerAuth.hashPassword(owner_password),
-      owner_password_set_at: new Date().toISOString(),
       admin_phone: cleanPhone(admin_phone),
       whatsapp_phone_number_id: whatsapp_phone_number_id || process.env.WA_PHONE_ID,
       bot_phone_display: bot_phone_display || '',
@@ -270,13 +269,69 @@ app.post('/onboard', async (req, res) => {
       working_days: '1,2,3,4,5,6',
       working_hours_start: '08:00',
       working_hours_end: '19:00'
-    });
+    };
+
+    // Če admin poda geslo, ga takoj nastavi — sicer lastnik dobi email z linkom
+    if (owner_password) {
+      salonData.owner_password_hash = ownerAuth.hashPassword(owner_password);
+      salonData.owner_password_set_at = new Date().toISOString();
+    }
+
+    const salon = await db.createSalon(salonData);
     await db.createServicesFromPreset(salon.id, preset.services);
 
-    console.log('New salon onboarded:', salon.id, name);
-    res.json({ success: true, salon_id: salon.id, business_slug: slug, message: `Podjetje "${name}" ustvarjeno.` });
+    // Pošlji welcome email z linkom za nastavitev gesla
+    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
+    let emailSent = false;
+    try {
+      emailSent = await mail.sendWelcomeEmail(salon, setupUrl);
+    } catch (emailErr) {
+      console.warn('Welcome email failed:', emailErr.message);
+    }
+
+    console.log('New salon onboarded:', salon.id, name, emailSent ? '(email sent)' : '(email failed)');
+    res.json({
+      success: true,
+      salon_id: salon.id,
+      business_slug: slug,
+      email_sent: emailSent,
+      setup_url: setupUrl,
+      message: `Podjetje "${name}" ustvarjeno.${emailSent ? ' Welcome email poslan.' : ' Email ni bil poslan.'}`
+    });
   } catch (err) {
     console.error('Onboard error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Owner password setup (via email link) ───────────────────
+app.get('/api/owner/setup-check', async (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.status(400).json({ error: 'Token manjka' });
+  try {
+    const salon = await db.getSalonByToken(token);
+    if (!salon) return res.status(404).json({ error: 'Neveljaven ali potekel link' });
+    res.json({ valid: true, salon_name: salon.name, owner_name: salon.owner_name || '' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/owner/setup-password', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Token in geslo sta obvezna' });
+  if (password.length < 8) return res.status(400).json({ error: 'Geslo mora imeti vsaj 8 znakov' });
+  try {
+    const salon = await db.getSalonByToken(token);
+    if (!salon) return res.status(404).json({ error: 'Neveljaven ali potekel link' });
+    await db.updateSalonSettings(salon.id, {
+      owner_password_hash: ownerAuth.hashPassword(password),
+      owner_password_set_at: new Date().toISOString()
+    });
+    const sessionToken = ownerAuth.createSession(salon.id, 'owner', { email: salon.owner_email });
+    res.json({ success: true, token: sessionToken, message: 'Geslo nastavljeno. Preusmerjam...' });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
