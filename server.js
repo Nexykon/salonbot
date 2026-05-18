@@ -256,6 +256,7 @@ app.post('/onboard', async (req, res) => {
     const salonData = {
       name,
       owner_name: owner_name || '',
+      email: String(owner_email).trim().toLowerCase(),
       owner_email: String(owner_email).trim().toLowerCase(),
       admin_phone: cleanPhone(admin_phone),
       whatsapp_phone_number_id: whatsapp_phone_number_id || process.env.WA_PHONE_ID,
