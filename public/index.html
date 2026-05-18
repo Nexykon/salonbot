@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SalonBot — Rezervacije na avtopilotu</title>
+<title>FlowTiq — WhatsApp avtomatizacija za vaše podjetje</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -28,10 +28,8 @@ body {
   overflow-x: hidden; min-height: 100vh;
 }
 
-/* ── CANVAS ─────────────────── */
 #c { position:fixed; inset:0; z-index:0; pointer-events:none; }
 
-/* ── NOISE ─────────────────── */
 body::after {
   content:''; position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.025;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -53,9 +51,10 @@ nav {
 }
 .logo-icon {
   width:32px; height:32px; border-radius:10px;
-  background:linear-gradient(135deg, #7c3aed, #3b82f6);
-  display:flex; align-items:center; justify-content:center; font-size:16px;
+  background:linear-gradient(135deg, #7c3aed, #06b6d4);
+  display:flex; align-items:center; justify-content:center;
 }
+.logo-icon svg { width:18px; height:18px; }
 .nav-links { display:flex; gap:32px; }
 .nav-links a { font-size:14px; color:var(--text2); text-decoration:none; cursor:pointer; transition:color .2s; }
 .nav-links a:hover { color:#fff; }
@@ -69,7 +68,6 @@ nav {
 .btn-nav.solid { background:#fff; color:#000; border:none; }
 .btn-nav.solid:hover { background:rgba(255,255,255,.88); transform:scale(1.02); }
 
-/* ── SECTIONS ─────────────────── */
 section { position:relative; z-index:2; }
 
 /* ── HERO ─────────────────────── */
@@ -105,7 +103,7 @@ section { position:relative; z-index:2; }
 .hero h1 .line1 { display:block; color:#fff; }
 .hero h1 .line2 {
   display:block;
-  background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 40%, #34d399 80%);
+  background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 40%, #06b6d4 80%);
   -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   background-size:200%; animation: gradShift 5s linear infinite;
 }
@@ -113,10 +111,11 @@ section { position:relative; z-index:2; }
 @keyframes gradShift { 0%{background-position:0%} 100%{background-position:200%} }
 
 .hero-sub {
-  font-size:18px; color:var(--text2); line-height:1.7; max-width:520px;
+  font-size:18px; color:var(--text2); line-height:1.7; max-width:560px;
   margin-bottom:48px;
   opacity:0; animation: fadeUp .8s ease .3s forwards;
 }
+.hero-sub strong { color:rgba(255,255,255,.7); font-weight:600; }
 
 .hero-cta {
   display:flex; align-items:center; gap:14px; margin-bottom:80px;
@@ -138,7 +137,7 @@ section { position:relative; z-index:2; }
 .btn-arrow { display:inline-block; transition:transform .2s; }
 .btn-hero-sec:hover .btn-arrow { transform:translateX(4px); }
 
-/* PHONE 3D */
+/* PHONE */
 .phone-3d-wrap {
   position:relative;
   opacity:0; animation: fadeUp .8s ease .5s forwards;
@@ -163,9 +162,10 @@ section { position:relative; z-index:2; }
 }
 .ph-avatar {
   width:38px; height:38px; border-radius:50%;
-  background:linear-gradient(135deg, #7c3aed, #3b82f6);
-  display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0;
+  background:linear-gradient(135deg, #7c3aed, #06b6d4);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
 }
+.ph-avatar svg { width:20px; height:20px; }
 .ph-name { font-size:14px; font-weight:700; }
 .ph-status { font-size:11px; color:var(--green); display:flex; align-items:center; gap:4px; }
 .status-dot { width:5px; height:5px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); }
@@ -173,7 +173,7 @@ section { position:relative; z-index:2; }
 .msg-row { display:flex; gap:8px; margin-bottom:10px; }
 .msg-row.r { flex-direction:row-reverse; }
 .msg-av { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
-.av-b { background:linear-gradient(135deg, #7c3aed, #3b82f6); }
+.av-b { background:linear-gradient(135deg, #7c3aed, #06b6d4); }
 .av-u { background:rgba(255,255,255,.08); }
 .msg-bubble {
   max-width:80%; padding:9px 13px; border-radius:16px; font-size:12.5px; line-height:1.5;
@@ -204,7 +204,7 @@ section { position:relative; z-index:2; }
 .proof-avatars { display:flex; }
 .proof-av {
   width:32px; height:32px; border-radius:50%; border:2px solid var(--bg);
-  background:linear-gradient(135deg, #7c3aed, #3b82f6);
+  background:linear-gradient(135deg, #7c3aed, #06b6d4);
   display:flex; align-items:center; justify-content:center; font-size:13px;
   margin-left:-10px;
 }
@@ -224,7 +224,6 @@ section { position:relative; z-index:2; }
   gap:14px;
 }
 
-/* card base */
 .bc {
   background:rgba(255,255,255,.025);
   border:1px solid rgba(255,255,255,.06);
@@ -235,13 +234,11 @@ section { position:relative; z-index:2; }
 }
 .bc.visible { opacity:1; transform:translateY(0); }
 .bc:hover { border-color:rgba(124,58,237,.25); box-shadow:0 20px 60px rgba(0,0,0,.4); }
-/* tilt handled by JS */
 
 .bc .blob {
   position:absolute; border-radius:50%; filter:blur(60px); pointer-events:none;
 }
 
-/* grid layout */
 .bc-1 { grid-column:span 5; grid-row:span 2; }
 .bc-2 { grid-column:span 4; }
 .bc-3 { grid-column:span 3; }
@@ -259,13 +256,11 @@ section { position:relative; z-index:2; }
 .bc-num.b { background:linear-gradient(135deg,#60a5fa,#3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 .bc-num.g { background:linear-gradient(135deg,#34d399,#10b981); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 
-/* chat in bento */
 .bc-chat { margin-top:16px; }
 .bc-msg { padding:8px 12px; border-radius:12px; font-size:12px; line-height:1.5; margin-bottom:7px; max-width:85%; }
 .bc-msg.b { background:rgba(255,255,255,.05); color:rgba(255,255,255,.7); border-bottom-left-radius:3px; }
 .bc-msg.u { background:rgba(124,58,237,.35); color:#fff; margin-left:auto; border-bottom-right-radius:3px; }
 
-/* steps */
 .steps-list { margin-top:16px; }
 .step-item { display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.04); }
 .step-item:last-child { border:none; }
@@ -273,11 +268,22 @@ section { position:relative; z-index:2; }
 .step-text { font-size:13px; color:rgba(255,255,255,.6); line-height:1.5; }
 .step-text strong { color:#fff; display:block; font-size:14px; margin-bottom:2px; }
 
-/* pills */
 .pill-group { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
 .pill { padding:5px 13px; border-radius:100px; font-size:12px; font-weight:600; transition:all .2s; }
 .pill.on { background:rgba(124,58,237,.15); border:1px solid rgba(124,58,237,.25); color:var(--purple-l); }
 .pill.off { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); color:rgba(255,255,255,.25); }
+
+/* ── INDUSTRIES ───────────────── */
+.industries-section { padding:60px 48px; max-width:1140px; margin:0 auto; }
+.industry-grid { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:32px; }
+.industry-chip {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 20px; border-radius:100px;
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  font-size:13px; font-weight:500; color:rgba(255,255,255,.6);
+  transition:all .25s;
+}
+.industry-chip:hover { background:rgba(124,58,237,.1); border-color:rgba(124,58,237,.25); color:#fff; }
 
 /* ── PRICING ───────────────────── */
 .pricing-section { padding:80px 48px; max-width:1140px; margin:0 auto; }
@@ -316,7 +322,7 @@ section { position:relative; z-index:2; }
 .p-btn.fill { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 20px rgba(124,58,237,.3); }
 .p-btn.fill:hover { box-shadow:0 4px 40px rgba(124,58,237,.5); transform:translateY(-1px); }
 
-/* ── CTA SECTION ───────────────── */
+/* ── CTA ───────────────────────── */
 .cta-section {
   padding:80px 48px; text-align:center; position:relative; overflow:hidden;
 }
@@ -343,33 +349,40 @@ section { position:relative; z-index:2; }
 }
 .btn-cta-sec:hover { border-color:rgba(255,255,255,.2); color:#fff; }
 
-/* ── FOOTER ─────────────────── */
 footer {
   padding:32px 48px; border-top:1px solid var(--border);
   display:flex; align-items:center; justify-content:space-between;
   font-size:13px; color:rgba(255,255,255,.15); position:relative; z-index:2;
 }
-.footer-logo { font-weight:700; color:rgba(255,255,255,.3); }
+.footer-logo { font-weight:700; color:rgba(255,255,255,.3); display:flex; align-items:center; gap:8px; }
+.footer-logo-icon {
+  width:22px; height:22px; border-radius:6px;
+  background:linear-gradient(135deg, #7c3aed, #06b6d4);
+  display:flex; align-items:center; justify-content:center;
+}
+.footer-logo-icon svg { width:12px; height:12px; }
 
-/* ── ANIMATIONS ─────────────── */
 @keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:none} }
 </style>
 </head>
 <body>
 
-<!-- Three.js canvas -->
 <canvas id="c"></canvas>
 
 <!-- NAV -->
 <nav>
   <a href="/" class="nav-logo">
-    <div class="logo-icon">💆</div>
-    SalonBot
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 2L4.5 13.5H11.5L11 22L19.5 10.5H12.5L13 2Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    FlowTiq
   </a>
   <div class="nav-links">
+    <a href="#kako-deluje">Kako deluje</a>
     <a href="#funkcije">Funkcije</a>
     <a href="#cenik">Cenik</a>
-    <a href="#demo">Demo</a>
   </div>
   <div class="nav-actions">
     <a href="/dashboard.html" class="btn-nav ghost">Admin</a>
@@ -380,18 +393,18 @@ footer {
 <!-- HERO -->
 <section class="hero" id="demo">
   <div class="hero-glow"></div>
-  <div class="hero-badge"><span class="badge-dot"></span> WhatsApp AI rezervacijski sistem</div>
+  <div class="hero-badge"><span class="badge-dot"></span> WhatsApp avtomatizacija za podjetja</div>
   <h1>
-    <span class="line1">Rezervacije</span>
-    <span class="line2">na avtopilotu.</span>
-    <span class="line3">Brez aplikacij.</span>
+    <span class="line1">Naročila.</span>
+    <span class="line2">Na avtopilotu.</span>
+    <span class="line3">Prek WhatsAppa.</span>
   </h1>
-  <p class="hero-sub">Bot na WhatsAppu ki sam sprejema, odgovarja in potrjuje rezervacije — frizer samo pritisne en gumb.</p>
+  <p class="hero-sub">Bot na WhatsAppu, ki <strong>sam sprejema, odgovarja in potrjuje naročila</strong> — za karkoli. Vi samo potrdite z enim klikom.</p>
   <div class="hero-cta">
     <button class="btn-hero-main" onclick="document.getElementById('cenik').scrollIntoView({behavior:'smooth'})">
       Začni 14-dnevni preizkus <span>→</span>
     </button>
-    <button class="btn-hero-sec" onclick="document.getElementById('funkcije').scrollIntoView({behavior:'smooth'})">
+    <button class="btn-hero-sec" onclick="document.getElementById('kako-deluje').scrollIntoView({behavior:'smooth'})">
       Kako deluje <span class="btn-arrow">↓</span>
     </button>
   </div>
@@ -402,24 +415,28 @@ footer {
     <div class="phone-3d" id="phoneCard">
       <div class="phone-notch"></div>
       <div class="phone-header-bar">
-        <div class="ph-avatar">💆</div>
+        <div class="ph-avatar">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 2L4.5 13.5H11.5L11 22L19.5 10.5H12.5L13 2Z" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"/>
+          </svg>
+        </div>
         <div>
-          <div class="ph-name">Salon Vita</div>
-          <div class="ph-status"><span class="status-dot"></span> bot aktiven</div>
+          <div class="ph-name">FlowTiq Bot</div>
+          <div class="ph-status"><span class="status-dot"></span> aktiven 24/7</div>
         </div>
       </div>
       <div id="chat-feed">
         <div class="msg-row r">
           <div class="msg-av av-u">👤</div>
-          <div class="msg-bubble">Živjo, bi rada naročila frizuro za četrtek 🙂</div>
+          <div class="msg-bubble">Živjo, bi se naročila za četrtek 🙂</div>
         </div>
         <div class="msg-row">
-          <div class="msg-av av-b">🤖</div>
-          <div class="msg-bubble">Pozdravljeni! Katero storitev bi izbrali?<br><br>✂️ <b>Striženje</b> — 45 min · 25€<br>🎨 <b>Barvanje</b> — 90 min · 65€<br>💆 <b>Nega las</b> — 60 min · 45€</div>
+          <div class="msg-av av-b">⚡</div>
+          <div class="msg-bubble">Pozdravljeni! Katero storitev bi izbrali?<br><br>💅 <b>Manikura</b> — 45 min · 25€<br>✨ <b>Trajni lak</b> — 60 min · 35€<br>💆 <b>Masaža</b> — 60 min · 45€</div>
         </div>
         <div class="msg-row r">
           <div class="msg-av av-u">👤</div>
-          <div class="msg-bubble">Striženje prosim</div>
+          <div class="msg-bubble">Manikuro prosim</div>
         </div>
         <div class="typing-dots" id="td1"><span></span><span></span><span></span></div>
       </div>
@@ -429,36 +446,59 @@ footer {
 
 <!-- SOCIAL PROOF -->
 <div class="proof" id="proof">
-  <span class="proof-text">Zaupajo nam frizerji po vsej Sloveniji</span>
+  <span class="proof-text">Zaupajo nam podjetja po vsej Sloveniji</span>
   <div class="proof-avatars">
-    <div class="proof-av">✂️</div>
-    <div class="proof-av">💆</div>
-    <div class="proof-av">💇</div>
-    <div class="proof-av">🧴</div>
     <div class="proof-av">💅</div>
+    <div class="proof-av">🦷</div>
+    <div class="proof-av">💆</div>
+    <div class="proof-av">🏋️</div>
+    <div class="proof-av">🧖</div>
   </div>
   <span class="proof-stars">★★★★★</span>
   <span class="proof-rating">5.0</span>
 </div>
 
+<!-- WHO IS IT FOR -->
+<section class="industries-section" id="kako-deluje">
+  <div style="text-align:center">
+    <div class="bento-label" style="display:inline-block">Za koga</div>
+    <div class="bento-heading" style="text-align:center;margin-bottom:12px">Deluje za <span class="g">katerokoli</span> storitev.</div>
+    <p style="color:var(--text2);font-size:15px;max-width:480px;margin:0 auto">Če sprejemate naročila — prek telefona, SMS-a ali instagrama — vam FlowTiq to avtomatizira prek WhatsAppa.</p>
+  </div>
+  <div class="industry-grid">
+    <div class="industry-chip">💅 Kozmetični studii</div>
+    <div class="industry-chip">✂️ Frizerji</div>
+    <div class="industry-chip">🦷 Zobozdravniki</div>
+    <div class="industry-chip">💆 Masažni saloni</div>
+    <div class="industry-chip">🏋️ Fitnes & trenerji</div>
+    <div class="industry-chip">🧖 Wellness centri</div>
+    <div class="industry-chip">🐾 Veterinarji</div>
+    <div class="industry-chip">👁️ Optiki</div>
+    <div class="industry-chip">🩺 Fizioterapevti</div>
+    <div class="industry-chip">🎨 Tatu studia</div>
+    <div class="industry-chip">📸 Fotografi</div>
+    <div class="industry-chip">+ vaša dejavnost</div>
+  </div>
+</section>
+
 <!-- BENTO FEATURES -->
 <section class="bento-section" id="funkcije">
   <div class="bento-label">Funkcije</div>
-  <div class="bento-heading">Vse kar frizerju <span class="g">ni treba</span> delati.</div>
+  <div class="bento-heading">Vse kar vaše <span class="g">podjetje potrebuje.</span></div>
 
   <div class="bento-grid">
 
     <!-- BIG: Chat -->
     <div class="bc bc-1" data-delay="0">
       <div class="blob" style="width:300px;height:300px;background:rgba(124,58,237,.08);right:-80px;bottom:-80px"></div>
-      <div class="bc-label">Živý demo</div>
+      <div class="bc-label">Live demo</div>
       <div class="bc-title">Stranka piše, bot rezervira</div>
-      <div class="bc-desc">V 2 minutah, brez čakanja.</div>
+      <div class="bc-desc">V 2 minutah, brez čakanja, brez vaše prisotnosti.</div>
       <div class="bc-chat">
-        <div class="bc-msg u">Bi rada naročila barvanje za petek 🎨</div>
+        <div class="bc-msg u">Bi naročila termin za petek 🙂</div>
         <div class="bc-msg b">Super! Prosti termini v petek:<br>🕙 10:00 · 🕑 14:00 · 🕓 16:00<br>Katerega izberete?</div>
         <div class="bc-msg u">14:00 prosim</div>
-        <div class="bc-msg b">✅ Rezervacija potrjena!<br>📅 Petek ob 14:00 — Barvanje<br>Vidimo se! 💆</div>
+        <div class="bc-msg b">✅ Rezervacija potrjena!<br>📅 Petek ob 14:00<br>Vidimo se! 🎉</div>
       </div>
     </div>
 
@@ -467,14 +507,14 @@ footer {
       <div class="blob" style="width:200px;height:200px;background:rgba(59,130,246,.08);right:-40px;top:-40px"></div>
       <div class="bc-label">Dostopnost</div>
       <div class="bc-num b">24/7</div>
-      <div class="bc-desc">Sprejema rezervacije tudi ob 23h, med počitnicami, ob nedeljah.</div>
+      <div class="bc-desc">Sprejema naročila tudi ob 23h, med vikendi, med počitnicami.</div>
     </div>
 
     <!-- 0 apps -->
     <div class="bc bc-3" data-delay="150">
-      <div class="bc-label">Za frizerja</div>
+      <div class="bc-label">Za vas</div>
       <div class="bc-num p">0</div>
-      <div class="bc-desc">Aplikacij za namestiti. Samo WhatsApp.</div>
+      <div class="bc-desc">Aplikacij za namestiti. Stranke že imajo WhatsApp.</div>
     </div>
 
     <!-- 1 day -->
@@ -486,21 +526,21 @@ footer {
 
     <!-- How it works -->
     <div class="bc bc-5" data-delay="100">
-      <div class="blob" style="width:200px;height:200px;background:rgba(34,211,238,.06);left:-40px;bottom:-40px"></div>
+      <div class="blob" style="width:200px;height:200px;background:rgba(6,182,212,.06);left:-40px;bottom:-40px"></div>
       <div class="bc-label">Kako deluje</div>
       <div class="bc-title">3 koraki.</div>
       <div class="steps-list">
         <div class="step-item">
           <div class="step-n">01</div>
-          <div class="step-text"><strong>Stranka piše</strong>Pošlje sporočilo na WA številko salona.</div>
+          <div class="step-text"><strong>Stranka piše</strong>Pošlje sporočilo na vaš WhatsApp.</div>
         </div>
         <div class="step-item">
           <div class="step-n">02</div>
-          <div class="step-text"><strong>Bot rezervira</strong>Pokaže storitve, termine, sprejme rezervacijo.</div>
+          <div class="step-text"><strong>Bot rezervira</strong>Pokaže storitve, termine, sprejme naročilo.</div>
         </div>
         <div class="step-item">
           <div class="step-n">03</div>
-          <div class="step-text"><strong>Frizer potrdi</strong>En gumb — Potrdi. Stranka dobi potrditev.</div>
+          <div class="step-text"><strong>Vi potrdite</strong>En klik — Potrdi. Stranka dobi potrditev takoj.</div>
         </div>
       </div>
     </div>
@@ -510,7 +550,7 @@ footer {
       <div class="blob" style="width:200px;height:200px;background:rgba(124,58,237,.1);right:-40px;bottom:-40px"></div>
       <div class="bc-label">Umetna inteligenca</div>
       <div class="bc-title">Razume slovenščino</div>
-      <div class="bc-desc">Odgovarja na vprašanja, razume glasovna sporočila, se uči o salonu.</div>
+      <div class="bc-desc">Odgovarja na vprašanja strank, razume glasovna sporočila, se uči o vašem podjetju.</div>
       <div class="pill-group">
         <span class="pill on">Glasovna sporočila</span>
         <span class="pill on">AI odgovori</span>
@@ -521,9 +561,9 @@ footer {
     <!-- Bottom wide -->
     <div class="bc bc-7" data-delay="200" style="display:flex;align-items:center;justify-content:space-between;gap:24px">
       <div>
-        <div class="bc-label">Za lastnike salonov</div>
-        <div class="bc-title" style="font-size:24px">Spletni portal za upravljanje</div>
-        <div class="bc-desc" style="margin-top:8px">Rezervacije, storitve, termini in znanje bota — vse na enem mestu. Brez WhatsApp komand.</div>
+        <div class="bc-label">Spletni portal</div>
+        <div class="bc-title" style="font-size:24px">Vse pod nadzorom — brez WhatsAppa</div>
+        <div class="bc-desc" style="margin-top:8px">Naročila, storitve, delovni čas in znanje bota — nastavljate prek spletnega portala. Brez tehničnega znanja.</div>
       </div>
       <div style="flex-shrink:0">
         <div style="font-size:48px">🖥️</div>
@@ -535,9 +575,9 @@ footer {
       <div class="bc-label">Pro plan</div>
       <div class="bc-title">Vse vključeno</div>
       <div class="pill-group" style="margin-top:16px">
-        <span class="pill on">Rezervacije</span>
+        <span class="pill on">Naročanje 24/7</span>
         <span class="pill on">AI pogovor</span>
-        <span class="pill on">Glasovni</span>
+        <span class="pill on">Glasovni vnos</span>
         <span class="pill on">Knowledge base</span>
         <span class="pill on">Dnevni povzetek</span>
         <span class="pill on">Spletni portal</span>
@@ -561,8 +601,8 @@ footer {
       <div class="p-divider"></div>
       <ul class="p-features">
         <li>WhatsApp bot 24/7</li>
-        <li>Avtomatske rezervacije</li>
-        <li>Admin obvestila z gumbi</li>
+        <li>Avtomatsko naročanje</li>
+        <li>Obvestila z gumbi za potrditev</li>
         <li>Dnevni povzetek ob 8:00</li>
         <li class="dim">AI pogovor</li>
         <li class="dim">Glasovna sporočila</li>
@@ -578,8 +618,8 @@ footer {
       <ul class="p-features">
         <li>Vse iz Starter paketa</li>
         <li>AI pogovor s strankami</li>
-        <li>Glasovna sporočila (Whisper)</li>
-        <li>Knowledge base za salon</li>
+        <li>Glasovni vnos (Whisper AI)</li>
+        <li>Knowledge base za vaše podjetje</li>
         <li>Spletni portal za upravljanje</li>
         <li>Multi-lokacija</li>
         <li>Prednostna podpora</li>
@@ -601,12 +641,18 @@ footer {
 </section>
 
 <footer>
-  <div class="footer-logo">💆 SalonBot</div>
-  <div>© 2026 SalonBot · Narejeno v Sloveniji 🇸🇮</div>
+  <div class="footer-logo">
+    <div class="footer-logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13 2L4.5 13.5H11.5L11 22L19.5 10.5H12.5L13 2Z" fill="white" stroke="white" stroke-width="0.5" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    FlowTiq
+  </div>
+  <div>© 2026 FlowTiq · WhatsApp avtomatizacija · Narejeno v Sloveniji 🇸🇮</div>
   <div><a href="/dashboard.html" style="color:inherit;text-decoration:none">Admin →</a></div>
 </footer>
 
-<!-- THREE.JS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ── THREE.JS BACKGROUND ──────────────────────────────────────
@@ -627,7 +673,6 @@ function resize3d() {
 resize3d();
 window.addEventListener('resize', resize3d);
 
-// Particles
 const geo = new THREE.BufferGeometry();
 const N = 1800;
 const pos = new Float32Array(N*3);
@@ -637,12 +682,12 @@ for(let i=0;i<N;i++){
   pos[i*3+1] = (Math.random()-.5)*20;
   pos[i*3+2] = (Math.random()-.5)*10;
   const t = Math.random();
-  if(t < .5){
+  if(t < .4){
     col[i*3]=0.48; col[i*3+1]=0.23; col[i*3+2]=0.93; // purple
-  } else if(t < .8){
+  } else if(t < .7){
     col[i*3]=0.23; col[i*3+1]=0.51; col[i*3+2]=0.96; // blue
   } else {
-    col[i*3]=0.13; col[i*3+1]=0.83; col[i*3+2]=0.93; // cyan
+    col[i*3]=0.02; col[i*3+1]=0.71; col[i*3+2]=0.83; // cyan
   }
 }
 geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
@@ -651,7 +696,6 @@ const mat = new THREE.PointsMaterial({ size:.025, vertexColors:true, transparent
 const pts = new THREE.Points(geo, mat);
 scene.add(pts);
 
-// Floating geometric shapes
 function makeShape(type, x, y, z, color) {
   let g;
   if(type===0) g = new THREE.IcosahedronGeometry(.3, 0);
@@ -666,21 +710,19 @@ function makeShape(type, x, y, z, color) {
 }
 const shapes = [
   makeShape(0, -3, 1.5, -1, 0x7c3aed),
-  makeShape(1, 3, -1, -2, 0x3b82f6),
+  makeShape(1, 3, -1, -2, 0x06b6d4),
   makeShape(2, -2, -2, -1, 0xa78bfa),
   makeShape(0, 2.5, 2, -3, 0x22d3ee),
   makeShape(1, -4, 0, -2, 0x7c3aed),
   makeShape(2, 4, -2.5, -1, 0x3b82f6),
 ];
 
-// Mouse parallax
 let mouseX=0, mouseY=0;
 window.addEventListener('mousemove', e => {
   mouseX = (e.clientX/innerWidth - .5) * 2;
   mouseY = (e.clientY/innerHeight - .5) * 2;
 });
 
-// Animation loop
 function animate3d() {
   requestAnimationFrame(animate3d);
   const t = Date.now() * .001;
@@ -705,7 +747,7 @@ setTimeout(() => {
   if(!feed) return;
   const m = document.createElement('div');
   m.className='msg-row'; m.style.cssText='animation:fadeUp .4s ease both';
-  m.innerHTML=`<div class="msg-av av-b">🤖</div><div class="msg-bubble">Odlično! 📅 Prosti termini za četrtek:<br><br>🕘 09:00 · 🕙 10:00 · 🕑 14:00 · 🕓 16:00</div>`;
+  m.innerHTML=`<div class="msg-av av-b">⚡</div><div class="msg-bubble">Odlično! 📅 Prosti termini za četrtek:<br><br>🕘 09:00 · 🕙 10:00 · 🕑 14:00 · 🕓 16:00</div>`;
   feed.appendChild(m);
 }, 2800);
 
@@ -735,13 +777,11 @@ const obs = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.bc, .p-card').forEach(el => obs.observe(el));
 
-// Hero proof
 const proofObs = new IntersectionObserver(entries => {
   entries.forEach(e => { if(e.isIntersecting){ e.target.style.animation='fadeUp .6s ease forwards'; } });
 }, { threshold:.2 });
 document.querySelectorAll('.proof').forEach(el => proofObs.observe(el));
 
-// CTA section
 const ctaObs = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if(e.isIntersecting){
@@ -751,7 +791,6 @@ const ctaObs = new IntersectionObserver(entries => {
 }, { threshold:.3 });
 document.querySelectorAll('.cta-section').forEach(el => ctaObs.observe(el));
 
-// ── 3D TILT on bento cards ───────────────────────────────────
 document.querySelectorAll('.bc').forEach(card => {
   card.addEventListener('mousemove', e => {
     const r = card.getBoundingClientRect();
