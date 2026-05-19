@@ -650,12 +650,26 @@ async function loginWithPassword() {
   document.getElementById('login-error').style.display = 'none';
   if (!email || password.length < 1) { showToast('Vnesite email in geslo', 'error'); return; }
   try {
-    const r = await fetch('/api/auth/login', {
+    const isMasterEmail = email.toLowerCase() === 'nexon666@gmail.com';
+    let r = await fetch(isMasterEmail ? '/api/auth/master-login' : '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await r.json();
+    let data = await r.json();
+    if (!r.ok && !isMasterEmail) {
+      r = await fetch('/api/auth/master-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      data = await r.json();
+    }
+    if (r.ok && data.role === 'master') {
+      sessionStorage.setItem('ft_master_token', data.token);
+      window.location.href = '/dashboard.html';
+      return;
+    }
     if (!r.ok) throw new Error(data.error || 'Prijava ni uspela');
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token', ownerToken);
