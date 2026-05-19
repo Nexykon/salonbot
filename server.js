@@ -370,6 +370,25 @@ app.post('/api/owner/setup-password', async (req, res) => {
   }
 });
 
+// ─── Resend welcome email (admin) ────────────────────────────
+app.post('/api/admin/resend-welcome', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const { salon_id } = req.body;
+  if (!salon_id) return res.status(400).json({ error: 'salon_id je obvezen' });
+  try {
+    const salon = await db.getSalonById(salon_id);
+    if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
+    if (!salon.owner_email) return res.status(400).json({ error: 'Salon nima owner_email' });
+    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
+    const sent = await mail.sendWelcomeEmail(salon, setupUrl);
+    if (!sent) return res.status(500).json({ error: 'Email ni bil poslan (Resend ni konfiguriran)' });
+    res.json({ success: true, message: `Email poslan na ${salon.owner_email}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Salons list (admin) ──────────────────────────────────────
 app.get('/salons', async (req, res) => {
   if (!adminAuth(req, res)) return;
@@ -1008,141 +1027,4 @@ app.get('/api/settings', async (req, res) => {
     business_label: salon.business_label || getPreset(salon.business_type || 'hair').label,
     business_slug: salon.business_slug || '',
     bot_phone_display: salon.bot_phone_display || '',
-    working_days: salon.working_days || '1,2,3,4,5,6',
-    working_hours_start: salon.working_hours_start || '08:00',
-    working_hours_end: salon.working_hours_end || '19:00',
-    booking_interval_minutes: salon.booking_interval_minutes || 30,
-    break_between_minutes: salon.break_between_minutes || 0,
-    max_advance_days: salon.max_advance_days || 30,
-    booking_mode: normalizeBookingMode(salon.booking_mode),
-    form_fields: safeFormFields(salon.form_fields, salon),
-    inquiry_confirmation_message: salon.inquiry_confirmation_message || '',
-    salon_token: salon.salon_token
-  });
-});
-
-// Update salon settings
-app.patch('/api/settings', async (req, res) => {
-  const salon = await settingsSalonAuth(req, res);
-  if (!salon) return;
-  const allowed = ['working_days','working_hours_start','working_hours_end',
-    'booking_interval_minutes','break_between_minutes','max_advance_days','name','bot_phone_display'];
-  const updates = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) updates[key] = req.body[key];
-  }
-  // Validate interval
-  if (updates.booking_interval_minutes) {
-    const v = parseInt(updates.booking_interval_minutes);
-    if (![5,10,15,20,30,45,60].includes(v)) return res.status(400).json({ error: 'Neveljaven interval' });
-    updates.booking_interval_minutes = v;
-  }
-  try {
-    await db.updateSalonSettings(salon.id, updates);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ─── Services Portal (auth: salon token/phone) ───────────────
-// Get all services for this salon
-app.patch('/api/settings/password', async (req, res) => {
-  const salon = await settingsSalonAuth(req, res);
-  if (!salon) return;
-  const currentPassword = String(req.body.current_password || '');
-  const newPassword = String(req.body.new_password || '');
-  if (newPassword.length < 8) return res.status(400).json({ error: 'Novo geslo mora imeti vsaj 8 znakov' });
-  try {
-    const session = ownerAuth.getSession(req.headers.authorization || req.headers['x-owner-token']);
-    const isMaster = session?.role === 'master';
-    if (!isMaster && salon.owner_password_hash && !ownerAuth.verifyPassword(currentPassword, salon.owner_password_hash)) {
-      return res.status(401).json({ error: 'Trenutno geslo ni pravilno' });
-    }
-    await db.updateSalonSettings(salon.id, {
-      owner_password_hash: ownerAuth.hashPassword(newPassword),
-      owner_password_set_at: new Date().toISOString()
-    });
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/settings/services', async (req, res) => {
-  const salon = await settingsSalonAuth(req, res);
-  if (!salon) return;
-  try {
-    const services = await db.getServices(salon.id);
-    res.json(services);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// Update single service (price + duration)
-app.post('/api/settings/services', async (req, res) => {
-  const salon = await settingsSalonAuth(req, res);
-  if (!salon) return;
-  const { name, price, duration_minutes } = req.body;
-  const serviceName = String(name || '').trim();
-  const dur = parseInt(duration_minutes);
-  const servicePrice = parseFloat(price);
-  if (!serviceName) return res.status(400).json({ error: 'Ime storitve je obvezno' });
-  if (isNaN(servicePrice) || servicePrice < 0 || servicePrice > 10000) return res.status(400).json({ error: 'Cena ni veljavna' });
-  if (isNaN(dur) || dur < 5 || dur > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
-  try {
-    const existing = await db.getServices(salon.id);
-    const service = await db.createService(salon.id, {
-      name: serviceName,
-      price: servicePrice,
-      duration_minutes: dur,
-      sort_order: existing.length + 1
-    });
-    res.json(service);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.patch('/api/settings/services/:id', async (req, res) => {
-  const salon = await settingsSalonAuth(req, res);
-  if (!salon) return;
-  const { id } = req.params;
-  const { name, price, duration_minutes } = req.body;
-  // Validate the service belongs to this salon
-  try {
-    const services = await db.getServices(salon.id);
-    const svc = services.find(s => s.id === id);
-    if (!svc) return res.status(404).json({ error: 'Storitev ni najdena' });
-    if (duration_minutes !== undefined) {
-      const dur = parseInt(duration_minutes);
-      if (isNaN(dur) || dur < 5 || dur > 480) return res.status(400).json({ error: 'Trajanje mora biti med 5 in 480 minut' });
-    }
-    if (price !== undefined) {
-      const p = parseFloat(price);
-      if (isNaN(p) || p < 0 || p > 10000) return res.status(400).json({ error: 'Cena ni veljavna' });
-    }
-    if (name !== undefined && !String(name).trim()) return res.status(400).json({ error: 'Ime storitve je obvezno' });
-    await db.updateServiceById(id,
-      price !== undefined ? parseFloat(price) : undefined,
-      duration_minutes !== undefined ? parseInt(duration_minutes) : undefined,
-      name !== undefined ? String(name).trim() : undefined
-    );
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.delete('/api/settings/services/:id', async (req, res) => {
-  const salon = await settingsSalonAuth(req, res);
-  if (!salon) return;
-  const { id } = req.params;
-  try {
-    const services = await db.getServices(salon.id);
-    const svc = services.find(s => s.id === id);
-    if (!svc) return res.status(404).json({ error: 'Storitev ni najdena' });
-    await db.setServiceActive(id, false);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-// ─── Health check ─────────────────────────────────────────────
-app.get('/', (req, res) => res.json({ status: 'ok', bot: 'FlowTiq SalonBot', version: '4.1' }));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`SalonBot running on port ${PORT}`);
-  startScheduler();
-});
+    working_days: salon.working_days || '1,2,3,4

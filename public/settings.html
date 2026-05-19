@@ -1012,12 +1012,4 @@ async function deleteService(svcId) {
     try {
       loadUI(await loadSettings()); return;
     } catch (_) {}
-    sessionStorage.removeItem('ft_owner_token');
-    if (!previewSalonId) sessionStorage.removeItem('ft_master_token');
-    localStorage.removeItem('ft_owner_token');
-    localStorage.removeItem('ft_salon_phone');
-  }
-})();
-</script>
-</body>
-</html>
+    sessionStorage
