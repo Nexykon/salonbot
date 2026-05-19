@@ -2003,11 +2003,14 @@ async function saveSalon() {
   if (resetParam) {
     showResetPassword();
   } else {
-    var saved = localStorage.getItem('master_token');
+    var saved = sessionStorage.getItem('ft_master_token');
     if (saved) {
       masterToken = saved;
-      apiKey = localStorage.getItem('api_key') || '';
       loginSuccess(masterToken);
+    } else {
+      localStorage.removeItem('master_token');
+      localStorage.removeItem('api_key');
+      localStorage.removeItem('ft_master_token');
     }
   }
 })();
