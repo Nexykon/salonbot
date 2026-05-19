@@ -42,6 +42,10 @@ function verifyPassword(password, storedHash) {
   return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
+function hashToken(token) {
+  return crypto.createHash('sha256').update(String(token || '')).digest('hex');
+}
+
 function createSession(salonId, role = 'owner', identity = {}) {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, {
@@ -94,5 +98,6 @@ module.exports = {
   clearSession,
   hashPassword,
   verifyPassword,
+  hashToken,
   createSession
 };

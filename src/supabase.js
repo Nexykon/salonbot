@@ -441,6 +441,28 @@ async function updateSalonSettings(salonId, settings) {
   );
 }
 
+async function getMasterAdminByEmail(email) {
+  const clean = String(email || '').trim().toLowerCase();
+  if (!clean) return null;
+  const r = await axios.get(`${BASE}/sb_master_admins?email=eq.${encodeURIComponent(clean)}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+async function getMasterAdminByResetTokenHash(tokenHash) {
+  const clean = String(tokenHash || '').trim();
+  if (!clean) return null;
+  const r = await axios.get(`${BASE}/sb_master_admins?reset_token_hash=eq.${encodeURIComponent(clean)}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+async function updateMasterAdmin(adminId, updates) {
+  await axios.patch(
+    `${BASE}/sb_master_admins?id=eq.${adminId}`,
+    updates,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+}
+
 module.exports = {
   getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
   getSalonById, getSalonBySlug, resolveSalon, getServiceById, createBookingIfFree,
@@ -451,5 +473,6 @@ module.exports = {
   getKnowledge, addKnowledge, deleteKnowledge,
   getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
   logError, getRecentErrors, getRecentLogs, clearErrors,
-  getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken, updateSalonSettings
+  getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken, updateSalonSettings,
+  getMasterAdminByEmail, getMasterAdminByResetTokenHash, updateMasterAdmin
 };

@@ -537,12 +537,29 @@
       </svg>
     </div>
     <h1 style="background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">FlowTiq</h1>
-    <p>Vstopite z master WhatsApp telefonsko stevilko.</p>
+    <p>Vstopite z master emailom in geslom.</p>
+    <div id="master-login-form">
+      <input type="email" id="admin-email-input" placeholder="Email" autocomplete="username" autofocus>
+      <input type="password" id="admin-password-input" placeholder="Geslo" autocomplete="current-password">
+      <button class="btn-primary" onclick="loginMaster()">Vstopi v admin</button>
+      <button class="btn-logout" style="margin-top:12px;width:100%" onclick="showForgotPassword()">Pozabljeno geslo</button>
+    </div>
+    <div id="master-forgot-form" style="display:none">
+      <input type="email" id="forgot-email-input" placeholder="Email za ponastavitev">
+      <button class="btn-primary" onclick="forgotMasterPassword()">Pošlji povezavo</button>
+      <button class="btn-logout" style="margin-top:12px;width:100%" onclick="showMasterLogin()">Nazaj na prijavo</button>
+    </div>
+    <div id="master-reset-form" style="display:none">
+      <input type="password" id="reset-password-input" placeholder="Novo geslo" autocomplete="new-password">
+      <button class="btn-primary" onclick="resetMasterPassword()">Nastavi novo geslo</button>
+    </div>
+    <div style="display:none">
     <input type="tel" id="admin-phone-input" placeholder="Vnesite master WhatsApp številko" autocomplete="off" autofocus>
     <button class="btn-primary" onclick="requestAdminOtp()">Poslji WhatsApp kodo</button>
     <div id="admin-otp-wrap" style="display:none;margin-top:12px">
       <input type="text" id="admin-code-input" placeholder="6-mestna koda" maxlength="6" inputmode="numeric">
       <button class="btn-primary" onclick="verifyAdminOtp()">Vstopi v admin</button>
+    </div>
     </div>
     <div class="login-error" id="login-error">Prijava ni uspela</div>
   </div>
@@ -568,6 +585,7 @@
       <select class="preview-select" id="preview-salon-select" title="Izberi salon za predogled"></select>
       <button class="btn-logout" onclick="openSelectedDashboard()">Predogled dashboarda</button>
       <span class="header-user" id="header-user">Tomaž</span>
+      <button class="btn-logout" onclick="changeMasterPassword()">Geslo</button>
       <button class="btn-logout" onclick="logout()">Odjava</button>
     </div>
   </header>
@@ -963,8 +981,97 @@ let masterToken = '';
 let salonsData = [];
 
 const PLAN_PRICES = { starter: 79, pro: 160 };
+const resetToken = new URLSearchParams(window.location.search).get('reset') || '';
 
 // ── AUTH ──────────────────────────────────────────────────
+function showMasterLogin() {
+  document.getElementById('master-login-form').style.display = 'block';
+  document.getElementById('master-forgot-form').style.display = 'none';
+  document.getElementById('master-reset-form').style.display = 'none';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+function showForgotPassword() {
+  document.getElementById('master-login-form').style.display = 'none';
+  document.getElementById('master-forgot-form').style.display = 'block';
+  document.getElementById('master-reset-form').style.display = 'none';
+  document.getElementById('forgot-email-input').value = document.getElementById('admin-email-input').value || '';
+  document.getElementById('forgot-email-input').focus();
+}
+
+function showResetPassword() {
+  document.getElementById('master-login-form').style.display = 'none';
+  document.getElementById('master-forgot-form').style.display = 'none';
+  document.getElementById('master-reset-form').style.display = 'block';
+  document.getElementById('reset-password-input').focus();
+}
+
+async function loginMaster() {
+  const email = document.getElementById('admin-email-input').value.trim();
+  const password = document.getElementById('admin-password-input').value;
+  if (!email || !password) return;
+  try {
+    const res = await fetch('/api/auth/master-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.role !== 'master') throw new Error(data.error || 'Prijava ni uspela.');
+    masterToken = data.token;
+    sessionStorage.setItem('ft_master_token', masterToken);
+    document.getElementById('login-error').style.display = 'none';
+    loadApp();
+  } catch (e) {
+    document.getElementById('login-error').textContent = e.message;
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function forgotMasterPassword() {
+  const email = document.getElementById('forgot-email-input').value.trim();
+  if (!email) return;
+  try {
+    const res = await fetch('/api/auth/master-forgot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Ni uspelo poslati povezave.');
+    document.getElementById('login-error').textContent = data.message || 'Če email obstaja, je povezava poslana.';
+    document.getElementById('login-error').style.display = 'block';
+  } catch (e) {
+    document.getElementById('login-error').textContent = e.message;
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function resetMasterPassword() {
+  const password = document.getElementById('reset-password-input').value;
+  if (password.length < 8) {
+    document.getElementById('login-error').textContent = 'Geslo mora imeti vsaj 8 znakov.';
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  try {
+    const res = await fetch('/api/auth/master-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: resetToken, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Gesla ni bilo mogoče nastaviti.');
+    history.replaceState(null, '', '/dashboard.html');
+    showMasterLogin();
+    document.getElementById('login-error').textContent = 'Geslo je nastavljeno. Zdaj se prijavite.';
+    document.getElementById('login-error').style.display = 'block';
+  } catch (e) {
+    document.getElementById('login-error').textContent = e.message;
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
 async function requestAdminOtp() {
   const phone = document.getElementById('admin-phone-input').value.trim().replace(/[^\d]/g, '');
   if (phone.length < 8) return;
@@ -1018,6 +1125,25 @@ function logout() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('admin-code-input').value = '';
   document.getElementById('admin-otp-wrap').style.display = 'none';
+}
+
+async function changeMasterPassword() {
+  const currentPassword = prompt('Vnesi trenutno geslo:');
+  if (!currentPassword) return;
+  const newPassword = prompt('Vnesi novo geslo (vsaj 8 znakov):');
+  if (!newPassword) return;
+  if (newPassword.length < 8) return showToast('Geslo mora imeti vsaj 8 znakov', 'error');
+  try {
+    const res = await apiFetch('/api/auth/master-change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Gesla ni bilo mogoče zamenjati');
+    showToast('Geslo je zamenjano', 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
 }
 
 document.getElementById('admin-phone-input').addEventListener('keydown', e => {
@@ -1764,4 +1890,151 @@ function showDayDetail(dateStr, evt) {
   const d = new Date(dateStr + 'T12:00:00');
   const label = `${d.getDate()}. ${MONTHS_SL[d.getMonth()]} ${d.getFullYear()}`;
   const activeCount = events.filter(b => b.status !== 'cancelled').length;
-  document.getElementById('day-detail-title').textContent = `📅 ${labe
+  document.getElementById('day-detail-title').textContent = `📅 ${label} — ${activeCount} rezervacij`;
+
+  const detail = document.getElementById('day-detail');
+  detail.classList.add('open');
+
+  const statusBadge = s => s === 'confirmed'
+    ? '<span class="badge active">✅ Potrjeno</span>'
+    : s === 'pending'
+    ? '<span class="badge trial">⏳ V čakanju</span>'
+    : '<span class="badge inactive">❌ Odpovedano</span>';
+
+  const sorted = [...events].sort((a,b) => (a.booking_time||'').localeCompare(b.booking_time||''));
+
+  const itemsHtml = sorted.length === 0
+    ? '<div style="padding:24px 20px;text-align:center;color:var(--text3)">Na ta dan ni rezervacij</div>'
+    : sorted.map(b => {
+        const ref = (b.id||'').slice(-6);
+        const time = (b.booking_time||'').substring(0,5);
+        const phone = b.customer_phone && b.customer_phone !== 'manual' ? b.customer_phone : null;
+        const svcName = getServiceName(b.service_id);
+        const canConfirm = b.status === 'pending';
+        const canCancel = b.status !== 'cancelled';
+        return `
+        <div class="day-booking-item" id="dbi-${ref}">
+          <div class="day-booking-top">
+            <div style="display:flex;align-items:flex-start;gap:12px;flex:1">
+              <div class="day-booking-time">${time}</div>
+              <div class="day-booking-info">
+                <div class="day-booking-name">${b.customer_name || '—'}</div>
+                <div class="day-booking-meta">
+                  ${phone ? `<span>📞 <a href="tel:+${phone}" style="color:var(--accent2);text-decoration:none">+${phone}</a></span>` : ''}
+                  ${svcName ? `<span>✂️ ${svcName}</span>` : ''}
+                  <span>📌 Ref: <b>${ref}</b></span>
+                </div>
+              </div>
+            </div>
+            <div>${statusBadge(b.status)}</div>
+          </div>
+          <div class="day-booking-actions">
+            ${canConfirm ? `<button class="btn-day-confirm" onclick="calConfirm('${ref}')">✅ Potrdi</button>` : ''}
+            ${canCancel ? `<button class="btn-day-cancel" onclick="calCancel('${ref}')">❌ Odpovej</button>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+  document.getElementById('day-detail-list').innerHTML =
+    itemsHtml +
+    `<button class="btn-day-add" onclick="openAddBookingModal('${dateStr}')">➕ Dodaj rezervacijo za ta dan</button>`;
+
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function calConfirm(ref) {
+  try {
+    const res = await apiFetch(`/api/admin/bookings/${ref}/confirm`, { method: 'PATCH' });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    const b = calBookings.find(b => (b.id||'').slice(-6) === ref);
+    if (b) b.status = 'confirmed';
+    renderCalendar();
+    showDayDetail(selectedCalDate, null);
+    showToast('✅ Rezervacija potrjena — stranka obveščena', 'success');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+async function calCancel(ref) {
+  if (!confirm('Odpovedati rezervacijo? Stranka bo obveščena.')) return;
+  try {
+    const res = await apiFetch(`/api/admin/bookings/${ref}/cancel`, { method: 'PATCH' });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+    const b = calBookings.find(b => (b.id||'').slice(-6) === ref);
+    if (b) b.status = 'cancelled';
+    renderCalendar();
+    showDayDetail(selectedCalDate, null);
+    showToast('❌ Rezervacija odpovedana', 'info');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+// ── ADD BOOKING MODAL ──────────────────────────────────────
+function openAddBookingModal(dateStr) {
+  document.getElementById('ab-date').value = dateStr || '';
+  document.getElementById('ab-name').value = '';
+  document.getElementById('ab-phone').value = '';
+  document.getElementById('ab-time').value = '';
+  // Fill services dropdown
+  const sel = document.getElementById('ab-service');
+  sel.innerHTML = '<option value="">— Brez storitve —</option>' +
+    calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min, €${s.price})</option>`).join('');
+  document.getElementById('add-booking-modal').classList.add('open');
+}
+
+async function saveAddBooking() {
+  const date = document.getElementById('ab-date').value.trim();
+  const time = document.getElementById('ab-time').value.trim();
+  const name = document.getElementById('ab-name').value.trim();
+  const phone = document.getElementById('ab-phone').value.trim();
+  const serviceId = document.getElementById('ab-service').value;
+
+  if (!date || !time || !name) { showToast('Izpolnite datum, uro in ime', 'error'); return; }
+
+  const btn = document.getElementById('ab-save-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const res = await apiFetch('/api/admin/bookings', {
+      method: 'POST',
+      body: JSON.stringify({ date, time, customerName: name, customerPhone: phone, serviceId: serviceId || null })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('add-booking-modal').classList.remove('open');
+    selectedCalDate = date;
+    await loadCalendar();
+    showToast(`✅ Rezervacija dodana (Ref: ${data.ref})`, 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Dodaj rezervacijo →';
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────
+const urlToken = new URLSearchParams(window.location.search).get('master_token');
+if (urlToken) {
+  masterToken = urlToken;
+  sessionStorage.setItem('ft_master_token', masterToken);
+  history.replaceState(null, '', '/dashboard.html');
+}
+localStorage.removeItem('ft_master_token');
+localStorage.removeItem('ft_master_phone');
+localStorage.removeItem('sb_api_key');
+document.getElementById('admin-email-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') loginMaster(); });
+document.getElementById('admin-password-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') loginMaster(); });
+document.getElementById('forgot-email-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') forgotMasterPassword(); });
+document.getElementById('reset-password-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') resetMasterPassword(); });
+const savedMasterToken = sessionStorage.getItem('ft_master_token');
+const savedKey = '';
+if (resetToken) {
+  sessionStorage.removeItem('ft_master_token');
+  showResetPassword();
+} else if (savedMasterToken) {
+  masterToken = savedMasterToken;
+  loadApp();
+} else if (savedKey) {
+  apiKey = savedKey;
+  loadApp();
+}
+</script>
+</body>
+</html>
