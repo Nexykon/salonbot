@@ -80,7 +80,8 @@ async function sendWelcomeEmail(salon, setupUrl) {
   return true;
 }
 
-async function sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel) {
+async function sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel, formAnswers = {}) {
+  const answerLines = Object.entries(formAnswers || {}).map(([key, value]) => `${key}: ${value}`);
   const subject = `Nova rezervacija - ${salon.name || 'FlowTiq'}`;
   const text = [
     `Nova ${sourceLabel || 'rezervacija'}`,
@@ -90,6 +91,7 @@ async function sendBookingNotification(salon, customerName, phone, date, time, r
     `Telefon: +${phone || '-'}`,
     `Termin: ${date} ob ${time}`,
     `Ref: ${ref6}`,
+    ...(answerLines.length ? ['', 'Dodatni odgovori:', ...answerLines] : []),
     '',
     'Rezervacijo lahko uredite v FlowTiq dashboardu.'
   ].join('\n');

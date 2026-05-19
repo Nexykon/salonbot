@@ -402,6 +402,7 @@
         <label>Telefonska številka</label>
         <input type="tel" id="inp-phone" placeholder="npr. 041 123 456" autocomplete="tel">
       </div>
+      <div id="custom-fields"></div>
       <button class="btn btn-primary" onclick="submitBooking()" id="btn-submit">Potrdi rezervacijo</button>
       <button class="btn btn-secondary" onclick="goStep(3)">← Nazaj</button>
     </div>
@@ -443,6 +444,8 @@ let state = {
   step: 1,
   serviceId: null, serviceName: '', servicePrice: '', serviceDuration: '',
   date: null, time: null,
+  bookingMode: 'exact_time',
+  formFields: [],
   availableDates: [],  // [{date, count}]
   calYear: null, calMonth: null
 };
@@ -469,6 +472,9 @@ const DAYS_SL = ['Ned','Pon','Tor','Sre','Čet','Pet','Sob'];
     document.getElementById('salon-title').textContent = data.salon.name || 'Naročanje';
     document.getElementById('salon-subtitle').textContent = data.salon.name || '';
     document.title = (data.salon.name || 'Naročanje') + ' — Rezervacija';
+    state.bookingMode = data.salon.booking_mode || 'exact_time';
+    state.formFields = Array.isArray(data.salon.form_fields) ? data.salon.form_fields : [];
+    document.getElementById('step-3').style.display = state.bookingMode === 'exact_time' ? '' : 'none';
     renderServices(data.services || []);
   } catch (e) {
     document.getElementById('services-list').innerHTML = '<p style="color:var(--red)">Napaka pri nalaganju storitev.</p>';
@@ -584,6 +590,11 @@ function changeMonth(dir) {
 async function selectDate(dateStr) {
   state.date = dateStr;
   renderCalendar();
+  if (state.bookingMode !== 'exact_time') {
+    state.time = null;
+    setTimeout(() => goStep(4), 200);
+    return;
+  }
   // Load times
   document.getElementById('times-list').innerHTML = '<div class="loader">Nalagam ure</div>';
   const d = new Date(dateStr + 'T12:00:00');
@@ -623,6 +634,32 @@ function renderSummary() {
     <div class="summary-row"><span class="summary-label">⏰ Ura</span><span class="summary-val">${state.time || '—'}</span></div>
     <div class="summary-row"><span class="summary-label">💰 Cena</span><span class="summary-val">${state.servicePrice} €</span></div>
   `;
+  renderCustomFields();
+}
+
+function renderCustomFields() {
+  const wrap = document.getElementById('custom-fields');
+  wrap.innerHTML = (state.formFields || []).map(f => {
+    const fieldId = escHtml(f.id || f.label || '');
+    const label = escHtml(f.label || 'Vprašanje');
+    const required = f.required ? 'required' : '';
+    if (f.type === 'textarea') {
+      return `<div class="form-group"><label>${label}${f.required ? ' *' : ''}</label><textarea data-field-id="${fieldId}" ${required} placeholder="${label}" style="width:100%;min-height:92px;padding:12px 14px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:inherit"></textarea></div>`;
+    }
+    return `<div class="form-group"><label>${label}${f.required ? ' *' : ''}</label><input type="${f.type === 'number' ? 'number' : 'text'}" data-field-id="${fieldId}" ${required} placeholder="${label}"></div>`;
+  }).join('');
+}
+
+function collectCustomAnswers() {
+  const answers = {};
+  for (const f of state.formFields || []) {
+    const fieldId = String(f.id || f.label || '');
+    const el = [...document.querySelectorAll('[data-field-id]')].find(node => node.dataset.fieldId === fieldId);
+    const value = (el?.value || '').trim();
+    if (f.required && !value) throw new Error(`Izpolnite polje: ${f.label || fieldId}`);
+    if (value) answers[fieldId] = value;
+  }
+  return answers;
 }
 
 async function submitBooking() {
@@ -630,6 +667,9 @@ async function submitBooking() {
   const phone = document.getElementById('inp-phone').value.trim();
   if (!name) { showToast('Vpišite ime in priimek', 'error'); return; }
   if (!phone || phone.replace(/[^\d]/g,'').length < 8) { showToast('Vpišite veljavno telefonsko številko', 'error'); return; }
+
+  let formAnswers = {};
+  try { formAnswers = collectCustomAnswers(); } catch (e) { showToast(e.message, 'error'); return; }
 
   const btn = document.getElementById('btn-submit');
   btn.disabled = true; btn.textContent = 'Pošiljam…';
@@ -644,13 +684,15 @@ async function submitBooking() {
         date: state.date,
         time: state.time,
         customerName: name,
-        customerPhone: phone
+        customerPhone: phone,
+        formAnswers
       })
     });
     const data = await r.json();
     if (!r.ok) throw new Error(data.error || 'Napaka pri rezervaciji');
 
     // Success
+    state.time = data.time || state.time || 'brez ure';
     const d = new Date((state.date || '') + 'T12:00:00');
     const fmtDate = `${d.getDate()}. ${MONTHS_SL[d.getMonth()]} ${d.getFullYear()}`;
     document.getElementById('success-ref').textContent = 'REF: ' + data.ref;
@@ -670,8 +712,10 @@ async function submitBooking() {
 }
 
 function resetFlow() {
+  const bookingMode = state.bookingMode;
+  const formFields = state.formFields;
   state = { step: 1, serviceId: null, serviceName: '', servicePrice: '', serviceDuration: '',
-    date: null, time: null, availableDates: state.availableDates, calYear: null, calMonth: null };
+    date: null, time: null, bookingMode, formFields, availableDates: state.availableDates, calYear: null, calMonth: null };
   document.getElementById('inp-name').value = '';
   document.getElementById('inp-phone').value = '';
   goStep(1);

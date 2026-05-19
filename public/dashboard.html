@@ -920,6 +920,34 @@
             </div>
           </div>
         </div>
+
+        <div class="studio-section">
+          <div class="studio-section-title">Forma naročanja</div>
+          <div class="form-group">
+            <label>Način zbiranja termina</label>
+            <select id="bs-booking-mode" onchange="updateBotStudioPreview()">
+              <option value="exact_time">Stranka izbere datum in uro</option>
+              <option value="date_only">Stranka izbere samo datum</option>
+              <option value="inquiry">Povpraševanje brez točne ure</option>
+            </select>
+            <div class="form-hint">To nastavljaš samo ti v master adminu. Lastnik tega ne spreminja.</div>
+          </div>
+          <div class="form-group">
+            <label>Sporočilo po oddaji povpraševanja</label>
+            <textarea id="bs-inquiry-message" oninput="updateBotStudioPreview()" placeholder="Hvala! Kontaktirali vas bomo za potrditev."></textarea>
+          </div>
+          <div class="service-grid-head" style="grid-template-columns:minmax(180px,1fr) 110px 90px 42px">
+            <div>Vprašanje</div>
+            <div>Tip</div>
+            <div>Obvezno</div>
+            <div></div>
+          </div>
+          <div class="service-editor-list" id="bs-form-fields"></div>
+          <div class="studio-actions" style="margin-top:14px">
+            <button class="btn-soft" onclick="addFormField()">+ Dodaj vprašanje</button>
+            <button class="btn-soft" onclick="applyFormPreset()">Preset za panogo</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -1186,7 +1214,7 @@ async function readApiJson(res) {
   return data;
 }
 
-let botStudio = { salonId: null, settings: null, services: [], deletedServiceIds: new Set() };
+let botStudio = { salonId: null, settings: null, services: [], formFields: [], deletedServiceIds: new Set() };
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({
@@ -1208,6 +1236,7 @@ async function openManageSalon(id) {
       salonId: id,
       settings,
       services: services.map(s => ({ ...s, _localId: s.id || localId() })),
+      formFields: Array.isArray(settings.form_fields) ? settings.form_fields.map(f => ({ ...f, _localId: localId() })) : [],
       deletedServiceIds: new Set()
     };
     document.getElementById('bs-title').textContent = settings.name || 'Uredi bota';
@@ -1222,7 +1251,10 @@ async function openManageSalon(id) {
     document.getElementById('bs-end').value = (settings.working_hours_end || '19:00').substring(0,5);
     document.getElementById('bs-interval').value = String(settings.booking_interval_minutes || 30);
     document.getElementById('bs-max-days').value = settings.max_advance_days || 30;
+    document.getElementById('bs-booking-mode').value = settings.booking_mode || 'exact_time';
+    document.getElementById('bs-inquiry-message').value = settings.inquiry_confirmation_message || '';
     renderBotStudioServices();
+    renderFormFields();
     updateBotStudioPreview();
     document.getElementById('bot-studio-modal').classList.add('open');
   } catch (e) {
@@ -1294,6 +1326,78 @@ function removeBotStudioService(localId) {
   updateBotStudioPreview();
 }
 
+function defaultFormFieldsForType(type) {
+  if (type === 'tattoo') {
+    return [
+      { _localId: localId(), id: 'idea', label: 'Opis tattoo ideje', type: 'textarea', required: true },
+      { _localId: localId(), id: 'placement', label: 'Mesto na telesu', type: 'text', required: false },
+      { _localId: localId(), id: 'size', label: 'Približna velikost', type: 'text', required: false }
+    ];
+  }
+  if (type === 'dentist') {
+    return [
+      { _localId: localId(), id: 'reason', label: 'Razlog obiska', type: 'textarea', required: true },
+      { _localId: localId(), id: 'urgent', label: 'Ali je nujno?', type: 'text', required: false }
+    ];
+  }
+  return [
+    { _localId: localId(), id: 'note', label: 'Opomba za termin', type: 'textarea', required: false }
+  ];
+}
+
+function renderFormFields() {
+  const wrap = document.getElementById('bs-form-fields');
+  if (!botStudio.formFields.length) {
+    wrap.innerHTML = '<div class="form-hint">Ni dodatnih vprašanj. Osnovna polja ime, telefon, storitev in datum ostanejo vključena.</div>';
+    return;
+  }
+  wrap.innerHTML = botStudio.formFields.map(f => `
+    <div class="service-row" style="grid-template-columns:minmax(180px,1fr) 110px 90px 42px" data-local-id="${esc(f._localId)}">
+      <input data-field="label" type="text" value="${esc(f.label || '')}" placeholder="Vprašanje" oninput="updateBotStudioPreview()">
+      <select data-field="type" onchange="updateBotStudioPreview()">
+        <option value="text" ${f.type === 'text' ? 'selected' : ''}>Tekst</option>
+        <option value="textarea" ${f.type === 'textarea' ? 'selected' : ''}>Daljši opis</option>
+        <option value="number" ${f.type === 'number' ? 'selected' : ''}>Številka</option>
+      </select>
+      <select data-field="required" onchange="updateBotStudioPreview()">
+        <option value="false" ${!f.required ? 'selected' : ''}>Ne</option>
+        <option value="true" ${f.required ? 'selected' : ''}>Da</option>
+      </select>
+      <button class="icon-btn" title="Odstrani vprašanje" onclick="removeFormField('${esc(f._localId)}')">×</button>
+    </div>
+  `).join('');
+}
+
+function collectFormFields() {
+  return [...document.querySelectorAll('#bs-form-fields .service-row')].map((row, index) => {
+    const label = row.querySelector('[data-field="label"]').value.trim();
+    return {
+      id: label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || `field_${index + 1}`,
+      label,
+      type: row.querySelector('[data-field="type"]').value,
+      required: row.querySelector('[data-field="required"]').value === 'true'
+    };
+  }).filter(f => f.label);
+}
+
+function addFormField() {
+  botStudio.formFields.push({ _localId: localId(), id: '', label: 'Novo vprašanje', type: 'text', required: false });
+  renderFormFields();
+  updateBotStudioPreview();
+}
+
+function removeFormField(localId) {
+  botStudio.formFields = botStudio.formFields.filter(f => f._localId !== localId);
+  renderFormFields();
+  updateBotStudioPreview();
+}
+
+function applyFormPreset() {
+  botStudio.formFields = defaultFormFieldsForType(document.getElementById('bs-business-type').value || 'custom');
+  renderFormFields();
+  updateBotStudioPreview();
+}
+
 async function applyBotStudioPreset() {
   const type = document.getElementById('bs-business-type').value || 'custom';
   if (!confirm('To bo zamenjalo aktivne storitve s presetom izbrane panoge. Nadaljujem?')) return;
@@ -1314,6 +1418,9 @@ function updateBotStudioPreview() {
   const phone = document.getElementById('bs-bot-phone')?.value || 'online';
   const greeting = document.getElementById('bs-greeting')?.value || 'Pozdravljeni! Izberite storitev:';
   const services = collectBotStudioServices();
+  const mode = document.getElementById('bs-booking-mode')?.value || 'exact_time';
+  const modeLabel = mode === 'exact_time' ? 'datum in ura' : mode === 'date_only' ? 'samo datum' : 'povprasevanje';
+  const fields = collectFormFields();
 
   document.getElementById('bs-preview-name').textContent = name;
   document.getElementById('bs-preview-phone').textContent = phone;
@@ -1324,13 +1431,14 @@ function updateBotStudioPreview() {
         <div class="wa-service-name">${esc(s.name).substring(0, 28)}</div>
         <div class="wa-service-meta">${Number.isFinite(s.duration_minutes) ? s.duration_minutes : 0} min · ${Number.isFinite(s.price) ? s.price : 0} EUR</div>
       </div>
-    `).join('')
+    `).join('') + `<div class="wa-list-row"><div class="wa-service-name">Forma</div><div class="wa-service-meta">${modeLabel}${fields.length ? ' · ' + fields.length + ' dodatnih vprasanj' : ''}</div></div>`
     : '<div class="wa-list-row"><div class="wa-service-meta">Dodaj storitve, da se prikazejo tukaj.</div></div>';
 }
 
 async function saveBotStudio() {
   const btn = document.getElementById('bs-save-btn');
   const services = collectBotStudioServices();
+  const formFields = collectFormFields();
   if (!document.getElementById('bs-name').value.trim()) return showToast('Ime podjetja je obvezno', 'error');
   if (!services.length) return showToast('Dodaj vsaj eno storitev', 'error');
   for (const service of services) {
@@ -1354,7 +1462,10 @@ async function saveBotStudio() {
       working_hours_start: document.getElementById('bs-start').value,
       working_hours_end: document.getElementById('bs-end').value,
       booking_interval_minutes: parseInt(document.getElementById('bs-interval').value),
-      max_advance_days: parseInt(document.getElementById('bs-max-days').value)
+      max_advance_days: parseInt(document.getElementById('bs-max-days').value),
+      booking_mode: document.getElementById('bs-booking-mode').value,
+      form_fields: formFields,
+      inquiry_confirmation_message: document.getElementById('bs-inquiry-message').value.trim()
     };
     if (ownerPassword) settingsPayload.owner_password = ownerPassword;
     await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/settings`, {

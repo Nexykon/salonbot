@@ -36,6 +36,33 @@ function isMasterAdminPhone(phone) {
   return masterAdminPhones().has(cleanPhone(phone));
 }
 
+function defaultFormFields(salon) {
+  const type = salon?.business_type || 'custom';
+  if (type === 'tattoo') {
+    return [
+      { id: 'idea', label: 'Opis tattoo ideje', type: 'textarea', required: true },
+      { id: 'placement', label: 'Mesto na telesu', type: 'text', required: false },
+      { id: 'size', label: 'Približna velikost', type: 'text', required: false }
+    ];
+  }
+  return [];
+}
+
+function safeFormFields(value, salon) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (_) {}
+  }
+  return defaultFormFields(salon);
+}
+
+function normalizeBookingMode(mode) {
+  return ['exact_time', 'date_only', 'inquiry'].includes(mode) ? mode : 'exact_time';
+}
+
 function publicSalon(salon) {
   return {
     id: salon.id,
@@ -51,7 +78,10 @@ function publicSalon(salon) {
     working_hours_end: salon.working_hours_end,
     booking_interval_minutes: salon.booking_interval_minutes || 30,
     break_between_minutes: salon.break_between_minutes || 0,
-    max_advance_days: salon.max_advance_days || 30
+    max_advance_days: salon.max_advance_days || 30,
+    booking_mode: normalizeBookingMode(salon.booking_mode),
+    form_fields: safeFormFields(salon.form_fields, salon),
+    inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.'
   };
 }
 
@@ -110,10 +140,10 @@ async function settingsSalonAuth(req, res) {
   return salonAuth(req, res);
 }
 
-async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, sourceLabel) {
+async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, sourceLabel, formAnswers = {}) {
   const to = cleanPhone(salon.admin_phone);
   if (!to) {
-    const sent = await mail.sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel);
+    const sent = await mail.sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel, formAnswers);
     if (!sent) console.warn('No admin phone and email provider not configured for booking notification:', salon.id);
     return;
   }
@@ -126,7 +156,8 @@ async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, 
       await wa.send(phoneId, token, wa.adminBookingNotifSession(to, customerName, phone, date, time, ref6));
     } catch (e2) {
       await wa.send(phoneId, token, wa.textMsg(to,
-        `Nova ${sourceLabel || 'rezervacija'}\n\n${customerName}\n+${phone}\n${date} ob ${time}\nRef: ${ref6}`
+        `Nova ${sourceLabel || 'rezervacija'}\n\n${customerName}\n+${phone}\n${date} ob ${time}\nRef: ${ref6}` +
+        (Object.keys(formAnswers || {}).length ? `\n\nDodatni odgovori:\n${Object.entries(formAnswers).map(([k,v]) => `${k}: ${v}`).join('\n')}` : '')
       ));
     }
   }
@@ -265,6 +296,8 @@ app.post('/onboard', async (req, res) => {
       business_label: preset.label,
       business_slug: slug,
       greeting_message: preset.greeting,
+      booking_mode: type === 'tattoo' ? 'inquiry' : 'exact_time',
+      form_fields: defaultFormFields({ business_type: type }),
       subscription_status: 'trial',
       subscription_plan: plan || 'starter',
       working_days: '1,2,3,4,5,6',
@@ -478,7 +511,10 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'working_hours_end',
     'booking_interval_minutes',
     'break_between_minutes',
-    'max_advance_days'
+    'max_advance_days',
+    'booking_mode',
+    'form_fields',
+    'inquiry_confirmation_message'
   ];
   const updates = {};
   for (const key of allowed) {
@@ -497,6 +533,8 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
   }
   if (updates.break_between_minutes !== undefined) updates.break_between_minutes = parseInt(updates.break_between_minutes) || 0;
   if (updates.max_advance_days !== undefined) updates.max_advance_days = parseInt(updates.max_advance_days) || 30;
+  if (updates.booking_mode !== undefined) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
+  if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
   try {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
@@ -751,7 +789,8 @@ app.get('/api/book/times', async (req, res) => {
 // Create booking (public)
 app.post('/api/book', async (req, res) => {
   const { serviceId, date, time, customerName, customerPhone } = req.body;
-  if (!date || !time || !customerName || !customerPhone) {
+  const formAnswers = req.body.formAnswers && typeof req.body.formAnswers === 'object' ? req.body.formAnswers : {};
+  if (!date || !customerName || !customerPhone) {
     return res.status(400).json({ error: 'Manjkajo podatki' });
   }
   // Normalize phone: strip + and spaces
@@ -763,30 +802,38 @@ app.post('/api/book', async (req, res) => {
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
     const svc = await db.getServiceById(salon.id, serviceId);
     const duration = svc?.duration_minutes || salon.booking_interval_minutes || 30;
+    const bookingMode = normalizeBookingMode(salon.booking_mode);
+    const needsExactTime = bookingMode === 'exact_time';
+    if (needsExactTime && !time) return res.status(400).json({ error: 'Izberite uro' });
+    const bookingTime = needsExactTime ? time : '00:00';
 
     // Double-check slot is still free
-    const freeTimes = await cal.getFreeTimesForDate(salon, date, duration);
-    if (!freeTimes.includes(time)) {
+    const freeTimes = needsExactTime ? await cal.getFreeTimesForDate(salon, date, duration) : [bookingTime];
+    if (needsExactTime && !freeTimes.includes(time)) {
       return res.status(409).json({ error: 'Ta termin je žal že zaseden. Izberite drugega.' });
     }
 
-    const booking = await db.createBookingIfFree({
+    const bookingPayload = {
       customer_phone: phone,
       customer_name: customerName.trim(),
       salon_id: salon.id,
       service_id: svc?.id || null,
       booking_date: date,
-      booking_time: time + ':00',
-      duration_minutes: duration,
-      status: 'pending'
-    });
+      booking_time: bookingTime + ':00',
+      duration_minutes: needsExactTime ? duration : 0,
+      status: 'pending',
+      notes: bookingMode === 'inquiry' ? 'Povprasevanje iz obrazca' : (bookingMode === 'date_only' ? 'Rezervacija brez izbrane ure' : ''),
+      form_answers: formAnswers
+    };
+    const booking = needsExactTime ? await db.createBookingIfFree(bookingPayload) : await db.createBooking(bookingPayload);
 
     const ref6 = (booking.id || '').slice(-6);
     const fmtD = `${date.substring(8,10)}.${date.substring(5,7)}.${date.substring(0,4)}`;
 
-    await notifyBookingAdmin(salon, customerName.trim(), phone, fmtD, time, ref6, 'WEB rezervacija');
+    const timeLabel = needsExactTime ? time : (bookingMode === 'date_only' ? 'brez ure' : 'povprasevanje');
+    await notifyBookingAdmin(salon, customerName.trim(), phone, fmtD, timeLabel, ref6, bookingMode === 'inquiry' ? 'WEB povprasevanje' : 'WEB rezervacija', formAnswers);
 
-    res.json({ success: true, ref: ref6, date: fmtD, time, customerName: customerName.trim() });
+    res.json({ success: true, ref: ref6, date: fmtD, time: timeLabel, customerName: customerName.trim(), booking_mode: bookingMode });
   } catch (err) {
     console.error('Web booking error:', err.message);
     res.status(err.code === 'SLOT_TAKEN' ? 409 : 500).json({ error: err.code === 'SLOT_TAKEN' ? 'Ta termin je zal ze zaseden. Izberite drugega.' : err.message });
@@ -967,6 +1014,9 @@ app.get('/api/settings', async (req, res) => {
     booking_interval_minutes: salon.booking_interval_minutes || 30,
     break_between_minutes: salon.break_between_minutes || 0,
     max_advance_days: salon.max_advance_days || 30,
+    booking_mode: normalizeBookingMode(salon.booking_mode),
+    form_fields: safeFormFields(salon.form_fields, salon),
+    inquiry_confirmation_message: salon.inquiry_confirmation_message || '',
     salon_token: salon.salon_token
   });
 });
