@@ -193,7 +193,15 @@
   .form-group select option { background: var(--bg3); }
   .form-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
 
-  .modal-footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px; }
+  .modal-footer {
+    display: flex; gap: 12px; justify-content: flex-end; margin-top: 8px;
+  }
+  .studio-footer {
+    display: flex; gap: 12px; justify-content: space-between; align-items: center;
+    padding: 16px 28px; border-top: 1px solid var(--border);
+    background: var(--bg2); flex-shrink: 0;
+  }
+  .studio-footer-note { font-size: 12px; color: var(--text3); }
   .btn-cancel {
     padding: 12px 24px; background: transparent; border: 1px solid var(--border);
     border-radius: 10px; color: var(--text2); font-size: 14px; cursor: pointer; transition: all 0.2s;
@@ -212,17 +220,24 @@
     padding: 0;
     overflow: hidden;
     max-height: 94vh;
+    display: flex;
+    flex-direction: column;
   }
   .studio-shell {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 390px;
-    height: min(820px, 94vh);
+    flex: 1;
     min-height: 0;
   }
   .studio-editor {
-    padding: 28px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     min-height: 0;
+  }
+  .studio-editor-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px;
     overscroll-behavior: contain;
     scrollbar-color: rgba(167,139,250,0.65) rgba(255,255,255,0.06);
   }
@@ -235,14 +250,7 @@
   }
   .studio-kicker { font-size: 12px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
   .studio-subtitle { color: var(--text2); font-size: 13px; margin-top: 4px; }
-  .studio-section {
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-    border-radius: 14px;
-    padding: 18px;
-    margin-top: 18px;
-  }
-  .studio-section-title { font-size: 14px; font-weight: 800; margin-bottom: 14px; }
+  /* studio-section, studio-section-title: redefined in STUDIO SECTION REDESIGN block below */
   .studio-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .service-editor-list { display: flex; flex-direction: column; gap: 10px; }
   .service-grid-head {
@@ -499,64 +507,122 @@
   }
   .btn-day-add:hover { background: rgba(124,58,237,0.25); }
 
-  /* ── BOOKING CONFIG (Master Admin Only) ── */
-  .master-only-badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
-    background: rgba(124,58,237,0.18); color: var(--accent2);
-    border: 1px solid rgba(124,58,237,0.3); letter-spacing: 0.04em; text-transform: uppercase;
-    margin-bottom: 14px;
+  /* ── STUDIO SECTION REDESIGN ── */
+  .studio-section {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.015);
+    border-radius: 16px;
+    padding: 0;
+    margin-top: 16px;
+    overflow: hidden;
   }
-  .booking-mode-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
-  }
-  .booking-mode-card {
-    position: relative; border: 2px solid rgba(255,255,255,0.08);
-    border-radius: 14px; padding: 16px 14px 14px;
-    cursor: pointer; transition: all 0.18s;
+  .studio-section-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
     background: rgba(255,255,255,0.02);
   }
-  .booking-mode-card:hover { border-color: rgba(124,58,237,0.45); background: rgba(124,58,237,0.06); }
+  .studio-section-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px;
+    background: rgba(124,58,237,0.14); border: 1px solid rgba(124,58,237,0.22);
+  }
+  .studio-section-info { flex: 1; min-width: 0; }
+  .studio-section-title { font-size: 14px; font-weight: 800; margin-bottom: 0; color: var(--text); }
+  .studio-section-desc { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
+  .studio-section-body { padding: 18px 20px 20px; }
+
+  /* ── MASTER-ONLY CONFIG SECTION ── */
+  .studio-section.master-section {
+    border-color: rgba(124,58,237,0.3);
+    background: rgba(124,58,237,0.04);
+  }
+  .studio-section.master-section .studio-section-head {
+    background: rgba(124,58,237,0.08);
+    border-bottom-color: rgba(124,58,237,0.2);
+  }
+  .master-only-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 20px; font-size: 10px; font-weight: 800;
+    background: rgba(124,58,237,0.25); color: var(--accent2);
+    border: 1px solid rgba(124,58,237,0.4); letter-spacing: 0.05em; text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  /* ── CONFIG STEPS ── */
+  .config-step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .config-step:last-child { border-bottom: none; padding-bottom: 0; }
+  .config-step:first-child { padding-top: 0; }
+  .config-step-num {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 900; color: var(--accent2);
+    background: rgba(124,58,237,0.18); border: 1.5px solid rgba(124,58,237,0.35);
+  }
+  .config-step-body { flex: 1; min-width: 0; }
+  .config-step-title {
+    font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 4px;
+  }
+  .config-step-desc {
+    font-size: 12px; color: var(--text2); line-height: 1.5; margin-bottom: 14px;
+  }
+
+  /* ── BOOKING MODE CARDS ── */
+  .booking-mode-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .booking-mode-card {
+    position: relative; border: 2px solid rgba(255,255,255,0.07);
+    border-radius: 12px; padding: 14px 12px 12px;
+    cursor: pointer; transition: all 0.16s;
+    background: rgba(255,255,255,0.02);
+  }
+  .booking-mode-card:hover { border-color: rgba(124,58,237,0.4); background: rgba(124,58,237,0.05); }
   .booking-mode-card.selected {
-    border-color: var(--accent); background: rgba(124,58,237,0.13);
-    box-shadow: 0 0 0 4px rgba(124,58,237,0.12);
+    border-color: var(--accent); background: rgba(124,58,237,0.11);
+    box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
   }
   .booking-mode-check {
-    position: absolute; top: 12px; right: 12px;
-    width: 20px; height: 20px; border-radius: 50%;
+    position: absolute; top: 10px; right: 10px;
+    width: 18px; height: 18px; border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.15);
-    display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+    display: flex; align-items: center; justify-content: center; transition: all 0.16s;
   }
-  .booking-mode-card.selected .booking-mode-check {
-    background: var(--accent); border-color: var(--accent);
-  }
-  .booking-mode-check-tick { display: none; color: white; font-size: 11px; font-weight: 900; }
+  .booking-mode-card.selected .booking-mode-check { background: var(--accent); border-color: var(--accent); }
+  .booking-mode-check-tick { display: none; color: white; font-size: 10px; font-weight: 900; }
   .booking-mode-card.selected .booking-mode-check-tick { display: block; }
-  .booking-mode-icon { font-size: 26px; margin-bottom: 8px; display: block; }
-  .booking-mode-title { font-size: 13px; font-weight: 800; margin-bottom: 5px; color: var(--text); }
-  .booking-mode-desc { font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .booking-mode-icon { font-size: 22px; margin-bottom: 8px; display: block; }
+  .booking-mode-title { font-size: 13px; font-weight: 800; margin-bottom: 4px; color: var(--text); }
+  .booking-mode-desc { font-size: 11.5px; color: var(--text2); line-height: 1.45; }
   .booking-mode-card.selected .booking-mode-title { color: var(--accent2); }
 
-  .config-section-label {
-    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--text3); margin-bottom: 10px; margin-top: 20px;
+  /* ── FORM FIELDS ── */
+  .form-fields-header {
+    display: grid; grid-template-columns: minmax(160px,1fr) 106px 82px 36px;
+    gap: 8px; margin-bottom: 8px; padding: 0 4px;
+    color: var(--text3); font-size: 10.5px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
   .field-row-hint {
-    font-size: 11px; color: var(--text3); padding: 10px 0 2px;
+    font-size: 11px; color: var(--text3); padding: 10px 0 0;
+    font-style: italic;
   }
-  .form-fields-header {
-    display: grid; grid-template-columns: minmax(180px,1fr) 110px 90px 42px;
-    gap: 10px; margin-bottom: 8px; color: var(--text2);
-    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
-  }
+
+  /* ── CLOSING MESSAGE PREVIEW ── */
   .closing-msg-preview {
-    margin-top: 8px; padding: 12px; border-radius: 10px;
-    background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.18);
-    font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.45; display: none;
+    margin-top: 10px; padding: 14px; border-radius: 12px;
+    background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.18);
+    font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.55; display: none;
   }
   .closing-msg-preview.visible { display: block; }
-  .config-divider {
-    border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 22px 0;
+  .closing-msg-preview-label {
+    font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--green); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
   }
 
   @media (max-width: 768px) {
@@ -642,8 +708,6 @@
       <div class="header-title" style="background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Flow<span style="-webkit-text-fill-color:transparent;">Tiq</span> <span style="font-size:13px;font-weight:400;-webkit-text-fill-color:var(--text2);">Admin</span></div>
     </div>
     <div class="header-right">
-      <select class="preview-select" id="preview-salon-select" title="Izberi salon za predogled"></select>
-      <button class="btn-logout" onclick="openSelectedDashboard()">Predogled dashboarda</button>
       <span class="header-user" id="header-user">Tomaž</span>
       <button class="btn-logout" onclick="changeMasterPassword()">Geslo</button>
       <button class="btn-logout" onclick="logout()">Odjava</button>
@@ -857,182 +921,233 @@
   <div class="modal studio-modal">
     <div class="studio-shell">
       <div class="studio-editor">
-        <div class="modal-header">
+        <div class="modal-header" style="padding:20px 28px 16px;flex-shrink:0;border-bottom:1px solid var(--border);">
           <div>
             <div class="studio-kicker">Bot Studio</div>
-            <div class="modal-title" id="bs-title">Uredi bota</div>
-            <div class="studio-subtitle">Uredi podatke, storitve in sporocilo, predogled se sproti posodablja.</div>
+            <div class="modal-title" id="bs-title" style="font-size:20px;font-weight:800;">Uredi bota</div>
+            <div class="studio-subtitle">Spremembe se predogledajo sproti na desni strani.</div>
           </div>
           <button class="modal-close" onclick="closeBotStudio()">×</button>
         </div>
+        <div class="studio-editor-scroll">
 
+        <!-- ── SECTION 1: PODJETJE ── -->
         <div class="studio-section">
-          <div class="studio-section-title">Podjetje in panoga</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Ime podjetja</label>
-              <input type="text" id="bs-name" oninput="updateBotStudioPreview()">
-            </div>
-            <div class="form-group">
-              <label>Panoga</label>
-              <select id="bs-business-type" onchange="updateBotStudioPreview()">
-                <option value="cosmetics">Kozmeticni studii</option>
-                <option value="hair">Frizerji</option>
-                <option value="beauty">Nohti / Beauty</option>
-                <option value="dentist">Zobozdravniki</option>
-                <option value="massage">Masazni saloni</option>
-                <option value="fitness">Fitness & trenerji</option>
-                <option value="wellness">Wellness centri</option>
-                <option value="veterinary">Veterinarji</option>
-                <option value="optical">Optiki</option>
-                <option value="physiotherapy">Fizioterapevti</option>
-                <option value="tattoo">Tattoo studio</option>
-                <option value="photography">Fotografi</option>
-                <option value="custom">+ vasa dejavnost</option>
-              </select>
+          <div class="studio-section-head">
+            <div class="studio-section-icon">🏢</div>
+            <div class="studio-section-info">
+              <div class="studio-section-title">Podjetje in panoga</div>
+              <div class="studio-section-desc">Osnovni podatki, ki se prikažejo stranki in v botu</div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Booking slug</label>
-              <input type="text" id="bs-slug" oninput="updateBotStudioPreview()">
+          <div class="studio-section-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Ime podjetja</label>
+                <input type="text" id="bs-name" oninput="updateBotStudioPreview()">
+              </div>
+              <div class="form-group">
+                <label>Panoga</label>
+                <select id="bs-business-type" onchange="updateBotStudioPreview()">
+                  <option value="cosmetics">Kozmetični studii</option>
+                  <option value="hair">Frizerji</option>
+                  <option value="beauty">Nohti / Beauty</option>
+                  <option value="dentist">Zobozdravniki</option>
+                  <option value="massage">Masažni saloni</option>
+                  <option value="fitness">Fitness &amp; trenerji</option>
+                  <option value="wellness">Wellness centri</option>
+                  <option value="veterinary">Veterinarji</option>
+                  <option value="optical">Optiki</option>
+                  <option value="physiotherapy">Fizioterapevti</option>
+                  <option value="tattoo">Tattoo studio</option>
+                  <option value="photography">Fotografi</option>
+                  <option value="custom">+ vaša dejavnost</option>
+                </select>
+              </div>
             </div>
-            <div class="form-group">
-              <label>Bot stevilka za prikaz</label>
-              <input type="text" id="bs-bot-phone" placeholder="+386 XX XXX XXX" oninput="updateBotStudioPreview()">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Booking slug <span style="color:var(--text3);font-weight:400">(URL pot)</span></label>
+                <input type="text" id="bs-slug" oninput="updateBotStudioPreview()" placeholder="ime-salona">
+              </div>
+              <div class="form-group">
+                <label>Bot številka za prikaz</label>
+                <input type="text" id="bs-bot-phone" placeholder="+386 XX XXX XXX" oninput="updateBotStudioPreview()">
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Pozdravno sporocilo stranki</label>
-            <textarea id="bs-greeting" oninput="updateBotStudioPreview()"></textarea>
-          </div>
-        </div>
-
-        <div class="studio-section">
-          <div class="studio-section-title">Dostop lastnika</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Email za prijavo</label>
-              <input type="email" id="bs-owner-email" placeholder="ana@salon.si">
-            </div>
-            <div class="form-group">
-              <label>Novo geslo</label>
-              <input type="password" id="bs-owner-password" placeholder="Pusti prazno, če ne menjaš" autocomplete="new-password">
-              <div class="form-hint">Vpiši samo, ko želiš lastniku resetirati geslo.</div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>Pozdravno sporočilo stranki</label>
+              <textarea id="bs-greeting" rows="3" oninput="updateBotStudioPreview()" placeholder="Pozdravljeni! Sem vaš digitalni asistent za naročanje..."></textarea>
             </div>
           </div>
         </div>
 
+        <!-- ── SECTION 2: DOSTOP LASTNIKA ── -->
         <div class="studio-section">
-          <div class="studio-section-title">Koledar</div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Zacetek delovnika</label>
-              <input type="time" id="bs-start">
-            </div>
-            <div class="form-group">
-              <label>Konec delovnika</label>
-              <input type="time" id="bs-end">
+          <div class="studio-section-head">
+            <div class="studio-section-icon">🔑</div>
+            <div class="studio-section-info">
+              <div class="studio-section-title">Dostop lastnika</div>
+              <div class="studio-section-desc">Prijava in geslo za dostop do lastnikovega portala</div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Osnovni interval</label>
-              <select id="bs-interval">
-                <option value="5">5 min</option>
-                <option value="10">10 min</option>
-                <option value="15">15 min</option>
-                <option value="20">20 min</option>
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">60 min</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Narocanje dni vnaprej</label>
-              <input type="number" id="bs-max-days" min="1" max="365">
+          <div class="studio-section-body">
+            <div class="form-row" style="margin-bottom:0">
+              <div class="form-group">
+                <label>Email za prijavo</label>
+                <input type="email" id="bs-owner-email" placeholder="ana@salon.si">
+              </div>
+              <div class="form-group">
+                <label>Novo geslo <span style="color:var(--text3);font-weight:400">(neobvezno)</span></label>
+                <input type="password" id="bs-owner-password" placeholder="Pusti prazno, če ne menjaš" autocomplete="new-password">
+                <div class="form-hint">Izpolni samo, ko želiš lastniku ponastaviti geslo.</div>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- ── SECTION 3: KOLEDAR ── -->
         <div class="studio-section">
-          <div class="studio-section-title">Storitve, ki jih vidi stranka</div>
-          <div class="service-grid-head">
-            <div>Ime storitve</div>
-            <div>Cena EUR</div>
-            <div>Trajanje min</div>
-            <div></div>
+          <div class="studio-section-head">
+            <div class="studio-section-icon">📆</div>
+            <div class="studio-section-info">
+              <div class="studio-section-title">Delovni čas in razpored</div>
+              <div class="studio-section-desc">Kdaj so termini na voljo in kako daleč vnaprej</div>
+            </div>
           </div>
-          <div class="service-editor-list" id="bs-services"></div>
-          <div class="studio-actions" style="margin-top:14px">
-            <button class="btn-soft" onclick="addBotStudioService()">+ Dodaj storitev</button>
-            <button class="btn-soft" onclick="applyBotStudioPreset()">Uporabi preset panoge</button>
+          <div class="studio-section-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Začetek delovnika</label>
+                <input type="time" id="bs-start">
+              </div>
+              <div class="form-group">
+                <label>Konec delovnika</label>
+                <input type="time" id="bs-end">
+              </div>
+            </div>
+            <div class="form-row" style="margin-bottom:0">
+              <div class="form-group">
+                <label>Interval med termini</label>
+                <select id="bs-interval">
+                  <option value="5">5 min</option>
+                  <option value="10">10 min</option>
+                  <option value="15">15 min</option>
+                  <option value="20">20 min</option>
+                  <option value="30">30 min</option>
+                  <option value="45">45 min</option>
+                  <option value="60">60 min</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Naročanje dni vnaprej</label>
+                <input type="number" id="bs-max-days" min="1" max="365">
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- ═══════════════════════════════════════════════════════
+        <!-- ── SECTION 4: STORITVE ── -->
+        <div class="studio-section">
+          <div class="studio-section-head">
+            <div class="studio-section-icon">✂️</div>
+            <div class="studio-section-info">
+              <div class="studio-section-title">Storitve</div>
+              <div class="studio-section-desc">Kaj bot ponudi stranki — naziv, cena in trajanje</div>
+            </div>
+          </div>
+          <div class="studio-section-body">
+            <div class="service-grid-head">
+              <div>Ime storitve</div>
+              <div>Cena EUR</div>
+              <div>Trajanje min</div>
+              <div></div>
+            </div>
+            <div class="service-editor-list" id="bs-services"></div>
+            <div class="studio-actions" style="margin-top:14px">
+              <button class="btn-soft" onclick="addBotStudioService()">+ Dodaj storitev</button>
+              <button class="btn-soft" onclick="applyBotStudioPreset()">🎯 Preset panoge</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════════════════
              MASTER ADMIN — KONFIGURACIJA REZERVACIJ
              Lastnik tega razdelka ne vidi. Vidno samo tebi.
-             ═══════════════════════════════════════════════════════ -->
-        <div class="studio-section" id="bs-booking-config-section">
-          <div class="studio-section-title" style="display:flex;align-items:center;gap:10px;">
-            🎛 Konfiguracija rezervacij
-            <span class="master-only-badge">🔒 Samo master admin</span>
-          </div>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.5;">
-            Nastavi, kako bo bot zbiral termin od stranke. Lastnik salona tega ne vidi in ne more spremeniti.
-          </p>
-
-          <!-- 1. BOOKING MODE -->
-          <div class="config-section-label">1. Način zbiranja termina</div>
-          <p style="font-size:12px;color:var(--text3);margin-bottom:0;line-height:1.5;">
-            Izberi, katere informacije bot vpraša stranko med rezervacijo.
-          </p>
-          <div class="booking-mode-grid" id="bs-booking-mode-grid">
-            <!-- Populated by renderBookingModeCards() -->
+             ══════════════════════════════════════════════════════ -->
+        <div class="studio-section master-section" id="bs-booking-config-section">
+          <div class="studio-section-head">
+            <div class="studio-section-icon" style="background:rgba(124,58,237,0.25);border-color:rgba(124,58,237,0.45);">🎛</div>
+            <div class="studio-section-info">
+              <div class="studio-section-title">Konfiguracija rezervacij</div>
+              <div class="studio-section-desc">Nastavi, kako bot zbira termin. Lastnik tega ne vidi in ne more spremeniti.</div>
+            </div>
+            <span class="master-only-badge">🔒 Master admin</span>
           </div>
 
-          <hr class="config-divider">
+          <div class="studio-section-body">
 
-          <!-- 2. FORM FIELDS -->
-          <div class="config-section-label">2. Dodatna vprašanja bota</div>
-          <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5;">
-            Bot <strong style="color:var(--text2)">vedno</strong> vpraša za ime in telefon. Tukaj dodaj specifična vprašanja za tvojo panogo — npr. opis tattoo ideje, razlog obiska, opomba ipd.
-          </p>
-          <div class="form-fields-header">
-            <div>Vprašanje, ki ga bot postavi stranki</div>
-            <div>Tip odgovora</div>
-            <div>Obvezno?</div>
-            <div></div>
-          </div>
-          <div class="service-editor-list" id="bs-form-fields"></div>
-          <div class="field-row-hint">Primer: "Opiši tattoo idejo" → tip: Daljši opis → Obvezno: Da</div>
-          <div class="studio-actions" style="margin-top:12px">
-            <button class="btn-soft" onclick="addFormField()">+ Dodaj vprašanje</button>
-            <button class="btn-soft" onclick="applyFormPreset()" title="Nastavi vprašanja glede na panogo salona">🎯 Preset za panogo</button>
-          </div>
+            <!-- STEP 1: BOOKING MODE -->
+            <div class="config-step">
+              <div class="config-step-num">1</div>
+              <div class="config-step-body">
+                <div class="config-step-title">Način zbiranja termina</div>
+                <div class="config-step-desc">Izberi, katere informacije bot zbira od stranke med rezervacijo.</div>
+                <div class="booking-mode-grid" id="bs-booking-mode-grid">
+                  <!-- Populated by renderBookingModeCards() -->
+                </div>
+              </div>
+            </div>
 
-          <hr class="config-divider">
+            <!-- STEP 2: FORM FIELDS -->
+            <div class="config-step">
+              <div class="config-step-num">2</div>
+              <div class="config-step-body">
+                <div class="config-step-title">Dodatna vprašanja bota</div>
+                <div class="config-step-desc">Bot <strong style="color:var(--text)">vedno</strong> vpraša za ime in telefon. Tukaj dodaj specifična vprašanja za to panogo — npr. opis tattoo ideje, razlog obiska, posebne zahteve.</div>
+                <div class="form-fields-header">
+                  <div>Vprašanje za stranko</div>
+                  <div>Tip odgovora</div>
+                  <div>Obvezno</div>
+                  <div></div>
+                </div>
+                <div class="service-editor-list" id="bs-form-fields"></div>
+                <div class="field-row-hint">Npr. "Opiši tattoo idejo" → Daljši opis → Obvezno: Da</div>
+                <div class="studio-actions" style="margin-top:12px">
+                  <button class="btn-soft" onclick="addFormField()">+ Dodaj vprašanje</button>
+                  <button class="btn-soft" onclick="applyFormPreset()" title="Nastavi vprašanja glede na panogo salona">🎯 Preset za panogo</button>
+                </div>
+              </div>
+            </div>
 
-          <!-- 3. CLOSING MESSAGE -->
-          <div class="config-section-label">3. Zaključno sporočilo</div>
-          <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.5;">
-            Sporočilo, ki ga stranka prejme takoj po oddaji rezervacije ali povpraševanja. Sem napiši zahvalo, naslednje korake ali kdaj jo kontaktirate.
-          </p>
-          <div class="form-group" style="margin-bottom:0">
-            <textarea id="bs-inquiry-message" rows="4"
-              oninput="updateClosingPreview()"
-              placeholder="Hvala za vaše povpraševanje! Kmalu vas kontaktiramo za potrditev termina. Do takrat smo na voljo za vsa vprašanja. 🙏"></textarea>
-          </div>
-          <div class="closing-msg-preview" id="closing-msg-preview">
-            <strong style="font-size:11px;color:var(--green);display:block;margin-bottom:4px;">📱 Predogled — kar stranka prejme na WhatsApp:</strong>
-            <span id="closing-msg-text"></span>
+            <!-- STEP 3: CLOSING MESSAGE -->
+            <div class="config-step">
+              <div class="config-step-num">3</div>
+              <div class="config-step-body">
+                <div class="config-step-title">Zaključno sporočilo</div>
+                <div class="config-step-desc">Sporočilo, ki ga stranka prejme takoj po oddaji rezervacije. Napiši zahvalo, naslednje korake ali kdaj jo boste kontaktirali.</div>
+                <div class="form-group" style="margin-bottom:0">
+                  <textarea id="bs-inquiry-message" rows="4"
+                    oninput="updateClosingPreview()"
+                    placeholder="Hvala za vaše povpraševanje! Kmalu vas kontaktiramo za potrditev termina. 🙏"></textarea>
+                </div>
+                <div class="closing-msg-preview" id="closing-msg-preview">
+                  <div class="closing-msg-preview-label">📱 Predogled — kar stranka prejme na WhatsApp</div>
+                  <span id="closing-msg-text"></span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button class="btn-cancel" onclick="closeBotStudio()">Preklici</button>
-          <button class="btn-save" id="bs-save-btn" onclick="saveBotStudio()">Shrani spremembe</button>
+        </div><!-- /studio-editor-scroll -->
+      </div>
+      <div class="studio-footer">
+        <span class="studio-footer-note">Spremembe so vidne takoj po shranjevanju.</span>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-cancel" onclick="closeBotStudio()">Prekliči</button>
+          <button class="btn-save" id="bs-save-btn" onclick="saveBotStudio()">💾 Shrani spremembe</button>
         </div>
       </div>
 
@@ -1854,27 +1969,25 @@ async function saveSalon() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
   try {
-    var res = await apiFetch('/onboard', {
+    var salonData = {
+      name: name,
+      owner_name: owner,
+      owner_email: email,
+      phone_number: phone,
+      whatsapp_account_id: waid,
+      bot_phone_display: botnum,
+      business_type: businessType,
+      business_slug: slug,
+      plan: plan
+    };
+    if (password) salonData.owner_password = password;
+    await readApiJson(await apiFetch('/api/admin/salons', {
       method: 'POST',
-      body: JSON.stringify({
-        name: name, owner_name: owner, owner_email: email, owner_password: password, admin_phone: phone,
-        plan: plan, business_type: businessType, business_slug: slug || undefined,
-        whatsapp_phone_number_id: waid || undefined, bot_phone_display: botnum || undefined
-      })
-    });
-    var data = await res.json();
-    if (res.ok) {
-      closeModal();
-      await refreshSalons();
-      if (data.email_sent) {
-        showToast('🎉 ' + name + ' dodan! Welcome email poslan.', 'success');
-      } else {
-        showToast('✅ ' + name + ' dodan! Email ni bil poslan — link: ' + data.setup_url, 'success');
-        console.log('Setup URL:', data.setup_url);
-      }
-    } else {
-      showToast(data.error || 'Napaka', 'error');
-    }
+      body: JSON.stringify(salonData)
+    }));
+    closeModal();
+    await refreshSalons();
+    showToast('Salon uspešno ustvarjen!', 'success');
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
@@ -1883,102 +1996,19 @@ async function saveSalon() {
   }
 }
 
-async function refreshSalons() {
-  var res = await apiFetch('/salons');
-  if (res.ok) {
-    salonsData = await res.json();
-    renderAll();
-  }
-}
-
-// ── TOAST ─────────────────────────────────────────────────
-var toastTimer;
-function showToast(msg, type) {
-  type = type || 'info';
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(function() { t.className = ''; }, 3500);
-}
-
-// ── CHANGE PLAN ───────────────────────────────────────────
-async function changePlan(id, plan) {
-  try {
-    var res = await apiFetch('/api/salons/' + id + '/plan', { method: 'PATCH', body: JSON.stringify({ plan: plan }) });
-    if (res.ok) {
-      var salon = salonsData.find(function(s) { return s.id === id; });
-      if (salon) salon.subscription_plan = plan;
-      renderStats();
-      showToast('Paket spremenjen → ' + (plan === 'pro' ? 'Pro €160' : 'Starter €79'), 'success');
-    } else {
-      showToast('Napaka pri menjavi paketa', 'error');
-      renderTable();
-    }
-  } catch (e) {
-    showToast('Napaka: ' + e.message, 'error');
-    renderTable();
-  }
-}
-
-// ── ERRORS ────────────────────────────────────────────────
-var errorsData = [];
-
-async function loadErrors() {
-  try {
-    var res = await apiFetch('/api/errors');
-    if (!res.ok) return;
-    errorsData = await res.json();
-    renderErrors();
-  } catch (e) { console.warn('Errors load failed:', e.message); }
-}
-
-function renderErrors() {
-  var tbody = document.getElementById('errors-table');
-  var badge = document.getElementById('error-count-badge');
-  if (!errorsData.length) {
-    badge.style.display = 'none';
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Ni napak ✅</td></tr>';
-    return;
-  }
-  badge.style.display = 'inline';
-  badge.textContent = errorsData.length;
-  tbody.innerHTML = errorsData.map(function(e) {
-    var d = new Date(e.created_at);
-    var time = d.toLocaleDateString('sl-SI') + ' ' + d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
-    return '<tr>' +
-      '<td class="error-time">' + time + '</td>' +
-      '<td><span class="error-type">' + (e.type || '?') + '</span></td>' +
-      '<td class="error-msg">' + (e.message || '') + '</td>' +
-      '<td class="error-phone">' + (e.customer_phone ? '+' + e.customer_phone : '—') + '</td>' +
-      '</tr>';
-  }).join('');
-}
-
-async function clearAllErrors() {
-  if (!confirm('Izbriši vse napake?')) return;
-  try {
-    var res = await apiFetch('/api/errors', { method: 'DELETE' });
-    if (res.ok) { errorsData = []; renderErrors(); showToast('Napake izbrisane', 'success'); }
-  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
-}
-
-// ── CALENDAR (disabled, stubs only) ────────────────────────────
-var MONTHS_SL = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
-var DAYS_SL = ['Šed','Čet','Pet','Sob','Ned','Pon','Tor'];
-var calYear = new Date().getFullYear();
-var calMonth = new Date().getMonth();
-function calChangeMonth(dir) { calMonth += dir; if (calMonth < 0) { calMonth = 11; calYear--; } if (calMonth > 11) { calMonth = 0; calYear++; } }
-
-// ── AUTO-INIT ───────────────────────────────────────────────
+// ── AUTO-INIT ─────────────────────────────────────────────
 (function() {
-  var stored = sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_master_token');
-  if (stored) {
-    masterToken = stored;
-    loadApp();
+  var params = new URLSearchParams(window.location.search);
+  var resetParam = params.get('reset');
+  if (resetParam) {
+    showResetPassword();
   } else {
-    var resetTok = new URLSearchParams(window.location.search).get('reset') || '';
-    if (resetTok) showResetPassword();
+    var saved = localStorage.getItem('master_token');
+    if (saved) {
+      masterToken = saved;
+      apiKey = localStorage.getItem('api_key') || '';
+      loginSuccess(masterToken);
+    }
   }
 })();
 </script>
