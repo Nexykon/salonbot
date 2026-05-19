@@ -91,13 +91,6 @@ function clearSession(token) {
 }
 
 module.exports = {
-  cleanPhone,
-  createOtp,
-  verifyOtp,
-  getSession,
-  clearSession,
-  hashPassword,
-  verifyPassword,
-  hashToken,
-  createSession
+  cleanPhone, createOtp, hashPassword, verifyPassword, hashToken,
+  createSession, verifyOtp, getSession, clearSession
 };

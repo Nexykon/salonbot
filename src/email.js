@@ -7,18 +7,26 @@ function configured() {
 async function sendEmail(to, subject, text) {
   const email = String(to || '').trim();
   if (!email || !configured()) return false;
-  await axios.post('https://api.resend.com/emails', {
-    from: process.env.EMAIL_FROM,
-    to: email,
-    subject,
-    text
-  }, {
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  return true;
+  try {
+    const res = await axios.post('https://api.resend.com/emails', {
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject,
+      text
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return true;
+  } catch (e) {
+    const status = e.response?.status;
+    const detail = JSON.stringify(e.response?.data || e.message);
+    console.error(`[email] sendEmail failed (${status}): ${detail}`);
+    // Ne mečemo napake — email je nebistven, bot naj še vedno deluje
+    return false;
+  }
 }
 
 async function sendWelcomeEmail(salon, setupUrl) {
@@ -66,18 +74,25 @@ async function sendWelcomeEmail(salon, setupUrl) {
 
   const email = String(salon.owner_email || '').trim();
   if (!email || !configured()) return false;
-  await axios.post('https://api.resend.com/emails', {
-    from: process.env.EMAIL_FROM,
-    to: email,
-    subject,
-    html
-  }, {
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json'
-    }
-  });
-  return true;
+  try {
+    await axios.post('https://api.resend.com/emails', {
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject,
+      html
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return true;
+  } catch (e) {
+    const status = e.response?.status;
+    const detail = JSON.stringify(e.response?.data || e.message);
+    console.error(`[email] sendWelcomeEmail failed (${status}): ${detail}`);
+    return false;
+  }
 }
 
 async function sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel, formAnswers = {}) {

@@ -23,6 +23,11 @@ if ($LASTEXITCODE -ne 0) { Write-Host "auth.js check failed" -ForegroundColor Re
 node --check src/email.js
 if ($LASTEXITCODE -ne 0) { Write-Host "email.js check failed" -ForegroundColor Red; pause; exit 1 }
 
+Write-Host "=== Removing git lock files ===" -ForegroundColor Cyan
+Remove-Item -Force ".git\index.lock" -ErrorAction SilentlyContinue
+Remove-Item -Force ".git\HEAD.lock" -ErrorAction SilentlyContinue
+Remove-Item -Force ".git\objects\maintenance.lock" -ErrorAction SilentlyContinue
+
 Write-Host "=== Committing FlowTiq changes ===" -ForegroundColor Cyan
 
 git add .env.example server.js package.json package-lock.json push_fix.ps1 FLOWTIQ_TATTOO_ONBOARDING_RUNBOOK.md public/index.html public/dashboard.html public/book.html public/settings.html src/handler.js src/whatsapp.js src/supabase.js src/scheduler.js src/ai.js src/calendar.js src/auth.js src/email.js src/presets.js
@@ -31,7 +36,7 @@ git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
-  git commit -m "feat: add multi-tenant FlowTiq owner platform"
+  git commit -m "fix: email.js syntax, booking config UI, settings endpoints, restored truncated files"
   if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
 }
 

@@ -499,6 +499,66 @@
   }
   .btn-day-add:hover { background: rgba(124,58,237,0.25); }
 
+  /* ── BOOKING CONFIG (Master Admin Only) ── */
+  .master-only-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    background: rgba(124,58,237,0.18); color: var(--accent2);
+    border: 1px solid rgba(124,58,237,0.3); letter-spacing: 0.04em; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .booking-mode-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;
+  }
+  .booking-mode-card {
+    position: relative; border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 16px 14px 14px;
+    cursor: pointer; transition: all 0.18s;
+    background: rgba(255,255,255,0.02);
+  }
+  .booking-mode-card:hover { border-color: rgba(124,58,237,0.45); background: rgba(124,58,237,0.06); }
+  .booking-mode-card.selected {
+    border-color: var(--accent); background: rgba(124,58,237,0.13);
+    box-shadow: 0 0 0 4px rgba(124,58,237,0.12);
+  }
+  .booking-mode-check {
+    position: absolute; top: 12px; right: 12px;
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; transition: all 0.18s;
+  }
+  .booking-mode-card.selected .booking-mode-check {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .booking-mode-check-tick { display: none; color: white; font-size: 11px; font-weight: 900; }
+  .booking-mode-card.selected .booking-mode-check-tick { display: block; }
+  .booking-mode-icon { font-size: 26px; margin-bottom: 8px; display: block; }
+  .booking-mode-title { font-size: 13px; font-weight: 800; margin-bottom: 5px; color: var(--text); }
+  .booking-mode-desc { font-size: 12px; color: var(--text2); line-height: 1.45; }
+  .booking-mode-card.selected .booking-mode-title { color: var(--accent2); }
+
+  .config-section-label {
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--text3); margin-bottom: 10px; margin-top: 20px;
+  }
+  .field-row-hint {
+    font-size: 11px; color: var(--text3); padding: 10px 0 2px;
+  }
+  .form-fields-header {
+    display: grid; grid-template-columns: minmax(180px,1fr) 110px 90px 42px;
+    gap: 10px; margin-bottom: 8px; color: var(--text2);
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .closing-msg-preview {
+    margin-top: 8px; padding: 12px; border-radius: 10px;
+    background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.18);
+    font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.45; display: none;
+  }
+  .closing-msg-preview.visible { display: block; }
+  .config-divider {
+    border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 22px 0;
+  }
+
   @media (max-width: 768px) {
     main { padding: 16px; }
     .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -910,6 +970,66 @@
           </div>
         </div>
 
+        <!-- ═══════════════════════════════════════════════════════
+             MASTER ADMIN — KONFIGURACIJA REZERVACIJ
+             Lastnik tega razdelka ne vidi. Vidno samo tebi.
+             ═══════════════════════════════════════════════════════ -->
+        <div class="studio-section" id="bs-booking-config-section">
+          <div class="studio-section-title" style="display:flex;align-items:center;gap:10px;">
+            🎛 Konfiguracija rezervacij
+            <span class="master-only-badge">🔒 Samo master admin</span>
+          </div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:4px;line-height:1.5;">
+            Nastavi, kako bo bot zbiral termin od stranke. Lastnik salona tega ne vidi in ne more spremeniti.
+          </p>
+
+          <!-- 1. BOOKING MODE -->
+          <div class="config-section-label">1. Način zbiranja termina</div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:0;line-height:1.5;">
+            Izberi, katere informacije bot vpraša stranko med rezervacijo.
+          </p>
+          <div class="booking-mode-grid" id="bs-booking-mode-grid">
+            <!-- Populated by renderBookingModeCards() -->
+          </div>
+
+          <hr class="config-divider">
+
+          <!-- 2. FORM FIELDS -->
+          <div class="config-section-label">2. Dodatna vprašanja bota</div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5;">
+            Bot <strong style="color:var(--text2)">vedno</strong> vpraša za ime in telefon. Tukaj dodaj specifična vprašanja za tvojo panogo — npr. opis tattoo ideje, razlog obiska, opomba ipd.
+          </p>
+          <div class="form-fields-header">
+            <div>Vprašanje, ki ga bot postavi stranki</div>
+            <div>Tip odgovora</div>
+            <div>Obvezno?</div>
+            <div></div>
+          </div>
+          <div class="service-editor-list" id="bs-form-fields"></div>
+          <div class="field-row-hint">Primer: "Opiši tattoo idejo" → tip: Daljši opis → Obvezno: Da</div>
+          <div class="studio-actions" style="margin-top:12px">
+            <button class="btn-soft" onclick="addFormField()">+ Dodaj vprašanje</button>
+            <button class="btn-soft" onclick="applyFormPreset()" title="Nastavi vprašanja glede na panogo salona">🎯 Preset za panogo</button>
+          </div>
+
+          <hr class="config-divider">
+
+          <!-- 3. CLOSING MESSAGE -->
+          <div class="config-section-label">3. Zaključno sporočilo</div>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.5;">
+            Sporočilo, ki ga stranka prejme takoj po oddaji rezervacije ali povpraševanja. Sem napiši zahvalo, naslednje korake ali kdaj jo kontaktirate.
+          </p>
+          <div class="form-group" style="margin-bottom:0">
+            <textarea id="bs-inquiry-message" rows="4"
+              oninput="updateClosingPreview()"
+              placeholder="Hvala za vaše povpraševanje! Kmalu vas kontaktiramo za potrditev termina. Do takrat smo na voljo za vsa vprašanja. 🙏"></textarea>
+          </div>
+          <div class="closing-msg-preview" id="closing-msg-preview">
+            <strong style="font-size:11px;color:var(--green);display:block;margin-bottom:4px;">📱 Predogled — kar stranka prejme na WhatsApp:</strong>
+            <span id="closing-msg-text"></span>
+          </div>
+        </div>
+
         <div class="modal-footer">
           <button class="btn-cancel" onclick="closeBotStudio()">Preklici</button>
           <button class="btn-save" id="bs-save-btn" onclick="saveBotStudio()">Shrani spremembe</button>
@@ -939,31 +1059,10 @@
           </div>
         </div>
 
-        <div class="studio-section">
-          <div class="studio-section-title">Forma naročanja</div>
-          <div class="form-group">
-            <label>Način zbiranja termina</label>
-            <select id="bs-booking-mode" onchange="updateBotStudioPreview()">
-              <option value="exact_time">Stranka izbere datum in uro</option>
-              <option value="date_only">Stranka izbere samo datum</option>
-              <option value="inquiry">Povpraševanje brez točne ure</option>
-            </select>
-            <div class="form-hint">To nastavljaš samo ti v master adminu. Lastnik tega ne spreminja.</div>
-          </div>
-          <div class="form-group">
-            <label>Sporočilo po oddaji povpraševanja</label>
-            <textarea id="bs-inquiry-message" oninput="updateBotStudioPreview()" placeholder="Hvala! Kontaktirali vas bomo za potrditev."></textarea>
-          </div>
-          <div class="service-grid-head" style="grid-template-columns:minmax(180px,1fr) 110px 90px 42px">
-            <div>Vprašanje</div>
-            <div>Tip</div>
-            <div>Obvezno</div>
-            <div></div>
-          </div>
-          <div class="service-editor-list" id="bs-form-fields"></div>
-          <div class="studio-actions" style="margin-top:14px">
-            <button class="btn-soft" onclick="addFormField()">+ Dodaj vprašanje</button>
-            <button class="btn-soft" onclick="applyFormPreset()">Preset za panogo</button>
+        <div class="studio-section" style="margin-top:18px;">
+          <div class="studio-section-title" style="font-size:12px;color:var(--text3);margin-bottom:10px;">📋 Aktivna konfiguracija</div>
+          <div id="preview-config-summary" style="font-size:12px;line-height:1.7;color:var(--text2);">
+            <!-- Populated by updateBotStudioPreview() -->
           </div>
         </div>
       </div>
@@ -1342,6 +1441,74 @@ async function readApiJson(res) {
 
 let botStudio = { salonId: null, settings: null, services: [], formFields: [], deletedServiceIds: new Set() };
 
+// ── BOOKING MODE CARDS ────────────────────────────────────
+const BOOKING_MODES = [
+  {
+    value: 'exact_time',
+    icon: '🕐',
+    title: 'Točen datum in ura',
+    desc: 'Bot stranko vpraša za točen datum IN uro. Primerno za frizerje, kozmetiko, masaže, fizioterapijo.'
+  },
+  {
+    value: 'date_only',
+    icon: '📅',
+    title: 'Samo datum',
+    desc: 'Bot vpraša samo za datum — uro določiš sam. Primerno kadar termin potrjuješ ročno po telefonu.'
+  },
+  {
+    value: 'inquiry',
+    icon: '📋',
+    title: 'Povpraševanje (brez termina)',
+    desc: 'Bot zbere podatke stranke in te obvesti. Nato jo sam pokličeš za termin. Idealno za tattoo studie, fotografe.'
+  },
+  {
+    value: 'month_only',
+    icon: '🗓',
+    title: 'Samo mesec',
+    desc: 'Bot vpraša samo za mesec — brez dneva ali ure. Primerno za dolgoročne projekte ali sezone.'
+  }
+];
+
+function renderBookingModeCards(selectedMode) {
+  const grid = document.getElementById('bs-booking-mode-grid');
+  if (!grid) return;
+  grid.innerHTML = BOOKING_MODES.map(m => `
+    <div class="booking-mode-card${selectedMode === m.value ? ' selected' : ''}"
+         data-mode="${m.value}" onclick="selectBookingMode(this)">
+      <div class="booking-mode-check"><span class="booking-mode-check-tick">✓</span></div>
+      <span class="booking-mode-icon">${m.icon}</span>
+      <div class="booking-mode-title">${m.title}</div>
+      <div class="booking-mode-desc">${m.desc}</div>
+    </div>
+  `).join('');
+}
+
+function selectBookingMode(el) {
+  document.querySelectorAll('.booking-mode-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  updateBotStudioPreview();
+}
+
+function getSelectedBookingMode() {
+  const el = document.querySelector('.booking-mode-card.selected');
+  return el ? el.dataset.mode : 'exact_time';
+}
+
+function updateClosingPreview() {
+  const msg = document.getElementById('bs-inquiry-message')?.value?.trim() || '';
+  const preview = document.getElementById('closing-msg-preview');
+  const text = document.getElementById('closing-msg-text');
+  if (preview && text) {
+    if (msg) {
+      text.textContent = msg;
+      preview.classList.add('visible');
+    } else {
+      preview.classList.remove('visible');
+    }
+  }
+  updateBotStudioPreview();
+}
+
 function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -1377,8 +1544,9 @@ async function openManageSalon(id) {
     document.getElementById('bs-end').value = (settings.working_hours_end || '19:00').substring(0,5);
     document.getElementById('bs-interval').value = String(settings.booking_interval_minutes || 30);
     document.getElementById('bs-max-days').value = settings.max_advance_days || 30;
-    document.getElementById('bs-booking-mode').value = settings.booking_mode || 'exact_time';
+    renderBookingModeCards(settings.booking_mode || 'exact_time');
     document.getElementById('bs-inquiry-message').value = settings.inquiry_confirmation_message || '';
+    updateClosingPreview();
     renderBotStudioServices();
     renderFormFields();
     updateBotStudioPreview();
@@ -1539,46 +1707,77 @@ async function applyBotStudioPreset() {
   }
 }
 
-function updateBotStudioPreview() {
-  const name = document.getElementById('bs-name')?.value || 'FlowTiq bot';
-  const phone = document.getElementById('bs-bot-phone')?.value || 'online';
-  const greeting = document.getElementById('bs-greeting')?.value || 'Pozdravljeni! Izberite storitev:';
-  const services = collectBotStudioServices();
-  const mode = document.getElementById('bs-booking-mode')?.value || 'exact_time';
-  const modeLabel = mode === 'exact_time' ? 'datum in ura' : mode === 'date_only' ? 'samo datum' : 'povprasevanje';
-  const fields = collectFormFields();
 
-  document.getElementById('bs-preview-name').textContent = name;
-  document.getElementById('bs-preview-phone').textContent = phone;
-  document.getElementById('bs-preview-greeting').textContent = greeting;
-  document.getElementById('bs-preview-services').innerHTML = services.length
-    ? services.slice(0, 10).map(s => `
-      <div class="wa-list-row">
-        <div class="wa-service-name">${esc(s.name).substring(0, 28)}</div>
-        <div class="wa-service-meta">${Number.isFinite(s.duration_minutes) ? s.duration_minutes : 0} min · ${Number.isFinite(s.price) ? s.price : 0} EUR</div>
-      </div>
-    `).join('') + `<div class="wa-list-row"><div class="wa-service-name">Forma</div><div class="wa-service-meta">${modeLabel}${fields.length ? ' · ' + fields.length + ' dodatnih vprasanj' : ''}</div></div>`
-    : '<div class="wa-list-row"><div class="wa-service-meta">Dodaj storitve, da se prikazejo tukaj.</div></div>';
+function updateBotStudioPreview() {
+  var name = document.getElementById('bs-name') ? document.getElementById('bs-name').value : 'FlowTiq bot';
+  var phone = document.getElementById('bs-bot-phone') ? document.getElementById('bs-bot-phone').value : 'online';
+  var greeting = document.getElementById('bs-greeting') ? document.getElementById('bs-greeting').value : 'Pozdravljeni! Izberite storitev:';
+  var services = collectBotStudioServices();
+  var mode = getSelectedBookingMode();
+  var modeInfo = BOOKING_MODES.find(function(m) { return m.value === mode; }) || BOOKING_MODES[0];
+  var fields = collectFormFields();
+  var closingMsgEl = document.getElementById('bs-inquiry-message');
+  var closingMsg = closingMsgEl ? closingMsgEl.value.trim() : '';
+
+  document.getElementById('bs-preview-name').textContent = name || 'FlowTiq bot';
+  document.getElementById('bs-preview-phone').textContent = phone || 'online';
+  document.getElementById('bs-preview-greeting').textContent = greeting || 'Pozdravljeni! Izberite storitev:';
+
+  var svcHtml = '';
+  if (services.length) {
+    services.slice(0, 8).forEach(function(s) {
+      var dur = Number.isFinite(s.duration_minutes) ? s.duration_minutes : 0;
+      var pr = Number.isFinite(s.price) ? s.price : 0;
+      svcHtml += '<div class="wa-list-row">' +
+        '<div class="wa-service-name">' + esc(s.name).substring(0, 28) + '</div>' +
+        '<div class="wa-service-meta">' + dur + ' min · ' + pr + ' EUR</div>' +
+        '</div>';
+    });
+  } else {
+    svcHtml = '<div class="wa-list-row"><div class="wa-service-meta">Dodaj storitve, da se prikažejo tukaj.</div></div>';
+  }
+  document.getElementById('bs-preview-services').innerHTML = svcHtml;
+
+  var summary = document.getElementById('preview-config-summary');
+  if (summary) {
+    var fieldsText = fields.length > 0 ? fields.map(function(f) { return f.label || '—'; }).join(', ') : '— nobenih —';
+    var closingText = closingMsg ? ('"' + closingMsg.substring(0, 60) + (closingMsg.length > 60 ? '…' : '') + '"') : '— ni nastavljeno —';
+    summary.innerHTML =
+      '<div style="margin-bottom:8px">' +
+        '<span style="color:var(--text3)">Način termina:</span><br>' +
+        '<strong style="color:var(--accent2)">' + modeInfo.icon + ' ' + modeInfo.title + '</strong>' +
+        '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + modeInfo.desc + '</div>' +
+      '</div>' +
+      '<div style="margin-bottom:8px">' +
+        '<span style="color:var(--text3)">Dodatna vprašanja:</span><br>' +
+        '<strong>' + fieldsText + '</strong>' +
+      '</div>' +
+      '<div>' +
+        '<span style="color:var(--text3)">Zaključno sporočilo:</span><br>' +
+        '<strong>' + closingText + '</strong>' +
+      '</div>';
+  }
 }
 
 async function saveBotStudio() {
-  const btn = document.getElementById('bs-save-btn');
-  const services = collectBotStudioServices();
-  const formFields = collectFormFields();
+  var btn = document.getElementById('bs-save-btn');
+  var services = collectBotStudioServices();
+  var formFields = collectFormFields();
   if (!document.getElementById('bs-name').value.trim()) return showToast('Ime podjetja je obvezno', 'error');
   if (!services.length) return showToast('Dodaj vsaj eno storitev', 'error');
-  for (const service of services) {
-    if (!Number.isFinite(service.price) || service.price < 0) return showToast('Cena storitve ni veljavna', 'error');
-    if (!Number.isFinite(service.duration_minutes) || service.duration_minutes < 5 || service.duration_minutes > 480) {
+  for (var i = 0; i < services.length; i++) {
+    var svc = services[i];
+    if (!Number.isFinite(svc.price) || svc.price < 0) return showToast('Cena storitve ni veljavna', 'error');
+    if (!Number.isFinite(svc.duration_minutes) || svc.duration_minutes < 5 || svc.duration_minutes > 480) {
       return showToast('Trajanje storitve mora biti med 5 in 480 minut', 'error');
     }
   }
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
   try {
-    const ownerPassword = document.getElementById('bs-owner-password').value;
-    if (ownerPassword && ownerPassword.length < 8) return showToast('Geslo mora imeti vsaj 8 znakov', 'error');
-    const settingsPayload = {
+    var ownerPassword = document.getElementById('bs-owner-password').value;
+    if (ownerPassword && ownerPassword.length < 8) { btn.disabled = false; btn.innerHTML = 'Shrani spremembe'; return showToast('Geslo mora imeti vsaj 8 znakov', 'error'); }
+    var settingsPayload = {
       name: document.getElementById('bs-name').value.trim(),
       owner_email: document.getElementById('bs-owner-email').value.trim(),
       business_type: document.getElementById('bs-business-type').value,
@@ -1589,38 +1788,28 @@ async function saveBotStudio() {
       working_hours_end: document.getElementById('bs-end').value,
       booking_interval_minutes: parseInt(document.getElementById('bs-interval').value),
       max_advance_days: parseInt(document.getElementById('bs-max-days').value),
-      booking_mode: document.getElementById('bs-booking-mode').value,
+      booking_mode: getSelectedBookingMode(),
       form_fields: formFields,
       inquiry_confirmation_message: document.getElementById('bs-inquiry-message').value.trim()
     };
     if (ownerPassword) settingsPayload.owner_password = ownerPassword;
-    await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/settings`, {
+    await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/settings', {
       method: 'PATCH',
       body: JSON.stringify(settingsPayload)
     }));
-
-    for (const id of botStudio.deletedServiceIds) {
-      await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/services/${id}`, { method: 'DELETE' }));
+    var deleted = Array.from(botStudio.deletedServiceIds);
+    for (var d = 0; d < deleted.length; d++) {
+      await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/services/' + deleted[d], { method: 'DELETE' }));
     }
-    for (const service of services) {
-      const payload = JSON.stringify({
-        name: service.name,
-        price: service.price,
-        duration_minutes: service.duration_minutes
-      });
-      if (service.id) {
-        await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/services/${service.id}`, {
-          method: 'PATCH',
-          body: payload
-        }));
+    for (var j = 0; j < services.length; j++) {
+      var svc2 = services[j];
+      var payload = JSON.stringify({ name: svc2.name, price: svc2.price, duration_minutes: svc2.duration_minutes });
+      if (svc2.id) {
+        await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/services/' + svc2.id, { method: 'PATCH', body: payload }));
       } else {
-        await readApiJson(await apiFetch(`/api/admin/salons/${botStudio.salonId}/services`, {
-          method: 'POST',
-          body: payload
-        }));
+        await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/services', { method: 'POST', body: payload }));
       }
     }
-
     closeBotStudio();
     await refreshSalons();
     showToast('Bot je posodobljen', 'success');
@@ -1637,59 +1826,50 @@ function openAddModal() {
 }
 function closeModal() {
   document.getElementById('add-modal').classList.remove('open');
-  ['f-name','f-owner','f-email','f-password','f-phone','f-waid','f-botnum','f-slug'].forEach(id => {
+  ['f-name','f-owner','f-email','f-password','f-phone','f-waid','f-botnum','f-slug'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
 }
-document.getElementById('add-modal').addEventListener('click', e => {
+document.getElementById('add-modal').addEventListener('click', function(e) {
   if (e.target === document.getElementById('add-modal')) closeModal();
 });
-document.getElementById('bot-studio-modal').addEventListener('click', e => {
+document.getElementById('bot-studio-modal').addEventListener('click', function(e) {
   if (e.target === document.getElementById('bot-studio-modal')) closeBotStudio();
 });
 
 async function saveSalon() {
-  const name = document.getElementById('f-name').value.trim();
-  const email = document.getElementById('f-email').value.trim();
-  const password = document.getElementById('f-password').value;
-  const phone = document.getElementById('f-phone').value.trim();
-  const plan = document.getElementById('f-plan').value;
-  const businessType = document.getElementById('f-business-type').value;
-  const slug = document.getElementById('f-slug').value.trim();
-  const owner = document.getElementById('f-owner').value.trim();
-  const waid = document.getElementById('f-waid').value.trim();
-  const botnum = document.getElementById('f-botnum').value.trim();
-
-  if (!name || !email) {
-    showToast('Ime salona in email sta obvezna', 'error'); return;
-  }
-  if (password && password.length < 8) {
-    showToast('Geslo mora imeti vsaj 8 znakov', 'error'); return;
-  }
-
-  const btn = document.getElementById('save-btn');
+  var name = document.getElementById('f-name').value.trim();
+  var email = document.getElementById('f-email').value.trim();
+  var password = document.getElementById('f-password').value;
+  var phone = document.getElementById('f-phone').value.trim();
+  var plan = document.getElementById('f-plan').value;
+  var businessType = document.getElementById('f-business-type').value;
+  var slug = document.getElementById('f-slug').value.trim();
+  var owner = document.getElementById('f-owner').value.trim();
+  var waid = document.getElementById('f-waid').value.trim();
+  var botnum = document.getElementById('f-botnum').value.trim();
+  if (!name || !email) { showToast('Ime salona in email sta obvezna', 'error'); return; }
+  if (password && password.length < 8) { showToast('Geslo mora imeti vsaj 8 znakov', 'error'); return; }
+  var btn = document.getElementById('save-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>';
-
   try {
-    const res = await apiFetch('/onboard', {
+    var res = await apiFetch('/onboard', {
       method: 'POST',
       body: JSON.stringify({
-        name, owner_name: owner, owner_email: email, owner_password: password, admin_phone: phone,
-        plan, business_type: businessType, business_slug: slug || undefined,
-        whatsapp_phone_number_id: waid || undefined,
-        bot_phone_display: botnum || undefined
+        name: name, owner_name: owner, owner_email: email, owner_password: password, admin_phone: phone,
+        plan: plan, business_type: businessType, business_slug: slug || undefined,
+        whatsapp_phone_number_id: waid || undefined, bot_phone_display: botnum || undefined
       })
     });
-
-    const data = await res.json();
+    var data = await res.json();
     if (res.ok) {
       closeModal();
       await refreshSalons();
       if (data.email_sent) {
-        showToast(`🎉 ${name} dodan! Welcome email poslan.`, 'success');
+        showToast('🎉 ' + name + ' dodan! Welcome email poslan.', 'success');
       } else {
-        showToast(`✅ ${name} dodan! Email ni bil poslan — link: ${data.setup_url}`, 'success');
+        showToast('✅ ' + name + ' dodan! Email ni bil poslan — link: ' + data.setup_url, 'success');
         console.log('Setup URL:', data.setup_url);
       }
     } else {
@@ -1704,7 +1884,7 @@ async function saveSalon() {
 }
 
 async function refreshSalons() {
-  const res = await apiFetch('/salons');
+  var res = await apiFetch('/salons');
   if (res.ok) {
     salonsData = await res.json();
     renderAll();
@@ -1712,30 +1892,28 @@ async function refreshSalons() {
 }
 
 // ── TOAST ─────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, type = 'info') {
-  const t = document.getElementById('toast');
+var toastTimer;
+function showToast(msg, type) {
+  type = type || 'info';
+  var t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `show ${type}`;
+  t.className = 'show ' + type;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.className = ''; }, 3500);
+  toastTimer = setTimeout(function() { t.className = ''; }, 3500);
 }
 
 // ── CHANGE PLAN ───────────────────────────────────────────
 async function changePlan(id, plan) {
   try {
-    const res = await apiFetch(`/api/salons/${id}/plan`, {
-      method: 'PATCH',
-      body: JSON.stringify({ plan })
-    });
+    var res = await apiFetch('/api/salons/' + id + '/plan', { method: 'PATCH', body: JSON.stringify({ plan: plan }) });
     if (res.ok) {
-      const salon = salonsData.find(s => s.id === id);
+      var salon = salonsData.find(function(s) { return s.id === id; });
       if (salon) salon.subscription_plan = plan;
-      renderStats(); // posodobi revenue
-      showToast(`Paket spremenjen → ${plan === 'pro' ? 'Pro €160' : 'Starter €79'}`, 'success');
+      renderStats();
+      showToast('Paket spremenjen → ' + (plan === 'pro' ? 'Pro €160' : 'Starter €79'), 'success');
     } else {
       showToast('Napaka pri menjavi paketa', 'error');
-      renderTable(); // povrni staro vrednost
+      renderTable();
     }
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
@@ -1744,11 +1922,11 @@ async function changePlan(id, plan) {
 }
 
 // ── ERRORS ────────────────────────────────────────────────
-let errorsData = [];
+var errorsData = [];
 
 async function loadErrors() {
   try {
-    const res = await apiFetch('/api/errors');
+    var res = await apiFetch('/api/errors');
     if (!res.ok) return;
     errorsData = await res.json();
     renderErrors();
@@ -1756,285 +1934,53 @@ async function loadErrors() {
 }
 
 function renderErrors() {
-  const tbody = document.getElementById('errors-table');
-  const badge = document.getElementById('error-count-badge');
-
+  var tbody = document.getElementById('errors-table');
+  var badge = document.getElementById('error-count-badge');
   if (!errorsData.length) {
     badge.style.display = 'none';
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Ni napak ✅</td></tr>`;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Ni napak ✅</td></tr>';
     return;
   }
-
   badge.style.display = 'inline';
   badge.textContent = errorsData.length;
-
-  tbody.innerHTML = errorsData.map(e => {
-    const d = new Date(e.created_at);
-    const time = d.toLocaleDateString('sl-SI') + ' ' + d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
-    return `<tr>
-      <td class="error-time">${time}</td>
-      <td><span class="error-type">${e.type || '?'}</span></td>
-      <td class="error-msg">${e.message || ''}</td>
-      <td class="error-phone">${e.customer_phone ? '+' + e.customer_phone : '—'}</td>
-    </tr>`;
+  tbody.innerHTML = errorsData.map(function(e) {
+    var d = new Date(e.created_at);
+    var time = d.toLocaleDateString('sl-SI') + ' ' + d.toLocaleTimeString('sl-SI', { hour: '2-digit', minute: '2-digit' });
+    return '<tr>' +
+      '<td class="error-time">' + time + '</td>' +
+      '<td><span class="error-type">' + (e.type || '?') + '</span></td>' +
+      '<td class="error-msg">' + (e.message || '') + '</td>' +
+      '<td class="error-phone">' + (e.customer_phone ? '+' + e.customer_phone : '—') + '</td>' +
+      '</tr>';
   }).join('');
 }
 
 async function clearAllErrors() {
   if (!confirm('Izbriši vse napake?')) return;
   try {
-    const res = await apiFetch('/api/errors', { method: 'DELETE' });
-    if (res.ok) {
-      errorsData = [];
-      renderErrors();
-      showToast('Napake izbrisane', 'success');
-    }
+    var res = await apiFetch('/api/errors', { method: 'DELETE' });
+    if (res.ok) { errorsData = []; renderErrors(); showToast('Napake izbrisane', 'success'); }
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
 
-// ── CALENDAR ──────────────────────────────────────────────
-const MONTHS_SL = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
-const DAYS_SL = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
+// ── CALENDAR (disabled, stubs only) ────────────────────────────
+var MONTHS_SL = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+var DAYS_SL = ['Šed','Čet','Pet','Sob','Ned','Pon','Tor'];
+var calYear = new Date().getFullYear();
+var calMonth = new Date().getMonth();
+function calChangeMonth(dir) { calMonth += dir; if (calMonth < 0) { calMonth = 11; calYear--; } if (calMonth > 11) { calMonth = 0; calYear++; } }
 
-let calYear = new Date().getFullYear();
-let calMonth = new Date().getMonth();
-let calBookings = [];
-let calServices = [];
-let selectedCalDate = null;
-
-async function loadCalendar() {
-  try {
-    const [calRes, svcRes] = await Promise.all([
-      apiFetch(`/api/calendar?year=${calYear}&month=${calMonth + 1}`),
-      fetch('/api/book/info')
-    ]);
-    if (calRes.ok) calBookings = await calRes.json();
-    if (svcRes.ok) { const d = await svcRes.json(); calServices = d.services || []; }
-    renderCalendar();
-    if (selectedCalDate) showDayDetail(selectedCalDate);
-  } catch (e) { console.warn('Cal load failed:', e.message); }
-}
-
-function calChangeMonth(dir) {
-  calMonth += dir;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  selectedCalDate = null;
-  document.getElementById('day-detail').classList.remove('open');
-  loadCalendar();
-}
-
-function renderCalendar() {
-  const y = calYear, m = calMonth;
-  document.getElementById('cal-title').textContent = `${MONTHS_SL[m]} ${y}`;
-  const firstDay = new Date(y, m, 1).getDay();
-  const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const prevDays = new Date(y, m, 0).getDate();
-  const startOffset = (firstDay + 6) % 7;
-  const today = new Date().toISOString().split('T')[0];
-
-  const byDate = {};
-  calBookings.forEach(b => {
-    const d = (b.booking_date || '').substring(0, 10);
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push(b);
-  });
-
-  let html = DAYS_SL.map(d => `<div class="cal-header-cell">${d}</div>`).join('');
-  for (let i = startOffset - 1; i >= 0; i--)
-    html += `<div class="cal-cell other-month"><div class="cal-day-num">${prevDays - i}</div></div>`;
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday = dateStr === today;
-    const isSelected = dateStr === selectedCalDate;
-    const events = (byDate[dateStr] || []).filter(b => b.status !== 'cancelled');
-    const pending = events.filter(b => b.status === 'pending');
-
-    const chips = events.slice(0, 3).map(b => {
-      const t = (b.booking_time || '').substring(0, 5);
-      const name = (b.customer_name || '?').split(' ')[0];
-      return `<span class="cal-event ${b.status}">${t} ${name}</span>`;
-    }).join('') + (events.length > 3 ? `<span class="cal-more">+${events.length-3} več</span>` : '');
-
-    const pendingDot = pending.length ? `<span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--yellow);box-shadow:0 0 6px var(--yellow)"></span>` : '';
-
-    html += `<div class="cal-cell${isToday?' today':''}${isSelected?' selected':''}" onclick="showDayDetail('${dateStr}',event)">
-      <div class="cal-day-num">${d}</div>${chips}${pendingDot}
-    </div>`;
+// ── AUTO-INIT ───────────────────────────────────────────────
+(function() {
+  var stored = sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_master_token');
+  if (stored) {
+    masterToken = stored;
+    loadApp();
+  } else {
+    var resetTok = new URLSearchParams(window.location.search).get('reset') || '';
+    if (resetTok) showResetPassword();
   }
-
-  const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
-  let next = 1;
-  for (let i = startOffset + daysInMonth; i < totalCells; i++)
-    html += `<div class="cal-cell other-month"><div class="cal-day-num">${next++}</div></div>`;
-
-  document.getElementById('cal-grid').innerHTML = html;
-}
-
-function getServiceName(id) {
-  if (!id) return null;
-  const s = calServices.find(s => s.id === id);
-  return s ? s.name : null;
-}
-
-function showDayDetail(dateStr, evt) {
-  evt?.stopPropagation();
-  selectedCalDate = dateStr;
-  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('selected'));
-  document.querySelectorAll(`.cal-cell`).forEach(c => {
-    if (c.onclick && c.onclick.toString().includes(dateStr)) c.classList.add('selected');
-  });
-
-  const events = calBookings.filter(b => (b.booking_date||'').substring(0,10) === dateStr);
-  const d = new Date(dateStr + 'T12:00:00');
-  const label = `${d.getDate()}. ${MONTHS_SL[d.getMonth()]} ${d.getFullYear()}`;
-  const activeCount = events.filter(b => b.status !== 'cancelled').length;
-  document.getElementById('day-detail-title').textContent = `📅 ${label} — ${activeCount} rezervacij`;
-
-  const detail = document.getElementById('day-detail');
-  detail.classList.add('open');
-
-  const statusBadge = s => s === 'confirmed'
-    ? '<span class="badge active">✅ Potrjeno</span>'
-    : s === 'pending'
-    ? '<span class="badge trial">⏳ V čakanju</span>'
-    : '<span class="badge inactive">❌ Odpovedano</span>';
-
-  const sorted = [...events].sort((a,b) => (a.booking_time||'').localeCompare(b.booking_time||''));
-
-  const itemsHtml = sorted.length === 0
-    ? '<div style="padding:24px 20px;text-align:center;color:var(--text3)">Na ta dan ni rezervacij</div>'
-    : sorted.map(b => {
-        const ref = (b.id||'').slice(-6);
-        const time = (b.booking_time||'').substring(0,5);
-        const phone = b.customer_phone && b.customer_phone !== 'manual' ? b.customer_phone : null;
-        const svcName = getServiceName(b.service_id);
-        const canConfirm = b.status === 'pending';
-        const canCancel = b.status !== 'cancelled';
-        return `
-        <div class="day-booking-item" id="dbi-${ref}">
-          <div class="day-booking-top">
-            <div style="display:flex;align-items:flex-start;gap:12px;flex:1">
-              <div class="day-booking-time">${time}</div>
-              <div class="day-booking-info">
-                <div class="day-booking-name">${b.customer_name || '—'}</div>
-                <div class="day-booking-meta">
-                  ${phone ? `<span>📞 <a href="tel:+${phone}" style="color:var(--accent2);text-decoration:none">+${phone}</a></span>` : ''}
-                  ${svcName ? `<span>✂️ ${svcName}</span>` : ''}
-                  <span>📌 Ref: <b>${ref}</b></span>
-                </div>
-              </div>
-            </div>
-            <div>${statusBadge(b.status)}</div>
-          </div>
-          <div class="day-booking-actions">
-            ${canConfirm ? `<button class="btn-day-confirm" onclick="calConfirm('${ref}')">✅ Potrdi</button>` : ''}
-            ${canCancel ? `<button class="btn-day-cancel" onclick="calCancel('${ref}')">❌ Odpovej</button>` : ''}
-          </div>
-        </div>`;
-      }).join('');
-
-  document.getElementById('day-detail-list').innerHTML =
-    itemsHtml +
-    `<button class="btn-day-add" onclick="openAddBookingModal('${dateStr}')">➕ Dodaj rezervacijo za ta dan</button>`;
-
-  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-async function calConfirm(ref) {
-  try {
-    const res = await apiFetch(`/api/admin/bookings/${ref}/confirm`, { method: 'PATCH' });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-    const b = calBookings.find(b => (b.id||'').slice(-6) === ref);
-    if (b) b.status = 'confirmed';
-    renderCalendar();
-    showDayDetail(selectedCalDate, null);
-    showToast('✅ Rezervacija potrjena — stranka obveščena', 'success');
-  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
-}
-
-async function calCancel(ref) {
-  if (!confirm('Odpovedati rezervacijo? Stranka bo obveščena.')) return;
-  try {
-    const res = await apiFetch(`/api/admin/bookings/${ref}/cancel`, { method: 'PATCH' });
-    if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
-    const b = calBookings.find(b => (b.id||'').slice(-6) === ref);
-    if (b) b.status = 'cancelled';
-    renderCalendar();
-    showDayDetail(selectedCalDate, null);
-    showToast('❌ Rezervacija odpovedana', 'info');
-  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
-}
-
-// ── ADD BOOKING MODAL ──────────────────────────────────────
-function openAddBookingModal(dateStr) {
-  document.getElementById('ab-date').value = dateStr || '';
-  document.getElementById('ab-name').value = '';
-  document.getElementById('ab-phone').value = '';
-  document.getElementById('ab-time').value = '';
-  // Fill services dropdown
-  const sel = document.getElementById('ab-service');
-  sel.innerHTML = '<option value="">— Brez storitve —</option>' +
-    calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min, €${s.price})</option>`).join('');
-  document.getElementById('add-booking-modal').classList.add('open');
-}
-
-async function saveAddBooking() {
-  const date = document.getElementById('ab-date').value.trim();
-  const time = document.getElementById('ab-time').value.trim();
-  const name = document.getElementById('ab-name').value.trim();
-  const phone = document.getElementById('ab-phone').value.trim();
-  const serviceId = document.getElementById('ab-service').value;
-
-  if (!date || !time || !name) { showToast('Izpolnite datum, uro in ime', 'error'); return; }
-
-  const btn = document.getElementById('ab-save-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
-  try {
-    const res = await apiFetch('/api/admin/bookings', {
-      method: 'POST',
-      body: JSON.stringify({ date, time, customerName: name, customerPhone: phone, serviceId: serviceId || null })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error);
-    document.getElementById('add-booking-modal').classList.remove('open');
-    selectedCalDate = date;
-    await loadCalendar();
-    showToast(`✅ Rezervacija dodana (Ref: ${data.ref})`, 'success');
-  } catch (e) {
-    showToast('Napaka: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false; btn.innerHTML = 'Dodaj rezervacijo →';
-  }
-}
-
-// ── INIT ──────────────────────────────────────────────────
-const urlToken = new URLSearchParams(window.location.search).get('master_token');
-if (urlToken) {
-  masterToken = urlToken;
-  sessionStorage.setItem('ft_master_token', masterToken);
-  history.replaceState(null, '', '/dashboard.html');
-}
-localStorage.removeItem('ft_master_token');
-localStorage.removeItem('ft_master_phone');
-localStorage.removeItem('sb_api_key');
-document.getElementById('admin-email-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') loginMaster(); });
-document.getElementById('admin-password-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') loginMaster(); });
-document.getElementById('forgot-email-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') forgotMasterPassword(); });
-document.getElementById('reset-password-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') resetMasterPassword(); });
-const savedMasterToken = sessionStorage.getItem('ft_master_token');
-const savedKey = '';
-if (resetToken) {
-  sessionStorage.removeItem('ft_master_token');
-  showResetPassword();
-} else if (savedMasterToken) {
-  masterToken = savedMasterToken;
-  loadApp();
-} else if (savedKey) {
-  apiKey = savedKey;
-  loadApp();
-}
+})();
 </script>
 </body>
 </html>

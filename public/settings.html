@@ -1010,26 +1010,26 @@ async function saveService(svcId) {
 
 async function deleteService(svcId) {
   if (!confirm('Izklopiti to storitev? Stranke je ne bodo več videle.')) return;
-  const headers = {};
-  Object.assign(headers, authHeaders());
-  try {
-    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), { method: 'DELETE', headers });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error);
-    showToast('Storitev izklopljena', 'success');
-    loadServices();
-  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+  const r = await fetch(scopedPath('/api/settings/services/' + svcId), {
+    method: 'DELETE', headers: authHeaders()
+  });
+  if (r.ok) {
+    showToast('Storitev odstranjena', 'info');
+    await loadServices();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    showToast('Napaka: ' + (d.error || '?'), 'error');
+  }
 }
 
-(async () => {
-  if (ownerToken || (masterToken && previewSalonId)) {
-    try {
-      loadUI(await loadSettings()); return;
-    } catch (_) {}
-    sessionStorage.removeItem('ft_owner_token');
-    if (!previewSalonId) sessionStorage.removeItem('ft_master_token');
-    localStorage.removeItem('ft_owner_token');
-    localStorage.removeItem('ft_salon_phone');
+// ── Auto-init ────────────────────────────────────────────────
+(function init() {
+  const stored = sessionStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token');
+  if (stored) {
+    document.getElementById('auth-token').value = stored;
+    doLogin(stored);
+  } else if (previewSalonId && masterToken) {
+    doLogin(masterToken);
   }
 })();
 </script>

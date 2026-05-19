@@ -463,16 +463,27 @@ async function updateMasterAdmin(adminId, updates) {
   );
 }
 
+
+
+async function deleteServiceById(serviceId) {
+  await axios.delete(`${BASE}/sb_services?id=eq.${serviceId}`, { headers: HEADERS });
+}
+
 module.exports = {
-  getSalon, getServices, getAvailableSlots, createBooking, markSlotBooked,
-  getSalonById, getSalonBySlug, resolveSalon, getServiceById, createBookingIfFree,
-  createService, createServicesFromPreset,
-  getBooking, getBookingForSalon, updateBookingStatus, getTodayBookings,
-  getBookingsByDate, getBookingsForRange, getBookingsByPhone, getSlotsByDate, addManualBooking, getBookingByName,
-  markSlotFree, updateService, updateServiceById, setServiceActive, addSlot, removeSlot, getBookedTimesForDate, getPendingBookings, getDailyStats,
+  getSalon, getSalonById, getSalonBySlug, resolveSalon, getSalonByPhoneId,
+  getAllSalons, createSalon, createService, createServicesFromPreset,
+  updateSalonStripe, updateSubscriptionStatus, logInvoice,
+  getServices, getServiceById, getAvailableSlots,
+  createBooking, createBookingIfFree, markSlotBooked,
+  getBooking, getBookingForSalon, updateBookingStatus,
+  getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
+  getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
+  updateServiceById, setServiceActive, updateService, deleteServiceById,
+  addSlot, removeSlot, getPendingBookings,
   getKnowledge, addKnowledge, deleteKnowledge,
-  getSalonByPhoneId, getAllSalons, createSalon, updateSalonStripe, updateSubscriptionStatus, logInvoice,
+  getDailyStats, getBookedTimesForDate,
   logError, getRecentErrors, getRecentLogs, clearErrors,
-  getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken, updateSalonSettings,
+  getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken,
+  updateSalonSettings,
   getMasterAdminByEmail, getMasterAdminByResetTokenHash, updateMasterAdmin
 };
