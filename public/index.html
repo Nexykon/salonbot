@@ -25,7 +25,7 @@ a{text-decoration:none;color:inherit}
 #cur.big{width:40px;height:40px}
 
 /* LAYOUT */
-.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 48px}
 
 /* BUTTONS */
 .btn-p{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:100px;background:var(--p);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
@@ -36,7 +36,7 @@ a{text-decoration:none;color:inherit}
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;align-items:center;transition:background .3s,border-color .3s}
 nav.up{background:rgba(9,9,15,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
-.nav-in{max-width:1200px;margin:0 auto;padding:0 40px;width:100%;display:flex;align-items:center;justify-content:space-between}
+.nav-in{max-width:1080px;margin:0 auto;padding:0 48px;width:100%;display:flex;align-items:center;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:700;color:#fff}
 .logo-ico{width:32px;height:32px;border-radius:8px;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:14px}
 .nav-r{display:flex;align-items:center;gap:32px}
@@ -49,15 +49,15 @@ nav.up{background:rgba(9,9,15,0.92);backdrop-filter:blur(20px);border-bottom:1px
 #hero{min-height:100vh;padding-top:68px;display:flex;align-items:center;position:relative;overflow:hidden}
 #vanta-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%}
 .hero-bg{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse 60% 50% at 70% 10%,rgba(124,58,237,0.18),transparent 55%),radial-gradient(ellipse 40% 40% at 0 80%,rgba(6,182,212,0.06),transparent 50%);pointer-events:none}
-.hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:80px;max-width:1200px;margin:0 auto;padding:80px 40px;width:100%}
+.hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:64px;max-width:1080px;margin:0 auto;padding:80px 48px;width:100%}
 
 .hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:100px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.25);font-size:12px;font-weight:600;color:var(--p2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:28px}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--p2);animation:bdot 2s ease-in-out infinite}
 @keyframes bdot{0%,100%{opacity:1}50%{opacity:.3}}
 
-.hero-h1{font-family:'Syne',sans-serif;font-size:clamp(42px,5vw,66px);font-weight:900;line-height:1.06;letter-spacing:-2px;margin-bottom:24px}
+.hero-h1{font-family:'Inter',sans-serif;font-size:clamp(30px,3.2vw,46px);font-weight:700;line-height:1.12;letter-spacing:-0.5px;margin-bottom:20px}
 .hero-h1 .acc{background:linear-gradient(110deg,#a78bfa 0%,#7c3aed 50%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-sub{font-size:17px;line-height:1.65;color:var(--muted);max-width:460px;margin-bottom:36px}
+.hero-sub{font-size:15px;line-height:1.7;color:var(--muted);max-width:420px;margin-bottom:32px}
 .hero-btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:44px}
 .hero-proof{display:flex;align-items:center;gap:12px}
 .proof-avs{display:flex}
@@ -122,15 +122,15 @@ nav.up{background:rgba(9,9,15,0.92);backdrop-filter:blur(20px);border-bottom:1px
 /* STATS */
 #stats{padding:64px 0;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden}
-.stat{background:var(--bg);padding:40px 32px;text-align:center}
-.stat-v{font-family:'Syne',sans-serif;font-size:clamp(36px,4vw,54px);font-weight:900;letter-spacing:-2px;margin-bottom:6px;background:linear-gradient(110deg,#fff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat{background:var(--bg);padding:28px 24px;text-align:center}
+.stat-v{font-family:'Inter',sans-serif;font-size:28px;font-weight:700;letter-spacing:-0.3px;margin-bottom:6px;color:#fff}
 .stat-l{font-size:13px;color:var(--muted);font-weight:500}
 
 /* FEATURES */
 #features{padding:100px 0;position:relative;overflow:hidden}
 .sec-center{text-align:center;margin-bottom:64px}
 .sec-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--p2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
-.sec-h{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,50px);font-weight:900;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px}
+.sec-h{font-family:'Syne',sans-serif;font-size:clamp(26px,3vw,40px);font-weight:800;line-height:1.12;letter-spacing:-0.5px;margin-bottom:16px}
 .sec-s{font-size:17px;color:var(--muted);line-height:1.6;max-width:520px;margin:0 auto}
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .feat-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 32px;transition:border-color .25s,transform .25s}
@@ -142,14 +142,66 @@ nav.up{background:rgba(9,9,15,0.92);backdrop-filter:blur(20px);border-bottom:1px
 /* PRICING */
 #pricing{padding:100px 0;background:var(--bg2);border-top:1px solid var(--border);position:relative;overflow:hidden}
 .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.pcard{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;position:relative;transition:border-color .25s}
-.pcard:hover{border-color:rgba(124,58,237,.35)}
-.pcard.hot{background:linear-gradient(150deg,rgba(124,58,237,.15),rgba(79,70,229,.1));border-color:rgba(124,58,237,.4)}
-.pbadge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--p);color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:100px;white-space:nowrap}
+.price-grid{align-items:stretch}
+.pcard{
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:24px;padding:40px 36px;
+  position:relative;overflow:hidden;
+  transition:transform .3s,box-shadow .3s,border-color .3s;
+  display:flex;flex-direction:column;
+}
+/* spotlight na miško */
+.pcard::before{
+  content:'';position:absolute;inset:0;border-radius:24px;
+  opacity:0;transition:opacity .35s;pointer-events:none;
+  background:radial-gradient(500px circle at var(--mx,50%) var(--my,50%),rgba(124,58,237,0.08),transparent 45%);
+}
+.pcard:hover{transform:translateY(-5px);box-shadow:0 24px 64px rgba(0,0,0,.45);border-color:rgba(255,255,255,0.14)}
+.pcard:hover::before{opacity:1}
+
+/* FEATURED card — vijolična, čista */
+.pcard.hot{
+  background:linear-gradient(160deg,#1a0e2e 0%,#120b22 60%,#0e0a1f 100%);
+  border:1px solid rgba(124,58,237,.45);
+  box-shadow:0 0 60px rgba(124,58,237,.15), inset 0 1px 0 rgba(255,255,255,.08);
+}
+.pcard.hot:hover{
+  transform:translateY(-7px);
+  box-shadow:0 0 80px rgba(124,58,237,.25),0 32px 80px rgba(0,0,0,.5);
+  border-color:rgba(124,58,237,.7);
+}
+/* shine sweep animation */
+.pcard.hot::after{
+  content:'';position:absolute;
+  top:-60%;left:-60%;
+  width:60%;height:220%;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.04) 50%,transparent 60%);
+  animation:card-shine 4s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes card-shine{0%,100%{left:-60%}50%{left:160%}}
+
+/* glow ring na vrhu featured */
+.pcard.hot .hot-ring{
+  position:absolute;top:-80px;left:50%;transform:translateX(-50%);
+  width:220px;height:160px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(124,58,237,.3),transparent 70%);
+  pointer-events:none;
+}
+
+.pbadge{
+  position:absolute;top:-1px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(90deg,#7c3aed,#6d28d9);
+  color:#fff;font-size:11px;font-weight:700;
+  padding:5px 20px;border-radius:0 0 12px 12px;
+  white-space:nowrap;letter-spacing:.04em;
+  box-shadow:0 4px 20px rgba(124,58,237,.4);
+}
 .pname{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
 .pprice{margin-bottom:8px}
 .pprice sup{font-size:22px;font-weight:700;vertical-align:top;margin-top:12px;display:inline-block;color:var(--muted)}
-.pprice .n{font-family:'Syne',sans-serif;font-size:clamp(44px,5vw,58px);font-weight:900;letter-spacing:-2px}
+.pprice .n{font-family:'Inter',sans-serif;font-size:42px;font-weight:700;letter-spacing:-1px}
 .pprice sub{font-size:14px;color:var(--muted);font-weight:500;margin-left:2px}
 .pdesc{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.5}
 .pdiv{border:none;border-top:1px solid var(--border);margin-bottom:22px}
@@ -163,7 +215,8 @@ nav.up{background:rgba(9,9,15,0.92);backdrop-filter:blur(20px);border-bottom:1px
 .pbtn-f:hover{background:#6d28d9;box-shadow:0 8px 24px rgba(124,58,237,.4)}
 
 /* CTA */
-#cta{padding:100px 0;border-top:1px solid var(--border);text-align:center}
+#cta{padding:100px 0;border-top:1px solid var(--border);text-align:center;position:relative;overflow:hidden}
+#vanta-cta{position:absolute;inset:0;z-index:0;opacity:0.55}
 .cta-in{max-width:680px;margin:0 auto}
 .cta-glow{width:400px;height:160px;margin:0 auto 40px;background:radial-gradient(ellipse,rgba(124,58,237,.22),transparent 65%);pointer-events:none}
 .cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px;margin-bottom:20px}
@@ -293,21 +346,29 @@ footer{border-top:1px solid var(--border);padding:40px 0}
   </div>
 </div>
 
+<!-- GLOWING DIVIDER -->
+<hr class="glow-line">
+
 <!-- STATS -->
 <div id="stats">
-  <div class="wrap">
+  <div class="orb v" style="width:400px;height:400px;top:-100px;left:-100px;animation-delay:0s"></div>
+  <div class="orb c" style="width:300px;height:300px;bottom:-80px;right:-50px;animation-delay:-7s"></div>
+  <div class="wrap" style="position:relative;z-index:1">
     <div class="stats-grid">
       <div class="stat"><div class="stat-v">24/7</div><div class="stat-l">Vedno aktivno, nikoli ne spi</div></div>
-      <div class="stat"><div class="stat-v">&lt;2s</div><div class="stat-l">Povprečni odzivni čas</div></div>
-      <div class="stat"><div class="stat-v">98%</div><div class="stat-l">Uspešnost rezervacij</div></div>
-      <div class="stat"><div class="stat-v">50+</div><div class="stat-l">Salonov uporablja FlowTiq</div></div>
+      <div class="stat"><div class="stat-v" data-count="2" data-prefix="&lt;" data-suffix="s">&lt;2s</div><div class="stat-l">Povprečni odzivni čas</div></div>
+      <div class="stat"><div class="stat-v" data-count="98" data-suffix="%">98%</div><div class="stat-l">Uspešnost rezervacij</div></div>
+      <div class="stat"><div class="stat-v" data-count="50" data-suffix="+">50+</div><div class="stat-l">Salonov uporablja FlowTiq</div></div>
     </div>
   </div>
 </div>
 
 <!-- FEATURES -->
 <section id="features">
-  <div class="wrap">
+  <div class="dot-grid"></div>
+  <div class="orb v" style="width:500px;height:500px;top:50px;right:-150px;animation-delay:-4s"></div>
+  <div class="orb c" style="width:350px;height:350px;bottom:0;left:-100px;animation-delay:-11s"></div>
+  <div class="wrap" style="position:relative;z-index:1">
     <div class="sec-center">
       <div class="sec-tag">⚡ Funkcije</div>
       <h2 class="sec-h">Vse kar vaš salon potrebuje.<br>Popolnoma avtomatizirano.</h2>
@@ -350,7 +411,10 @@ footer{border-top:1px solid var(--border);padding:40px 0}
 
 <!-- PRICING -->
 <section id="pricing">
-  <div class="wrap">
+  <div class="orb v" style="width:600px;height:600px;top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-6s;opacity:.07!important"></div>
+  <div class="orb c" style="width:280px;height:280px;top:-60px;right:10%;animation-delay:-2s"></div>
+  <div class="orb g" style="width:240px;height:240px;bottom:-40px;left:8%;animation-delay:-14s"></div>
+  <div class="wrap" style="position:relative;z-index:1">
     <div class="sec-center">
       <div class="sec-tag">💳 Cenik</div>
       <h2 class="sec-h">Enostavne cene. Brez presenečenj.</h2>
@@ -372,6 +436,7 @@ footer{border-top:1px solid var(--border);padding:40px 0}
         <button class="pbtn pbtn-o">Začni zdaj</button>
       </div>
       <div class="pcard hot">
+        <div class="hot-ring"></div>
         <div class="pbadge">Najbolj priljubljen</div>
         <div class="pname">Pro</div>
         <div class="pprice"><sup>€</sup><span class="n">160</span><sub>/mes</sub></div>
@@ -406,7 +471,8 @@ footer{border-top:1px solid var(--border);padding:40px 0}
 
 <!-- CTA -->
 <section id="cta">
-  <div class="wrap">
+  <div id="vanta-cta"></div>
+  <div class="wrap" style="position:relative;z-index:1">
     <div class="cta-in">
       <div class="cta-glow"></div>
       <div class="sec-tag" style="justify-content:center">⚡ Ste pripravljeni?</div>
@@ -439,10 +505,11 @@ footer{border-top:1px solid var(--border);padding:40px 0}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.dots.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script>
-// VANTA NET animated background
+// VANTA NET — hero
 if(window.VANTA && window.THREE){
   VANTA.NET({
     el:'#vanta-bg',
@@ -463,6 +530,57 @@ if(window.VANTA && window.THREE){
   });
 }
 
+// VANTA DOTS — CTA section
+if(window.VANTA && window.THREE && document.getElementById('vanta-cta')){
+  VANTA.DOTS({
+    el:'#vanta-cta',
+    THREE:THREE,
+    mouseControls:true,
+    touchControls:false,
+    gyroControls:false,
+    minHeight:200,
+    minWidth:200,
+    scale:1.0,
+    color:0x7c3aed,
+    color2:0x06b6d4,
+    backgroundColor:0x09090f,
+    size:3.5,
+    spacing:30.0,
+    showLines:false
+  });
+}
+
+// COUNT-UP for stats
+(function(){
+  var observed = false;
+  var els = document.querySelectorAll('.stat-v[data-count]');
+  if(!els.length) return;
+  function animateCount(el){
+    var target = parseFloat(el.dataset.count);
+    var prefix = el.dataset.prefix || '';
+    var suffix = el.dataset.suffix || '';
+    var start = 0; var dur = 1800; var startTime = null;
+    function step(ts){
+      if(!startTime) startTime = ts;
+      var p = Math.min((ts - startTime)/dur, 1);
+      var ease = 1 - Math.pow(1-p, 3);
+      var val = Math.round(start + (target - start) * ease);
+      el.textContent = prefix + val + suffix;
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting && !observed){
+        observed = true;
+        els.forEach(function(el){ animateCount(el) });
+      }
+    });
+  },{threshold:0.5});
+  io.observe(document.getElementById('stats'));
+})();
+
 var cur=document.getElementById('cur');
 if(cur&&window.matchMedia('(hover:hover)').matches){
   document.addEventListener('mousemove',function(e){gsap.to(cur,{x:e.clientX,y:e.clientY,duration:.1,ease:'power2.out'})});
@@ -472,6 +590,15 @@ if(cur&&window.matchMedia('(hover:hover)').matches){
   });
 }
 window.addEventListener('scroll',function(){document.getElementById('nav').classList.toggle('up',window.scrollY>40)});
+
+// PRICING spotlight — sledi miški
+document.querySelectorAll('.pcard').forEach(function(card){
+  card.addEventListener('mousemove',function(e){
+    var r=card.getBoundingClientRect();
+    card.style.setProperty('--mx',(e.clientX-r.left)+'px');
+    card.style.setProperty('--my',(e.clientY-r.top)+'px');
+  });
+});
 if(window.gsap&&window.ScrollTrigger){
   gsap.registerPlugin(ScrollTrigger);
   gsap.from('.hero-text > *',{opacity:0,y:28,duration:.7,stagger:.09,delay:.15,ease:'power3.out'});
