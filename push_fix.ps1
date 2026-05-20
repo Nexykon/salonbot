@@ -36,7 +36,7 @@ git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
-  git commit -m "fix: email.js syntax, booking config UI, settings endpoints, restored truncated files"
+  git commit -m "feat: WhatsApp phone mockup on landing page, redesigned index.html v3, fixed email.js"
   if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
 }
 
