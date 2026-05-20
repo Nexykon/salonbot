@@ -37,13 +37,4 @@ if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
   git commit -m "feat: light theme landing page, logo, WhatsApp phone animation, floating bubbles, Slovenian copy"
-  if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
-}
-
-Write-Host "=== Pushing to GitHub ===" -ForegroundColor Cyan
-git push
-if ($LASTEXITCODE -ne 0) { Write-Host "git push failed" -ForegroundColor Red; pause; exit 1 }
-
-Write-Host ""
-Write-Host "DONE! Railway bo redeployiral v ~1 min." -ForegroundColor Green
-pause
+  if ($LASTEXITCODE -ne 0) { 
