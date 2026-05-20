@@ -1,1186 +1,519 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FlowTiq — AI Automation Platform</title>
+<title>FlowTiq — AI Asistent za Rezervacije</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{font-size:16px}
 :root{
-  --bg:#08080d;
-  --p:#7c3aed;
-  --p2:#a78bfa;
-  --cyan:#06b6d4;
-  --green:#10b981;
-  --text:#f0f0ff;
-  --muted:rgba(240,240,255,0.42);
-  --border:rgba(255,255,255,0.07);
+  --bg:#09090f;--bg2:#0f0f1a;
+  --p:#7c3aed;--p2:#a78bfa;--p3:rgba(124,58,237,0.12);
+  --green:#25d366;
+  --text:#f1f0ff;--muted:rgba(241,240,255,0.5);
+  --border:rgba(255,255,255,0.08);--card:rgba(255,255,255,0.04);
 }
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'Inter',sans-serif;
-  overflow-x:hidden;cursor:none;
-}
-::-webkit-scrollbar{display:none}
+html{font-size:16px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden;cursor:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.4);border-radius:2px}
+a{text-decoration:none;color:inherit}
 
-/* CUSTOM CURSOR */
-#cur{
-  position:fixed;z-index:9999;pointer-events:none;
-  width:12px;height:12px;border-radius:50%;
-  background:#fff;
-  transform:translate(-50%,-50%);
-  transition:width 0.2s,height 0.2s,background 0.2s;
-  mix-blend-mode:difference;
-}
-#cur.big{width:48px;height:48px}
+/* CURSOR */
+#cur{position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;border-radius:50%;background:#fff;mix-blend-mode:difference;transform:translate(-50%,-50%);transition:width .2s,height .2s}
+#cur.big{width:40px;height:40px}
+
+/* LAYOUT */
+.wrap{max-width:1200px;margin:0 auto;padding:0 40px}
+
+/* BUTTONS */
+.btn-p{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:100px;background:var(--p);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
+.btn-p:hover{background:#6d28d9;transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,0.4)}
+.btn-o{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:100px;background:transparent;color:var(--text);font-size:15px;font-weight:600;border:1px solid var(--border);cursor:pointer;transition:all .2s;text-decoration:none}
+.btn-o:hover{border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.05)}
 
 /* NAV */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:500;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:28px 56px;
-  mix-blend-mode:normal;
-}
-.nl{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;color:#fff;text-decoration:none;letter-spacing:-0.3px}
-.nlm{width:28px;height:28px;border-radius:7px;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:13px}
-.nav-r{display:flex;gap:28px;align-items:center}
-.nav-r a{color:rgba(255,255,255,0.5);font-size:13px;font-weight:500;text-decoration:none;transition:color 0.2s}
-.nav-r a:hover{color:#fff}
-.nav-r .cta{
-  padding:9px 22px;border-radius:100px;
-  background:#fff;color:#08080d;
-  font-size:13px;font-weight:700;text-decoration:none;
-  transition:all 0.2s;
-}
-.nav-r .cta:hover{background:var(--p);color:#fff}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;align-items:center;transition:background .3s,border-color .3s}
+nav.up{background:rgba(9,9,15,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.nav-in{max-width:1200px;margin:0 auto;padding:0 40px;width:100%;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:9px;font-size:18px;font-weight:700;color:#fff}
+.logo-ico{width:32px;height:32px;border-radius:8px;background:var(--p);display:flex;align-items:center;justify-content:center;font-size:14px}
+.nav-r{display:flex;align-items:center;gap:32px}
+.nav-r a{font-size:14px;font-weight:500;color:var(--muted);transition:color .2s}
+.nav-r a:hover{color:var(--text)}
+.nav-cta{padding:9px 20px;border-radius:100px;background:#fff!important;color:#09090f!important;font-size:13px;font-weight:700;transition:all .2s}
+.nav-cta:hover{background:var(--p)!important;color:#fff!important}
 
-/* ══════════ HERO ══════════ */
-#hero{
-  position:relative;height:100vh;
-  display:flex;flex-direction:column;
-  justify-content:flex-end;
-  padding:0 56px 64px;
-  overflow:hidden;
-}
-.hero-bg{
-  position:absolute;inset:0;z-index:0;
-  background:
-    radial-gradient(ellipse 120% 80% at 60% 20%,rgba(124,58,237,0.28),transparent 55%),
-    radial-gradient(ellipse 60% 50% at 10% 80%,rgba(6,182,212,0.12),transparent 50%),
-    #08080d;
-}
-.hero-noise{
-  position:absolute;inset:0;z-index:1;opacity:0.04;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size:180px;
-}
+/* HERO */
+#hero{min-height:100vh;padding-top:68px;display:flex;align-items:center;position:relative;overflow:hidden}
+#vanta-bg{position:absolute;inset:0;z-index:0;width:100%;height:100%}
+.hero-bg{position:absolute;inset:0;z-index:1;background:radial-gradient(ellipse 60% 50% at 70% 10%,rgba(124,58,237,0.18),transparent 55%),radial-gradient(ellipse 40% 40% at 0 80%,rgba(6,182,212,0.06),transparent 50%);pointer-events:none}
+.hero-in{position:relative;z-index:2;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:80px;max-width:1200px;margin:0 auto;padding:80px 40px;width:100%}
 
-/* BIG TITLE — full width editorial */
-.hero-title{
-  position:relative;z-index:2;
-  font-family:'Syne',sans-serif;
-  font-size:clamp(72px, 14vw, 200px);
-  font-weight:900;
-  line-height:0.88;
-  letter-spacing:-5px;
-  text-transform:uppercase;
-  overflow:hidden;
-}
-.hero-title .line{display:flex;overflow:hidden}
-.hero-title .word{display:block;transform:translateY(110%);will-change:transform}
-.hero-title .stroke{
-  -webkit-text-stroke:2px rgba(255,255,255,0.85);
-  color:transparent;
-}
-.hero-title .fill{color:#fff}
-.hero-title .grad{
-  background:linear-gradient(110deg,#fff 0%,#a78bfa 55%,#06b6d4 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:100px;background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.25);font-size:12px;font-weight:600;color:var(--p2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:28px}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--p2);animation:bdot 2s ease-in-out infinite}
+@keyframes bdot{0%,100%{opacity:1}50%{opacity:.3}}
 
-.hero-bottom{
-  position:relative;z-index:2;
-  display:flex;align-items:flex-end;justify-content:space-between;
-  margin-top:32px;
-  padding-top:28px;
-  border-top:1px solid rgba(255,255,255,0.1);
-}
-.hero-sub{
-  font-size:16px;color:rgba(255,255,255,0.5);
-  max-width:380px;line-height:1.65;font-weight:400;
-}
-.hero-sub strong{color:#fff;font-weight:600}
-.hero-btns{display:flex;gap:12px;align-items:center}
-.bprimary{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:14px 32px;border-radius:100px;
-  background:#fff;color:#08080d;
-  font-size:14px;font-weight:700;text-decoration:none;
-  transition:all 0.2s;
-}
-.bprimary:hover{background:var(--p);color:#fff;transform:scale(1.03)}
-.bsecondary{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:14px 28px;border-radius:100px;
-  background:transparent;color:rgba(255,255,255,0.6);
-  font-size:14px;font-weight:500;text-decoration:none;
-  border:1px solid rgba(255,255,255,0.15);
-  transition:all 0.2s;
-}
-.bsecondary:hover{border-color:rgba(255,255,255,0.4);color:#fff}
-.hero-scroll{
-  display:flex;align-items:center;gap:10px;
-  font-size:11px;color:rgba(255,255,255,0.3);
-  font-weight:600;letter-spacing:0.1em;text-transform:uppercase;
-}
-.hero-scroll-line{
-  width:40px;height:1px;
-  background:linear-gradient(to right,rgba(255,255,255,0.3),transparent);
+.hero-h1{font-family:'Syne',sans-serif;font-size:clamp(42px,5vw,66px);font-weight:900;line-height:1.06;letter-spacing:-2px;margin-bottom:24px}
+.hero-h1 .acc{background:linear-gradient(110deg,#a78bfa 0%,#7c3aed 50%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:17px;line-height:1.65;color:var(--muted);max-width:460px;margin-bottom:36px}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:44px}
+.hero-proof{display:flex;align-items:center;gap:12px}
+.proof-avs{display:flex}
+.proof-av{width:32px;height:32px;border-radius:50%;border:2px solid var(--bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-left:-8px}
+.proof-av:first-child{margin-left:0}
+.proof-t{font-size:13px;color:var(--muted)}
+.proof-t strong{color:var(--text)}
+
+/* PHONE */
+.hero-phone{display:flex;justify-content:center;align-items:center;position:relative}
+.ph-glow{position:absolute;width:360px;height:360px;border-radius:50%;background:radial-gradient(ellipse,rgba(37,211,102,0.15),transparent 65%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+.phone{width:272px;border-radius:46px;background:#0d1117;border:8px solid #1a1a2e;position:relative;overflow:hidden;z-index:1;box-shadow:0 60px 100px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.05)}
+.ph-notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:78px;height:22px;background:#0d1117;border-radius:0 0 14px 14px;z-index:5}
+.ph-screen{display:flex;flex-direction:column;height:550px}
+.wa-hd{background:#1f2c34;padding:28px 12px 10px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.wa-bk{font-size:18px;color:rgba(255,255,255,.4);margin-right:2px}
+.wa-av{width:30px;height:30px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--p),#4f46e5);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:700}
+.wa-inf{flex:1}
+.wa-nm{font-size:12px;font-weight:600;color:#e9edef}
+.wa-on{font-size:9.5px;color:rgba(134,188,109,.9)}
+.wa-ic{color:rgba(255,255,255,.4);font-size:12px;display:flex;gap:12px}
+.wa-ch{flex:1;background:#0b141a;padding:10px 8px;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.wa-dt{align-self:center;background:rgba(255,255,255,.06);border-radius:6px;padding:2px 10px;font-size:9px;color:rgba(255,255,255,.35);margin-bottom:2px}
+.bub{max-width:80%;font-size:11px;line-height:1.5;padding:6px 9px 16px;border-radius:7px;position:relative;word-break:break-word;opacity:0;transition:opacity .25s}
+.bub .tm{position:absolute;right:6px;bottom:2px;font-size:9px;color:rgba(255,255,255,.3);white-space:nowrap}
+.bot{background:#1f2c34;color:#e9edef;align-self:flex-start;border-radius:0 7px 7px 7px}
+.usr{background:#005c4b;color:#e9edef;align-self:flex-end;border-radius:7px 0 7px 7px}
+.usr .tm{color:rgba(134,188,109,.6)}
+.typ{align-self:flex-start;background:#1f2c34;border-radius:0 7px 7px 7px;padding:8px 12px;display:flex;gap:3px;align-items:center;opacity:0;transition:opacity .2s}
+.td{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);animation:tda 1.2s infinite ease-in-out}
+.td:nth-child(2){animation-delay:.15s}.td:nth-child(3){animation-delay:.3s}
+@keyframes tda{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+.wa-inp{background:#1f2c34;padding:6px 8px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.wa-bar{flex:1;background:#2a3942;border-radius:18px;padding:7px 12px;font-size:10px;color:rgba(255,255,255,.3)}
+.wa-snd{width:28px;height:28px;border-radius:50%;background:#00a884;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+
+/* MARQUEE */
+.mq-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:14px 0;overflow:hidden}
+.mq-track{display:flex;animation:mq 22s linear infinite;width:max-content}
+.mq-item{display:flex;align-items:center;gap:10px;padding:0 28px;font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.mq-dot{width:4px;height:4px;border-radius:50%;background:var(--p2);flex-shrink:0}
+@keyframes mq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ANIMATED ORBS */
+.orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:0;pointer-events:none;animation:orb-float 18s ease-in-out infinite}
+.orb.v{opacity:.13;background:var(--p)}
+.orb.c{opacity:.09;background:#06b6d4}
+.orb.g{opacity:.08;background:#10b981}
+@keyframes orb-float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-50px) scale(1.15)}66%{transform:translate(-30px,30px) scale(0.88)}}
+
+/* GRID DOT PATTERN */
+.dot-grid{position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(124,58,237,0.18) 1px,transparent 1px);
+  background-size:28px 28px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 40%,transparent 100%);
 }
 
-/* ══════════ MARQUEE ══════════ */
-.marquee-wrap{
-  border-top:1px solid var(--border);
-  border-bottom:1px solid var(--border);
-  padding:18px 0;overflow:hidden;background:rgba(255,255,255,0.015);
-}
-.marquee-track{
-  display:flex;gap:64px;
-  animation:marquee 22s linear infinite;
-  width:max-content;
-}
-.marquee-item{
-  display:flex;align-items:center;gap:12px;
-  font-size:12px;font-weight:600;
-  color:rgba(255,255,255,0.25);
-  text-transform:uppercase;letter-spacing:0.08em;
-  white-space:nowrap;
-}
-.marquee-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0}
-@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+/* LINE GLOW DIVIDER */
+.glow-line{height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,0.6),rgba(6,182,212,0.4),transparent);margin:0;border:none}
 
-/* ══════════ INTRO TEXT ══════════ */
-#intro{
-  padding:120px 56px;
-  max-width:1400px;margin:0 auto;
-}
-.intro-text{
-  font-family:'Syne',sans-serif;
-  font-size:clamp(32px,4.5vw,64px);
-  font-weight:800;
-  line-height:1.15;
-  letter-spacing:-1.5px;
-  max-width:900px;
-}
-.intro-text .dim{color:rgba(255,255,255,0.25)}
-.intro-text .bright{color:#fff}
-.intro-text .accent{
-  background:linear-gradient(110deg,#a78bfa,#06b6d4);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.intro-side{
-  display:flex;justify-content:flex-end;align-items:flex-end;margin-top:60px;
-}
-.intro-stats{display:flex;gap:56px}
-.istat-v{
-  font-family:'Syne',sans-serif;font-size:52px;font-weight:900;
-  letter-spacing:-2px;line-height:1;
-  background:linear-gradient(135deg,#fff,#a78bfa);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  margin-bottom:6px;
-}
-.istat-l{font-size:12px;color:rgba(255,255,255,0.4);font-weight:500;letter-spacing:0.04em}
+/* STATS */
+#stats{padding:64px 0;border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.stat{background:var(--bg);padding:40px 32px;text-align:center}
+.stat-v{font-family:'Syne',sans-serif;font-size:clamp(36px,4vw,54px);font-weight:900;letter-spacing:-2px;margin-bottom:6px;background:linear-gradient(110deg,#fff,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-l{font-size:13px;color:var(--muted);font-weight:500}
 
-/* ══════════ HORIZONTAL SCROLL FEATURES ══════════ */
-#hscroll{height:300vh;position:relative}
-.hscroll-sticky{
-  position:sticky;top:0;height:100vh;
-  display:flex;align-items:center;
-  overflow:hidden;
-}
-.hscroll-inner{display:flex;gap:0;align-items:stretch;will-change:transform}
-.hpanel{
-  flex-shrink:0;width:100vw;height:100vh;
-  display:flex;align-items:center;justify-content:center;
-  position:relative;overflow:hidden;
-}
-/* Panel 1 — dark bg */
-.hp1{background:#08080d}
-.hp1-content{
-  display:grid;grid-template-columns:1fr 1fr;gap:80px;
-  align-items:center;padding:0 80px;max-width:1400px;width:100%;
-}
-.hp-kicker{
-  font-size:11px;font-weight:700;text-transform:uppercase;
-  letter-spacing:0.12em;color:var(--p2);margin-bottom:20px;
-  display:flex;align-items:center;gap:10px;
-}
-.hp-kicker::before{content:'';width:20px;height:1.5px;background:var(--p2)}
-.hp-title{
-  font-family:'Syne',sans-serif;
-  font-size:clamp(36px,5vw,68px);font-weight:900;
-  letter-spacing:-2px;line-height:1.0;margin-bottom:24px;
-}
-.hp-desc{font-size:17px;color:rgba(255,255,255,0.5);line-height:1.65;margin-bottom:36px}
-.flow-visual{
-  background:rgba(255,255,255,0.03);border:1px solid var(--border);
-  border-radius:20px;padding:32px;
-}
-.flow-node{
-  display:flex;align-items:center;gap:14px;
-  padding:14px 18px;border-radius:12px;
-  background:rgba(255,255,255,0.04);border:1px solid var(--border);
-  margin-bottom:10px;transition:all 0.3s;
-}
-.flow-node:hover{border-color:rgba(124,58,237,0.4);background:rgba(124,58,237,0.06)}
-.fn-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.fn-text{font-size:13px;font-weight:500;flex:1}
-.fn-badge{padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700}
-.fa{background:rgba(16,185,129,0.15);color:#10b981}
-.fr{background:rgba(124,58,237,0.18);color:var(--p2)}
-.flow-arrow{text-align:center;color:rgba(255,255,255,0.15);font-size:18px;margin:6px 0}
+/* FEATURES */
+#features{padding:100px 0;position:relative;overflow:hidden}
+.sec-center{text-align:center;margin-bottom:64px}
+.sec-tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--p2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px}
+.sec-h{font-family:'Syne',sans-serif;font-size:clamp(32px,4vw,50px);font-weight:900;line-height:1.1;letter-spacing:-1.5px;margin-bottom:16px}
+.sec-s{font-size:17px;color:var(--muted);line-height:1.6;max-width:520px;margin:0 auto}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feat-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px 32px;transition:border-color .25s,transform .25s}
+.feat-card:hover{border-color:rgba(124,58,237,0.4);transform:translateY(-3px)}
+.feat-ico{width:48px;height:48px;border-radius:14px;background:var(--p3);border:1px solid rgba(124,58,237,.2);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:20px}
+.feat-t{font-size:18px;font-weight:700;margin-bottom:10px}
+.feat-d{font-size:14px;color:var(--muted);line-height:1.65}
 
-/* Panel 2 — purple bg */
-.hp2{background:linear-gradient(135deg,#1a0533,#0c0020)}
-.hp2-content{
-  display:grid;grid-template-columns:1fr 1fr;gap:80px;
-  align-items:center;padding:0 80px;max-width:1400px;width:100%;
-}
-.channel-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.ch-card{
-  padding:28px 24px;border-radius:18px;
-  background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
-  transition:all 0.3s;text-align:center;
-}
-.ch-card:hover{background:rgba(255,255,255,0.1);transform:translateY(-4px)}
-.ch-icon{font-size:28px;margin-bottom:12px;display:block}
-.ch-title{font-size:14px;font-weight:700;margin-bottom:4px}
-.ch-sub{font-size:12px;color:rgba(255,255,255,0.45)}
+/* PRICING */
+#pricing{padding:100px 0;background:var(--bg2);border-top:1px solid var(--border);position:relative;overflow:hidden}
+.price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.pcard{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:36px;position:relative;transition:border-color .25s}
+.pcard:hover{border-color:rgba(124,58,237,.35)}
+.pcard.hot{background:linear-gradient(150deg,rgba(124,58,237,.15),rgba(79,70,229,.1));border-color:rgba(124,58,237,.4)}
+.pbadge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--p);color:#fff;font-size:11px;font-weight:700;padding:4px 16px;border-radius:100px;white-space:nowrap}
+.pname{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.pprice{margin-bottom:8px}
+.pprice sup{font-size:22px;font-weight:700;vertical-align:top;margin-top:12px;display:inline-block;color:var(--muted)}
+.pprice .n{font-family:'Syne',sans-serif;font-size:clamp(44px,5vw,58px);font-weight:900;letter-spacing:-2px}
+.pprice sub{font-size:14px;color:var(--muted);font-weight:500;margin-left:2px}
+.pdesc{font-size:14px;color:var(--muted);margin-bottom:24px;line-height:1.5}
+.pdiv{border:none;border-top:1px solid var(--border);margin-bottom:22px}
+.plist{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:28px}
+.plist li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.plist li::before{content:'✓';color:var(--green);font-weight:700;font-size:13px;flex-shrink:0}
+.pbtn{width:100%;padding:13px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;border:none}
+.pbtn-o{background:transparent;border:1px solid var(--border);color:var(--text)}
+.pbtn-o:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05)}
+.pbtn-f{background:var(--p);color:#fff}
+.pbtn-f:hover{background:#6d28d9;box-shadow:0 8px 24px rgba(124,58,237,.4)}
 
-/* Panel 3 — dark teal bg */
-.hp3{background:linear-gradient(135deg,#010d12,#030f18)}
-.hp3-content{
-  text-align:center;padding:0 80px;max-width:900px;width:100%;
-}
-.int-cloud{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:40px}
-.int-pill{
-  padding:10px 20px;border-radius:100px;
-  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
-  font-size:13px;font-weight:600;color:rgba(255,255,255,0.7);
-  transition:all 0.2s;
-}
-.int-pill:hover{background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.4);color:var(--cyan)}
-
-/* ══════════ VOICE SECTION ══════════ */
-#voice{
-  padding:140px 56px;
-  max-width:1400px;margin:0 auto;
-  display:grid;grid-template-columns:1fr 1fr;gap:100px;align-items:center;
-}
-.voice-right{
-  position:relative;
-}
-.voice-card{
-  background:rgba(255,255,255,0.03);border:1px solid var(--border);
-  border-radius:24px;overflow:hidden;
-}
-.vc-header{
-  background:rgba(255,255,255,0.04);border-bottom:1px solid var(--border);
-  padding:18px 24px;display:flex;align-items:center;gap:10px;
-}
-.vc-live{
-  display:flex;align-items:center;gap:6px;
-  font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.08em;
-}
-.vc-live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.5s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
-.vc-body{padding:24px}
-.vc-msg{
-  display:flex;flex-direction:column;gap:12px;
-}
-.msg{
-  padding:14px 18px;border-radius:16px;max-width:80%;
-  font-size:13px;line-height:1.5;
-}
-.msg-ai{
-  background:linear-gradient(135deg,rgba(124,58,237,0.2),rgba(79,70,229,0.12));
-  border:1px solid rgba(124,58,237,0.2);align-self:flex-start;
-  border-radius:4px 16px 16px 16px;
-}
-.msg-user{
-  background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);
-  align-self:flex-end;border-radius:16px 4px 16px 16px;
-}
-.msg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
-.msg-label.ai{color:var(--p2)}
-.msg-label.u{color:rgba(255,255,255,0.4)}
-.vc-wave{
-  display:flex;align-items:center;gap:3px;padding:16px 24px;
-  border-top:1px solid var(--border);
-}
-.wave-bar{
-  flex:1;border-radius:2px;
-  background:linear-gradient(to top,var(--p),var(--p2));
-  animation:wave 1.2s ease infinite;
-}
-@keyframes wave{0%,100%{height:4px;opacity:0.4}50%{height:24px;opacity:1}}
-.vc-stats{display:grid;grid-template-columns:repeat(3,1fr);margin-top:12px;border-top:1px solid var(--border)}
-.vcs{padding:14px;text-align:center;border-right:1px solid var(--border)}
-.vcs:last-child{border-right:none}
-.vcs-v{font-size:18px;font-weight:800;margin-bottom:3px}
-.vcs-l{font-size:10px;color:rgba(255,255,255,0.4)}
-.voice-glow{
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  width:400px;height:400px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,rgba(124,58,237,0.2),transparent);
-  filter:blur(60px);z-index:-1;
-}
-
-/* ══════════ PRICING ══════════ */
-#pricing{
-  padding:120px 56px;
-  max-width:1400px;margin:0 auto;
-}
-.pricing-header{
-  display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:60px;
-}
-.pricing-note{font-size:14px;color:rgba(255,255,255,0.4);max-width:260px;line-height:1.6;text-align:right}
-.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:24px;overflow:hidden}
-.pcard{
-  background:var(--bg);padding:48px 40px;position:relative;
-  transition:background 0.3s;
-}
-.pcard:hover{background:#0f0f18}
-.pcard.hot{background:linear-gradient(150deg,#120826,#0a0620)}
-.ptag{
-  position:absolute;top:24px;right:24px;
-  padding:4px 14px;border-radius:100px;
-  font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;
-  background:var(--p);color:#fff;
-}
-.pname{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:rgba(255,255,255,0.4);margin-bottom:16px}
-.pprice{
-  font-family:'Syne',sans-serif;
-  font-size:60px;font-weight:900;letter-spacing:-3px;line-height:1;margin-bottom:8px;
-  color:#fff;
-}
-.pprice sup{font-size:22px;letter-spacing:0;vertical-align:top;margin-top:12px;display:inline-block;color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-weight:500}
-.pprice sub{font-size:16px;color:rgba(255,255,255,0.4);letter-spacing:0;font-family:'Inter',sans-serif;font-weight:400}
-.pdesc{font-size:14px;color:rgba(255,255,255,0.45);margin-bottom:36px;line-height:1.55;margin-top:12px}
-.pfeats{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:40px}
-.pfeats li{display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.75)}
-.pfeats li::before{content:'↗';font-size:12px;color:var(--p2);flex-shrink:0}
-.pbtn{
-  display:block;width:100%;padding:15px;border-radius:100px;
-  font-size:14px;font-weight:700;text-align:center;cursor:pointer;
-  text-decoration:none;transition:all 0.22s;border:none;
-}
-.pbtn-o{background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.7)}
-.pbtn-o:hover{border-color:rgba(255,255,255,0.35);color:#fff}
-.pbtn-f{background:#fff;color:#08080d}
-.pbtn-f:hover{background:var(--p);color:#fff}
-
-/* ══════════ CTA FULL BLEED ══════════ */
-#cta{
-  position:relative;overflow:hidden;
-  min-height:80vh;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;text-align:center;
-  padding:100px 56px;
-}
-.cta-bg{
-  position:absolute;inset:0;
-  background:linear-gradient(135deg,#0d0520 0%,#050210 50%,#020d18 100%);
-}
-.cta-glow1{position:absolute;top:-20%;left:20%;width:600px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(124,58,237,0.3),transparent 70%);filter:blur(80px);pointer-events:none}
-.cta-glow2{position:absolute;bottom:-20%;right:20%;width:500px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(6,182,212,0.18),transparent 70%);filter:blur(80px);pointer-events:none}
-.cta-content{position:relative;z-index:2}
-.cta-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--p2);margin-bottom:24px}
-.cta-title{
-  font-family:'Syne',sans-serif;
-  font-size:clamp(48px,9vw,130px);
-  font-weight:900;line-height:0.9;letter-spacing:-4px;
-  text-transform:uppercase;margin-bottom:36px;color:#fff;
-}
-.cta-title span{
-  display:block;
-  background:linear-gradient(110deg,#fff 0%,#c4b5fd 50%,#67e8f9 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-.cta-sub{font-size:18px;color:rgba(255,255,255,0.45);margin-bottom:48px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6}
-.cta-btns{display:flex;gap:14px;justify-content:center}
-.cta-note{font-size:12px;color:rgba(255,255,255,0.25);margin-top:20px;letter-spacing:0.04em}
+/* CTA */
+#cta{padding:100px 0;border-top:1px solid var(--border);text-align:center}
+.cta-in{max-width:680px;margin:0 auto}
+.cta-glow{width:400px;height:160px;margin:0 auto 40px;background:radial-gradient(ellipse,rgba(124,58,237,.22),transparent 65%);pointer-events:none}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:36px;margin-bottom:20px}
+.cta-note{font-size:12px;color:rgba(255,255,255,.2);letter-spacing:.04em}
 
 /* FOOTER */
-footer{
-  border-top:1px solid var(--border);
-  padding:40px 56px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.fb{font-size:15px;font-weight:700}
-.fc{font-size:12px;color:rgba(255,255,255,0.25)}
-.fl{display:flex;gap:24px}
-.fl a{font-size:12px;color:rgba(255,255,255,0.25);text-decoration:none;transition:color 0.2s}
-.fl a:hover{color:rgba(255,255,255,0.6)}
+footer{border-top:1px solid var(--border);padding:40px 0}
+.foot-in{display:flex;align-items:center;justify-content:space-between}
+.foot-logo{font-size:16px;font-weight:700}
+.foot-copy{font-size:12px;color:rgba(255,255,255,.2)}
+.foot-links{display:flex;gap:24px}
+.foot-links a{font-size:12px;color:rgba(255,255,255,.25);transition:color .2s}
+.foot-links a:hover{color:rgba(255,255,255,.6)}
 
-/* ══ WHATSAPP SECTION ══ */
-#wapp{
-  display:grid;grid-template-columns:1fr 1fr;
-  min-height:100vh;align-items:center;
-  padding:120px 80px;gap:100px;
-  position:relative;overflow:hidden;
-}
-#wapp::before{
-  content:'';position:absolute;
-  right:-160px;top:50%;transform:translateY(-50%);
-  width:700px;height:700px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(37,211,102,0.07),transparent 65%);
-  pointer-events:none;
-}
-.wapp-text{position:relative;z-index:2}
-.wapp-text .hp-desc{max-width:440px}
-.wapp-feats{display:flex;flex-direction:column;gap:14px;margin-top:36px}
-.wfeat{display:flex;align-items:center;gap:14px}
-.wfeat-icon{
-  width:38px;height:38px;border-radius:10px;flex-shrink:0;
-  background:rgba(37,211,102,0.08);
-  border:1px solid rgba(37,211,102,0.18);
-  display:flex;align-items:center;justify-content:center;font-size:16px;
-}
-.wfeat span{color:rgba(255,255,255,0.62);font-size:15px;line-height:1.4}
-.wapp-right{
-  display:flex;align-items:center;justify-content:center;
-  position:relative;z-index:2;
-}
-.phone-wrap{position:relative}
-.phone-glow{
-  position:absolute;width:420px;height:420px;border-radius:50%;
-  background:radial-gradient(ellipse,rgba(37,211,102,0.14),transparent 60%);
-  top:50%;left:50%;transform:translate(-50%,-50%);
-  pointer-events:none;z-index:0;
-}
-/* PHONE FRAME */
-.phone{
-  width:290px;height:590px;
-  background:#111;border-radius:44px;
-  border:10px solid #1e1e1e;
-  position:relative;overflow:hidden;z-index:1;
-  box-shadow:
-    0 70px 130px rgba(0,0,0,0.8),
-    0 0 0 1px rgba(255,255,255,0.06),
-    inset 0 0 0 1px rgba(255,255,255,0.02);
-}
-.phone::before{
-  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
-  width:90px;height:24px;background:#111;
-  border-radius:0 0 16px 16px;z-index:20;
-}
-.phone-screen{
-  position:absolute;inset:0;
-  background:#0b141a;display:flex;flex-direction:column;
-}
-/* WA HEADER */
-.wa-header{
-  background:#1f2c34;padding:34px 12px 10px;
-  display:flex;align-items:center;gap:10px;flex-shrink:0;
-  border-bottom:1px solid rgba(255,255,255,0.04);
-}
-.wa-back{font-size:16px;color:rgba(255,255,255,0.5);margin-right:2px}
-.wa-avatar{
-  width:32px;height:32px;border-radius:50%;
-  background:linear-gradient(135deg,#7c3aed,#4f46e5);
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;color:#fff;flex-shrink:0;
-}
-.wa-info{flex:1}
-.wa-name{font-size:12.5px;font-weight:600;color:#e9edef;line-height:1.2}
-.wa-status{font-size:9.5px;color:rgba(134,188,109,0.9)}
-.wa-acts{display:flex;gap:14px;color:rgba(255,255,255,0.45);font-size:13px;margin-left:4px}
-/* WA CHAT */
-.wa-chat{
-  flex:1;overflow:hidden;
-  background:#0b141a;
-  padding:10px 8px;
-  display:flex;flex-direction:column;gap:3px;
-}
-.wa-date-pill{
-  align-self:center;
-  background:rgba(255,255,255,0.07);
-  border-radius:7px;padding:3px 10px;
-  font-size:9.5px;color:rgba(255,255,255,0.4);
-  margin-bottom:4px;
-}
-.wa-bubble{
-  max-width:80%;font-size:11px;line-height:1.5;
-  padding:6px 9px 16px;border-radius:7.5px;
-  position:relative;opacity:0;
-  word-break:break-word;
-}
-.wa-bubble .wa-time{
-  position:absolute;right:6px;bottom:2px;
-  font-size:9px;color:rgba(255,255,255,0.35);
-  white-space:nowrap;
-}
-.bubble-bot{
-  background:#1f2c34;color:#e9edef;
-  border-radius:0 7.5px 7.5px 7.5px;
-  align-self:flex-start;
-}
-.bubble-user{
-  background:#005c4b;color:#e9edef;
-  border-radius:7.5px 0 7.5px 7.5px;
-  align-self:flex-end;
-}
-.bubble-user .wa-time{color:rgba(134,188,109,0.6)}
-/* TYPING */
-.wa-typing{
-  align-self:flex-start;
-  background:#1f2c34;
-  border-radius:0 7.5px 7.5px 7.5px;
-  padding:9px 12px;
-  display:flex;gap:3px;align-items:center;
-  opacity:0;
-}
-.typing-dot{
-  width:5px;height:5px;border-radius:50%;
-  background:rgba(255,255,255,0.38);
-  animation:tdot 1.2s infinite ease-in-out;
-}
-.typing-dot:nth-child(2){animation-delay:0.15s}
-.typing-dot:nth-child(3){animation-delay:0.3s}
-@keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
-/* WA INPUT */
-.wa-input{
-  background:#1f2c34;padding:7px 8px;
-  display:flex;align-items:center;gap:7px;flex-shrink:0;
-}
-.wa-input-pill{
-  flex:1;background:#2a3942;border-radius:20px;
-  padding:7px 12px;font-size:10.5px;color:rgba(255,255,255,0.32);
-}
-.wa-mic{
-  width:30px;height:30px;border-radius:50%;
-  background:#00a884;
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;color:#fff;flex-shrink:0;
-}
-
-/* REVEAL UTIL */
-.rvy{opacity:0;transform:translateY(40px);transition:opacity 0.9s ease,transform 0.9s ease}
-.rvy.in{opacity:1;transform:none}
-
-/* MOBILE */
+/* RESPONSIVE */
 @media(max-width:900px){
-  nav{padding:20px 24px}
-  .nav-r a:not(.cta){display:none}
-  #hero{padding:0 24px 48px}
-  .hero-title{letter-spacing:-2px}
-  .hero-bottom{flex-direction:column;align-items:flex-start;gap:24px}
-  #intro{padding:72px 24px}
-  .intro-side{justify-content:flex-start}
-  .intro-stats{gap:32px}
-  .istat-v{font-size:36px}
-  #hscroll{height:auto}
-  .hscroll-sticky{position:relative;height:auto;overflow:visible}
-  .hscroll-inner{flex-direction:column;transform:none!important}
-  .hpanel{width:100%;height:auto;min-height:80vh}
-  .hp1-content,.hp2-content{grid-template-columns:1fr;gap:40px;padding:48px 24px}
-  .hp3-content{padding:48px 24px}
-  #wapp{grid-template-columns:1fr;padding:72px 24px;gap:56px;text-align:center}
-  .wapp-feats{align-items:center}
-  .wfeat{text-align:left}
-  .wapp-right{justify-content:center}
-  .phone{width:260px;height:530px}
-  .phone-glow{width:300px;height:300px}
-  #voice{grid-template-columns:1fr;padding:72px 24px;gap:48px}
-  #pricing{padding:72px 24px}
-  .pricing-header{flex-direction:column;align-items:flex-start;gap:16px}
-  .pricing-note{text-align:left}
-  .pgrid{grid-template-columns:1fr}
-  #cta{padding:72px 24px}
-  .cta-title{letter-spacing:-2px}
-  .cta-btns{flex-direction:column;align-items:center}
-  footer{flex-direction:column;gap:20px;text-align:center;padding:32px 24px}
-  .fl{justify-content:center}
+  .wrap{padding:0 24px}
+  .nav-in{padding:0 24px}
+  .nav-r a:not(.nav-cta){display:none}
+  .hero-in{grid-template-columns:1fr;gap:48px;padding:60px 24px}
+  .hero-phone{order:-1}
+  .phone{width:240px}
+  .ph-screen{height:480px}
+  .hero-h1{letter-spacing:-1px}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .feat-grid{grid-template-columns:1fr}
+  #features{padding:72px 0}
+  .price-grid{grid-template-columns:1fr}
+  #pricing{padding:72px 0}
+  #cta{padding:72px 0}
+  .foot-in{flex-direction:column;gap:20px;text-align:center}
+  .foot-links{justify-content:center}
 }
-@media(prefers-reduced-motion:reduce){
-  *{animation:none!important;transition:none!important}
-  #cur{display:none}
-  body{cursor:auto}
-}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}#cur{display:none}body{cursor:auto}}
 </style>
 </head>
 <body>
 
-<!-- CURSOR -->
 <div id="cur"></div>
 
 <!-- NAV -->
-<nav>
-  <a class="nl" href="#"><div class="nlm">⚡</div>FlowTiq</a>
-  <div class="nav-r">
-    <a href="#hscroll">Features</a>
-    <a href="#pricing">Pricing</a>
-    <a href="/dashboard.html">Sign in</a>
-    <a href="#cta" class="cta">Get started →</a>
+<nav id="nav">
+  <div class="nav-in">
+    <a class="logo" href="#"><div class="logo-ico">⚡</div>FlowTiq</a>
+    <div class="nav-r">
+      <a href="#features">Funkcije</a>
+      <a href="#pricing">Cenik</a>
+      <a href="/dashboard.html">Prijava</a>
+      <a href="#cta" class="nav-cta">Začnite →</a>
+    </div>
   </div>
 </nav>
 
-<!-- ══ HERO ══ -->
+<!-- HERO -->
 <section id="hero">
+  <div id="vanta-bg"></div>
   <div class="hero-bg"></div>
-  <div class="hero-noise"></div>
-
-  <div class="hero-title">
-    <div class="line"><span class="word fill">Automate</span></div>
-    <div class="line"><span class="word stroke">Everything.</span></div>
-    <div class="line"><span class="word grad">Now.</span></div>
-  </div>
-
-  <div class="hero-bottom">
-    <p class="hero-sub">
-      FlowTiq is an <strong>AI-native automation platform</strong> — workflows, real-time voice agents, omnichannel comms and 100+ integrations in one system.
-    </p>
-    <div class="hero-btns">
-      <a href="#cta" class="bprimary">Start for free →</a>
-      <a href="#hscroll" class="bsecondary">See what it does</a>
-    </div>
-    <div class="hero-scroll">
-      <div class="hero-scroll-line"></div>
-      Scroll
-    </div>
-  </div>
-</section>
-
-<!-- ══ MARQUEE ══ -->
-<div class="marquee-wrap">
-  <div class="marquee-track">
-    <div class="marquee-item"><div class="marquee-dot"></div>Workflow Automation</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>AI Voice Agents</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>WhatsApp</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>Email</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>SMS</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>100+ Integrations</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>Real-Time AI</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>GPT-4 &amp; Claude</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>Workflow Automation</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>AI Voice Agents</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>WhatsApp</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>Email</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>SMS</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>100+ Integrations</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>Real-Time AI</div>
-    <div class="marquee-item"><div class="marquee-dot"></div>GPT-4 &amp; Claude</div>
-  </div>
-</div>
-
-<!-- ══ INTRO TEXT ══ -->
-<section id="intro">
-  <div class="intro-text rvy">
-    <span class="dim">Your business runs on dozens of tools.</span>
-    <span class="bright"> FlowTiq connects them all</span>
-    <span class="dim"> — with an </span>
-    <span class="accent">AI brain in the middle</span>
-    <span class="dim"> that automates, responds, and learns.</span>
-  </div>
-  <div class="intro-side">
-    <div class="intro-stats rvy">
-      <div>
-        <div class="istat-v">100+</div>
-        <div class="istat-l">Integrations</div>
+  <div class="hero-in">
+    <div class="hero-text">
+      <div class="hero-badge"><span class="badge-dot"></span>AI rezervacijski sistem</div>
+      <h1 class="hero-h1">Vaš salon deluje<br>sam od sebe.<br><span class="acc">24/7 na WhatsApp-u.</span></h1>
+      <p class="hero-sub">FlowTiqov AI bot rezervira termine, odgovarja na vprašanja in pošilja opomnike samodejno. Nobena stranka ni pozabljena, brez nadur.</p>
+      <div class="hero-btns">
+        <a href="mailto:hello@flowtiq.si" class="btn-p">Rezervirajte demo →</a>
+        <a href="#features" class="btn-o">Kako deluje</a>
       </div>
-      <div>
-        <div class="istat-v">&lt;200ms</div>
-        <div class="istat-l">Voice latency</div>
-      </div>
-      <div>
-        <div class="istat-v">24/7</div>
-        <div class="istat-l">Always on</div>
+      <div class="hero-proof">
+        <div class="proof-avs">
+          <div class="proof-av" style="background:#7c3aed">M</div>
+          <div class="proof-av" style="background:#4f46e5">A</div>
+          <div class="proof-av" style="background:#06b6d4">S</div>
+          <div class="proof-av" style="background:#10b981">T</div>
+        </div>
+        <p class="proof-t"><strong>50+ salonov</strong> že na avtopilotu</p>
       </div>
     </div>
-  </div>
-</section>
 
-<!-- ══ WHATSAPP BOT ══ -->
-<section id="wapp">
-  <div class="wapp-text rvy">
-    <div class="hp-kicker">WhatsApp AI</div>
-    <h2 class="hp-title">Your AI assistant.<br>Always on WhatsApp.</h2>
-    <p class="hp-desc">Customers send a message — the bot books appointments, answers questions, sends confirmations. No waiting, no missed clients. 24 hours a day.</p>
-    <div class="wapp-feats">
-      <div class="wfeat">
-        <div class="wfeat-icon">✅</div>
-        <span>Automatic booking confirmations</span>
-      </div>
-      <div class="wfeat">
-        <div class="wfeat-icon">🤖</div>
-        <span>GPT-4 powered natural conversations</span>
-      </div>
-      <div class="wfeat">
-        <div class="wfeat-icon">⚡</div>
-        <span>Responds in under 2 seconds, 24/7</span>
-      </div>
-    </div>
-    <a href="#cta" class="bprimary" style="display:inline-flex;margin-top:40px">Deploy your bot →</a>
-  </div>
-
-  <div class="wapp-right">
-    <div class="phone-wrap">
-      <div class="phone-glow"></div>
+    <div class="hero-phone">
+      <div class="ph-glow"></div>
       <div class="phone">
-        <div class="phone-screen">
-          <!-- Header -->
-          <div class="wa-header">
-            <div class="wa-back">‹</div>
-            <div class="wa-avatar">⚡</div>
-            <div class="wa-info">
-              <div class="wa-name">FlowTiq Bot</div>
-              <div class="wa-status">● online</div>
-            </div>
-            <div class="wa-acts">📞 ⋮</div>
+        <div class="ph-notch"></div>
+        <div class="ph-screen">
+          <div class="wa-hd">
+            <div class="wa-bk">‹</div>
+            <div class="wa-av">⚡</div>
+            <div class="wa-inf"><div class="wa-nm">FlowTiq Bot</div><div class="wa-on">● aktivno</div></div>
+            <div class="wa-ic">📞 ⋮</div>
           </div>
-          <!-- Chat -->
-          <div class="wa-chat" id="waChat">
-            <div class="wa-date-pill">Today</div>
-            <div class="wa-bubble bubble-user" id="wm1">Živjo, bi rad rezerviral termin za striž 💇<div class="wa-time">14:22</div></div>
-            <div class="wa-typing" id="wt1"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-            <div class="wa-bubble bubble-bot" id="wm2">Pozdravljeni! 😊 Z veseljem vam pomagam. Kdaj bi radi prišli?<div class="wa-time">14:22</div></div>
-            <div class="wa-bubble bubble-user" id="wm3">V petek, po 16h<div class="wa-time">14:23</div></div>
-            <div class="wa-typing" id="wt2"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-            <div class="wa-bubble bubble-bot" id="wm4">Imam prosto ob <b>16:30</b> ali <b>17:00</b>. Katera ura vam bolj ustreza?<div class="wa-time">14:23</div></div>
-            <div class="wa-bubble bubble-user" id="wm5">16:30 prosim ✓<div class="wa-time">14:24</div></div>
-            <div class="wa-typing" id="wt3"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
-            <div class="wa-bubble bubble-bot" id="wm6">✅ Rezervacija potrjena! Petek ob 16:30. Dan prej vam pošljem opomnik. Se vidimo! 👋<div class="wa-time">14:24</div></div>
+          <div class="wa-ch" id="waChat">
+            <div class="wa-dt">Danes</div>
+            <div class="bub usr" id="wm1">Živjo, bi rada rezervirala termin za striž 💇<div class="tm">14:22</div></div>
+            <div class="typ" id="wt1"><div class="td"></div><div class="td"></div><div class="td"></div></div>
+            <div class="bub bot" id="wm2">Pozdravljeni! 😊 Z veseljem vam pomagam. Kdaj bi radi prišli?<div class="tm">14:22</div></div>
+            <div class="bub usr" id="wm3">V petek, po 16h<div class="tm">14:23</div></div>
+            <div class="typ" id="wt2"><div class="td"></div><div class="td"></div><div class="td"></div></div>
+            <div class="bub bot" id="wm4">Imam prosto ob <b>16:30</b> ali <b>17:00</b>. Kaj vam bolj ustreza?<div class="tm">14:23</div></div>
+            <div class="bub usr" id="wm5">16:30 prosim ✓<div class="tm">14:24</div></div>
+            <div class="typ" id="wt3"><div class="td"></div><div class="td"></div><div class="td"></div></div>
+            <div class="bub bot" id="wm6">✅ Rezervacija potrjena! Petek ob 16:30. Opomnik vam pošljem dan prej. Se vidimo! 👋<div class="tm">14:24</div></div>
           </div>
-          <!-- Input -->
-          <div class="wa-input">
-            <div class="wa-input-pill">Type a message</div>
-            <div class="wa-mic">🎤</div>
-          </div>
+          <div class="wa-inp"><div class="wa-bar">Napiši sporočilo…</div><div class="wa-snd">➤</div></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ HORIZONTAL SCROLL ══ -->
-<div id="hscroll">
-  <div class="hscroll-sticky">
-    <div class="hscroll-inner" id="hscroll-inner">
+<!-- MARQUEE -->
+<div class="mq-wrap">
+  <div class="mq-track">
+    <div class="mq-item"><div class="mq-dot"></div>WhatsApp AI</div>
+    <div class="mq-item"><div class="mq-dot"></div>Samodejne rezervacije</div>
+    <div class="mq-item"><div class="mq-dot"></div>E-poštni opomniki</div>
+    <div class="mq-item"><div class="mq-dot"></div>SMS opozorila</div>
+    <div class="mq-item"><div class="mq-dot"></div>GPT-4 tehnologija</div>
+    <div class="mq-item"><div class="mq-dot"></div>Aktiven 24/7</div>
+    <div class="mq-item"><div class="mq-dot"></div>Večkanalno</div>
+    <div class="mq-item"><div class="mq-dot"></div>Nič zamujenih strank</div>
+    <div class="mq-item"><div class="mq-dot"></div>WhatsApp AI</div>
+    <div class="mq-item"><div class="mq-dot"></div>Samodejne rezervacije</div>
+    <div class="mq-item"><div class="mq-dot"></div>E-poštni opomniki</div>
+    <div class="mq-item"><div class="mq-dot"></div>SMS opozorila</div>
+    <div class="mq-item"><div class="mq-dot"></div>GPT-4 tehnologija</div>
+    <div class="mq-item"><div class="mq-dot"></div>Aktiven 24/7</div>
+    <div class="mq-item"><div class="mq-dot"></div>Večkanalno</div>
+    <div class="mq-item"><div class="mq-dot"></div>Nič zamujenih strank</div>
+  </div>
+</div>
 
-      <!-- Panel 1: Workflows -->
-      <div class="hpanel hp1">
-        <div class="hp1-content">
-          <div>
-            <div class="hp-kicker">01 — Workflows</div>
-            <h2 class="hp-title">Build automations<br>that actually run.</h2>
-            <p class="hp-desc">Visual drag-and-drop builder. Branch logic, loops, parallel flows. What engineers build in weeks — you build in hours. Zero code required.</p>
-            <a href="#cta" class="bprimary" style="display:inline-flex">Try it free →</a>
-          </div>
-          <div class="flow-visual">
-            <div class="flow-node">
-              <div class="fn-dot" style="background:#10b981;box-shadow:0 0 8px #10b981"></div>
-              <div class="fn-text">Trigger: New lead from Typeform</div>
-              <div class="fn-badge fa">Active</div>
-            </div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node">
-              <div class="fn-dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></div>
-              <div class="fn-text">AI: Qualify &amp; score lead (GPT-4)</div>
-              <div class="fn-badge fr">+0.3s</div>
-            </div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node">
-              <div class="fn-dot" style="background:#06b6d4;box-shadow:0 0 8px #06b6d4"></div>
-              <div class="fn-text">Send: WhatsApp + update CRM</div>
-              <div class="fn-badge fa">Done</div>
-            </div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node">
-              <div class="fn-dot" style="background:#f59e0b;box-shadow:0 0 8px #f59e0b"></div>
-              <div class="fn-text">If high score → book call automatically</div>
-              <div class="fn-badge fr">Running</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 2: Channels -->
-      <div class="hpanel hp2">
-        <div class="hp2-content">
-          <div>
-            <div class="hp-kicker">02 — Channels</div>
-            <h2 class="hp-title">Every channel.<br>One inbox.</h2>
-            <p class="hp-desc">Email, SMS, WhatsApp, and AI Voice — all unified. AI suggests replies, routes tickets, tracks every touchpoint. No message missed, ever.</p>
-            <a href="#cta" class="bprimary" style="display:inline-flex;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.2)">Explore comms →</a>
-          </div>
-          <div class="channel-grid">
-            <div class="ch-card">
-              <span class="ch-icon">💬</span>
-              <div class="ch-title">WhatsApp</div>
-              <div class="ch-sub">Automated + live chat</div>
-            </div>
-            <div class="ch-card">
-              <span class="ch-icon">📧</span>
-              <div class="ch-title">Email</div>
-              <div class="ch-sub">AI-drafted sequences</div>
-            </div>
-            <div class="ch-card">
-              <span class="ch-icon">📱</span>
-              <div class="ch-title">SMS</div>
-              <div class="ch-sub">Instant alerts + replies</div>
-            </div>
-            <div class="ch-card">
-              <span class="ch-icon">🎙</span>
-              <div class="ch-title">Voice AI</div>
-              <div class="ch-sub">&lt;200ms, human-grade</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Panel 3: Integrations -->
-      <div class="hpanel hp3">
-        <div class="hp3-content">
-          <div class="hp-kicker" style="justify-content:center">03 — Integrations</div>
-          <h2 class="hp-title" style="text-align:center">Connect your entire stack.<br>In minutes, not months.</h2>
-          <p class="hp-desc" style="max-width:520px;margin:0 auto">100+ native connectors. REST API and webhooks for everything else. If your tool exists, FlowTiq talks to it.</p>
-          <div class="int-cloud">
-            <div class="int-pill">Salesforce</div>
-            <div class="int-pill">HubSpot</div>
-            <div class="int-pill">Shopify</div>
-            <div class="int-pill">Stripe</div>
-            <div class="int-pill">Slack</div>
-            <div class="int-pill">Gmail</div>
-            <div class="int-pill">Zapier</div>
-            <div class="int-pill">Notion</div>
-            <div class="int-pill">Calendly</div>
-            <div class="int-pill">Twilio</div>
-            <div class="int-pill">Typeform</div>
-            <div class="int-pill">Airtable</div>
-            <div class="int-pill">Linear</div>
-            <div class="int-pill">Intercom</div>
-            <div class="int-pill">+ 86 more</div>
-          </div>
-        </div>
-      </div>
-
+<!-- STATS -->
+<div id="stats">
+  <div class="wrap">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-v">24/7</div><div class="stat-l">Vedno aktivno, nikoli ne spi</div></div>
+      <div class="stat"><div class="stat-v">&lt;2s</div><div class="stat-l">Povprečni odzivni čas</div></div>
+      <div class="stat"><div class="stat-v">98%</div><div class="stat-l">Uspešnost rezervacij</div></div>
+      <div class="stat"><div class="stat-v">50+</div><div class="stat-l">Salonov uporablja FlowTiq</div></div>
     </div>
   </div>
 </div>
 
-<!-- ══ VOICE SECTION ══ -->
-<section id="voice">
-  <div class="rvy">
-    <div class="hp-kicker">Voice AI</div>
-    <h2 class="hp-title" style="max-width:480px">Real-time AI voice.<br>Sounds human.</h2>
-    <p class="hp-desc" style="max-width:420px">Sub-200ms latency. Handles calls, qualifies leads, books appointments — 24/7. Your best sales rep, available always.</p>
-    <a href="#cta" class="bprimary" style="display:inline-flex">Deploy voice agent →</a>
-  </div>
-  <div class="voice-right rvy">
-    <div class="voice-glow"></div>
-    <div class="voice-card">
-      <div class="vc-header">
-        <div class="vc-live"><div class="vc-live-dot"></div>Live call in progress</div>
-        <div style="margin-left:auto;font-size:12px;color:rgba(255,255,255,0.3)">00:01:42</div>
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-center">
+      <div class="sec-tag">⚡ Funkcije</div>
+      <h2 class="sec-h">Vse kar vaš salon potrebuje.<br>Popolnoma avtomatizirano.</h2>
+      <p class="sec-s">Od prve sporočila do potrjene rezervacije — FlowTiq poskrbi za vse, medtem ko vi skrbite za stranke.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-ico">💬</div>
+        <h3 class="feat-t">WhatsApp AI Bot</h3>
+        <p class="feat-d">Stranke vam pišejo na WhatsApp — AI takoj odgovori, uredi rezervacijo in odgovori na vprašanja. Povsem naravno, vedno vljudno.</p>
       </div>
-      <div class="vc-body">
-        <div class="vc-msg">
-          <div class="msg msg-ai"><div class="msg-label ai">FlowTiq AI</div>Hi! I'm calling about your inquiry for a demo. Is now a good time?</div>
-          <div class="msg msg-user"><div class="msg-label u">Caller</div>Yes, perfect timing actually.</div>
-          <div class="msg msg-ai"><div class="msg-label ai">FlowTiq AI</div>Great! I'd love to learn more about your team. How many people handle customer communications today?</div>
-          <div class="msg msg-user"><div class="msg-label u">Caller</div>About 8 people, but we're overwhelmed.</div>
-          <div class="msg msg-ai"><div class="msg-label ai">FlowTiq AI</div>Understood. Let me book a personalized demo for your team — what works best, Tuesday or Thursday?</div>
-        </div>
+      <div class="feat-card">
+        <div class="feat-ico">📅</div>
+        <h3 class="feat-t">Pametno načrtovanje</h3>
+        <p class="feat-d">Sinhronizacija v realnem času. Bot pozna vaše termine in rezervira pravo uro — brez dvojnih rezervacij, brez ročnega dela.</p>
       </div>
-      <div class="vc-wave">
-        <div class="wave-bar" style="animation-delay:0s"></div>
-        <div class="wave-bar" style="animation-delay:0.1s"></div>
-        <div class="wave-bar" style="animation-delay:0.2s"></div>
-        <div class="wave-bar" style="animation-delay:0.15s"></div>
-        <div class="wave-bar" style="animation-delay:0.05s"></div>
-        <div class="wave-bar" style="animation-delay:0.25s"></div>
-        <div class="wave-bar" style="animation-delay:0.1s"></div>
-        <div class="wave-bar" style="animation-delay:0.3s"></div>
-        <div class="wave-bar" style="animation-delay:0.05s"></div>
-        <div class="wave-bar" style="animation-delay:0.2s"></div>
-        <div class="wave-bar" style="animation-delay:0.15s"></div>
-        <div class="wave-bar" style="animation-delay:0s"></div>
+      <div class="feat-card">
+        <div class="feat-ico">🔔</div>
+        <h3 class="feat-t">Samodejni opomniki</h3>
+        <p class="feat-d">Zmanjša izostanke za 60%. Pošlje potrditev ob rezervaciji, opomnik 24 ur prej in sporočilo po terminu.</p>
       </div>
-      <div class="vc-stats">
-        <div class="vcs"><div class="vcs-v" style="color:#10b981">142ms</div><div class="vcs-l">Latency</div></div>
-        <div class="vcs"><div class="vcs-v" style="color:#a78bfa">98.2%</div><div class="vcs-l">Uptime</div></div>
-        <div class="vcs"><div class="vcs-v" style="color:#06b6d4">24/7</div><div class="vcs-l">Available</div></div>
+      <div class="feat-card">
+        <div class="feat-ico">📧</div>
+        <h3 class="feat-t">E-pošta in SMS</h3>
+        <p class="feat-d">Večkanalni doseg. Potrditve gredo hkrati prek WhatsApp-a, e-pošte in SMS-a. Nobena stranka ne uide.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-ico">📊</div>
+        <h3 class="feat-t">Nadzorna plošča</h3>
+        <p class="feat-d">Vse rezervacije, zgodovino pogovorov in statistike na enem pregledem dashboardu. Vedno obvladujete vaše poslovanje.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-ico">🔧</div>
+        <h3 class="feat-t">Enostavna postavitev</h3>
+        <p class="feat-d">V živo v manj kot 30 minutah. Povežite vašo WhatsApp številko, nastavite razpoložljivost in AI je pripravljen.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ PRICING ══ -->
+<!-- PRICING -->
 <section id="pricing">
-  <div class="pricing-header rvy">
-    <div>
-      <div class="hp-kicker">Pricing</div>
-      <h2 class="hp-title" style="margin-bottom:0">Simple pricing.<br>No surprises.</h2>
+  <div class="wrap">
+    <div class="sec-center">
+      <div class="sec-tag">💳 Cenik</div>
+      <h2 class="sec-h">Enostavne cene. Brez presenečenj.</h2>
+      <p class="sec-s">Začnite brezplačno. Rastite skupaj z nami. Kadarkoli odpovejte — brez pogodb, brez skritih stroškov.</p>
     </div>
-    <p class="pricing-note">Start free. Scale as you grow. Cancel anytime — no contracts, no hidden fees.</p>
-  </div>
-  <div class="pgrid">
-    <div class="pcard rvy">
-      <div class="pname">Starter</div>
-      <div class="pprice"><sup>€</sup>79<sub>/mo</sub></div>
-      <div class="pdesc">For small teams getting started with automation.</div>
-      <ul class="pfeats">
-        <li>5,000 workflow runs/mo</li>
-        <li>Email, SMS &amp; WhatsApp</li>
-        <li>AI assistant included</li>
-        <li>20 integrations</li>
-        <li>Email support</li>
-      </ul>
-      <a href="#cta" class="pbtn pbtn-o">Get started</a>
-    </div>
-    <div class="pcard hot rvy">
-      <div class="ptag">Popular</div>
-      <div class="pname">Pro</div>
-      <div class="pprice"><sup>€</sup>160<sub>/mo</sub></div>
-      <div class="pdesc">Full omnichannel power with Voice AI and unlimited runs.</div>
-      <ul class="pfeats">
-        <li>Unlimited workflow runs</li>
-        <li>All channels + Voice AI</li>
-        <li>GPT-4 &amp; Claude agents</li>
-        <li>100+ integrations</li>
-        <li>Priority support + Slack</li>
-      </ul>
-      <a href="#cta" class="pbtn pbtn-f">Start free trial</a>
-    </div>
-    <div class="pcard rvy">
-      <div class="pname">Enterprise</div>
-      <div class="pprice" style="font-size:42px;letter-spacing:-1px">Custom</div>
-      <div class="pdesc">Dedicated infrastructure, SLAs, and custom AI fine-tuning.</div>
-      <ul class="pfeats">
-        <li>Unlimited everything</li>
-        <li>Dedicated infrastructure</li>
-        <li>Custom AI fine-tuning</li>
-        <li>SSO &amp; SAML</li>
-        <li>24/7 SLA + Dedicated CSM</li>
-      </ul>
-      <a href="#cta" class="pbtn pbtn-o">Contact sales</a>
+    <div class="price-grid">
+      <div class="pcard">
+        <div class="pname">Starter</div>
+        <div class="pprice"><sup>€</sup><span class="n">79</span><sub>/mes</sub></div>
+        <p class="pdesc">Za manjše salone, ki začenjajo z AI avtomatizacijo.</p>
+        <hr class="pdiv">
+        <ul class="plist">
+          <li>WhatsApp AI bot</li>
+          <li>Do 200 rezervacij/mes</li>
+          <li>E-poštni opomniki</li>
+          <li>Osnovna nadzorna plošča</li>
+          <li>E-poštna podpora</li>
+        </ul>
+        <button class="pbtn pbtn-o">Začni zdaj</button>
+      </div>
+      <div class="pcard hot">
+        <div class="pbadge">Najbolj priljubljen</div>
+        <div class="pname">Pro</div>
+        <div class="pprice"><sup>€</sup><span class="n">160</span><sub>/mes</sub></div>
+        <p class="pdesc">Popolna avtomatizacija — WhatsApp, e-pošta, SMS in analitika.</p>
+        <hr class="pdiv">
+        <ul class="plist">
+          <li>Vse iz paketa Starter</li>
+          <li>Neomejene rezervacije</li>
+          <li>SMS + E-pošta + WhatsApp</li>
+          <li>Napredna analitika</li>
+          <li>Prednostna podpora</li>
+        </ul>
+        <button class="pbtn pbtn-f">Začni brezplačno</button>
+      </div>
+      <div class="pcard">
+        <div class="pname">Enterprise</div>
+        <div class="pprice"><span class="n" style="font-size:46px;letter-spacing:-1px">Po meri</span></div>
+        <p class="pdesc">Za verige in franšize. Prilagodjena postavitev in namenska podpora.</p>
+        <hr class="pdiv">
+        <ul class="plist">
+          <li>Vse neomejeno</li>
+          <li>Podpora za več lokacij</li>
+          <li>Po meri treniran AI</li>
+          <li>SSO in SAML</li>
+          <li>24/7 namenski skrbnik</li>
+        </ul>
+        <button class="pbtn pbtn-o">Kontaktirajte nas</button>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- ══ CTA ══ -->
+<!-- CTA -->
 <section id="cta">
-  <div class="cta-bg"></div>
-  <div class="cta-glow1"></div>
-  <div class="cta-glow2"></div>
-  <div class="cta-content">
-    <div class="cta-label">⚡ Ready to automate?</div>
-    <h2 class="cta-title">
-      <span>Your business</span>
-      <span>on autopilot.</span>
-    </h2>
-    <p class="cta-sub">Join hundreds of teams already running on FlowTiq. 14-day free trial, no credit card required.</p>
-    <div class="cta-btns">
-      <a href="mailto:hello@flowtiq.si" class="bprimary" style="font-size:16px;padding:16px 40px">Book a demo →</a>
-      <a href="#hscroll" class="bsecondary" style="font-size:16px;padding:16px 32px">Explore platform</a>
+  <div class="wrap">
+    <div class="cta-in">
+      <div class="cta-glow"></div>
+      <div class="sec-tag" style="justify-content:center">⚡ Ste pripravljeni?</div>
+      <h2 class="sec-h">Prepustite AI rezervacije.<br>Vi skrbite za stranke.</h2>
+      <p class="sec-s" style="margin:16px auto 0">Pridružite se 50+ salonom, ki so že na avtopilotu. Postavitev traja manj kot 30 minut.</p>
+      <div class="cta-btns">
+        <a href="mailto:hello@flowtiq.si" class="btn-p" style="font-size:16px;padding:14px 36px">Rezervirajte brezplačni demo →</a>
+        <a href="#features" class="btn-o" style="font-size:16px;padding:14px 28px">Izvedi več</a>
+      </div>
+      <p class="cta-note">14-dnevni brezplačni preizkus &nbsp;·&nbsp; Brez kartice &nbsp;·&nbsp; Kadarkoli odpovejte</p>
     </div>
-    <p class="cta-note">14-day trial &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel anytime</p>
   </div>
 </section>
 
+<!-- FOOTER -->
 <footer>
-  <div class="fb">⚡ FlowTiq</div>
-  <div class="fc">© 2026 FlowTiq. All rights reserved.</div>
-  <div class="fl">
-    <a href="#">Privacy</a>
-    <a href="#">Terms</a>
-    <a href="mailto:hello@flowtiq.si">Contact</a>
-    <a href="/dashboard.html">Dashboard</a>
+  <div class="wrap">
+    <div class="foot-in">
+      <div class="foot-logo">⚡ FlowTiq</div>
+      <div class="foot-copy">© 2026 FlowTiq. Vse pravice pridržane.</div>
+      <div class="foot-links">
+        <a href="#">Zasebnost</a>
+        <a href="#">Pogoji</a>
+        <a href="mailto:hello@flowtiq.si">Kontakt</a>
+        <a href="/dashboard.html">Nadzorna plošča</a>
+      </div>
+    </div>
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vanta@0.5.24/dist/vanta.net.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <script>
-gsap.registerPlugin(ScrollTrigger);
-
-// ── CURSOR ──
-var cur = document.getElementById('cur');
-if (cur && window.matchMedia('(hover:hover)').matches) {
-  document.addEventListener('mousemove', function(e) {
-    gsap.to(cur, { x: e.clientX, y: e.clientY, duration: 0.12, ease: 'power2.out' });
-  });
-  document.querySelectorAll('a,button,.pcard,.ch-card,.flow-node,.int-pill').forEach(function(el) {
-    el.addEventListener('mouseenter', function() { cur.classList.add('big'); });
-    el.addEventListener('mouseleave', function() { cur.classList.remove('big'); });
-  });
-}
-
-// ── HERO TITLE ANIMATION ──
-var words = document.querySelectorAll('.hero-title .word');
-gsap.to(words, {
-  y: '0%', duration: 1.1, ease: 'power4.out',
-  stagger: 0.12, delay: 0.2
-});
-
-// ── HORIZONTAL SCROLL ──
-var isMobile = window.innerWidth < 900;
-if (!isMobile) {
-  var inner = document.getElementById('hscroll-inner');
-  var panels = inner.querySelectorAll('.hpanel');
-  var totalX = -(panels.length - 1) * 100;
-
-  gsap.to(inner, {
-    xPercent: totalX,
-    ease: 'none',
-    scrollTrigger: {
-      trigger: '#hscroll',
-      start: 'top top',
-      end: () => '+=' + (panels.length - 1) * window.innerWidth,
-      pin: true,
-      scrub: 0.8,
-      invalidateOnRefresh: true,
-      anticipatePin: 1
-    }
-  });
-
-  // Animate content inside each panel as it enters
-  panels.forEach(function(panel, i) {
-    if (i === 0) return;
-    var els = panel.querySelectorAll('.hp-kicker,.hp-title,.hp-desc,.bprimary,.flow-visual,.channel-grid,.int-cloud');
-    gsap.fromTo(els, { opacity: 0, y: 30 }, {
-      opacity: 1, y: 0, duration: 0.6, stagger: 0.08,
-      scrollTrigger: {
-        trigger: '#hscroll',
-        start: () => '+=' + ((i - 0.5) * window.innerWidth),
-        once: true,
-        containerAnimation: ScrollTrigger.getById('hscroll-anim')
-      }
-    });
+// VANTA NET animated background
+if(window.VANTA && window.THREE){
+  VANTA.NET({
+    el:'#vanta-bg',
+    THREE:THREE,
+    mouseControls:true,
+    touchControls:true,
+    gyroControls:false,
+    minHeight:200,
+    minWidth:200,
+    scale:1.0,
+    scaleMobile:1.0,
+    color:0x7c3aed,
+    backgroundColor:0x09090f,
+    points:9.0,
+    maxDistance:22.0,
+    spacing:18.0,
+    showDots:true
   });
 }
 
-// ── NAV SCROLL EFFECT ──
-ScrollTrigger.create({
-  start: 'top -80',
-  onUpdate: function(self) {
-    var nav = document.querySelector('nav');
-    if (self.progress > 0) {
-      nav.style.background = 'rgba(8,8,13,0.92)';
-      nav.style.backdropFilter = 'blur(24px)';
-      nav.style.borderBottom = '1px solid rgba(255,255,255,0.07)';
-      nav.style.padding = '16px 56px';
-    } else {
-      nav.style.background = '';
-      nav.style.backdropFilter = '';
-      nav.style.borderBottom = '';
-      nav.style.padding = '';
-    }
-  }
-});
-
-// ── REVEAL ON SCROLL ──
-var reveals = document.querySelectorAll('.rvy');
-reveals.forEach(function(el, i) {
-  ScrollTrigger.create({
-    trigger: el,
-    start: 'top 88%',
-    once: true,
-    onEnter: function() {
-      el.classList.add('in');
-    }
+var cur=document.getElementById('cur');
+if(cur&&window.matchMedia('(hover:hover)').matches){
+  document.addEventListener('mousemove',function(e){gsap.to(cur,{x:e.clientX,y:e.clientY,duration:.1,ease:'power2.out'})});
+  document.querySelectorAll('a,button,.feat-card,.pcard').forEach(function(el){
+    el.addEventListener('mouseenter',function(){cur.classList.add('big')});
+    el.addEventListener('mouseleave',function(){cur.classList.remove('big')});
   });
-});
-
-// ── WAVE BARS RANDOM HEIGHTS ──
-document.querySelectorAll('.wave-bar').forEach(function(bar, i) {
-  bar.style.animationDelay = (i * 0.08) + 's';
-  var h = 6 + Math.random() * 28;
-  bar.style.setProperty('--h', h + 'px');
-});
-
-// Fix wave heights with inline CSS
-document.querySelectorAll('.wave-bar').forEach(function(bar) {
-  var maxH = 6 + Math.random() * 28;
-  bar.style.animation = 'none';
-  var keyName = 'wave_' + Math.random().toString(36).substr(2,6);
-  var style = document.createElement('style');
-  style.textContent = '@keyframes ' + keyName + '{0%,100%{height:4px;opacity:0.4}50%{height:' + maxH + 'px;opacity:1}}';
-  document.head.appendChild(style);
-  bar.style.animation = keyName + ' ' + (0.8 + Math.random() * 0.8) + 's ease ' + (Math.random() * 0.4) + 's infinite';
-});
-
-// ── WHATSAPP CONVERSATION ANIMATION ──
-(function() {
-  var seq = [
-    { id: 'wm1', dur: 0 },
-    { id: 'wt1', dur: 1100, hide: true },
-    { id: 'wm2', dur: 0 },
-    { id: 'wm3', dur: 1600 },
-    { id: 'wt2', dur: 1000, hide: true },
-    { id: 'wm4', dur: 0 },
-    { id: 'wm5', dur: 1800 },
-    { id: 'wt3', dur: 900, hide: true },
-    { id: 'wm6', dur: 0 }
+}
+window.addEventListener('scroll',function(){document.getElementById('nav').classList.toggle('up',window.scrollY>40)});
+if(window.gsap&&window.ScrollTrigger){
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.from('.hero-text > *',{opacity:0,y:28,duration:.7,stagger:.09,delay:.15,ease:'power3.out'});
+  gsap.from('.hero-phone',{opacity:0,x:36,duration:.9,delay:.3,ease:'power3.out'});
+  document.querySelectorAll('.feat-card,.pcard,.stat').forEach(function(el,i){
+    gsap.from(el,{opacity:0,y:20,duration:.55,delay:(i%3)*.07,scrollTrigger:{trigger:el,start:'top 92%',once:true}});
+  });
+  document.querySelectorAll('.sec-tag,.sec-h,.sec-s').forEach(function(el){
+    gsap.from(el,{opacity:0,y:18,duration:.6,scrollTrigger:{trigger:el,start:'top 90%',once:true}});
+  });
+}
+(function(){
+  var seq=[
+    {id:'wm1',wait:500},
+    {id:'wt1',wait:1000,hide:true},
+    {id:'wm2',wait:700},
+    {id:'wm3',wait:1600},
+    {id:'wt2',wait:900,hide:true},
+    {id:'wm4',wait:700},
+    {id:'wm5',wait:1800},
+    {id:'wt3',wait:800,hide:true},
+    {id:'wm6',wait:600}
   ];
-
-  function runSequence() {
-    // Reset all
-    seq.forEach(function(s) {
-      var el = document.getElementById(s.id);
-      if (el) { el.style.opacity = '0'; }
+  function show(id){var e=document.getElementById(id);if(e)e.style.opacity='1'}
+  function hide(id){var e=document.getElementById(id);if(e)e.style.opacity='0'}
+  function run(){
+    seq.forEach(function(s){hide(s.id)});
+    var chat=document.getElementById('waChat');
+    var t=200;
+    seq.forEach(function(s){
+      var d=t;
+      setTimeout(function(){
+        show(s.id);
+        if(chat)chat.scrollTop=chat.scrollHeight;
+        if(s.hide)setTimeout(function(){hide(s.id)},s.wait);
+      },d);
+      t+=s.wait+(s.hide?0:550);
     });
-    var chat = document.getElementById('waChat');
-
-    var delay = 0;
-    seq.forEach(function(s, i) {
-      // show this element
-      var showDelay = delay;
-      setTimeout(function() {
-        var el = document.getElementById(s.id);
-        if (!el) return;
-        gsap.to(el, { opacity: 1, y: 0, duration: 0.25, ease: 'power2.out' });
-        // scroll chat to bottom
-        if (chat) chat.scrollTop = chat.scrollHeight;
-        // if it's a typing indicator, hide it after dur
-        if (s.hide) {
-          setTimeout(function() {
-            gsap.to(el, { opacity: 0, duration: 0.15 });
-          }, s.dur);
-        }
-      }, showDelay);
-
-      delay += s.dur || 600;
-    });
-
-    // restart loop after 5s pause
-    setTimeout(runSequence, delay + 5000);
+    setTimeout(run,t+4500);
   }
-
-  // Start animation when section enters viewport
-  ScrollTrigger.create({
-    trigger: '#wapp',
-    start: 'top 70%',
-    once: true,
-    onEnter: function() { runSequence(); }
-  });
+  setTimeout(run,600);
 })();
-
-// ── PRICING CARD HOVER GLOW ──
-document.querySelectorAll('.pcard').forEach(function(card) {
-  card.addEventListener('mousemove', function(e) {
-    var r = card.getBoundingClientRect();
-    var x = e.clientX - r.left;
-    var y = e.clientY - r.top;
-    card.style.background = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, rgba(124,58,237,0.12), transparent 60%), ' + (card.classList.contains('hot') ? 'linear-gradient(150deg,#120826,#0a0620)' : 'var(--bg)');
-  });
-  card.addEventListener('mouseleave', function() {
-    card.style.background = '';
-  });
-});
 </script>
 </body>
 </html>
