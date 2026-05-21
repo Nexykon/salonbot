@@ -606,14 +606,28 @@ async function handleMessage(msgObj, salon) {
       ));
     }
 
-    // Notify admin — vedno email z gumbi Potrdi/Zavrni
-    mail.sendAdminBookingConfirmEmail(salon, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6, booking.id)
-      .catch(e => console.error('[email] admin confirm email:', e.message));
-    // Dodatno WA obvestilo adminu (če ima telefon)
+    // Notify admin — WA če ima telefon, email če nima
     if (salonAdminPhone) {
-      wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-        `📩 *Nova rezervacija*\n👤 ${customerName} (+${from})\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi prek emaila ali dashboarda.`
-      )).catch(e => console.error('Admin WA notify err:', e.message));
+      // Admin ima WA → pošlji WA z gumbi (template → session fallback → text)
+      try {
+        await wa.send(phoneId, token,
+          wa.adminBookingNotif(salonAdminPhone, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6)
+        );
+      } catch (e) {
+        try {
+          await wa.send(phoneId, token,
+            wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6)
+          );
+        } catch (e2) {
+          wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
+            `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi z: *#potrdi ${ref6}*`
+          )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
+        }
+      }
+    } else {
+      // Admin nima telefona → pošlji email z gumboma Potrdi/Zavrni
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6, booking.id)
+        .catch(e => console.error('[email] admin confirm email:', e.message));
     }
     return;
   }
