@@ -1,7 +1,9 @@
 const axios = require('axios');
 
 function configured() {
-  return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  const ok = Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
+  if (!ok) console.warn('[email] NOT configured — missing RESEND_API_KEY or EMAIL_FROM env var');
+  return ok;
 }
 
 async function sendEmail(to, subject, text) {

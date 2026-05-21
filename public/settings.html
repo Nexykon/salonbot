@@ -173,7 +173,29 @@
   }
   .dur-input:focus { border-color: var(--purple); }
   .dur-label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
-  .dur-save-btn {
+  .booking-mode-pill {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); padding: 7px 16px; border-radius: 20px;
+    font-size: 0.85rem; cursor: pointer; transition: all .15s;
+  }
+  .booking-mode-pill.active {
+    background: rgba(124,58,237,0.25); border-color: var(--purple);
+    color: var(--purple-light); font-weight: 600;
+  }
+  .ff-field-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+  }
+  .ff-field-row .ff-label { flex: 1; font-size: 0.9rem; color: var(--text); }
+  .ff-field-row .ff-type { font-size: 0.75rem; color: var(--muted); background: var(--surface); padding: 2px 8px; border-radius: 10px; }
+  .ff-field-row .ff-req { font-size: 0.75rem; color: var(--purple-light); margin-left:4px; }
+  .ff-field-row .ff-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1.1rem; padding: 0 4px; opacity: .7; margin-left:auto; }
+  .ff-field-row .ff-del:hover { opacity: 1; }
+  .ff-move-btns { display:flex; flex-direction:column; gap:2px; }
+  .ff-move-btns button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; line-height:1; padding:1px 3px; }
+  .ff-move-btns button:hover { color: var(--text); }
+      .dur-save-btn {
     padding: 8px 14px; border-radius: 9px; font-size: 0.8rem; font-weight: 700;
     background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.35);
     color: var(--purple-light); cursor: pointer; transition: all 0.15s; white-space: nowrap;
@@ -430,6 +452,49 @@
         <label>Ime salona (kot se prikaže strankam)</label>
         <input type="text" id="salon-name" placeholder="npr. Salon Vita">
       </div>
+    </div>
+
+    <!-- Obrazec / vprašalnik -->
+    <div class="card owner-panel settings-panel" id="form-fields-card">
+      <div class="card-title">📝 Vprašalnik ob naročilu
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Vprašanja, ki jih bot postavi stranki</span>
+      </div>
+
+      <!-- Booking mode -->
+      <div class="form-group" style="margin-bottom:18px">
+        <label style="margin-bottom:8px;display:block">Način naročanja</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="booking-mode-pill" data-mode="exact_time">📅 Točen termin</button>
+          <button type="button" class="booking-mode-pill" data-mode="inquiry">💬 Povpraševanje</button>
+          <button type="button" class="booking-mode-pill" data-mode="date_only">📆 Samo datum</button>
+        </div>
+        <div class="form-hint" id="booking-mode-hint" style="margin-top:8px"></div>
+      </div>
+
+      <!-- Fields list -->
+      <div id="ff-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+
+      <!-- Add field -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="ff-new-label" placeholder="Novo vprašanje (npr. Alergije?)" class="dur-input" style="flex:1;min-width:180px">
+        <select id="ff-new-type" class="dur-input" style="width:auto">
+          <option value="text">Kratko besedilo</option>
+          <option value="textarea">Dolgo besedilo</option>
+          <option value="number">Število</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--muted);cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="ff-new-required" style="accent-color:var(--purple)"> Obvezno
+        </label>
+        <button class="btn btn-secondary" onclick="ffAddField()" style="padding:8px 14px;font-size:0.85rem">+ Dodaj</button>
+      </div>
+
+      <!-- Inquiry confirmation message -->
+      <div id="inquiry-msg-group" class="form-group" style="margin-top:18px;display:none">
+        <label>Sporočilo po oddaji povpraševanja</label>
+        <input type="text" id="inquiry-confirmation-message" placeholder="Hvala! Kontaktirali vas bomo čim prej." class="dur-input" style="width:100%">
+      </div>
+
+      <button class="btn btn-primary" onclick="saveFormFields()" style="margin-top:18px;width:100%" id="ff-save-btn">💾 Shrani vprašalnik</button>
     </div>
 
     <!-- Storitve & trajanje -->
@@ -788,6 +853,7 @@ function loadUI(data) {
 
   updatePreview();
   loadServices();
+  ffLoadFromData(data);
 }
 
 // ── Preview ────────────────────────────────────────────────
@@ -839,6 +905,115 @@ async function saveSettings() {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = '💾 Shrani nastavitve';
+  }
+}
+
+// ── Form Fields Editor ─────────────────────────────────────
+let currentFormFields = [];
+let currentBookingMode = 'exact_time';
+
+const BOOKING_MODE_HINTS = {
+  exact_time: 'Stranka izbere točen datum in uro. Primerno za salone, frizerje, masaže.',
+  inquiry: 'Stranka izpolni vprašalnik brez izbire termina — vi kontaktirate. Primerno za tattoo, fotografe.',
+  date_only: 'Stranka izbere datum, uro izberete sami. Primerno za daljše storitve.'
+};
+
+const FIELD_TYPE_LABELS = { text: 'kratko', textarea: 'dolgo', number: 'število' };
+
+function ffRender() {
+  const list = document.getElementById('ff-list');
+  if (!list) return;
+  if (currentFormFields.length === 0) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.875rem;padding:8px 0">Ni vprašanj — bot ne bo ničesar vprašal pred imenom.</div>';
+    return;
+  }
+  list.innerHTML = currentFormFields.map((f, i) => `
+    <div class="ff-field-row" data-idx="${i}">
+      <div class="ff-move-btns">
+        <button title="Gor" onclick="ffMove(${i},-1)">▲</button>
+        <button title="Dol" onclick="ffMove(${i},1)">▼</button>
+      </div>
+      <span class="ff-label">${f.label}</span>
+      <span class="ff-type">${FIELD_TYPE_LABELS[f.type] || f.type}</span>
+      ${f.required ? '<span class="ff-req">obvezno</span>' : '<span style="font-size:0.75rem;color:var(--muted)">opcijsko</span>'}
+      <button class="ff-del" title="Odstrani" onclick="ffRemove(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function ffAddField() {
+  const label = document.getElementById('ff-new-label').value.trim();
+  if (!label) { showToast('Vnesite besedilo vprašanja', 'error'); return; }
+  const type = document.getElementById('ff-new-type').value;
+  const required = document.getElementById('ff-new-required').checked;
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30) + '_' + Date.now().toString(36);
+  currentFormFields.push({ id, label, type, required });
+  document.getElementById('ff-new-label').value = '';
+  document.getElementById('ff-new-required').checked = false;
+  ffRender();
+}
+
+function ffRemove(idx) {
+  currentFormFields.splice(idx, 1);
+  ffRender();
+}
+
+function ffMove(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= currentFormFields.length) return;
+  const tmp = currentFormFields[idx];
+  currentFormFields[idx] = currentFormFields[newIdx];
+  currentFormFields[newIdx] = tmp;
+  ffRender();
+}
+
+function ffSetMode(mode) {
+  currentBookingMode = mode;
+  document.querySelectorAll('.booking-mode-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.mode === mode);
+  });
+  const hint = document.getElementById('booking-mode-hint');
+  if (hint) hint.textContent = BOOKING_MODE_HINTS[mode] || '';
+  const inqGroup = document.getElementById('inquiry-msg-group');
+  if (inqGroup) inqGroup.style.display = mode === 'inquiry' ? 'block' : 'none';
+}
+
+function ffLoadFromData(data) {
+  currentFormFields = Array.isArray(data.form_fields) ? JSON.parse(JSON.stringify(data.form_fields)) : [];
+  ffSetMode(data.booking_mode || 'exact_time');
+  if (data.inquiry_confirmation_message) {
+    const el = document.getElementById('inquiry-confirmation-message');
+    if (el) el.value = data.inquiry_confirmation_message;
+  }
+  ffRender();
+  // Wire up mode pills
+  document.querySelectorAll('.booking-mode-pill').forEach(p => {
+    p.onclick = () => ffSetMode(p.dataset.mode);
+  });
+}
+
+async function saveFormFields() {
+  const btn = document.getElementById('ff-save-btn');
+  btn.disabled = true; btn.textContent = 'Shranjujem...';
+  const body = {
+    booking_mode: currentBookingMode,
+    form_fields: currentFormFields
+  };
+  const inqMsg = document.getElementById('inquiry-confirmation-message');
+  if (inqMsg && inqMsg.value.trim()) body.inquiry_confirmation_message = inqMsg.value.trim();
+  try {
+    const r = await fetch(scopedPath('/api/settings'), {
+      method: 'PATCH',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Napaka');
+    showToast('Vprašalnik shranjen!', 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Shrani vprašalnik';
   }
 }
 

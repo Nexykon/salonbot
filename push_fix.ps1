@@ -1,4 +1,4 @@
-# FlowTiq - Full push: multi-tenant platform + owner OTP + presets
+# FlowTiq - Full push
 # Pozeni z: Right-click -> Run with PowerShell
 
 Set-Location "C:\Users\nexon\Desktop\Podjetje\salonbot"
@@ -26,20 +26,29 @@ if ($LASTEXITCODE -ne 0) { Write-Host "email.js check failed" -ForegroundColor R
 node --check src/whatsapp.js
 if ($LASTEXITCODE -ne 0) { Write-Host "whatsapp.js check failed" -ForegroundColor Red; pause; exit 1 }
 
-Write-Host "=== Removing git lock files ===" -ForegroundColor Cyan
+Write-Host "=== Fixing git index if corrupt ===" -ForegroundColor Cyan
 Remove-Item -Force ".git\index.lock" -ErrorAction SilentlyContinue
 Remove-Item -Force ".git\HEAD.lock" -ErrorAction SilentlyContinue
 Remove-Item -Force ".git\objects\maintenance.lock" -ErrorAction SilentlyContinue
 
+# Test if git index is OK
+git status 2>&1 | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  Write-Host "Git index pokvarjen — popravljam..." -ForegroundColor Yellow
+  Remove-Item -Force ".git\index" -ErrorAction SilentlyContinue
+  git reset HEAD 2>&1 | Out-Null
+  Write-Host "Git index popravljen." -ForegroundColor Green
+}
+
 Write-Host "=== Committing FlowTiq changes ===" -ForegroundColor Cyan
 
-git add .env.example server.js package.json package-lock.json push_fix.ps1 FLOWTIQ_TATTOO_ONBOARDING_RUNBOOK.md public/index.html public/dashboard.html public/book.html public/settings.html src/handler.js src/whatsapp.js src/supabase.js src/scheduler.js src/ai.js src/calendar.js src/auth.js src/email.js src/presets.js src/session.js
+git add .env.example server.js package.json package-lock.json push_fix.ps1 public/index.html public/dashboard.html public/book.html public/settings.html src/handler.js src/whatsapp.js src/supabase.js src/scheduler.js src/ai.js src/calendar.js src/auth.js src/email.js src/presets.js src/session.js
 
 git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
-  git commit -m "fix: parse form_fields JSON string, fix inquiry flow - submit after name, no customer email"
+  git commit -m "fix: form_fields autoName, inquiry flow, dashboard form editor + booking mode"
   if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
 }
 
