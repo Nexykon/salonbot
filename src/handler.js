@@ -392,31 +392,38 @@ async function handleMessage(msgObj, salon) {
     return;
   }
 
-  // ── Step 5: waiting for customer email (after booking confirmed) ──
+  // ── Step 5: email collection — ENO končno sporočilo ──
   if (sess.step === 5 && msgText) {
     const s = session.get(from);
-    // If booking already created (bookingRef exists), this is email collection
-    if (s.bookingRef) {
-      const rawEmail = msgText.trim();
-      const skipEmail = rawEmail === '0' || /preskok|preskoci|skip/i.test(rawEmail);
-      const customerEmail = (!skipEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) ? rawEmail.toLowerCase() : null;
-      if (!skipEmail && !customerEmail) {
-        await wa.send(phoneId, token, wa.textMsg(from, '❌ Neveljaven e-poštni naslov. Poskusite znova ali pošljite *0* za preskok:'));
+    if (!s.bookingRef) { session.clear(from); }
+    else {
+      const raw = msgText.trim().toLowerCase();
+      const skip = raw === '0' || /preskok|preskoci|skip/i.test(raw);
+      const useKnown = s.knownEmail && /^(da|yes|ja|ok)$/i.test(raw);
+      const newEmail = (!skip && !useKnown && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(msgText.trim())) ? msgText.trim().toLowerCase() : null;
+      const customerEmail = useKnown ? s.knownEmail : newEmail;
+
+      if (!skip && !customerEmail) {
+        await wa.send(phoneId, token, wa.textMsg(from, '❌ Neveljaven naslov. Poskusite znova ali pošljite *0* za preskok:'));
         return;
       }
+
       session.clear(from);
+
       if (customerEmail) {
-        // Update booking notes with email
         await db.updateBookingNotes(s.bookingId, `customer_email:${customerEmail}`).catch(() => {});
-        await mail.sendCustomerBookingReceived(customerEmail, s.customerName, salon.name, s.bookingDate, s.bookingTime, s.bookingRef).catch(e => console.error('[email] customer booking received:', e.message));
-        await wa.send(phoneId, token, wa.textMsg(from, `✅ Rezervacija oddana! Potrditev bo prišla na *${customerEmail}*. Hvala! 🙏`));
+        await mail.sendCustomerBookingReceived(customerEmail, s.customerName, salon.name, s.bookingDate, s.bookingTime, s.bookingRef)
+          .catch(e => console.error('[email] booking received:', e.message));
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `📋 Rezervacija oddana!\n\n👤 ${s.customerName}\n📅 ${s.bookingDate} ob ${s.bookingTime}\n🔑 Ref: *${s.bookingRef}*\n\n📧 Potrditev smo poslali na *${customerEmail}*. Hvala! 🙏`
+        ));
       } else {
-        await wa.send(phoneId, token, wa.textMsg(from, '✅ Rezervacija je oddana! Ko bo potrjena, vas obvestimo na WhatsApp. Hvala! 🙏'));
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `📋 Rezervacija oddana!\n\n👤 ${s.customerName}\n📅 ${s.bookingDate} ob ${s.bookingTime}\n🔑 Ref: *${s.bookingRef}*\n\n⏳ Ko bo termin potrjen, vas obvestimo. Hvala! 🙏`
+        ));
       }
       return;
     }
-    // Otherwise fall through to default (stale session)
-    session.clear(from);
   }
 
   // ── Service selection ──
@@ -576,54 +583,37 @@ async function handleMessage(msgObj, salon) {
     const ref6 = (booking.id || '').slice(-6);
     const fDate = fmtDate(s.selectedDate);
 
+    // Vedno spravi booking info za step 5
+    session.set(from, {
+      step: 5,
+      bookingRef: ref6,
+      bookingId: booking.id,
+      bookingDate: fDate,
+      bookingTime: s.selectedTime,
+      customerName,
+      knownEmail: knownEmail || null
+    });
+
     if (knownEmail) {
-      // Email že poznamo — pošlji takoj, ne vprašaj
-      session.clear(from);
+      // Email že poznamo — samo vprašaj za potrditev, 1 sporočilo na koncu (step 5 auto-process)
       await wa.send(phoneId, token, wa.textMsg(from,
-        `📋 Rezervacija oddana!\n\n👤 ${customerName}\n📅 ${fDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n📧 Potrditev smo poslali na *${knownEmail}*. Hvala! 🙏`
+        `📧 Pošljemo potrditev na *${knownEmail}*? (da / vpišite drug email / 0 za preskok):`
       ));
-      await mail.sendCustomerBookingReceived(knownEmail, customerName, salon.name, fDate, s.selectedTime, ref6).catch(e => console.error('[email] booking received:', e.message));
     } else {
-      // Vprašaj za email
-      session.set(from, {
-        step: 5,
-        bookingRef: ref6,
-        bookingId: booking.id,
-        bookingDate: fDate,
-        bookingTime: s.selectedTime,
-        customerName
-      });
+      // Vprašaj za email — potrditev pride enkrat na koncu
       await wa.send(phoneId, token, wa.textMsg(from,
-        `📋 Rezervacija oddana!\n\n👤 ${customerName}\n📅 ${fDate} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n📧 Vpišite email za potrditev (ali *0* za preskok):`
+        `📧 Vpišite vaš email za potrditev (ali *0* za preskok):`
       ));
     }
 
-    // Notify admin
+    // Notify admin — vedno email z gumbi Potrdi/Zavrni
+    mail.sendAdminBookingConfirmEmail(salon, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6, booking.id)
+      .catch(e => console.error('[email] admin confirm email:', e.message));
+    // Dodatno WA obvestilo adminu (če ima telefon)
     if (salonAdminPhone) {
-      try {
-        await wa.send(phoneId, token,
-          wa.adminBookingNotif(salonAdminPhone, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6)
-        );
-      } catch (e) {
-        console.error('Template notify err:', e.response?.data?.error?.message || e.message);
-        try {
-          await wa.send(phoneId, token,
-            wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6)
-          );
-        } catch (e2) {
-          console.error('Session notify err:', e2.response?.data?.error?.message || e2.message);
-          try {
-            await wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-              `📩 *Nova rezervacija*\n\n👤 ${customerName}\n📞 +${from}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n💡 Napišite "termini" za prikaz gumbov za potrditev.`
-            ));
-          } catch (e3) {
-            console.error('Text notify err:', e3.message);
-            await db.logError(salon.id, 'admin_notify', e3.message, 'Admin obvestilo ni uspelo', from);
-          }
-        }
-      }
-    } else {
-      await mail.sendBookingNotification(salon, customerName, from, fmtDate(s.selectedDate), s.selectedTime, ref6, 'WhatsApp rezervacija').catch(() => {});
+      wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
+        `📩 *Nova rezervacija*\n👤 ${customerName} (+${from})\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\nPotrdi prek emaila ali dashboarda.`
+      )).catch(e => console.error('Admin WA notify err:', e.message));
     }
     return;
   }

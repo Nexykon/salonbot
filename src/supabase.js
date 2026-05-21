@@ -160,6 +160,11 @@ async function getBooking(ref) {
   return r.data[0];
 }
 
+async function getBookingById(id) {
+  const r = await axios.get(`${BASE}/sb_bookings?id=eq.${id}&limit=1`, { headers: HEADERS });
+  return r.data[0];
+}
+
 async function getBookingForSalon(salonId, ref) {
   const r = await axios.get(
     `${BASE}/sb_bookings?salon_id=eq.${salonId}&id=like.*${ref}&order=created_at.desc&limit=1`,
@@ -499,7 +504,7 @@ module.exports = {
   updateSalonStripe, updateSubscriptionStatus, logInvoice,
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
-  getBooking, getBookingForSalon, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
+  getBooking, getBookingById, getBookingForSalon, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,

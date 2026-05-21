@@ -39,7 +39,7 @@ git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
-  git commit -m "feat: dashboard confirm/cancel sends WA+email, auto-email known customer, booking flow fixes"
+  git commit -m "feat: admin email confirm flow - Ewa gets email with Potrdi/Zavrni, customer gets WA"
   if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
 }
 

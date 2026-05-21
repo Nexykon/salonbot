@@ -163,4 +163,70 @@ async function sendCustomerBookingConfirmed(customerEmail, customerName, salonNa
   return sendEmail(customerEmail, subject, text);
 }
 
-module.exports = { configured, sendEmail, sendWelcomeEmail, sendBookingNotification, sendPasswordReset, sendCustomerBookingReceived, sendCustomerBookingConfirmed };
+// Email adminu: nova rezervacija z gumboma Potrdi/Zavrni
+async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, time, ref6, bookingId) {
+  const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+  const confirmUrl = `${baseUrl}/api/confirm-booking?id=${bookingId}&action=confirm`;
+  const cancelUrl  = `${baseUrl}/api/confirm-booking?id=${bookingId}&action=cancel`;
+  const subject = `📩 Nova rezervacija — ${customerName} (${date} ob ${time})`;
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+    <tr><td align="center">
+      <table width="540" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
+        <tr><td style="background:linear-gradient(135deg,#7c3aed,#4f46e5);padding:24px 32px;">
+          <div style="font-size:22px;font-weight:800;color:#fff;">FlowTiq</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.75);margin-top:2px;">Nova rezervacija čaka na potrditev</div>
+        </td></tr>
+        <tr><td style="padding:32px;">
+          <p style="color:#1e293b;font-size:16px;font-weight:600;margin:0 0 20px;">📩 Nova rezervacija pri <strong>${salon.name || 'vaš salon'}</strong></p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:28px;">
+            <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">👤 Stranka</td><td style="padding:6px 0;color:#1e293b;font-size:14px;font-weight:600;">${customerName}</td></tr>
+            <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">📞 Telefon</td><td style="padding:6px 0;color:#1e293b;font-size:14px;">+${phone}</td></tr>
+            <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">📅 Termin</td><td style="padding:6px 0;color:#1e293b;font-size:14px;font-weight:600;">${date} ob ${time}</td></tr>
+            <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">🔑 Ref</td><td style="padding:6px 0;color:#7c3aed;font-size:14px;font-weight:700;">${ref6}</td></tr>
+          </table>
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="48%" style="padding-right:8px;">
+                <a href="${confirmUrl}" style="display:block;text-align:center;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 0;border-radius:10px;">✅ Potrdi rezervacijo</a>
+              </td>
+              <td width="48%" style="padding-left:8px;">
+                <a href="${cancelUrl}" style="display:block;text-align:center;background:#f1f5f9;color:#ef4444;font-size:15px;font-weight:700;text-decoration:none;padding:14px 0;border-radius:10px;border:1px solid #fecaca;">❌ Zavrni</a>
+              </td>
+            </tr>
+          </table>
+          <p style="color:#94a3b8;font-size:12px;text-align:center;margin:20px 0 0;">Ali upravljajte rezervacije v <a href="${baseUrl}/dashboard.html" style="color:#7c3aed;">FlowTiq dashboardu</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  const email = String(salon.owner_email || '').trim();
+  if (!email || !configured()) return false;
+  try {
+    await axios.post('https://api.resend.com/emails', {
+      from: process.env.EMAIL_FROM,
+      to: email,
+      subject,
+      html
+    }, {
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    return true;
+  } catch (e) {
+    const status = e.response?.status;
+    const detail = JSON.stringify(e.response?.data || e.message);
+    console.error(`[email] sendAdminBookingConfirmEmail failed (${status}): ${detail}`);
+    return false;
+  }
+}
+
+module.exports = { configured, sendEmail, sendWelcomeEmail, sendBookingNotification, sendAdminBookingConfirmEmail, sendPasswordReset, sendCustomerBookingReceived, sendCustomerBookingConfirmed };

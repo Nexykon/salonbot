@@ -1107,6 +1107,78 @@ app.get('/api/calendar', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── Email confirm/cancel link (Ewa klikne v emailu) ──────────
+app.get('/api/confirm-booking', async (req, res) => {
+  const { id, action } = req.query;
+  if (!id) return res.status(400).send('<h2>Napaka: manjka ID rezervacije.</h2>');
+  try {
+    const booking = await db.getBookingById(id);
+    if (!booking) return res.status(404).send('<h2>Rezervacija ni najdena.</h2>');
+    if (booking.status === 'confirmed' && action === 'confirm') {
+      return res.send(resultPage('✅ Že potrjeno', `Rezervacija <b>${id.slice(-6)}</b> je bila že potrjena.`, '#22c55e'));
+    }
+    if (booking.status === 'cancelled') {
+      return res.send(resultPage('❌ Že preklicano', `Rezervacija <b>${id.slice(-6)}</b> je bila že preklicana.`, '#ef4444'));
+    }
+
+    const salon = await db.getSalonById(booking.salon_id);
+    const phoneId = (salon && salon.whatsapp_phone_number_id) || process.env.WA_PHONE_ID;
+    const token = process.env.WA_TOKEN;
+    const fmtD = d => { const dt = new Date(d.substring(0,10)+'T12:00:00'); return String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0')+'.'+dt.getFullYear(); };
+    const custDate = fmtD(booking.booking_date || '2000-01-01');
+    const custTime = (booking.booking_time || '').substring(0, 5);
+    const ref6 = id.slice(-6);
+    const notesEmail = (booking.notes || '').match(/customer_email:([^\s,]+)/)?.[1];
+
+    if (action === 'cancel') {
+      await db.updateBookingStatus(id, 'cancelled');
+      // Obvesti stranko
+      if (booking.customer_phone && booking.customer_phone !== 'manual' && phoneId && token) {
+        wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+          `❌ Žal vaša rezervacija za ${custDate} ob ${custTime} ni bila potrjena.\n\nZa novo rezervacijo nam pišite. 🙏`
+        )).catch(e => console.error('email-cancel WA err:', e.message));
+      }
+      return res.send(resultPage('❌ Rezervacija zavrnjena', `Rezervacija stranke <b>${booking.customer_name || ref6}</b> za ${custDate} ob ${custTime} je bila zavrnjena.`, '#ef4444'));
+    }
+
+    // action === confirm (default)
+    await db.updateBookingStatus(id, 'confirmed');
+
+    // WA stranki
+    if (booking.customer_phone && booking.customer_phone !== 'manual' && phoneId && token) {
+      try {
+        await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime, salon?.name || ''));
+      } catch {
+        wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+          `✅ Vaša rezervacija je potrjena!\n\n📅 ${custDate} ob ${custTime}\n\nHvala, vidimo se! 💆`
+        )).catch(e => console.error('email-confirm WA err:', e.message));
+      }
+    }
+    // Email stranki
+    if (notesEmail) {
+      mail.sendCustomerBookingConfirmed(notesEmail, booking.customer_name || 'stranka', salon?.name || '', custDate, custTime, ref6)
+        .catch(e => console.error('email-confirm customer email err:', e.message));
+    }
+
+    return res.send(resultPage('✅ Rezervacija potrjena!', `Rezervacija stranke <b>${booking.customer_name || ref6}</b> za ${custDate} ob ${custTime} je bila potrjena.<br><br>Stranka je bila obveščena.`, '#22c55e'));
+  } catch (err) {
+    console.error('confirm-booking err:', err.message);
+    res.status(500).send('<h2>Napaka strežnika.</h2>');
+  }
+});
+
+function resultPage(title, body, color) {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Segoe UI',Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;">
+  <div style="background:#fff;border-radius:16px;padding:40px 48px;max-width:420px;text-align:center;border:1px solid #e2e8f0;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+    <div style="font-size:48px;margin-bottom:16px;">${color === '#22c55e' ? '✅' : '❌'}</div>
+    <h2 style="color:${color};margin:0 0 12px;font-size:22px;">${title}</h2>
+    <p style="color:#64748b;font-size:15px;line-height:1.6;margin:0 0 24px;">${body}</p>
+    <a href="/dashboard.html" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;">Odpri dashboard →</a>
+  </div>
+</body></html>`;
+}
+
 // ─── Admin: confirm booking ────────────────────────────────────
 async function bookingActionSalon(req, res) {
   if (isMasterRequest(req)) {
