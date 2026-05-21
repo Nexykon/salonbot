@@ -181,14 +181,13 @@ async function handleMessage(msgObj, salon) {
       if (booking) {
         await db.updateBookingStatus(booking.id, 'confirmed');
         await wa.send(phoneId, token, wa.textMsg(from, `✅ Rezervacija *${ref}* potrjena za ${booking.customer_name || booking.customer_phone}.`));
-        // Obvesti stranko — najprej template (24/7), potem plain text fallback
+        const custDate = fmtDate(booking.booking_date);
+        const custTime = (booking.booking_time || '').substring(0, 5);
+        // Obvesti stranko prek WhatsApp — najprej template (24/7), potem plain text fallback
         if (booking.customer_phone && booking.customer_phone !== 'manual') {
-          const custDate = fmtDate(booking.booking_date);
-          const custTime = (booking.booking_time || '').substring(0, 5);
           try {
             await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime, salon.name));
           } catch (e) {
-            // Template ni odobren → plain text fallback
             try {
               await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
                 `✅ Vaša rezervacija je potrjena!\n\n📅 ${custDate} ob ${custTime}\n\nHvala, vidimo se! 💆`
@@ -201,6 +200,11 @@ async function handleMessage(msgObj, salon) {
               await wa.send(phoneId, token, wa.textMsg(from, `⚠️ Stranka (${booking.customer_phone}) NI obveščena.\nNapaka: ${errMsg}`));
             }
           }
+        }
+        // Pošlji email potrditve stranki (če je email shranjen v notes)
+        const notesEmail = (booking.notes || '').match(/customer_email:([^\s,]+)/)?.[1];
+        if (notesEmail) {
+          await mail.sendCustomerBookingConfirmed(notesEmail, booking.customer_name || 'stranka', salon.name, custDate, custTime, ref).catch(e => console.error('[email] customer confirmed:', e.message));
         }
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Rezervacija ${ref} ni najdena.`));
@@ -259,6 +263,15 @@ async function handleMessage(msgObj, salon) {
             } catch (e) {
               console.error('Notify customer err:', e.response?.data || e.message);
               await wa.send(phoneId, token, wa.textMsg(from, `⚠️ Ni uspelo obvestiti stranke (${booking.customer_phone}): ${e.message}`));
+            }
+          }
+          // Email potrditve stranki (če je email shranjen v notes)
+          if (isConfirm) {
+            const notesEmail = (booking.notes || '').match(/customer_email:([^\s,]+)/)?.[1];
+            if (notesEmail) {
+              const cDate = fmtDate(booking.booking_date);
+              const cTime = (booking.booking_time || '').substring(0, 5);
+              await mail.sendCustomerBookingConfirmed(notesEmail, booking.customer_name || 'stranka', salon.name, cDate, cTime, ref).catch(e => console.error('[email] customer confirmed text:', e.message));
             }
           }
         } else {
@@ -373,7 +386,30 @@ async function handleMessage(msgObj, salon) {
       session.clear(from);
       return;
     }
-    const customerName = msgText;
+    // Save name, ask for email
+    session.set(from, { ...s, step: 5, customerName: msgText.trim() });
+    await wa.send(phoneId, token, wa.textMsg(from, '📧 Vpišite vaš e-poštni naslov za potrditev rezervacije:\n_(ali pošljite 0 za preskok)_'));
+    return;
+  }
+
+  // ── Step 5: waiting for customer email ──
+  if (sess.step === 5 && msgText) {
+    const s = session.get(from);
+    if (!s.selectedDate || !s.selectedTime || !s.serviceId || !s.customerName) {
+      await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Začnite znova.'));
+      session.clear(from);
+      return;
+    }
+    const customerName = s.customerName;
+    // Accept email or skip (0 / preskoči)
+    const rawEmail = msgText.trim();
+    const skipEmail = rawEmail === '0' || /preskok|preskoci|skip/i.test(rawEmail);
+    const customerEmail = (!skipEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail)) ? rawEmail.toLowerCase() : null;
+    if (!skipEmail && !customerEmail) {
+      await wa.send(phoneId, token, wa.textMsg(from, '❌ Neveljaven e-poštni naslov. Poskusite znova ali pošljite *0* za preskok:'));
+      return;
+    }
+
     const bookingData = {
       customer_phone: from,
       customer_name: customerName,
@@ -381,7 +417,8 @@ async function handleMessage(msgObj, salon) {
       service_id: s.serviceId,
       booking_date: s.selectedDate,
       booking_time: s.selectedTime + ':00',
-      status: 'pending'
+      status: 'pending',
+      notes: customerEmail ? `customer_email:${customerEmail}` : ''
     };
     if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
     const booking = await db.createBookingIfFree(bookingData);
@@ -392,6 +429,11 @@ async function handleMessage(msgObj, salon) {
     await wa.send(phoneId, token, wa.textMsg(from,
       `📋 Rezervacija prejeta!\n\n👤 ${customerName}\n📅 ${fmtDate(s.selectedDate)} ob ${s.selectedTime}\n🔑 Ref: *${ref6}*\n\n⏳ Čakamo na potrditev. Ko bo potrjena, vas obvestimo. Hvala! 🙏`
     ));
+
+    // Pošlji stranki email potrditve (čaka na potrditev)
+    if (customerEmail) {
+      await mail.sendCustomerBookingReceived(customerEmail, customerName, salon.name, fmtDate(s.selectedDate), s.selectedTime, ref6).catch(e => console.error('[email] customer booking received:', e.message));
+    }
 
     if (salonAdminPhone) {
       try {

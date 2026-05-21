@@ -36,7 +36,7 @@ git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
-  git commit -m "feat: light theme landing page, logo, WhatsApp phone animation, floating bubbles, Slovenian copy"
+  git commit -m "feat: customer email collection in booking flow + confirmation emails"
   if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
 }
 

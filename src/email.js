@@ -24,7 +24,6 @@ async function sendEmail(to, subject, text) {
     const status = e.response?.status;
     const detail = JSON.stringify(e.response?.data || e.message);
     console.error(`[email] sendEmail failed (${status}): ${detail}`);
-    // Ne mečemo napake — email je nebistven, bot naj še vedno deluje
     return false;
   }
 }
@@ -128,4 +127,40 @@ async function sendPasswordReset(to, resetUrl) {
   );
 }
 
-module.exports = { configured, sendEmail, sendWelcomeEmail, sendBookingNotification, sendPasswordReset };
+// Email stranki: rezervacija prejeta (čaka na potrditev)
+async function sendCustomerBookingReceived(customerEmail, customerName, salonName, date, time, ref6) {
+  const subject = `Rezervacija prejeta — ${salonName}`;
+  const text = [
+    `Pozdravljeni ${customerName},`,
+    '',
+    `Vaša rezervacija pri ${salonName} je bila prejeta in čaka na potrditev.`,
+    '',
+    `📅 Termin: ${date} ob ${time}`,
+    `🔑 Referenca: ${ref6}`,
+    '',
+    'Ko bo rezervacija potrjena, boste prejeli še eno obvestilo.',
+    '',
+    `Hvala, ekipa ${salonName}`
+  ].join('\n');
+  return sendEmail(customerEmail, subject, text);
+}
+
+// Email stranki: rezervacija potrjena s strani admina
+async function sendCustomerBookingConfirmed(customerEmail, customerName, salonName, date, time, ref6) {
+  const subject = `✅ Rezervacija potrjena — ${salonName}`;
+  const text = [
+    `Pozdravljeni ${customerName},`,
+    '',
+    `Vaša rezervacija pri ${salonName} je bila potrjena! 🎉`,
+    '',
+    `📅 Termin: ${date} ob ${time}`,
+    `🔑 Referenca: ${ref6}`,
+    '',
+    'Vidimo se! Če imate kakršna koli vprašanja, nam pišite na WhatsApp.',
+    '',
+    `Lep pozdrav, ekipa ${salonName}`
+  ].join('\n');
+  return sendEmail(customerEmail, subject, text);
+}
+
+module.exports = { configured, sendEmail, sendWelcomeEmail, sendBookingNotification, sendPasswordReset, sendCustomerBookingReceived, sendCustomerBookingConfirmed };
