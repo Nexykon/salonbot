@@ -39,14 +39,51 @@ function isMasterAdminPhone(phone) {
 
 function defaultFormFields(salon) {
   const type = salon?.business_type || 'custom';
-  if (type === 'tattoo') {
-    return [
-      { id: 'idea', label: 'Opis tattoo ideje', type: 'textarea', required: true },
-      { id: 'placement', label: 'Mesto na telesu', type: 'text', required: false },
-      { id: 'size', label: 'Približna velikost', type: 'text', required: false }
-    ];
-  }
-  return [];
+  const fields = {
+    tattoo: [
+      { id: 'idea',      label: 'Opiši svojo tattoo idejo',          type: 'textarea', required: true },
+      { id: 'placement', label: 'Mesto na telesu (npr. podlaket)',    type: 'text',     required: true },
+      { id: 'size',      label: 'Približna velikost (npr. 10×10 cm)', type: 'text',     required: false },
+      { id: 'reference', label: 'Imaš referenčno sliko? (da / ne)',   type: 'text',     required: false }
+    ],
+    photography: [
+      { id: 'shoot_type', label: 'Vrsta fotografiranja (portret / družina / poslovni / event)', type: 'text',     required: true },
+      { id: 'location',   label: 'Željeno mesto snemanja',                                      type: 'text',     required: false },
+      { id: 'people',     label: 'Število oseb',                                                type: 'text',     required: false },
+      { id: 'date_wish',  label: 'Željeni datum ali obdobje',                                   type: 'text',     required: false }
+    ],
+    veterinary: [
+      { id: 'pet_name',  label: 'Ime živali',                          type: 'text', required: true },
+      { id: 'pet_type',  label: 'Vrsta živali (pes / mačka / ...)',    type: 'text', required: true },
+      { id: 'complaint', label: 'Kratko opiši težavo (opcijsko)',      type: 'text', required: false }
+    ],
+    physiotherapy: [
+      { id: 'complaint', label: 'Opiši težavo ali poškodbo',           type: 'textarea', required: true },
+      { id: 'since',     label: 'Kdaj se je začelo? (opcijsko)',       type: 'text',     required: false },
+      { id: 'prev',      label: 'Ste bili že pri fizioterapevtu? (da/ne)', type: 'text', required: false }
+    ],
+    dentist: [
+      { id: 'complaint',  label: 'Kratko opiši težavo (opcijsko)',      type: 'text', required: false },
+      { id: 'is_patient', label: 'Ste naš pacient? (da / ne)',          type: 'text', required: false }
+    ],
+    massage: [
+      { id: 'health',    label: 'Zdravstvene omejitve ali alergije na olja? (opcijsko)', type: 'text', required: false }
+    ],
+    fitness: [
+      { id: 'goal',      label: 'Vaš cilj (izguba teže / moč / kondicija / ...)',        type: 'text', required: false },
+      { id: 'level',     label: 'Izkušnje s treningom (začetnik / srednji / napredni)',  type: 'text', required: false }
+    ],
+    wellness: [
+      { id: 'people',    label: 'Število oseb',                                           type: 'text', required: false },
+      { id: 'wishes',    label: 'Posebne želje ali prehranske omejitve (opcijsko)',        type: 'text', required: false }
+    ]
+  };
+  return fields[type] || [];
+}
+
+function defaultBookingMode(type) {
+  if (type === 'tattoo' || type === 'photography') return 'inquiry';
+  return 'exact_time';
 }
 
 function safeFormFields(value, salon) {
@@ -297,7 +334,7 @@ app.post('/onboard', async (req, res) => {
       business_label: preset.label,
       business_slug: slug,
       greeting_message: preset.greeting,
-      booking_mode: type === 'tattoo' ? 'inquiry' : 'exact_time',
+      booking_mode: defaultBookingMode(type),
       form_fields: defaultFormFields({ business_type: type }),
       subscription_status: 'trial',
       subscription_plan: plan || 'starter',

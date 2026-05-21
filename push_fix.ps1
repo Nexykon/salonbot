@@ -39,7 +39,7 @@ git diff --cached --quiet
 if ($LASTEXITCODE -eq 0) {
   Write-Host "No changes to commit. Pushing current branch anyway..." -ForegroundColor Yellow
 } else {
-  git commit -m "feat: inquiry flow for tattoo salons - form fields, no date picker, admin email/WA notify"
+  git commit -m "fix: remove customer email prompt - admin notified at owner_email, customer gets WA only"
   if ($LASTEXITCODE -ne 0) { Write-Host "git commit failed" -ForegroundColor Red; pause; exit 1 }
 }
 
