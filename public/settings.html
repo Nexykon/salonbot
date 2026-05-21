@@ -4,39 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FlowTiq — Nastavitve salona</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: rgba(255,255,255,0.04);
-    --surface2: rgba(255,255,255,0.07);
-    --border: rgba(255,255,255,0.08);
+    --bg: #f8f7ff;
+    --surface: #ffffff;
+    --surface2: #f0eeff;
+    --border: #e8e7f0;
     --purple: #7c3aed;
-    --purple-light: #a855f7;
+    --purple-light: #6d28d9;
     --cyan: #06b6d4;
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --green: #22c55e;
-    --red: #ef4444;
+    --text: #111118;
+    --muted: #6b6b80;
+    --green: #059669;
+    --red: #dc2626;
     --radius: 16px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     background: var(--bg); color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
+    background-image: radial-gradient(rgba(124,58,237,0.06) 1.5px, transparent 1.5px);
+    background-size: 32px 32px;
   }
   body::before {
-    content: ''; position: fixed; inset: 0; z-index: -1;
-    background:
-      radial-gradient(ellipse 60% 40% at 15% 15%, rgba(124,58,237,0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 50% at 85% 85%, rgba(6,182,212,0.07) 0%, transparent 60%);
+    content: none;
   }
 
   /* Header */
   .header {
     padding: 20px 24px; display: flex; align-items: center; gap: 14px;
     border-bottom: 1px solid var(--border);
-    background: rgba(10,10,15,0.8); backdrop-filter: blur(20px);
+    background: rgba(255,255,255,0.90); backdrop-filter: blur(20px);
     position: sticky; top: 0; z-index: 100;
   }
   .logo { width: 36px; height: 36px; }
@@ -50,6 +51,7 @@
   .login-box {
     background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
     padding: 40px; width: 100%; max-width: 420px; text-align: center;
+    box-shadow: 0 8px 40px rgba(124,58,237,0.1);
   }
   .login-icon { font-size: 3rem; margin-bottom: 20px; }
   .login-box h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
@@ -67,6 +69,7 @@
   .card {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
   }
   .card-title {
     font-size: 1rem; font-weight: 700; margin-bottom: 20px;
@@ -84,7 +87,7 @@
     outline: none; transition: border-color 0.2s;
   }
   .form-group input:focus, .form-group select:focus { border-color: var(--purple); }
-  .form-group select option { background: #1a1a2e; }
+  .form-group select option { background: #ffffff; color: #111118; }
   .form-group input::placeholder { color: var(--muted); }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .form-hint { font-size: 0.78rem; color: var(--muted); margin-top: 6px; }
@@ -219,7 +222,7 @@
   .owner-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
   .owner-tab {
     padding: 13px 16px; border-radius: 14px; border: 1px solid var(--border);
-    background: rgba(255,255,255,0.04); color: var(--muted); font-weight: 800; cursor: pointer;
+    background: var(--surface2); color: var(--muted); font-weight: 800; cursor: pointer;
   }
   .owner-tab.active {
     color: #fff; border-color: rgba(167,139,250,0.5);
@@ -233,7 +236,7 @@
   .cal-leg-item { display:flex;align-items:center;gap:6px; }
   .cal-leg-dot { width:9px;height:9px;border-radius:50%; }
   .cal-grid { display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border);border-top:1px solid var(--border);border-radius:14px;overflow:hidden; }
-  .cal-header-cell { padding:10px;text-align:center;font-size:0.72rem;font-weight:900;color:var(--muted);background:rgba(255,255,255,0.04);border-right:1px solid var(--border);border-bottom:1px solid var(--border); }
+  .cal-header-cell { padding:10px;text-align:center;font-size:0.72rem;font-weight:900;color:var(--muted);background:var(--surface2);border-right:1px solid var(--border);border-bottom:1px solid var(--border); }
   .cal-cell { min-height:92px;padding:8px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;background:rgba(5,7,14,0.38); }
   .cal-cell:hover,.cal-cell.selected { background:rgba(124,58,237,0.12); }
   .cal-cell.other-month { opacity:.35;cursor:default; }
@@ -265,28 +268,27 @@
   body::after {
     content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background-image:
-      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      none;
     background-size: 42px 42px;
     mask-image: linear-gradient(to bottom, rgba(0,0,0,0.65), transparent 70%);
   }
   .header {
     background: rgba(8,10,20,0.72);
     backdrop-filter: blur(22px) saturate(160%);
-    border-bottom-color: rgba(255,255,255,0.07);
+    border-bottom-color: var(--border);
   }
   .container { max-width: 920px; }
   .login-box, .card, .salon-bar {
-    background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
-    border-color: rgba(255,255,255,0.09);
+    background: var(--surface);
+    border-color: var(--border);
     box-shadow: 0 22px 70px rgba(0,0,0,0.26);
     backdrop-filter: blur(16px);
   }
   .card { border-radius: 20px; }
-  .card-title { border-bottom-color: rgba(255,255,255,0.07); }
+  .card-title { border-bottom-color: var(--border); }
   .form-group input, .form-group select, .dur-input {
     background: rgba(5,7,14,0.72);
-    border-color: rgba(255,255,255,0.09);
+    border-color: var(--border);
   }
   .btn-primary {
     background: linear-gradient(135deg, #7c3aed, #06b6d4);

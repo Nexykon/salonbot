@@ -300,16 +300,19 @@ async function handleMessage(msgObj, salon) {
   };
 
   // Helper: submit inquiry (step 10 or step 20)
-  const submitInquiry = async (customerName, formAnswers, serviceId) => {
+  const submitInquiry = async (customerName, formAnswers, serviceId, preferredDate, preferredTime) => {
     const svc = services.find(sv => sv.id === serviceId);
     const today = new Date().toISOString().split('T')[0];
+    const bDate = preferredDate || today;
+    const rawTime = preferredTime || '00:00:00';
+    const bTime = /^\d{1,2}:\d{2}$/.test(rawTime) ? rawTime + ':00' : rawTime;
     const bData = {
       customer_phone: from,
       customer_name: customerName,
       salon_id: salon.id,
       service_id: serviceId || null,
-      booking_date: today,
-      booking_time: '00:00:00',
+      booking_date: bDate,
+      booking_time: bTime,
       duration_minutes: 0,
       status: 'pending',
       notes: '',
@@ -323,14 +326,37 @@ async function handleMessage(msgObj, salon) {
     const aSum = Object.entries(formAnswers || {}).map(([k, v]) => `${k}: ${v}`).join('\n');
     if (salonAdminPhone) {
       wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-        `*Novo povprasevanje*\n\nIme: ${customerName}\nTel: +${from}\nStoritev: ${svc ? svc.name : ''}\nRef: *${r6}*${aSum ? '\n\n' + aSum : ''}`
+        `*Novo povprasevanje*\n\nIme: ${customerName}\nTel: +${from}\nStoritev: ${svc ? svc.name : ''}\nDatum: ${preferredDate || '?'}\nUra: ${preferredTime || '?'}\nRef: *${r6}*${aSum ? '\n\n' + aSum : ''}`
       )).catch(e => console.error('Inquiry admin WA err:', e.message));
     } else {
       console.log(`[email] Sending inquiry admin email to ${salon.owner_email} for booking ${bk.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, today, svc ? svc.name : 'povprasevanje', r6, bk.id)
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, preferredDate || today, preferredTime || 'po dogovoru', r6, bk.id)
         .catch(e => console.error('[email] inquiry admin email failed:', e.message));
     }
   };
+
+  // ── Step 6: preferred date for inquiry ──
+  if (sess.step === 6 && msgText) {
+    session.set(from, { ...sess, step: 7, preferredDate: msgText.trim() });
+    await wa.send(phoneId, token, wa.textMsg(from, 'Ob kateri uri? (npr. 10:00, popoldne...)'));
+    return;
+  }
+
+  // ── Step 7: preferred time for inquiry ──
+  if (sess.step === 7 && msgText) {
+    const s = session.get(from);
+    const updated = { ...s, preferredTime: msgText.trim() };
+    if (formFields.length > 0) {
+      const first = formFields[0];
+      session.set(from, { ...updated, step: 10, fieldIndex: 0, formAnswers: {} });
+      const opt = first.required ? '' : ' (opcijsko - 0 za preskok)';
+      await wa.send(phoneId, token, wa.textMsg(from, `${first.label}:${opt}`));
+    } else {
+      session.set(from, { ...updated, step: 20, formAnswers: {} });
+      await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
+    }
+    return;
+  }
 
   // ── Step 10: collecting form fields ──
   if (sess.step === 10 && msgText) {
@@ -355,7 +381,7 @@ async function handleMessage(msgObj, salon) {
 
       if (bookingMode === 'inquiry') {
         if (autoName) {
-          await submitInquiry(autoName, answers, s.serviceId);
+          await submitInquiry(autoName, answers, s.serviceId, s.preferredDate, s.preferredTime);
         } else {
           session.set(from, { ...s, step: 20, formAnswers: answers });
           await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
@@ -377,7 +403,7 @@ async function handleMessage(msgObj, salon) {
   // ── Step 20: name for inquiry (no name in form fields) ──
   if (sess.step === 20 && msgText) {
     const s = session.get(from);
-    await submitInquiry(msgText.trim(), s.formAnswers, s.serviceId);
+    await submitInquiry(msgText.trim(), s.formAnswers, s.serviceId, s.preferredDate, s.preferredTime);
     return;
   }
 
@@ -402,15 +428,8 @@ async function handleMessage(msgObj, salon) {
     const serviceDuration = svc ? svc.duration_minutes : null;
 
     if (bookingMode === 'inquiry') {
-      if (formFields.length > 0) {
-        const first = formFields[0];
-        session.set(from, { step: 10, serviceId: svcId, fieldIndex: 0, formAnswers: {} });
-        const opt = first.required ? '' : ' (opcijsko - 0 za preskok)';
-        await wa.send(phoneId, token, wa.textMsg(from, `${first.label}:${opt}`));
-      } else {
-        session.set(from, { step: 20, serviceId: svcId, formAnswers: {} });
-        await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
-      }
+      session.set(from, { step: 6, serviceId: svcId });
+      await wa.send(phoneId, token, wa.textMsg(from, 'Kdaj bi zeleli priti? (npr. v petek, 28.5., naslednji teden...)'));
       return;
     }
 
