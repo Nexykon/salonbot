@@ -177,6 +177,30 @@ async function updateBookingStatus(id, status) {
   return r.data[0];
 }
 
+async function updateBookingNotes(id, notes) {
+  const r = await axios.patch(
+    `${BASE}/sb_bookings?id=eq.${id}`,
+    { notes },
+    { headers: HEADERS }
+  );
+  return r.data[0];
+}
+
+// Poišče email stranke iz prejšnjih rezervacij
+async function getCustomerEmailByPhone(salonId, phone) {
+  try {
+    const r = await axios.get(
+      `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&notes=like.*customer_email*&order=created_at.desc&limit=1`,
+      { headers: HEADERS }
+    );
+    const booking = r.data[0];
+    if (!booking) return null;
+    return (booking.notes || '').match(/customer_email:([^\s,]+)/)?.[1] || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function getTodayBookings(salonId) {
   const today = new Date().toISOString().split('T')[0];
   const r = await axios.get(
@@ -475,7 +499,7 @@ module.exports = {
   updateSalonStripe, updateSubscriptionStatus, logInvoice,
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
-  getBooking, getBookingForSalon, updateBookingStatus,
+  getBooking, getBookingForSalon, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,

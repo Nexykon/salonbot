@@ -1121,12 +1121,47 @@ app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
   const isMaster = isMasterRequest(req);
   if (!isMaster && !actionSalon) return;
   try {
+    const salon = actionSalon || await db.getSalonById(req.body?.salonId || req.query.salonId);
     const booking = actionSalon
       ? await db.getBookingForSalon(actionSalon.id, req.params.ref)
       : await db.getBooking(req.params.ref);
     if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
     await db.updateBookingStatus(booking.id, 'confirmed');
     res.json({ success: true });
+
+    // Pošlji obvestilo stranki (async, ne blokiraj odgovora)
+    if (salon) {
+      const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+      const token = process.env.WA_TOKEN;
+      const custDate = booking.booking_date ? (() => {
+        const d = new Date(booking.booking_date.substring(0,10) + 'T12:00:00');
+        return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+      })() : '?';
+      const custTime = (booking.booking_time || '').substring(0, 5);
+      const ref = req.params.ref;
+
+      // WA stranki (samo če ima telefon in ni manual)
+      if (booking.customer_phone && booking.customer_phone !== 'manual' && phoneId && token) {
+        try {
+          await wa.send(phoneId, token, wa.customerConfirmTemplate(booking.customer_phone, custDate, custTime, salon.name));
+        } catch {
+          try {
+            await wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+              `✅ Vaša rezervacija je potrjena!\n\n📅 ${custDate} ob ${custTime}\n\nHvala, vidimo se! 💆`
+            ));
+          } catch (e2) { console.error('Dashboard confirm WA err:', e2.message); }
+        }
+      }
+
+      // Email stranki (če je shranjen v notes)
+      const notesEmail = (booking.notes || '').match(/customer_email:([^\s,]+)/)?.[1];
+      if (notesEmail) {
+        mail.sendCustomerBookingConfirmed(
+          notesEmail, booking.customer_name || 'stranka',
+          salon.name, custDate, custTime, ref
+        ).catch(e => console.error('[email] dashboard confirm:', e.message));
+      }
+    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -1135,12 +1170,30 @@ app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
   const isMaster = isMasterRequest(req);
   if (!isMaster && !actionSalon) return;
   try {
+    const salon = actionSalon;
     const booking = actionSalon
       ? await db.getBookingForSalon(actionSalon.id, req.params.ref)
       : await db.getBooking(req.params.ref);
     if (!booking) return res.status(404).json({ error: 'Rezervacija ni najdena' });
     await db.updateBookingStatus(booking.id, 'cancelled');
     res.json({ success: true });
+
+    // Obvesti stranko o zavrnitvi (async)
+    if (salon) {
+      const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+      const token = process.env.WA_TOKEN;
+      const custDate = booking.booking_date ? (() => {
+        const d = new Date(booking.booking_date.substring(0,10) + 'T12:00:00');
+        return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+      })() : '?';
+      const custTime = (booking.booking_time || '').substring(0, 5);
+
+      if (booking.customer_phone && booking.customer_phone !== 'manual' && phoneId && token) {
+        wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+          `❌ Žal vaša rezervacija za ${custDate} ob ${custTime} ni bila potrjena.\n\nZa novo rezervacijo nam pišite. 🙏`
+        )).catch(e => console.error('Dashboard cancel WA err:', e.message));
+      }
+    }
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

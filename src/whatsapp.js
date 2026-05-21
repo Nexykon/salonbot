@@ -128,6 +128,27 @@ function adminBookingNotif(to, customerName, phone, date, time, ref6) {
   };
 }
 
+// Finalna potrditev z imenom + storitvijo
+function finalConfirmButtons(to, date, time, name, serviceName) {
+  const d = new Date(date + 'T12:00:00');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: `Preverite in potrdite:\n\n👤 ${name}\n💈 ${serviceName || 'Storitev'}\n📅 ${dd}.${mm}.${yyyy} ob ${time}` },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'final_confirm', title: 'Potrdi ✅' } },
+          { type: 'reply', reply: { id: 'final_cancel', title: 'Prekliči ❌' } }
+        ]
+      }
+    }
+  };
+}
+
 // Fallback: interactive gumbi (samo znotraj 24h seje)
 function adminBookingNotifSession(to, customerName, phone, date, time, ref6) {
   return {
@@ -191,4 +212,4 @@ function customerConfirmTemplate(to, date, time, salonName) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate };
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate };
