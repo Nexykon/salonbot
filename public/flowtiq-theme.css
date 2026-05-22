@@ -1,0 +1,173 @@
+/* FlowTiq Light Theme Override — matches index.html */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg: #f8f7ff !important;
+  --bg2: #ffffff !important;
+  --bg3: #f0eeff !important;
+  --border: #e8e7f0 !important;
+  --accent: #7c3aed !important;
+  --accent2: #6d28d9 !important;
+  --green: #059669 !important;
+  --yellow: #d97706 !important;
+  --red: #dc2626 !important;
+  --text: #111118 !important;
+  --text2: #6b6b80 !important;
+  --text3: #a0a0b0 !important;
+  --surface: #ffffff !important;
+  --surface2: #f0eeff !important;
+  --purple: #7c3aed !important;
+  --purple-light: #6d28d9 !important;
+}
+
+*, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+body {
+  background-color: #f8f7ff !important;
+  background-image: radial-gradient(rgba(124,58,237,0.07) 1.5px, transparent 1.5px) !important;
+  background-size: 32px 32px !important;
+  color: #111118 !important;
+}
+
+body::before { content: none !important; }
+
+/* Header */
+header, .header {
+  background: rgba(255,255,255,0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  border-bottom: 1px solid #e8e7f0 !important;
+  box-shadow: 0 1px 12px rgba(0,0,0,0.06) !important;
+}
+
+/* Login box */
+#login-screen {
+  background: radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.07) 0%, transparent 70%) !important;
+}
+.login-box, .login-wrap .login-box {
+  background: #ffffff !important;
+  border: 1px solid #e8e7f0 !important;
+  box-shadow: 0 8px 48px rgba(124,58,237,0.10) !important;
+  color: #111118 !important;
+}
+.login-box h1, .login-box h2 { color: #111118 !important; }
+.login-box p { color: #6b6b80 !important; }
+.login-box input, .login-wrap input {
+  background: #f0eeff !important;
+  border: 1px solid #e8e7f0 !important;
+  color: #111118 !important;
+}
+.login-box input::placeholder { color: #a0a0b0 !important; }
+
+/* Cards & surfaces */
+.stat-card, .table-wrap, .cal-wrap, .day-detail,
+.modal, .studio-section, .card {
+  background: #ffffff !important;
+  border-color: #e8e7f0 !important;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.06) !important;
+  color: #111118 !important;
+}
+
+.stat-card::before {
+  background: linear-gradient(90deg, #7c3aed, #a78bfa) !important;
+}
+
+/* Table */
+thead, .cal-header-cell { background: #f0eeff !important; }
+th { color: #6b6b80 !important; }
+td { border-top-color: #e8e7f0 !important; color: #111118 !important; }
+tr:hover td { background: rgba(124,58,237,0.04) !important; }
+
+/* Inputs */
+.form-group input, .form-group select, .form-group textarea,
+.service-row input, .preview-select, input, select, textarea {
+  background: #f0eeff !important;
+  border-color: #e8e7f0 !important;
+  color: #111118 !important;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus,
+input:focus, select:focus, textarea:focus {
+  border-color: #7c3aed !important;
+  outline: none !important;
+}
+input::placeholder, textarea::placeholder { color: #a0a0b0 !important; }
+select option { background: #ffffff !important; color: #111118 !important; }
+
+/* Buttons */
+.btn-primary, .btn-add, .btn-save {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(124,58,237,0.25) !important;
+}
+.btn-cancel, .btn-logout {
+  background: transparent !important;
+  border-color: #e8e7f0 !important;
+  color: #6b6b80 !important;
+}
+.btn-logout:hover { border-color: #dc2626 !important; color: #dc2626 !important; }
+.btn-cancel:hover { border-color: #6b6b80 !important; color: #111118 !important; }
+
+/* Studio section head */
+.studio-section-head { background: #f8f7ff !important; border-bottom-color: #e8e7f0 !important; }
+.studio-section-title { color: #111118 !important; }
+.studio-section-desc { color: #6b6b80 !important; }
+
+/* Studio footer */
+.studio-footer { background: #ffffff !important; border-top-color: #e8e7f0 !important; }
+
+/* Booking mode cards */
+.booking-mode-card {
+  border-color: #e8e7f0 !important;
+  background: #f8f7ff !important;
+}
+.booking-mode-card:hover { border-color: rgba(124,58,237,0.4) !important; background: rgba(124,58,237,0.04) !important; }
+.booking-mode-card.selected { border-color: #7c3aed !important; background: rgba(124,58,237,0.08) !important; }
+.booking-mode-title, .booking-mode-desc { color: #111118 !important; }
+.booking-mode-card.selected .booking-mode-title { color: #7c3aed !important; }
+.booking-mode-check { border-color: #e8e7f0 !important; }
+
+/* Config steps */
+.config-step { border-bottom-color: #e8e7f0 !important; }
+.config-step-title { color: #111118 !important; }
+.config-step-desc { color: #6b6b80 !important; }
+
+/* Modal overlay */
+.modal-overlay { background: rgba(0,0,0,0.4) !important; backdrop-filter: blur(6px) !important; }
+.modal-title { color: #111118 !important; }
+.form-group label { color: #6b6b80 !important; }
+.modal-close { color: #6b6b80 !important; }
+.modal-close:hover { color: #111118 !important; }
+
+/* Day detail */
+.day-detail-title { color: #111118 !important; }
+.day-booking-name { color: #111118 !important; }
+.day-booking-meta { color: #6b6b80 !important; }
+
+/* Calendar */
+.cal-nav-btn { background: #f0eeff !important; border-color: #e8e7f0 !important; color: #111118 !important; }
+.cal-nav-btn:hover { background: #7c3aed !important; border-color: #7c3aed !important; color: #fff !important; }
+.cal-month-title { color: #111118 !important; }
+.cal-cell { color: #111118 !important; }
+.cal-day-num { color: #6b6b80 !important; }
+.cal-cell:hover { background: rgba(124,58,237,0.05) !important; }
+
+/* Text colors */
+.stat-label, .header-user, .salon-owner, .studio-subtitle,
+.form-hint, .studio-footer-note, .section-title { color: #6b6b80 !important; }
+.stat-value, .salon-name, .section-title { color: #111118 !important; }
+
+/* Brand text */
+.brand { background: linear-gradient(135deg,#7c3aed,#06b6d4) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+
+/* Day toggle */
+.day-toggle { background: #f0eeff !important; border-color: #e8e7f0 !important; color: #6b6b80 !important; }
+.day-toggle.active { background: #7c3aed !important; border-color: #7c3aed !important; color: #fff !important; }
+
+/* Closing msg preview */
+.closing-msg-preview { color: #6b6b80 !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: #f0eeff; }
+::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.3); border-radius: 3px; }
