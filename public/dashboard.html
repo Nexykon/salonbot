@@ -251,16 +251,14 @@
   }
   .studio-preview {
     border-left: 1px solid var(--border);
-    background:
-      radial-gradient(circle at 50% 0%, rgba(16,185,129,0.12), transparent 32%),
-      linear-gradient(180deg, rgba(8,17,15,0.98), #050b0a);
+    background: linear-gradient(160deg, #f7f5ff 0%, #f0eeff 100%);
     padding: 24px 22px;
     overflow-y: auto;
     min-height: 0;
     grid-column: 2;
     grid-row: 1 / 3;
   }
-  .studio-kicker { font-size: 12px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .studio-kicker { font-size: 11px; color: #7c3aed; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
   .studio-subtitle { color: var(--text2); font-size: 13px; margin-top: 4px; }
   /* studio-section, studio-section-title: redefined in STUDIO SECTION REDESIGN block below */
   .studio-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -294,33 +292,35 @@
   }
   /* ── PHONE MOCKUP ─────────────────────────────────────────── */
   .phone-preview {
-    width: 100%; max-width: 300px; margin: 12px auto 0;
-    border-radius: 36px;
-    background: #e8e8ed;
+    width: 100%; max-width: 290px; margin: 0 auto;
+    border-radius: 44px;
+    background: linear-gradient(145deg, #d8d8de 0%, #c8c8cf 50%, #bbbbc3 100%);
     box-shadow:
-      0 0 0 1px rgba(0,0,0,0.12),
-      inset 0 0 0 6px #e8e8ed,
-      0 20px 60px rgba(0,0,0,0.18),
-      0 4px 12px rgba(0,0,0,0.1);
-    padding: 8px;
+      0 0 0 1px rgba(0,0,0,0.14),
+      inset 0 1px 0 rgba(255,255,255,0.6),
+      inset 0 -1px 0 rgba(0,0,0,0.12),
+      0 24px 56px rgba(124,58,237,0.14),
+      0 8px 20px rgba(0,0,0,0.12);
+    padding: 10px;
     position: relative;
   }
-  /* side buttons */
+  /* volume buttons left */
   .phone-preview::before {
     content: '';
     position: absolute;
-    left: -3px; top: 80px;
-    width: 3px; height: 50px;
-    background: #d0d0d6;
+    left: -4px; top: 90px;
+    width: 4px; height: 32px;
+    background: linear-gradient(180deg, #c8c8cf, #b8b8bf);
     border-radius: 3px 0 0 3px;
-    box-shadow: 0 30px 0 #d0d0d6, 0 60px 0 #d0d0d6;
+    box-shadow: 0 44px 0 #c1c1c8, 0 -44px 0 rgba(0,0,0,0) ;
   }
+  /* power button right */
   .phone-preview::after {
     content: '';
     position: absolute;
-    right: -3px; top: 100px;
-    width: 3px; height: 60px;
-    background: #d0d0d6;
+    right: -4px; top: 110px;
+    width: 4px; height: 52px;
+    background: linear-gradient(180deg, #c8c8cf, #b8b8bf);
     border-radius: 0 3px 3px 0;
   }
   .phone-inner {
@@ -1350,9 +1350,9 @@
           </div>
         </div>
 
-        <div class="studio-section" style="margin-top:18px;">
-          <div class="studio-section-title" style="font-size:12px;color:var(--text3);margin-bottom:10px;">📋 Aktivna konfiguracija</div>
-          <div id="preview-config-summary" style="font-size:12px;line-height:1.7;color:var(--text2);">
+        <div class="studio-section" style="margin-top:20px; background:#fff; border-radius:16px; border:1px solid rgba(124,58,237,0.12); padding:16px; box-shadow:0 2px 12px rgba(124,58,237,0.07);">
+          <div class="studio-section-title" style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">📋 Aktivna konfiguracija</div>
+          <div id="preview-config-summary" style="font-size:12px;line-height:1.9;color:#374151;">
             <!-- Populated by updateBotStudioPreview() -->
           </div>
         </div>
