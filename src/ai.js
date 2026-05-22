@@ -389,8 +389,31 @@ async function transcribeAudio(mediaId, waToken) {
     throw new Error(`Audio download failed: ${e.message}`);
   }
   if (!audioBuffer || audioBuffer.length < 100) {
-    throw new Error(`Audio too short or empty (${audioBuffer?.length ?? 0} bytes)`);
+    console.warn(`Whisper: audio too short (${audioBuffer?.length ?? 0} bytes), skipping`);
+    return null;
   }
 
   // 3. Pošlji Whisper API
-  const form = new
+  const form = new FormData();
+  form.append('file', audioBuffer, { filename: 'voice.ogg', contentType: 'audio/ogg' });
+  form.append('model', 'whisper-1');
+  form.append('language', 'sl');
+
+  let whisperRes;
+  try {
+    whisperRes = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        ...form.getHeaders()
+      },
+      timeout: 30000
+    });
+  } catch (e) {
+    const detail = e.response?.data ? JSON.stringify(e.response.data) : e.message;
+    throw new Error(`Whisper API failed: ${detail}`);
+  }
+
+  return whisperRes.data.text?.trim() || null;
+}
+
+module.exports = { askAdminAI, askCustomerAI, transcribeAudio };
