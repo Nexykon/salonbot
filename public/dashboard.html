@@ -888,7 +888,7 @@
       <div class="header-title" style="background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Flow<span style="-webkit-text-fill-color:transparent;">Tiq</span> <span style="font-size:13px;font-weight:400;-webkit-text-fill-color:var(--text2);">Admin</span></div>
     </div>
     <div class="header-right">
-      <span class="header-user" id="header-user">Tomaž</span>
+      <span class="header-user" id="header-user"></span>
       <button class="btn-logout" onclick="changeMasterPassword()">Geslo</button>
       <button class="btn-logout" onclick="logout()">Odjava</button>
     </div>
@@ -1586,6 +1586,12 @@ async function loadApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('login-error').style.display = 'none';
+    // Show logged-in email in header
+    try {
+      var payload = JSON.parse(atob(masterToken.split('.')[1]));
+      var userEl = document.getElementById('header-user');
+      if (userEl && payload.email) userEl.textContent = payload.email;
+    } catch(e) {}
     salonsData = await res.json();
     renderAll();
     loadErrors();
