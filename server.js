@@ -490,6 +490,7 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
     const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
     const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
     const to = salon.admin_phone;
+    if (!to) return res.status(400).json({ error: 'Salon nima nastavljene admin_phone številke.' });
 
     const salonName = salon.name || 'Salon';
     const msg = wa.textMsg(to,
@@ -1339,7 +1340,4 @@ app.post('/api/admin/bookings', async (req, res) => {
 });
 
 // ─── Start server ──────────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`FlowTiq server running on port ${PORT}`);
-});
+const PORT = process.en
