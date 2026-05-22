@@ -250,15 +250,17 @@
     scrollbar-color: rgba(167,139,250,0.65) rgba(255,255,255,0.06);
   }
   .studio-preview {
-    border-left: 1px solid var(--border);
-    background: linear-gradient(160deg, #f7f5ff 0%, #f0eeff 100%);
-    padding: 24px 22px;
-    overflow-y: auto;
+    border-left: 1px solid rgba(124,58,237,0.12);
+    background: linear-gradient(160deg, #f7f5ff 0%, #ece8ff 100%);
+    padding: 18px 16px 0;
+    overflow: hidden;
     min-height: 0;
     grid-column: 2;
     grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
   }
-  .studio-kicker { font-size: 11px; color: #7c3aed; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .studio-kicker { font-size: 11px; color: #7c3aed; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; flex-shrink: 0; }
   .studio-subtitle { color: var(--text2); font-size: 13px; margin-top: 4px; }
   /* studio-section, studio-section-title: redefined in STUDIO SECTION REDESIGN block below */
   .studio-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -303,6 +305,10 @@
       0 8px 20px rgba(0,0,0,0.12);
     padding: 10px;
     position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   /* volume buttons left */
   .phone-preview::before {
@@ -328,6 +334,10 @@
     border-radius: 32px;
     overflow: hidden;
     box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   /* status bar */
   .phone-statusbar {
@@ -373,7 +383,37 @@
     background-color: #e5ddd5;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='60' cy='20' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='20' cy='60' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3C/svg%3E");
     padding: 10px 8px 12px;
-    min-height: 370px;
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  /* sent (user) bubble */
+  .wa-bubble-sent {
+    background: #dcf8c6;
+    border-radius: 12px 12px 5px 12px;
+    padding: 8px 10px 6px;
+    font-size: 12px; line-height: 1.45;
+    color: #111; max-width: 82%;
+    margin-left: auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .wa-bubble-sent::after {
+    content: '';
+    position: absolute; bottom: 0; right: -6px;
+    border: 6px solid transparent;
+    border-bottom: 0; border-left: 6px solid #dcf8c6;
+  }
+  .wa-step-label {
+    text-align: center; margin: 8px 0 4px;
+  }
+  .wa-step-label span {
+    background: rgba(255,255,255,0.75);
+    border-radius: 8px; padding: 2px 8px;
+    font-size: 9.5px; color: #666; font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.07);
+    text-transform: uppercase; letter-spacing: 0.04em;
   }
   /* date chip */
   .wa-date-chip {
@@ -1323,21 +1363,9 @@
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
               </div>
             </div>
-            <!-- chat -->
-            <div class="wa-chat">
+            <!-- chat — full conversation, populated by updateBotStudioPreview() -->
+            <div class="wa-chat" id="bs-preview-chat">
               <div class="wa-date-chip"><span>Danes</span></div>
-              <div class="wa-bubble">
-                <div id="bs-preview-greeting">Pozdravljeni! Izberite storitev:</div>
-                <div class="wa-list">
-                  <div class="wa-list-title">Storitve</div>
-                  <div id="bs-preview-services"></div>
-                </div>
-                <div class="wa-button">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="#128C7E"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
-                  Izberi storitev
-                </div>
-                <div class="wa-bubble-time">9:41 ✓✓</div>
-              </div>
             </div>
             <!-- input bar -->
             <div class="wa-inputbar">
@@ -1350,12 +1378,6 @@
           </div>
         </div>
 
-        <div class="studio-section" style="margin-top:20px; background:#fff; border-radius:16px; border:1px solid rgba(124,58,237,0.12); padding:16px; box-shadow:0 2px 12px rgba(124,58,237,0.07);">
-          <div class="studio-section-title" style="font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">📋 Aktivna konfiguracija</div>
-          <div id="preview-config-summary" style="font-size:12px;line-height:1.9;color:#374151;">
-            <!-- Populated by updateBotStudioPreview() -->
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -2022,55 +2044,117 @@ async function applyBotStudioPreset() {
 
 
 function updateBotStudioPreview() {
-  var name = document.getElementById('bs-name') ? document.getElementById('bs-name').value : 'FlowTiq bot';
-  var phone = document.getElementById('bs-bot-phone') ? document.getElementById('bs-bot-phone').value : 'online';
-  var greeting = document.getElementById('bs-greeting') ? document.getElementById('bs-greeting').value : 'Pozdravljeni! Izberite storitev:';
+  var name     = (document.getElementById('bs-name') || {}).value || 'Bot';
+  var phone    = (document.getElementById('bs-bot-phone') || {}).value || 'online';
+  var greeting = (document.getElementById('bs-greeting') || {}).value || 'Pozdravljeni! Izberite storitev:';
   var services = collectBotStudioServices();
-  var mode = getSelectedBookingMode();
-  var modeInfo = BOOKING_MODES.find(function(m) { return m.value === mode; }) || BOOKING_MODES[0];
-  var fields = collectFormFields();
-  var closingMsgEl = document.getElementById('bs-inquiry-message');
-  var closingMsg = closingMsgEl ? closingMsgEl.value.trim() : '';
+  var mode     = getSelectedBookingMode();
+  var fields   = collectFormFields();
+  var closingMsg = ((document.getElementById('bs-inquiry-message') || {}).value || '').trim();
 
-  document.getElementById('bs-preview-name').textContent = name || 'FlowTiq bot';
-  document.getElementById('bs-preview-phone').textContent = phone || 'online';
-  document.getElementById('bs-preview-greeting').textContent = greeting || 'Pozdravljeni! Izberite storitev:';
+  // header
+  var nameEl = document.getElementById('bs-preview-name');
+  if (nameEl) nameEl.textContent = name;
+  var phoneEl = document.getElementById('bs-preview-phone');
+  if (phoneEl) phoneEl.textContent = phone || 'online';
   var avatarEl = document.getElementById('bs-preview-avatar');
-  if (avatarEl) avatarEl.textContent = (name || 'F').trim().charAt(0).toUpperCase();
+  if (avatarEl) avatarEl.textContent = (name || 'B').charAt(0).toUpperCase();
 
-  var svcHtml = '';
+  // ── build full conversation ──────────────────────────────
+  function botBubble(html, time) {
+    return '<div class="wa-bubble" style="margin-bottom:6px">' + html +
+      '<div class="wa-bubble-time">' + (time||'') + ' ✓✓</div></div>';
+  }
+  function userBubble(txt, time) {
+    return '<div class="wa-bubble-sent">' + esc(txt) +
+      '<div class="wa-bubble-time" style="color:rgba(0,0,0,0.4)">' + (time||'') + ' ✓✓</div></div>';
+  }
+  function stepLabel(txt) {
+    return '<div class="wa-step-label"><span>' + txt + '</span></div>';
+  }
+
+  // service list html
+  var svcRows = '';
   if (services.length) {
     services.slice(0, 8).forEach(function(s) {
-      var dur = Number.isFinite(s.duration_minutes) ? s.duration_minutes : 0;
-      var pr = Number.isFinite(s.price) ? s.price : 0;
-      svcHtml += '<div class="wa-list-row">' +
-        '<div><div class="wa-service-name">' + esc(s.name).substring(0, 26) + '</div>' +
-        '<div class="wa-service-meta">' + dur + ' min · ' + pr + ' EUR</div></div>' +
-        '</div>';
+      svcRows += '<div class="wa-list-row"><div>' +
+        '<div class="wa-service-name">' + esc(s.name).substring(0,26) + '</div>' +
+        '<div class="wa-service-meta">' + (s.duration_minutes||0) + ' min · ' + (s.price||0) + ' EUR</div>' +
+        '</div></div>';
     });
   } else {
-    svcHtml = '<div class="wa-list-row"><div class="wa-service-meta">Dodaj storitve, da se prikažejo tukaj.</div></div>';
+    svcRows = '<div class="wa-list-row"><div class="wa-service-meta" style="color:#aaa">Dodaj storitve zgoraj…</div></div>';
   }
-  document.getElementById('bs-preview-services').innerHTML = svcHtml;
 
-  var summary = document.getElementById('preview-config-summary');
-  if (summary) {
-    var fieldsText = fields.length > 0 ? fields.map(function(f) { return f.label || '—'; }).join(', ') : '— nobenih —';
-    var closingText = closingMsg ? ('"' + closingMsg.substring(0, 60) + (closingMsg.length > 60 ? '…' : '') + '"') : '— ni nastavljeno —';
-    summary.innerHTML =
-      '<div style="margin-bottom:8px">' +
-        '<span style="color:var(--text3)">Način termina:</span><br>' +
-        '<strong style="color:var(--accent2)">' + modeInfo.icon + ' ' + modeInfo.title + '</strong>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + modeInfo.desc + '</div>' +
-      '</div>' +
-      '<div style="margin-bottom:8px">' +
-        '<span style="color:var(--text3)">Dodatna vprašanja:</span><br>' +
-        '<strong>' + fieldsText + '</strong>' +
-      '</div>' +
-      '<div>' +
-        '<span style="color:var(--text3)">Zaključno sporočilo:</span><br>' +
-        '<strong>' + closingText + '</strong>' +
-      '</div>';
+  var firstSvc = services.length ? services[0].name : 'Striženje';
+
+  var chatHtml = '<div class="wa-date-chip"><span>Danes</span></div>';
+
+  // 1. Bot greeting + services
+  chatHtml += botBubble(
+    '<div style="margin-bottom:6px">' + esc(greeting) + '</div>' +
+    '<div class="wa-list"><div class="wa-list-title">Storitve</div>' + svcRows + '</div>' +
+    '<div class="wa-button"><svg width="12" height="12" viewBox="0 0 24 24" fill="#128C7E"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg> Izberi storitev</div>',
+    '9:41'
+  );
+
+  // 2. User picks service
+  chatHtml += stepLabel('Stranka izbere storitev');
+  chatHtml += userBubble(firstSvc, '9:42');
+
+  // 3. Booking mode specific flow
+  if (mode === 'exact_time') {
+    chatHtml += stepLabel('Bot vpraša za datum');
+    chatHtml += botBubble('Kateri datum vam ustreza? (npr. jutri, 28.5., ponedeljek…)', '9:42');
+    chatHtml += userBubble('Jutri, 23.5.', '9:43');
+    chatHtml += stepLabel('Bot vpraša za uro');
+    chatHtml += botBubble('Ob kateri uri? (npr. 10:00, 14:30…)', '9:43');
+    chatHtml += userBubble('10:00', '9:44');
+  } else if (mode === 'date_only') {
+    chatHtml += stepLabel('Bot vpraša za datum');
+    chatHtml += botBubble('Kateri datum vam ustreza? (npr. jutri, 28.5., ponedeljek…)', '9:42');
+    chatHtml += userBubble('Jutri, 23.5.', '9:43');
+  } else if (mode === 'inquiry') {
+    chatHtml += stepLabel('Bot vpraša za okvirni datum');
+    chatHtml += botBubble('Kdaj bi željeli priti? (npr. v petek, naslednji teden…)', '9:42');
+    chatHtml += userBubble('V petek ali soboto', '9:43');
+    chatHtml += stepLabel('Bot vpraša za okvirno uro');
+    chatHtml += botBubble('Ob kateri uri? (npr. 10:00, popoldne…)', '9:43');
+    chatHtml += userBubble('Popoldne', '9:44');
+  } else if (mode === 'month_only') {
+    chatHtml += stepLabel('Bot vpraša za mesec');
+    chatHtml += botBubble('V katerem mesecu bi željeli termin? (npr. junij, julij…)', '9:42');
+    chatHtml += userBubble('Junij', '9:43');
+  }
+
+  // 4. Custom form fields
+  var t = 45;
+  fields.forEach(function(f) {
+    var hh = Math.floor(t/60), mm = t%60;
+    var ts = '9:' + (mm < 10 ? '0'+mm : mm);
+    chatHtml += stepLabel('Bot vpraša: ' + f.label);
+    var req = f.required ? '' : ' <span style="color:#aaa;font-size:10px">(opcijsko)</span>';
+    chatHtml += botBubble(esc(f.label) + ':' + req, ts);
+    chatHtml += userBubble(f.type === 'textarea' ? 'Želim mali tattoo na zapestju, cvetlična motivika.' : 'Odgovor stranke…', ts);
+    t += 1;
+  });
+
+  // 5. Name
+  chatHtml += stepLabel('Bot vpraša za ime');
+  chatHtml += botBubble('Vpišite vaše ime in priimek:', '9:50');
+  chatHtml += userBubble('Jana Novak', '9:51');
+
+  // 6. Confirmation
+  chatHtml += stepLabel('Zaključno sporočilo bota');
+  var confirmMsg = closingMsg || (mode === 'inquiry'
+    ? 'Rezervacija je potrjena! Vas kontaktiram čim prej. 🎨'
+    : 'Termin je rezerviran! Do takrat lep pozdrav. 😊');
+  chatHtml += botBubble(esc(confirmMsg), '9:51');
+
+  var chatEl = document.getElementById('bs-preview-chat');
+  if (chatEl) {
+    chatEl.innerHTML = chatHtml;
+    chatEl.scrollTop = 0; // start from top
   }
 }
 
