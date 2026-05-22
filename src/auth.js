@@ -1,7 +1,39 @@
 const crypto = require('crypto');
 
+// ── JWT helpers (no external deps, HMAC-SHA256) ──────────────
+const JWT_SECRET = process.env.JWT_SECRET || 'flowtiq-default-secret-change-me';
+const JWT_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+function b64url(buf) {
+  return Buffer.from(buf).toString('base64url');
+}
+
+function signJwt(payload) {
+  const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const body   = b64url(JSON.stringify(payload));
+  const sig    = crypto.createHmac('sha256', JWT_SECRET)
+                       .update(`${header}.${body}`)
+                       .digest('base64url');
+  return `${header}.${body}.${sig}`;
+}
+
+function verifyJwt(token) {
+  try {
+    const parts = String(token || '').split('.');
+    if (parts.length !== 3) return null;
+    const [header, body, sig] = parts;
+    const expected = crypto.createHmac('sha256', JWT_SECRET)
+                           .update(`${header}.${body}`)
+                           .digest('base64url');
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
+    if (payload.expiresAt < Date.now()) return null;
+    return payload;
+  } catch { return null; }
+}
+
+// OTP store stays in-memory (short-lived, only for login flow)
 const otpStore = new Map();
-const sessions = new Map();
 const PASSWORD_PREFIX = 'scrypt';
 
 function cleanPhone(phone) {
@@ -46,15 +78,9 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(String(token || '')).digest('hex');
 }
 
+// createSession now returns a signed JWT instead of random token stored in Map
 function createSession(salonId, role = 'owner', identity = {}) {
-  const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, {
-    salonId,
-    role,
-    ...identity,
-    expiresAt: Date.now() + 12 * 60 * 60 * 1000
-  });
-  return token;
+  return signJwt({ salonId, role, ...identity, expiresAt: Date.now() + JWT_TTL_MS });
 }
 
 function verifyOtp(phone, code) {
@@ -77,18 +103,11 @@ function verifyOtp(phone, code) {
 
 function getSession(token) {
   const cleanToken = String(token || '').replace(/^Bearer\s+/i, '').trim();
-  const session = sessions.get(cleanToken);
-  if (!session) return null;
-  if (session.expiresAt < Date.now()) {
-    sessions.delete(cleanToken);
-    return null;
-  }
-  return session;
+  return verifyJwt(cleanToken);
 }
 
-function clearSession(token) {
-  sessions.delete(String(token || '').replace(/^Bearer\s+/i, '').trim());
-}
+// clearSession is a no-op for JWT (stateless); kept for API compatibility
+function clearSession(_token) {}
 
 module.exports = {
   cleanPhone, createOtp, hashPassword, verifyPassword, hashToken,
