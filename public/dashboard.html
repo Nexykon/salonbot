@@ -1660,7 +1660,6 @@ function renderTable() {
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
-          <button class="btn-action btn-msg" onclick="manageSalonServices('${s.id}')">Storitve</button>
         </div>
       </td>
     </tr>`;
@@ -1884,7 +1883,7 @@ function closeBotStudio() {
 }
 
 function collectBotStudioServices() {
-  return [...document.querySelectorAll('.service-row')].map(row => ({
+  return [...document.querySelectorAll('#bs-services .service-row')].map(row => ({
     id: row.dataset.id || null,
     name: row.querySelector('[data-field="name"]').value.trim(),
     price: parseFloat(row.querySelector('[data-field="price"]').value || 0),
