@@ -365,33 +365,32 @@ Ko admin reče "danes" → ${today}, "jutri" → naslednji dan.`;
 // ─── Whisper — glasovno sporočilo → besedilo ─────────────────
 async function transcribeAudio(mediaId, waToken) {
   // 1. Pridobi URL od Meta
-  const metaRes = await axios.get(`https://graph.facebook.com/v19.0/${mediaId}`, {
-    headers: { Authorization: `Bearer ${waToken}` }
-  });
+  let metaRes;
+  try {
+    metaRes = await axios.get(`https://graph.facebook.com/v19.0/${mediaId}`, {
+      headers: { Authorization: `Bearer ${waToken}` }
+    });
+  } catch (e) {
+    const detail = e.response?.data ? JSON.stringify(e.response.data) : e.message;
+    throw new Error(`Meta media URL fetch failed: ${detail}`);
+  }
   const audioUrl = metaRes.data.url;
+  if (!audioUrl) throw new Error(`Meta returned no URL for mediaId=${mediaId}`);
 
   // 2. Prenesi audio kot buffer
-  const audioRes = await axios.get(audioUrl, {
-    headers: { Authorization: `Bearer ${waToken}` },
-    responseType: 'arraybuffer'
-  });
-  const audioBuffer = Buffer.from(audioRes.data);
+  let audioBuffer;
+  try {
+    const audioRes = await axios.get(audioUrl, {
+      headers: { Authorization: `Bearer ${waToken}` },
+      responseType: 'arraybuffer'
+    });
+    audioBuffer = Buffer.from(audioRes.data);
+  } catch (e) {
+    throw new Error(`Audio download failed: ${e.message}`);
+  }
+  if (!audioBuffer || audioBuffer.length < 100) {
+    throw new Error(`Audio too short or empty (${audioBuffer?.length ?? 0} bytes)`);
+  }
 
   // 3. Pošlji Whisper API
-  const form = new FormData();
-  form.append('file', audioBuffer, { filename: 'voice.ogg', contentType: 'audio/ogg' });
-  form.append('model', 'whisper-1');
-  form.append('language', 'sl');
-
-  const whisperRes = await axios.post('https://api.openai.com/v1/audio/transcriptions', form, {
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      ...form.getHeaders()
-    },
-    timeout: 30000
-  });
-
-  return whisperRes.data.text?.trim() || null;
-}
-
-module.exports = { askAdminAI, askCustomerAI, transcribeAudio };
+  const form = new
