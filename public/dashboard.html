@@ -1584,6 +1584,18 @@ function apiFetch(path, options = {}) {
 }
 
 // ── RENDER ────────────────────────────────────────────────
+async function refreshSalons() {
+  try {
+    const res = await apiFetch('/salons');
+    if (res.ok) {
+      salonsData = await res.json();
+      renderAll();
+    }
+  } catch (e) {
+    showToast('Napaka pri osvežitvi: ' + e.message, 'error');
+  }
+}
+
 function renderAll() {
   renderStats();
   renderPreviewSelect();
