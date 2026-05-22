@@ -295,14 +295,14 @@
   /* ── PHONE MOCKUP ─────────────────────────────────────────── */
   .phone-preview {
     width: 100%; max-width: 300px; margin: 12px auto 0;
-    border-radius: 40px;
-    background: linear-gradient(160deg, #2a2a2e 0%, #1c1c1f 60%, #111113 100%);
+    border-radius: 36px;
+    background: #e8e8ed;
     box-shadow:
-      0 0 0 1px rgba(255,255,255,0.08),
-      inset 0 0 0 1px rgba(255,255,255,0.04),
-      0 30px 80px rgba(0,0,0,0.6),
-      0 8px 20px rgba(0,0,0,0.4);
-    padding: 10px;
+      0 0 0 1px rgba(0,0,0,0.12),
+      inset 0 0 0 6px #e8e8ed,
+      0 20px 60px rgba(0,0,0,0.18),
+      0 4px 12px rgba(0,0,0,0.1);
+    padding: 8px;
     position: relative;
   }
   /* side buttons */
@@ -310,17 +310,17 @@
     content: '';
     position: absolute;
     left: -3px; top: 80px;
-    width: 3px; height: 60px;
-    background: #2a2a2e;
+    width: 3px; height: 50px;
+    background: #d0d0d6;
     border-radius: 3px 0 0 3px;
-    box-shadow: 0 36px 0 #2a2a2e, 0 72px 0 #2a2a2e;
+    box-shadow: 0 30px 0 #d0d0d6, 0 60px 0 #d0d0d6;
   }
   .phone-preview::after {
     content: '';
     position: absolute;
     right: -3px; top: 100px;
-    width: 3px; height: 70px;
-    background: #2a2a2e;
+    width: 3px; height: 60px;
+    background: #d0d0d6;
     border-radius: 0 3px 3px 0;
   }
   .phone-inner {
@@ -347,7 +347,7 @@
     background: #1c1c1f;
     border-radius: 20px;
     z-index: 10;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
   }
   /* WA header */
   .wa-header {
