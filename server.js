@@ -1340,4 +1340,7 @@ app.post('/api/admin/bookings', async (req, res) => {
 });
 
 // ─── Start server ──────────────────────────────────────────────
-const PORT = process.en
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`FlowTiq server running on port ${PORT}`);
+});
