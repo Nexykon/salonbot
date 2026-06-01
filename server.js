@@ -741,10 +741,17 @@ app.patch('/api/settings', async (req, res) => {
   if (!salon) return;
   try {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
-      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days'];
+      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
+      'booking_mode', 'inquiry_confirmation_message'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    // form_fields needs special handling (array → JSON)
+    if (req.body.form_fields !== undefined) {
+      updates.form_fields = Array.isArray(req.body.form_fields)
+        ? req.body.form_fields
+        : [];
     }
     await db.updateSalonSettings(salon.id, updates);
     res.json({ success: true });
