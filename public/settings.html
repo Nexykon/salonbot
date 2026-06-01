@@ -666,7 +666,10 @@ function showDayDetail(dateStr) {
 
 async function calConfirm(ref) {
   const r = await fetch(`/api/admin/bookings/${ref}/confirm`, { method: 'PATCH', headers: authHeaders({ 'Content-Type': 'application/json' }) });
-  if (!r.ok) return showToast('Napaka pri potrditvi', 'error');
+  if (!r.ok) {
+    const errData = await r.json().catch(() => ({}));
+    return showToast('Napaka pri potrditvi: ' + (errData.error || r.status), 'error');
+  }
   showToast('Rezervacija potrjena', 'success');
   await loadCalendar();
   if (selectedCalDate) showDayDetail(selectedCalDate);
