@@ -247,10 +247,10 @@
   .cal-cell:hover,.cal-cell.selected { background:rgba(124,58,237,0.12); }
   .cal-cell.other-month { opacity:.35;cursor:default; }
   .cal-day-num { font-size:.82rem;font-weight:800;color:var(--muted);margin-bottom:6px; }
-  .cal-event { display:block;padding:3px 6px;border-radius:6px;font-size:.72rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-  .cal-event.confirmed { background:rgba(34,197,94,0.18);color:var(--green); }
-  .cal-event.pending { background:rgba(245,158,11,0.18);color:#fbbf24; }
-  .cal-event.cancelled { background:rgba(239,68,68,0.12);color:var(--red);opacity:.7; }
+  .cal-event { display:block;padding:4px 8px;border-radius:7px;font-size:.75rem;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .cal-event.confirmed { background:#16a34a;color:#fff; }
+  .cal-event.pending { background:#d97706;color:#fff; }
+  .cal-event.cancelled { background:#dc2626;color:#fff;opacity:.75; }
   .day-detail { display:none;margin-top:16px; }
   .day-detail.open { display:block; }
   .day-booking-item { padding:14px 0;border-bottom:1px solid var(--border); }
@@ -258,6 +258,10 @@
   .day-booking-time { color:var(--purple-light);font-weight:900; }
   .day-booking-name { font-weight:800;margin-bottom:4px; }
   .day-booking-meta { color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:3px; }
+  .booking-answers { margin-top:10px;display:flex;flex-direction:column;gap:6px; }
+  .booking-answer { display:flex;gap:8px;font-size:.85rem;background:var(--surface2);border-radius:8px;padding:7px 10px; }
+  .ba-label { font-weight:700;color:var(--text);white-space:nowrap;min-width:120px; }
+  .ba-val { color:var(--muted); }
   .day-booking-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap; }
   .small-btn { padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-weight:800; }
   .small-btn.ok { color:var(--green);border-color:rgba(34,197,94,.3); }
@@ -660,10 +664,29 @@ function showDayDetail(dateStr) {
     const fullId = b.id || '';
     const ref = fullId.slice(-6);
     const t = (b.booking_time || '').substring(0,5);
-    const answers = b.form_answers && typeof b.form_answers === 'object'
-      ? Object.entries(b.form_answers).map(([k,v]) => `<span>${escHtml(k)}: ${escHtml(v)}</span>`).join('')
+    const answers = b.form_answers && typeof b.form_answers === 'object' && Object.keys(b.form_answers).length
+      ? '<div class="booking-answers">' + Object.entries(b.form_answers).map(([k,v]) => `<div class="booking-answer"><span class="ba-label">${escHtml(k)}:</span><span class="ba-val">${escHtml(String(v))}</span></div>`).join('') + '</div>'
       : '';
-    return `<div class="day-booking-item"><div class="day-booking-top"><div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div><div style="flex:1"><div class="day-booking-name">${b.customer_name || '?'}</div><div class="day-booking-meta"><span>Telefon: ${b.customer_phone || '-'}</span><span>Status: ${b.status || 'pending'}</span><span>Ref: ${ref}</span>${answers}</div></div></div><div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${fullId}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${fullId}')">Odpovej</button></div></div>`;
+    const svcName = b.service_id ? (calServices.find(s=>s.id===b.service_id)?.name || '') : '';
+    const statusLabel = {confirmed:'✅ Potrjeno', pending:'⏳ V čakanju', cancelled:'❌ Odpovedano'}[b.status] || b.status;
+    const notesTxt = b.notes ? `<div class="day-booking-meta" style="margin-top:4px"><span>📝 ${escHtml(b.notes)}</span></div>` : '';
+    return `<div class="day-booking-item">
+      <div class="day-booking-top">
+        <div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div>
+        <div style="flex:1">
+          <div class="day-booking-name">${b.customer_name || '?'}</div>
+          <div class="day-booking-meta">
+            <span>📞 ${b.customer_phone || '-'}</span>
+            ${svcName ? `<span>💆 ${escHtml(svcName)}</span>` : ''}
+            <span>${statusLabel}</span>
+            <span style="color:#aaa;font-size:.75rem">Ref: ${ref}</span>
+          </div>
+          ${answers}
+          ${notesTxt}
+        </div>
+      </div>
+      <div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${fullId}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${fullId}')">Odpovej</button></div>
+    </div>`;
   }).join('') : '<div class="service-empty">Ni rezervacij za ta dan.</div>';
   const serviceOptions = calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('');
   document.getElementById('day-detail-list').innerHTML = rows + `<div class="preview-box"><div class="preview-title">Dodaj rezervacijo</div><div class="manual-booking-grid"><input class="dur-input" id="mb-time" type="time"><input class="dur-input" id="mb-name" placeholder="Ime stranke"><input class="dur-input" id="mb-phone" placeholder="Telefon"><select class="dur-input" id="mb-service"><option value="">Brez storitve</option>${serviceOptions}</select></div><button class="btn btn-secondary" style="margin-top:12px" onclick="saveManualBooking('${dateStr}')">Dodaj rezervacijo</button></div>`;
