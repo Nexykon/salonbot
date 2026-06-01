@@ -190,6 +190,45 @@
     background: rgba(124,58,237,0.25); border-color: var(--purple);
     color: var(--purple-light); font-weight: 600;
   }
+  /* Drag & drop chat bubbles */
+  .ff-bubble-fixed {
+    background: white;
+    border-radius: 4px 14px 14px 14px;
+    padding: 9px 13px;
+    font-size: .8rem;
+    color: #555;
+    box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    opacity: .65;
+  }
+  .ff-bubble-drag {
+    background: white;
+    border-radius: 4px 14px 14px 14px;
+    padding: 9px 13px;
+    font-size: .8rem;
+    color: #111;
+    box-shadow: 0 2px 10px rgba(124,58,237,.18);
+    border: 2px solid rgba(124,58,237,.3);
+    cursor: grab;
+    transition: transform .15s, box-shadow .15s;
+    position: relative;
+    user-select: none;
+  }
+  .ff-bubble-drag:hover { box-shadow: 0 4px 18px rgba(124,58,237,.28); transform: translateY(-1px); }
+  .ff-bubble-drag:active { cursor: grabbing; }
+  .ff-bubble-drag.dragging { opacity: .4; transform: scale(.97); }
+  .ff-bubble-drag.drag-over { border-color: var(--purple); background: #f3f0ff; }
+  .ff-bubble-drag .ff-bub-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .ff-bubble-drag .ff-bub-label { font-weight: 600; flex:1; }
+  .ff-bubble-drag .ff-bub-actions { display:flex; gap:4px; align-items:center; }
+  .ff-bubble-drag .ff-bub-req { font-size:.65rem; padding:2px 7px; border-radius:100px; font-weight:700; }
+  .ff-bubble-drag .ff-bub-req.yes { background:#ede9fe; color:var(--purple); }
+  .ff-bubble-drag .ff-bub-req.no { background:#f1f5f9; color:#94a3b8; }
+  .ff-bubble-drag .ff-bub-del { background:none; border:none; color:#ef4444; cursor:pointer; font-size:1rem; padding:0 2px; opacity:.6; }
+  .ff-bubble-drag .ff-bub-del:hover { opacity:1; }
+  .ff-bubble-drag .ff-bub-hint { font-size:.7rem; color:#94a3b8; margin-top:3px; }
+  .ff-drag-handle { font-size:.85rem; color:#aaa; cursor:grab; padding-right:4px; }
+  .ff-bubble-fixed:first-child { border-radius: 14px 14px 14px 4px; }
+
   .ff-field-row {
     display: flex; align-items: center; gap: 10px;
     background: var(--surface2); border: 1px solid var(--border);
@@ -469,7 +508,7 @@
     <!-- Obrazec / vprašalnik -->
     <div class="card owner-panel settings-panel" id="form-fields-card">
       <div class="card-title">📝 Vprašalnik ob naročilu
-        <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Vprašanja, ki jih bot postavi stranki</span>
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Povlecite oblačke da spremenite vrstni red</span>
       </div>
 
       <!-- Booking mode -->
@@ -483,21 +522,45 @@
         <div class="form-hint" id="booking-mode-hint" style="margin-top:8px"></div>
       </div>
 
-      <!-- Fields list -->
-      <div id="ff-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px"></div>
+      <!-- TWO COLUMN LAYOUT -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
 
-      <!-- Add field -->
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="text" id="ff-new-label" placeholder="Novo vprašanje (npr. Alergije?)" class="dur-input" style="flex:1;min-width:180px">
-        <select id="ff-new-type" class="dur-input" style="width:auto">
-          <option value="text">Kratko besedilo</option>
-          <option value="textarea">Dolgo besedilo</option>
-          <option value="number">Število</option>
-        </select>
-        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--muted);cursor:pointer;white-space:nowrap">
-          <input type="checkbox" id="ff-new-required" style="accent-color:var(--purple)"> Obvezno
-        </label>
-        <button class="btn btn-secondary" onclick="ffAddField()" style="padding:8px 14px;font-size:0.85rem">+ Dodaj</button>
+        <!-- LEFT: Add field + field list -->
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Dodaj vprašanje</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+            <input type="text" id="ff-new-label" placeholder="Vprašanje (npr. Opiši tattoo idejo)" class="dur-input" style="width:100%;text-align:left">
+            <div style="display:flex;gap:8px">
+              <select id="ff-new-type" class="dur-input" style="flex:1;text-align:left">
+                <option value="text">Kratko besedilo</option>
+                <option value="textarea">Dolgo besedilo</option>
+                <option value="number">Število</option>
+              </select>
+              <label style="display:flex;align-items:center;gap:5px;font-size:.83rem;color:var(--muted);cursor:pointer;white-space:nowrap">
+                <input type="checkbox" id="ff-new-required" style="accent-color:var(--purple)"> Obvezno
+              </label>
+            </div>
+            <button class="btn btn-secondary" onclick="ffAddField()" style="width:100%">+ Dodaj vprašanje</button>
+          </div>
+
+          <!-- Hidden original ff-list (still used internally) -->
+          <div id="ff-list" style="display:none"></div>
+        </div>
+
+        <!-- RIGHT: Chat preview with drag & drop -->
+        <div>
+          <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">📱 Predogled pogovora</div>
+          <div id="ff-chat-preview" style="
+            background:#e5ddd5;
+            border-radius:16px;
+            padding:12px;
+            min-height:200px;
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+            font-size:.8rem;
+          "></div>
+        </div>
       </div>
 
       <!-- Inquiry confirmation message -->
@@ -506,11 +569,6 @@
         <input type="text" id="inquiry-confirmation-message" placeholder="Hvala! Kontaktirali vas bomo čim prej." class="dur-input" style="width:100%">
       </div>
 
-      <!-- PREVIEW -->
-      <div style="margin-top:20px;background:var(--surface2);border-radius:14px;padding:16px;border:1px solid var(--border);">
-        <div style="font-size:.75rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">📱 Predogled pogovora</div>
-        <div id="ff-preview" style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;"></div>
-      </div>
       <button class="btn btn-primary" onclick="saveFormFields()" style="margin-top:18px;width:100%" id="ff-save-btn">💾 Shrani vprašalnik</button>
     </div>
 
@@ -961,46 +1019,91 @@ const BOOKING_MODE_HINTS = {
 const FIELD_TYPE_LABELS = { text: 'kratko', textarea: 'dolgo', number: 'število' };
 
 function ffRender() {
-  const list = document.getElementById('ff-list');
-  if (!list) return;
-  ffUpdatePreview();
-  if (currentFormFields.length === 0) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:0.875rem;padding:8px 0">Ni vprašanj — bot ne bo ničesar vprašal pred imenom.</div>';
-    return;
-  }
-  list.innerHTML = currentFormFields.map((f, i) => `
-    <div class="ff-field-row" data-idx="${i}">
-      <div class="ff-move-btns">
-        <button title="Gor" onclick="ffMove(${i},-1)">▲</button>
-        <button title="Dol" onclick="ffMove(${i},1)">▼</button>
-      </div>
-      <span class="ff-label">${f.label}</span>
-      <span class="ff-type">${FIELD_TYPE_LABELS[f.type] || f.type}</span>
-      ${f.required ? '<span class="ff-req">obvezno</span>' : '<span style="font-size:0.75rem;color:var(--muted)">opcijsko</span>'}
-      <button class="ff-del" title="Odstrani" onclick="ffRemove(${i})">✕</button>
-    </div>
-  `).join('');
+  ffRenderChat();
 }
 
-function ffUpdatePreview() {
-  const prev = document.getElementById('ff-preview');
-  if (!prev) return;
-  const steps = [
-    { bot: '👋 Pozdravlja bot in pokaže storitve', sent: false },
-    { bot: '📅 Bot vpraša za datum', sent: false },
+function ffRenderChat() {
+  const chat = document.getElementById('ff-chat-preview');
+  if (!chat) return;
+
+  // Fixed steps (non-draggable)
+  const fixedBefore = [
+    '👋 Pozdravi stranko in pokaže storitve',
+    '📅 Stranka izbere datum' + (currentBookingMode === 'exact_time' ? '' : ''),
+    ...(currentBookingMode === 'exact_time' ? ['🕐 Stranka izbere uro'] : []),
   ];
-  if (currentBookingMode === 'exact_time') steps.push({ bot: '🕐 Bot vpraša za uro', sent: false });
-  currentFormFields.forEach((f, i) => {
-    steps.push({ bot: `❓ <strong>${f.label}</strong>${f.required ? ' <span style="color:#ef4444">*</span>' : ' <span style="color:#aaa">(opcijsko)</span>'}`, sent: false });
+  const fixedAfter = [
+    '👤 Stranka vpiše ime in priimek',
+    '✅ Potrditev in oddaja rezervacije',
+  ];
+
+  let html = '';
+
+  // Fixed before
+  fixedBefore.forEach(txt => {
+    html += `<div class="ff-bubble-fixed">${txt}</div>`;
   });
-  steps.push({ bot: '👤 Bot vpraša za ime', sent: false });
-  steps.push({ bot: '✅ Potrditev rezervacije', sent: false });
-  prev.innerHTML = steps.map((s, i) => `
-    <div style="display:flex;gap:8px;align-items:flex-start;">
-      <div style="width:22px;height:22px;border-radius:50%;background:${s.sent ? '#dcf8c6' : 'var(--surface)'};border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;color:var(--muted);">${i+1}</div>
-      <div style="background:white;border:1px solid var(--border);border-radius:4px 10px 10px 10px;padding:6px 10px;flex:1;">${s.bot}</div>
-    </div>
-  `).join('');
+
+  // Draggable custom fields
+  if (currentFormFields.length === 0) {
+    html += `<div style="text-align:center;padding:10px;font-size:.75rem;color:#aaa;border:2px dashed #ddd;border-radius:12px;">+ Dodaj vprašanja spodaj levo</div>`;
+  } else {
+    currentFormFields.forEach((f, i) => {
+      const typeLabel = {text:'kratko',textarea:'dolgo',number:'število'}[f.type] || f.type;
+      html += `<div class="ff-bubble-drag" draggable="true"
+        data-idx="${i}"
+        ondragstart="ffDragStart(event,${i})"
+        ondragover="ffDragOver(event)"
+        ondrop="ffDrop(event,${i})"
+        ondragleave="ffDragLeave(event)"
+        ondragend="ffDragEnd(event)">
+        <div class="ff-bub-top">
+          <span class="ff-drag-handle">⠿</span>
+          <span class="ff-bub-label">❓ ${f.label}</span>
+          <div class="ff-bub-actions">
+            <span class="ff-bub-req ${f.required ? 'yes' : 'no'}" onclick="ffToggleReq(${i})" title="Klikni za preklop" style="cursor:pointer">${f.required ? 'obvezno' : 'opcijsko'}</span>
+            <button class="ff-bub-del" onclick="ffRemove(${i})" title="Odstrani">✕</button>
+          </div>
+        </div>
+        <div class="ff-bub-hint">${typeLabel} odgovor</div>
+      </div>`;
+    });
+  }
+
+  // Fixed after
+  fixedAfter.forEach(txt => {
+    html += `<div class="ff-bubble-fixed">${txt}</div>`;
+  });
+
+  chat.innerHTML = html;
+}
+
+let ffDragIdx = null;
+function ffDragStart(e, idx) {
+  ffDragIdx = idx;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function ffDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function ffDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function ffDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.ff-bubble-drag').forEach(b => b.classList.remove('drag-over')); }
+function ffDrop(e, toIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (ffDragIdx === null || ffDragIdx === toIdx) return;
+  const tmp = currentFormFields[ffDragIdx];
+  currentFormFields.splice(ffDragIdx, 1);
+  currentFormFields.splice(toIdx, 0, tmp);
+  ffDragIdx = null;
+  ffRenderChat();
+}
+function ffToggleReq(idx) {
+  currentFormFields[idx].required = !currentFormFields[idx].required;
+  ffRenderChat();
 }
 
 function ffAddField() {
