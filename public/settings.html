@@ -657,12 +657,13 @@ function showDayDetail(dateStr) {
   const detail = document.getElementById('day-detail');
   document.getElementById('day-detail-title').textContent = `${dateStr} - ${active.length} rezervacij`;
   const rows = active.length ? active.map(b => {
-    const ref = (b.id || '').slice(-6);
+    const fullId = b.id || '';
+    const ref = fullId.slice(-6);
     const t = (b.booking_time || '').substring(0,5);
     const answers = b.form_answers && typeof b.form_answers === 'object'
       ? Object.entries(b.form_answers).map(([k,v]) => `<span>${escHtml(k)}: ${escHtml(v)}</span>`).join('')
       : '';
-    return `<div class="day-booking-item"><div class="day-booking-top"><div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div><div style="flex:1"><div class="day-booking-name">${b.customer_name || '?'}</div><div class="day-booking-meta"><span>Telefon: ${b.customer_phone || '-'}</span><span>Status: ${b.status || 'pending'}</span><span>Ref: ${ref}</span>${answers}</div></div></div><div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${ref}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${ref}')">Odpovej</button></div></div>`;
+    return `<div class="day-booking-item"><div class="day-booking-top"><div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div><div style="flex:1"><div class="day-booking-name">${b.customer_name || '?'}</div><div class="day-booking-meta"><span>Telefon: ${b.customer_phone || '-'}</span><span>Status: ${b.status || 'pending'}</span><span>Ref: ${ref}</span>${answers}</div></div></div><div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${fullId}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${fullId}')">Odpovej</button></div></div>`;
   }).join('') : '<div class="service-empty">Ni rezervacij za ta dan.</div>';
   const serviceOptions = calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('');
   document.getElementById('day-detail-list').innerHTML = rows + `<div class="preview-box"><div class="preview-title">Dodaj rezervacijo</div><div class="manual-booking-grid"><input class="dur-input" id="mb-time" type="time"><input class="dur-input" id="mb-name" placeholder="Ime stranke"><input class="dur-input" id="mb-phone" placeholder="Telefon"><select class="dur-input" id="mb-service"><option value="">Brez storitve</option>${serviceOptions}</select></div><button class="btn btn-secondary" style="margin-top:12px" onclick="saveManualBooking('${dateStr}')">Dodaj rezervacijo</button></div>`;
