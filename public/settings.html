@@ -506,6 +506,11 @@
         <input type="text" id="inquiry-confirmation-message" placeholder="Hvala! Kontaktirali vas bomo čim prej." class="dur-input" style="width:100%">
       </div>
 
+      <!-- PREVIEW -->
+      <div style="margin-top:20px;background:var(--surface2);border-radius:14px;padding:16px;border:1px solid var(--border);">
+        <div style="font-size:.75rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">📱 Predogled pogovora</div>
+        <div id="ff-preview" style="display:flex;flex-direction:column;gap:8px;font-size:.82rem;"></div>
+      </div>
       <button class="btn btn-primary" onclick="saveFormFields()" style="margin-top:18px;width:100%" id="ff-save-btn">💾 Shrani vprašalnik</button>
     </div>
 
@@ -958,6 +963,7 @@ const FIELD_TYPE_LABELS = { text: 'kratko', textarea: 'dolgo', number: 'število
 function ffRender() {
   const list = document.getElementById('ff-list');
   if (!list) return;
+  ffUpdatePreview();
   if (currentFormFields.length === 0) {
     list.innerHTML = '<div style="color:var(--muted);font-size:0.875rem;padding:8px 0">Ni vprašanj — bot ne bo ničesar vprašal pred imenom.</div>';
     return;
@@ -972,6 +978,27 @@ function ffRender() {
       <span class="ff-type">${FIELD_TYPE_LABELS[f.type] || f.type}</span>
       ${f.required ? '<span class="ff-req">obvezno</span>' : '<span style="font-size:0.75rem;color:var(--muted)">opcijsko</span>'}
       <button class="ff-del" title="Odstrani" onclick="ffRemove(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function ffUpdatePreview() {
+  const prev = document.getElementById('ff-preview');
+  if (!prev) return;
+  const steps = [
+    { bot: '👋 Pozdravlja bot in pokaže storitve', sent: false },
+    { bot: '📅 Bot vpraša za datum', sent: false },
+  ];
+  if (currentBookingMode === 'exact_time') steps.push({ bot: '🕐 Bot vpraša za uro', sent: false });
+  currentFormFields.forEach((f, i) => {
+    steps.push({ bot: `❓ <strong>${f.label}</strong>${f.required ? ' <span style="color:#ef4444">*</span>' : ' <span style="color:#aaa">(opcijsko)</span>'}`, sent: false });
+  });
+  steps.push({ bot: '👤 Bot vpraša za ime', sent: false });
+  steps.push({ bot: '✅ Potrditev rezervacije', sent: false });
+  prev.innerHTML = steps.map((s, i) => `
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <div style="width:22px;height:22px;border-radius:50%;background:${s.sent ? '#dcf8c6' : 'var(--surface)'};border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;color:var(--muted);">${i+1}</div>
+      <div style="background:white;border:1px solid var(--border);border-radius:4px 10px 10px 10px;padding:6px 10px;flex:1;">${s.bot}</div>
     </div>
   `).join('');
 }

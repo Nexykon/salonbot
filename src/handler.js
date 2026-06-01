@@ -498,6 +498,11 @@ async function handleMessage(msgObj, salon) {
   // ── Date selection ──
   if (iId.startsWith('date_')) {
     const date = iId.replace('date_', '');
+    // date_only mode: skip time selection, use 00:00 as placeholder
+    if (bookingMode === 'date_only') {
+      await goAfterTime(date, '00:00', { ...sess, selectedDate: date });
+      return;
+    }
     session.set(from, { ...sess, step: 2, selectedDate: date });
     await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, date, sess.serviceDuration), date));
     return;
