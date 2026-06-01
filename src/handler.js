@@ -550,14 +550,16 @@ async function handleMessage(msgObj, salon) {
         try {
           await wa.send(phoneId, token, wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6));
         } catch (e2) {
+          const faLines = fa && typeof fa === 'object' ? Object.entries(fa).map(([k,v]) => `• ${k}: ${v}`).join('\n') : '';
+          const faBlock = faLines ? `\n\n📋 Odgovori stranke:\n${faLines}` : '';
           wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-            `Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*`
+            `📩 Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*${faBlock}\n\nPotrdi: *#potrdi ${ref6}*`
           )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
         }
       }
     } else {
       console.log(`[email] Sending admin confirm email to ${salon.owner_email} for booking ${booking.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id)
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id, fa)
         .catch(e => console.error('[email] admin confirm email failed:', e.message));
     }
     return;
