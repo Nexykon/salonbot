@@ -175,6 +175,10 @@
     border-radius: 10px; color: var(--text); font-size: 0.9rem; font-weight: 600;
     outline: none; transition: border-color 0.2s;
   }
+  .manual-booking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .manual-booking-grid .dur-input { width: 100%; text-align: left; font-weight: 500; }
+  .preview-box { background: #f0faf8; border: 1px solid #c8ece6; border-radius: 14px; padding: 16px; margin-top: 14px; }
+  .preview-title { font-size: 0.78rem; font-weight: 700; color: #0d9488; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
   .dur-input:focus { border-color: var(--purple); }
   .dur-label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
   .booking-mode-pill {
@@ -226,8 +230,9 @@
     background: var(--surface2); color: var(--muted); font-weight: 800; cursor: pointer;
   }
   .owner-tab.active {
-    color: #fff; border-color: rgba(167,139,250,0.5);
-    background: linear-gradient(135deg, rgba(124,58,237,0.28), rgba(6,182,212,0.14));
+    color: #fff; border-color: #7c3aed;
+    background: #7c3aed;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.3);
   }
   .tab-hidden { display: none !important; }
   .cal-toolbar { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px; }
