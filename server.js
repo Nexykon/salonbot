@@ -730,7 +730,10 @@ app.get('/api/settings', async (req, res) => {
       bot_phone_display: salon.bot_phone_display || '',
       business_type: salon.business_type || '',
       business_slug: salon.business_slug || '',
-      owner_email: salon.owner_email || ''
+      owner_email: salon.owner_email || '',
+      booking_mode: salon.booking_mode || 'exact_time',
+      form_fields: Array.isArray(salon.form_fields) ? salon.form_fields : [],
+      inquiry_confirmation_message: salon.inquiry_confirmation_message || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
