@@ -190,10 +190,10 @@ async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, ti
             <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">📅 Termin</td><td style="padding:6px 0;color:#1e293b;font-size:14px;font-weight:600;">${date} ob ${time}</td></tr>
             <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">🔑 Ref</td><td style="padding:6px 0;color:#7c3aed;font-size:14px;font-weight:700;">${ref6}</td></tr>
           </table>
-          ${formAnswers && typeof formAnswers === 'object' && Object.keys(formAnswers).length ? `
+          ${(formAnswers && typeof formAnswers === 'object' && Object.keys(formAnswers).length) || (typeof formAnswers === 'string' && formAnswers.length > 2) ? `
           <p style="color:#1e293b;font-size:14px;font-weight:700;margin:20px 0 10px;">📋 Odgovori stranke</p>
           <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:28px;">
-            ${Object.entries(formAnswers).map(([k,v]) => `<tr><td style="padding:5px 0;color:#64748b;font-size:13px;vertical-align:top;padding-right:16px;">${k}</td><td style="padding:5px 0;color:#1e293b;font-size:13px;font-weight:600;">${String(v)}</td></tr>`).join('')}
+            ${Object.entries(typeof formAnswers === 'string' ? JSON.parse(formAnswers) : formAnswers).map(([k,v]) => `<tr><td style="padding:5px 0;color:#64748b;font-size:13px;vertical-align:top;padding-right:16px;">${k}</td><td style="padding:5px 0;color:#1e293b;font-size:13px;font-weight:600;">${String(v)}</td></tr>`).join('')}
           </table>` : ''}
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>

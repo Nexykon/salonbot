@@ -316,7 +316,7 @@ async function handleMessage(msgObj, salon) {
       duration_minutes: 0,
       status: 'pending',
       notes: '',
-      form_answers: JSON.stringify(formAnswers || {})
+      form_answers: (formAnswers && Object.keys(formAnswers).length) ? formAnswers : null
     };
     const bk = await db.createBooking(bData);
     const r6 = (bk.id || '').slice(-6);
@@ -330,7 +330,7 @@ async function handleMessage(msgObj, salon) {
       )).catch(e => console.error('Inquiry admin WA err:', e.message));
     } else {
       console.log(`[email] Sending inquiry admin email to ${salon.owner_email} for booking ${bk.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, preferredDate || today, preferredTime || 'po dogovoru', r6, bk.id)
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, preferredDate || today, preferredTime || 'po dogovoru', r6, bk.id, formAnswers)
         .catch(e => console.error('[email] inquiry admin email failed:', e.message));
     }
   };
@@ -526,7 +526,8 @@ async function handleMessage(msgObj, salon) {
       return;
     }
     const customerName = s.customerName;
-    const fa = s.formAnswers && Object.keys(s.formAnswers).length ? JSON.stringify(s.formAnswers) : null;
+    const faObj = (s.formAnswers && Object.keys(s.formAnswers).length) ? s.formAnswers : null;
+    const fa = faObj ? JSON.stringify(faObj) : null;
     const bookingData = {
       customer_phone: from,
       customer_name: customerName,
@@ -536,7 +537,7 @@ async function handleMessage(msgObj, salon) {
       booking_time: s.selectedTime + ':00',
       status: 'pending',
       notes: '',
-      form_answers: fa
+      form_answers: faObj
     };
     if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
     const booking = await db.createBookingIfFree(bookingData);
@@ -549,22 +550,30 @@ async function handleMessage(msgObj, salon) {
     ));
 
     if (salonAdminPhone) {
+      // Zgradimo blok z odgovori stranke
+      const faLines = faObj ? Object.entries(faObj).map(([k,v]) => `• ${k}: ${v}`).join('\n') : '';
+      const faBlock = faLines ? `\n\n📋 Odgovori stranke:\n${faLines}` : '';
+      const adminMsg = `📩 Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*${faBlock}\n\nPotrdi: *#potrdi ${ref6}*`;
       try {
         await wa.send(phoneId, token, wa.adminBookingNotif(salonAdminPhone, customerName, from, fDate, s.selectedTime, ref6));
+        // Po template-u pošlji še odgovore stranke (če obstajajo)
+        if (faLines) {
+          await wa.send(phoneId, token, wa.textMsg(salonAdminPhone, `📋 Odgovori stranke za *${ref6}*:\n${faLines}`));
+        }
       } catch (e) {
         try {
           await wa.send(phoneId, token, wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6));
+          if (faLines) {
+            await wa.send(phoneId, token, wa.textMsg(salonAdminPhone, `📋 Odgovori stranke za *${ref6}*:\n${faLines}`));
+          }
         } catch (e2) {
-          const faLines = fa && typeof fa === 'object' ? Object.entries(fa).map(([k,v]) => `• ${k}: ${v}`).join('\n') : '';
-          const faBlock = faLines ? `\n\n📋 Odgovori stranke:\n${faLines}` : '';
-          wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-            `📩 Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*${faBlock}\n\nPotrdi: *#potrdi ${ref6}*`
-          )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
+          wa.send(phoneId, token, wa.textMsg(salonAdminPhone, adminMsg))
+            .catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
         }
       }
     } else {
       console.log(`[email] Sending admin confirm email to ${salon.owner_email} for booking ${booking.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id, fa)
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id, faObj)
         .catch(e => console.error('[email] admin confirm email failed:', e.message));
     }
     return;
