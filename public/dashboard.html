@@ -1998,6 +1998,10 @@ function renderFormFields() {
         <option value="false" ${!f.required ? 'selected' : ''}>Ne</option>
         <option value="true" ${f.required ? 'selected' : ''}>Da</option>
       </select>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <button class="icon-btn" title="Gor" onclick="moveFormField('${esc(f._localId)}',-1)" style="font-size:.65rem;padding:2px 5px;">▲</button>
+        <button class="icon-btn" title="Dol" onclick="moveFormField('${esc(f._localId)}',1)" style="font-size:.65rem;padding:2px 5px;">▼</button>
+      </div>
       <button class="icon-btn" title="Odstrani vprašanje" onclick="removeFormField('${esc(f._localId)}')">×</button>
     </div>
   `).join('');
@@ -2023,6 +2027,18 @@ function addFormField() {
 
 function removeFormField(localId) {
   botStudio.formFields = botStudio.formFields.filter(f => f._localId !== localId);
+  renderFormFields();
+  updateBotStudioPreview();
+}
+
+function moveFormField(localId, dir) {
+  const idx = botStudio.formFields.findIndex(f => f._localId === localId);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= botStudio.formFields.length) return;
+  const tmp = botStudio.formFields[idx];
+  botStudio.formFields[idx] = botStudio.formFields[newIdx];
+  botStudio.formFields[newIdx] = tmp;
   renderFormFields();
   updateBotStudioPreview();
 }
