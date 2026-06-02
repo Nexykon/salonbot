@@ -167,7 +167,7 @@ async function getBookingById(id) {
 
 async function getBookingForSalon(salonId, ref) {
   const r = await axios.get(
-    `${BASE}/sb_bookings?salon_id=eq.${salonId}&id=eq.${ref}&order=created_at.desc&limit=1`,
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&id=like.*${ref}&order=created_at.desc&limit=1`,
     { headers: HEADERS }
   );
   return r.data[0];

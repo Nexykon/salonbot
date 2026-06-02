@@ -118,6 +118,7 @@ function publicSalon(salon) {
     break_between_minutes: salon.break_between_minutes || 0,
     max_advance_days: salon.max_advance_days || 30,
     booking_mode: normalizeBookingMode(salon.booking_mode),
+    datetime_position: salon.datetime_position === 'last' ? 'last' : 'first',
     form_fields: safeFormFields(salon.form_fields, salon),
     inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.'
   };
@@ -571,6 +572,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'break_between_minutes',
     'max_advance_days',
     'booking_mode',
+    'datetime_position',
     'form_fields',
     'inquiry_confirmation_message'
   ];
@@ -592,6 +594,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
   if (updates.break_between_minutes !== undefined) updates.break_between_minutes = parseInt(updates.break_between_minutes) || 0;
   if (updates.max_advance_days !== undefined) updates.max_advance_days = parseInt(updates.max_advance_days) || 30;
   if (updates.booking_mode !== undefined) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
+  if (updates.datetime_position !== undefined) updates.datetime_position = updates.datetime_position === 'last' ? 'last' : 'first';
   if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
   try {
     const salon = await db.getSalonById(req.params.id);
@@ -730,10 +733,7 @@ app.get('/api/settings', async (req, res) => {
       bot_phone_display: salon.bot_phone_display || '',
       business_type: salon.business_type || '',
       business_slug: salon.business_slug || '',
-      owner_email: salon.owner_email || '',
-      booking_mode: salon.booking_mode || 'exact_time',
-      form_fields: Array.isArray(salon.form_fields) ? salon.form_fields : [],
-      inquiry_confirmation_message: salon.inquiry_confirmation_message || ''
+      owner_email: salon.owner_email || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -744,17 +744,10 @@ app.patch('/api/settings', async (req, res) => {
   if (!salon) return;
   try {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
-      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
-      'booking_mode', 'inquiry_confirmation_message'];
+      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
-    }
-    // form_fields needs special handling (array → JSON)
-    if (req.body.form_fields !== undefined) {
-      updates.form_fields = Array.isArray(req.body.form_fields)
-        ? req.body.form_fields
-        : [];
     }
     await db.updateSalonSettings(salon.id, updates);
     res.json({ success: true });

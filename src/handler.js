@@ -279,6 +279,7 @@ async function handleMessage(msgObj, salon) {
 
   const VALID_MODES = ['exact_time', 'date_only', 'inquiry', 'month_only'];
   const bookingMode = VALID_MODES.includes(salon.booking_mode) ? salon.booking_mode : 'exact_time';
+  const datetimePosition = salon.datetime_position === 'last' ? 'last' : 'first';
   const rawFF = salon.form_fields;
   const formFields = Array.isArray(rawFF)
     ? rawFF
@@ -286,7 +287,7 @@ async function handleMessage(msgObj, salon) {
         ? (() => { try { const p = JSON.parse(rawFF); return Array.isArray(p) ? p : []; } catch (err) { return []; } })()
         : []);
 
-  // Helper: after time confirmed
+  // Helper: after time confirmed (datetime_position = 'first')
   const goAfterTime = async (date, time, sessData) => {
     if (formFields.length > 0) {
       const first = formFields[0];
@@ -297,6 +298,21 @@ async function handleMessage(msgObj, salon) {
       session.set(from, { ...sessData, step: 4, selectedDate: date, selectedTime: time });
       await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
     }
+  };
+
+  // Helper: start form fields first (datetime_position = 'last')
+  const goFormFirst = async (sessData) => {
+    const first = formFields[0];
+    session.set(from, { ...sessData, step: 30, fieldIndex: 0, formAnswers: {} });
+    const opt = first.required ? '' : ' (opcijsko - 0 za preskok)';
+    await wa.send(phoneId, token, wa.textMsg(from, `${first.label}:${opt}`));
+  };
+
+  // Helper: after form fields collected in 'last' mode → ask for date
+  const goDateAfterForm = async (sessData) => {
+    const freeDates = await getFreeDates(salon, 30, sessData.serviceDuration);
+    session.set(from, { ...sessData, step: 31 });
+    await wa.send(phoneId, token, wa.dateList(from, freeDates));
   };
 
   // Helper: submit inquiry (step 10 or step 20)
@@ -316,7 +332,7 @@ async function handleMessage(msgObj, salon) {
       duration_minutes: 0,
       status: 'pending',
       notes: '',
-      form_answers: (formAnswers && Object.keys(formAnswers).length) ? formAnswers : null
+      form_answers: JSON.stringify(formAnswers || {})
     };
     const bk = await db.createBooking(bData);
     const r6 = (bk.id || '').slice(-6);
@@ -330,7 +346,7 @@ async function handleMessage(msgObj, salon) {
       )).catch(e => console.error('Inquiry admin WA err:', e.message));
     } else {
       console.log(`[email] Sending inquiry admin email to ${salon.owner_email} for booking ${bk.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, preferredDate || today, preferredTime || 'po dogovoru', r6, bk.id, formAnswers)
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, preferredDate || today, preferredTime || 'po dogovoru', r6, bk.id)
         .catch(e => console.error('[email] inquiry admin email failed:', e.message));
     }
   };
@@ -407,6 +423,92 @@ async function handleMessage(msgObj, salon) {
     return;
   }
 
+  // ── Step 30: collecting form fields BEFORE date (datetime_position = 'last') ──
+  if (sess.step === 30 && msgText) {
+    const s = session.get(from);
+    const fi = s.fieldIndex || 0;
+    const field = formFields[fi];
+    const skipped = msgText.trim() === '0' && field && !field.required;
+    const answers = skipped ? s.formAnswers : { ...(s.formAnswers || {}), [field ? field.label : `Q${fi}`]: msgText.trim() };
+    const nextFi = fi + 1;
+    if (nextFi < formFields.length) {
+      const nextField = formFields[nextFi];
+      session.set(from, { ...s, step: 30, fieldIndex: nextFi, formAnswers: answers });
+      const opt = nextField.required ? '' : ' (opcijsko - 0 za preskok)';
+      await wa.send(phoneId, token, wa.textMsg(from, `${nextField.label}:${opt}`));
+    } else {
+      // All pre-fields done → now ask for date
+      await goDateAfterForm({ ...s, formAnswers: answers });
+    }
+    return;
+  }
+
+  // ── Step 31: natural language date (datetime_position = 'last') ──
+  if (sess.step === 31 && msgText) {
+    const { date, time } = parseCustomerDateTime(msgText);
+    const workingDays = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
+    if (date && time) {
+      const d = new Date(date + 'T12:00:00');
+      if (!workingDays.includes(d.getDay())) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+        await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
+        return;
+      }
+      const bestTime = await resolveCustomTime(salon, date, time, sess.serviceDuration);
+      if (bestTime) {
+        await goAfterTime(date, bestTime, { ...sess, step: 31 });
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Ob ${time} ni prostih terminov. Izberite drug datum:`));
+        await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
+      }
+    } else if (date) {
+      const d = new Date(date + 'T12:00:00');
+      if (!workingDays.includes(d.getDay())) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+        await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
+        return;
+      }
+      session.set(from, { ...sess, step: 32, selectedDate: date });
+      await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, date, sess.serviceDuration), date));
+    } else {
+      await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
+    }
+    return;
+  }
+
+  // ── Step 32: natural language time (datetime_position = 'last') ──
+  if (sess.step === 32 && msgText) {
+    const { date: parsedDate, time: parsedTime } = parseCustomerDateTime(msgText);
+    const useDate = parsedDate || sess.selectedDate;
+    if (!useDate) { session.clear(from); await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon))); return; }
+    if (parsedTime) {
+      const bestTime = await resolveCustomTime(salon, useDate, parsedTime, sess.serviceDuration);
+      if (bestTime) {
+        // Skip formFields (already collected in step 30), go straight to name/confirm
+        const s = session.get(from);
+        const nameField = formFields.find(f =>
+          f.id === 'full_name' || f.id === 'name' || f.id === 'ime' ||
+          /ime.*priimek|full.?name/i.test(f.label || '')
+        );
+        const autoName = nameField ? ((s.formAnswers || {})[nameField.label] || null) : null;
+        if (autoName) {
+          const svc = services.find(sv => sv.id === s.serviceId);
+          session.set(from, { ...s, step: 5, customerName: autoName, selectedDate: useDate, selectedTime: bestTime });
+          await wa.send(phoneId, token, wa.finalConfirmButtons(from, useDate, bestTime, autoName, svc ? svc.name : 'Storitev'));
+        } else {
+          session.set(from, { ...s, step: 4, selectedDate: useDate, selectedTime: bestTime });
+          await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Ob ${parsedTime} ni prostega termina. Izberite:`));
+        await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, useDate, sess.serviceDuration), useDate));
+      }
+    } else {
+      await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, useDate, sess.serviceDuration), useDate));
+    }
+    return;
+  }
+
   // ── Step 4: name for exact_time ──
   if (sess.step === 4 && msgText) {
     const s = session.get(from);
@@ -430,6 +532,12 @@ async function handleMessage(msgObj, salon) {
     if (bookingMode === 'inquiry') {
       session.set(from, { step: 6, serviceId: svcId });
       await wa.send(phoneId, token, wa.textMsg(from, 'Kdaj bi zeleli priti? (npr. v petek, 28.5., naslednji teden...)'));
+      return;
+    }
+
+    if (datetimePosition === 'last' && formFields.length > 0) {
+      // Form fields first, date/time later
+      await goFormFirst({ step: 30, serviceId: svcId, serviceDuration });
       return;
     }
 
@@ -498,12 +606,8 @@ async function handleMessage(msgObj, salon) {
   // ── Date selection ──
   if (iId.startsWith('date_')) {
     const date = iId.replace('date_', '');
-    // date_only mode: skip time selection, use 00:00 as placeholder
-    if (bookingMode === 'date_only') {
-      await goAfterTime(date, '00:00', { ...sess, selectedDate: date });
-      return;
-    }
-    session.set(from, { ...sess, step: 2, selectedDate: date });
+    const nextStep = (sess.step === 31) ? 32 : 2;
+    session.set(from, { ...sess, step: nextStep, selectedDate: date });
     await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, date, sess.serviceDuration), date));
     return;
   }
@@ -513,7 +617,25 @@ async function handleMessage(msgObj, salon) {
     const withoutPrefix = iId.replace('time_', '');
     const date = withoutPrefix.substring(0, 10);
     const time = withoutPrefix.substring(11).replace('h', ':');
-    await goAfterTime(date, time, sess);
+    if (sess.step === 31 || sess.step === 32) {
+      // datetime_position = 'last': form already collected, go straight to name/confirm
+      const s = session.get(from);
+      const nameField = formFields.find(f =>
+        f.id === 'full_name' || f.id === 'name' || f.id === 'ime' ||
+        /ime.*priimek|full.?name/i.test(f.label || '')
+      );
+      const autoName = nameField ? ((s.formAnswers || {})[nameField.label] || null) : null;
+      if (autoName) {
+        const svc = services.find(sv => sv.id === s.serviceId);
+        session.set(from, { ...s, step: 5, customerName: autoName, selectedDate: date, selectedTime: time });
+        await wa.send(phoneId, token, wa.finalConfirmButtons(from, date, time, autoName, svc ? svc.name : 'Storitev'));
+      } else {
+        session.set(from, { ...s, step: 4, selectedDate: date, selectedTime: time });
+        await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
+      }
+    } else {
+      await goAfterTime(date, time, sess);
+    }
     return;
   }
 
@@ -526,8 +648,7 @@ async function handleMessage(msgObj, salon) {
       return;
     }
     const customerName = s.customerName;
-    const faObj = (s.formAnswers && Object.keys(s.formAnswers).length) ? s.formAnswers : null;
-    const fa = faObj ? JSON.stringify(faObj) : null;
+    const fa = s.formAnswers && Object.keys(s.formAnswers).length ? JSON.stringify(s.formAnswers) : null;
     const bookingData = {
       customer_phone: from,
       customer_name: customerName,
@@ -537,7 +658,7 @@ async function handleMessage(msgObj, salon) {
       booking_time: s.selectedTime + ':00',
       status: 'pending',
       notes: '',
-      form_answers: faObj
+      form_answers: fa
     };
     if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
     const booking = await db.createBookingIfFree(bookingData);
@@ -550,30 +671,20 @@ async function handleMessage(msgObj, salon) {
     ));
 
     if (salonAdminPhone) {
-      // Zgradimo blok z odgovori stranke
-      const faLines = faObj ? Object.entries(faObj).map(([k,v]) => `• ${k}: ${v}`).join('\n') : '';
-      const faBlock = faLines ? `\n\n📋 Odgovori stranke:\n${faLines}` : '';
-      const adminMsg = `📩 Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*${faBlock}\n\nPotrdi: *#potrdi ${ref6}*`;
       try {
         await wa.send(phoneId, token, wa.adminBookingNotif(salonAdminPhone, customerName, from, fDate, s.selectedTime, ref6));
-        // Po template-u pošlji še odgovore stranke (če obstajajo)
-        if (faLines) {
-          await wa.send(phoneId, token, wa.textMsg(salonAdminPhone, `📋 Odgovori stranke za *${ref6}*:\n${faLines}`));
-        }
       } catch (e) {
         try {
           await wa.send(phoneId, token, wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6));
-          if (faLines) {
-            await wa.send(phoneId, token, wa.textMsg(salonAdminPhone, `📋 Odgovori stranke za *${ref6}*:\n${faLines}`));
-          }
         } catch (e2) {
-          wa.send(phoneId, token, wa.textMsg(salonAdminPhone, adminMsg))
-            .catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
+          wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
+            `Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*`
+          )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
         }
       }
     } else {
       console.log(`[email] Sending admin confirm email to ${salon.owner_email} for booking ${booking.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id, faObj)
+      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id)
         .catch(e => console.error('[email] admin confirm email failed:', e.message));
     }
     return;

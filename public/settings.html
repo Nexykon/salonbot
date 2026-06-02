@@ -175,10 +175,6 @@
     border-radius: 10px; color: var(--text); font-size: 0.9rem; font-weight: 600;
     outline: none; transition: border-color 0.2s;
   }
-  .manual-booking-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  .manual-booking-grid .dur-input { width: 100%; text-align: left; font-weight: 500; }
-  .preview-box { background: #f0faf8; border: 1px solid #c8ece6; border-radius: 14px; padding: 16px; margin-top: 14px; }
-  .preview-title { font-size: 0.78rem; font-weight: 700; color: #0d9488; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 12px; }
   .dur-input:focus { border-color: var(--purple); }
   .dur-label { font-size: 0.8rem; color: var(--muted); white-space: nowrap; }
   .booking-mode-pill {
@@ -190,45 +186,6 @@
     background: rgba(124,58,237,0.25); border-color: var(--purple);
     color: var(--purple-light); font-weight: 600;
   }
-  /* Drag & drop chat bubbles */
-  .ff-bubble-fixed {
-    background: rgba(0,0,0,.06);
-    border-radius: 4px 14px 14px 14px;
-    padding: 8px 13px;
-    font-size: .78rem;
-    color: #999;
-    font-style: italic;
-    border: 1px dashed #ddd;
-  }
-  .ff-bubble-drag {
-    background: white;
-    border-radius: 4px 14px 14px 14px;
-    padding: 9px 13px;
-    font-size: .8rem;
-    color: #111;
-    box-shadow: 0 2px 10px rgba(124,58,237,.18);
-    border: 2px solid rgba(124,58,237,.3);
-    cursor: grab;
-    transition: transform .15s, box-shadow .15s;
-    position: relative;
-    user-select: none;
-  }
-  .ff-bubble-drag:hover { box-shadow: 0 4px 18px rgba(124,58,237,.28); transform: translateY(-1px); }
-  .ff-bubble-drag:active { cursor: grabbing; }
-  .ff-bubble-drag.dragging { opacity: .4; transform: scale(.97); }
-  .ff-bubble-drag.drag-over { border-color: var(--purple); background: #f3f0ff; }
-  .ff-bubble-drag .ff-bub-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .ff-bubble-drag .ff-bub-label { font-weight: 600; flex:1; }
-  .ff-bubble-drag .ff-bub-actions { display:flex; gap:4px; align-items:center; }
-  .ff-bubble-drag .ff-bub-req { font-size:.65rem; padding:2px 7px; border-radius:100px; font-weight:700; }
-  .ff-bubble-drag .ff-bub-req.yes { background:#ede9fe; color:var(--purple); }
-  .ff-bubble-drag .ff-bub-req.no { background:#f1f5f9; color:#94a3b8; }
-  .ff-bubble-drag .ff-bub-del { background:none; border:none; color:#ef4444; cursor:pointer; font-size:1rem; padding:0 2px; opacity:.6; }
-  .ff-bubble-drag .ff-bub-del:hover { opacity:1; }
-  .ff-bubble-drag .ff-bub-hint { font-size:.7rem; color:#94a3b8; margin-top:3px; }
-  .ff-drag-handle { font-size:.9rem; color:#a78bfa; cursor:grab; padding-right:6px; flex-shrink:0; }
-  .ff-bubble-fixed:first-child { border-radius: 14px 14px 14px 4px; }
-
   .ff-field-row {
     display: flex; align-items: center; gap: 10px;
     background: var(--surface2); border: 1px solid var(--border);
@@ -242,6 +199,64 @@
   .ff-move-btns { display:flex; flex-direction:column; gap:2px; }
   .ff-move-btns button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.7rem; line-height:1; padding:1px 3px; }
   .ff-move-btns button:hover { color: var(--text); }
+
+  /* Flow Builder */
+  .flow-row {
+    display: flex; align-items: center; gap: 10px;
+    border-radius: 12px; padding: 11px 14px;
+    border: 1px solid var(--border);
+    transition: background 0.15s, box-shadow 0.15s;
+    user-select: none;
+  }
+  .flow-row-fixed {
+    background: rgba(107,107,128,0.06);
+    border-style: dashed; border-color: rgba(107,107,128,0.18); cursor: default; opacity: .7;
+  }
+  .flow-row-dt {
+    background: rgba(6,182,212,0.1);
+    border-color: rgba(6,182,212,0.35);
+    border-left: 3px solid #06b6d4;
+    cursor: grab;
+  }
+  .flow-row-dt:active { cursor: grabbing; }
+  .flow-row-field {
+    background: rgba(124,58,237,0.1);
+    border-color: rgba(124,58,237,0.3);
+    border-left: 3px solid var(--purple);
+    cursor: grab;
+  }
+  .flow-row-field:active { cursor: grabbing; }
+  .flow-row-name {
+    background: rgba(34,197,94,0.09);
+    border-color: rgba(34,197,94,0.28);
+    border-left: 3px solid #22c55e;
+    cursor: grab;
+  }
+  .flow-row-name:active { cursor: grabbing; }
+  /* CSS drag handle — 6 dots, works in all fonts */
+  .flow-drag-handle {
+    display: inline-grid; grid-template-columns: 1fr 1fr; gap: 2px 3px;
+    flex-shrink: 0; cursor: grab; opacity: .45; padding: 2px 1px;
+  }
+  .flow-drag-handle::before, .flow-drag-handle::after {
+    content: ''; display: block;
+    width: 3px; height: 3px; border-radius: 50%; background: var(--muted);
+    box-shadow: 0 6px 0 var(--muted), 0 12px 0 var(--muted);
+  }
+  .flow-icon { font-size: 1rem; flex-shrink: 0; }
+  .flow-label { flex: 1; font-size: 0.9rem; color: var(--text); font-weight: 500; }
+  .flow-badge {
+    font-size: 0.72rem; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+  }
+  .flow-badge-dt  { background: rgba(6,182,212,0.15); color: #22d3ee; border: 1px solid rgba(6,182,212,0.3); }
+  .flow-badge-name { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+  .flow-badge-req { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+  .flow-badge-opt { background: rgba(107,107,128,0.12); color: var(--muted); border: 1px solid rgba(107,107,128,0.2); }
+  .flow-badge-type { background: rgba(124,58,237,0.12); color: var(--purple-light); border: 1px solid rgba(124,58,237,0.2); }
+  .flow-row .ff-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; padding: 0 4px; opacity: .6; margin-left: 2px; }
+  .flow-row .ff-del:hover { opacity: 1; }
+
       .dur-save-btn {
     padding: 8px 14px; border-radius: 9px; font-size: 0.8rem; font-weight: 700;
     background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.35);
@@ -269,9 +284,8 @@
     background: var(--surface2); color: var(--muted); font-weight: 800; cursor: pointer;
   }
   .owner-tab.active {
-    color: #fff; border-color: #7c3aed;
-    background: #7c3aed;
-    box-shadow: 0 4px 14px rgba(124,58,237,0.3);
+    color: #fff; border-color: rgba(167,139,250,0.5);
+    background: linear-gradient(135deg, rgba(124,58,237,0.28), rgba(6,182,212,0.14));
   }
   .tab-hidden { display: none !important; }
   .cal-toolbar { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px; }
@@ -286,10 +300,10 @@
   .cal-cell:hover,.cal-cell.selected { background:rgba(124,58,237,0.12); }
   .cal-cell.other-month { opacity:.35;cursor:default; }
   .cal-day-num { font-size:.82rem;font-weight:800;color:var(--muted);margin-bottom:6px; }
-  .cal-event { display:block;padding:4px 8px;border-radius:7px;font-size:.75rem;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-  .cal-event.confirmed { background:#16a34a;color:#fff; }
-  .cal-event.pending { background:#d97706;color:#fff; }
-  .cal-event.cancelled { background:#dc2626;color:#fff;opacity:.75; }
+  .cal-event { display:block;padding:3px 6px;border-radius:6px;font-size:.72rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .cal-event.confirmed { background:rgba(34,197,94,0.18);color:var(--green); }
+  .cal-event.pending { background:rgba(245,158,11,0.18);color:#fbbf24; }
+  .cal-event.cancelled { background:rgba(239,68,68,0.12);color:var(--red);opacity:.7; }
   .day-detail { display:none;margin-top:16px; }
   .day-detail.open { display:block; }
   .day-booking-item { padding:14px 0;border-bottom:1px solid var(--border); }
@@ -297,10 +311,6 @@
   .day-booking-time { color:var(--purple-light);font-weight:900; }
   .day-booking-name { font-weight:800;margin-bottom:4px; }
   .day-booking-meta { color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:3px; }
-  .booking-answers { margin-top:10px;display:flex;flex-direction:column;gap:6px; }
-  .booking-answer { display:flex;gap:8px;font-size:.85rem;background:var(--surface2);border-radius:8px;padding:7px 10px; }
-  .ba-label { font-weight:700;color:var(--text);white-space:nowrap;min-width:120px; }
-  .ba-val { color:var(--muted); }
   .day-booking-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap; }
   .small-btn { padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-weight:800; }
   .small-btn.ok { color:var(--green);border-color:rgba(34,197,94,.3); }
@@ -508,7 +518,7 @@
     <!-- Obrazec / vprašalnik -->
     <div class="card owner-panel settings-panel" id="form-fields-card">
       <div class="card-title">📝 Vprašalnik ob naročilu
-        <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Povlecite oblačke da spremenite vrstni red</span>
+        <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Vprašanja, ki jih bot postavi stranki</span>
       </div>
 
       <!-- Booking mode -->
@@ -522,45 +532,27 @@
         <div class="form-hint" id="booking-mode-hint" style="margin-top:8px"></div>
       </div>
 
-      <!-- TWO COLUMN LAYOUT -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
-
-        <!-- LEFT: Add field + field list -->
-        <div>
-          <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Dodaj vprašanje</div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
-            <input type="text" id="ff-new-label" placeholder="Vprašanje (npr. Opiši tattoo idejo)" class="dur-input" style="width:100%;text-align:left">
-            <div style="display:flex;gap:8px">
-              <select id="ff-new-type" class="dur-input" style="flex:1;text-align:left">
-                <option value="text">Kratko besedilo</option>
-                <option value="textarea">Dolgo besedilo</option>
-                <option value="number">Število</option>
-              </select>
-              <label style="display:flex;align-items:center;gap:5px;font-size:.83rem;color:var(--muted);cursor:pointer;white-space:nowrap">
-                <input type="checkbox" id="ff-new-required" style="accent-color:var(--purple)"> Obvezno
-              </label>
-            </div>
-            <button class="btn btn-secondary" onclick="ffAddField()" style="width:100%">+ Dodaj vprašanje</button>
-          </div>
-
-          <!-- Hidden original ff-list (still used internally) -->
-          <div id="ff-list" style="display:none"></div>
+      <!-- FLOW BUILDER -->
+      <div style="margin-bottom:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <span style="font-size:0.78rem;color:var(--muted);font-weight:700;letter-spacing:.4px;text-transform:uppercase">Predogled pogovora</span>
+          <span style="font-size:0.74rem;color:var(--muted)">↕ povleci za prestavitev</span>
         </div>
+        <div id="flow-builder" style="display:flex;flex-direction:column;gap:5px"></div>
+      </div>
 
-        <!-- RIGHT: Chat preview with drag & drop -->
-        <div>
-          <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">📱 Predogled pogovora</div>
-          <div id="ff-chat-preview" style="
-            background:#e5ddd5;
-            border-radius:16px;
-            padding:12px;
-            min-height:200px;
-            display:flex;
-            flex-direction:column;
-            gap:8px;
-            font-size:.8rem;
-          "></div>
-        </div>
+      <!-- Add field -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px;background:rgba(124,58,237,0.06);border-radius:12px;border:1px dashed rgba(124,58,237,0.25)">
+        <input type="text" id="ff-new-label" placeholder="Novo vprašanje (npr. Alergije?)" class="dur-input" style="flex:1;min-width:180px">
+        <select id="ff-new-type" class="dur-input" style="width:auto">
+          <option value="text">Kratko besedilo</option>
+          <option value="textarea">Dolgo besedilo</option>
+          <option value="number">Število</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--muted);cursor:pointer;white-space:nowrap">
+          <input type="checkbox" id="ff-new-required" style="accent-color:var(--purple)"> Obvezno
+        </label>
+        <button class="btn btn-secondary" onclick="ffAddField()" style="padding:8px 14px;font-size:0.85rem;margin-top:0">+ Dodaj</button>
       </div>
 
       <!-- Inquiry confirmation message -->
@@ -724,32 +716,12 @@ function showDayDetail(dateStr) {
   const detail = document.getElementById('day-detail');
   document.getElementById('day-detail-title').textContent = `${dateStr} - ${active.length} rezervacij`;
   const rows = active.length ? active.map(b => {
-    const fullId = b.id || '';
-    const ref = fullId.slice(-6);
+    const ref = (b.id || '').slice(-6);
     const t = (b.booking_time || '').substring(0,5);
-    const answers = b.form_answers && typeof b.form_answers === 'object' && Object.keys(b.form_answers).length
-      ? '<div class="booking-answers">' + Object.entries(b.form_answers).map(([k,v]) => `<div class="booking-answer"><span class="ba-label">${escHtml(k)}:</span><span class="ba-val">${escHtml(String(v))}</span></div>`).join('') + '</div>'
+    const answers = b.form_answers && typeof b.form_answers === 'object'
+      ? Object.entries(b.form_answers).map(([k,v]) => `<span>${escHtml(k)}: ${escHtml(v)}</span>`).join('')
       : '';
-    const svcName = b.service_id ? (calServices.find(s=>s.id===b.service_id)?.name || '') : '';
-    const statusLabel = {confirmed:'✅ Potrjeno', pending:'⏳ V čakanju', cancelled:'❌ Odpovedano'}[b.status] || b.status;
-    const notesTxt = b.notes ? `<div class="day-booking-meta" style="margin-top:4px"><span>📝 ${escHtml(b.notes)}</span></div>` : '';
-    return `<div class="day-booking-item">
-      <div class="day-booking-top">
-        <div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div>
-        <div style="flex:1">
-          <div class="day-booking-name">${b.customer_name || '?'}</div>
-          <div class="day-booking-meta">
-            <span>📞 ${b.customer_phone || '-'}</span>
-            ${svcName ? `<span>💆 ${escHtml(svcName)}</span>` : ''}
-            <span>${statusLabel}</span>
-            <span style="color:#aaa;font-size:.75rem">Ref: ${ref}</span>
-          </div>
-          ${answers}
-          ${notesTxt}
-        </div>
-      </div>
-      <div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${fullId}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${fullId}')">Odpovej</button></div>
-    </div>`;
+    return `<div class="day-booking-item"><div class="day-booking-top"><div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div><div style="flex:1"><div class="day-booking-name">${b.customer_name || '?'}</div><div class="day-booking-meta"><span>Telefon: ${b.customer_phone || '-'}</span><span>Status: ${b.status || 'pending'}</span><span>Ref: ${ref}</span>${answers}</div></div></div><div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${ref}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${ref}')">Odpovej</button></div></div>`;
   }).join('') : '<div class="service-empty">Ni rezervacij za ta dan.</div>';
   const serviceOptions = calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('');
   document.getElementById('day-detail-list').innerHTML = rows + `<div class="preview-box"><div class="preview-title">Dodaj rezervacijo</div><div class="manual-booking-grid"><input class="dur-input" id="mb-time" type="time"><input class="dur-input" id="mb-name" placeholder="Ime stranke"><input class="dur-input" id="mb-phone" placeholder="Telefon"><select class="dur-input" id="mb-service"><option value="">Brez storitve</option>${serviceOptions}</select></div><button class="btn btn-secondary" style="margin-top:12px" onclick="saveManualBooking('${dateStr}')">Dodaj rezervacijo</button></div>`;
@@ -758,10 +730,7 @@ function showDayDetail(dateStr) {
 
 async function calConfirm(ref) {
   const r = await fetch(`/api/admin/bookings/${ref}/confirm`, { method: 'PATCH', headers: authHeaders({ 'Content-Type': 'application/json' }) });
-  if (!r.ok) {
-    const errData = await r.json().catch(() => ({}));
-    return showToast('Napaka pri potrditvi: ' + (errData.error || r.status), 'error');
-  }
+  if (!r.ok) return showToast('Napaka pri potrditvi', 'error');
   showToast('Rezervacija potrjena', 'success');
   await loadCalendar();
   if (selectedCalDate) showDayDetail(selectedCalDate);
@@ -1018,93 +987,142 @@ const BOOKING_MODE_HINTS = {
 
 const FIELD_TYPE_LABELS = { text: 'kratko', textarea: 'dolgo', number: 'število' };
 
-function ffRender() {
-  ffRenderChat();
-}
+// ── Flow Builder ─────────────────────────────────────────────
+// flowOrder: array of items like { type: 'fixed'|'datetime'|'field'|'name', ... }
+// 'fixed' = welcome (always first), 'confirm' (always last)
+// 'datetime' = datum & ura block (draggable)
+// 'field' = form field (draggable, deletable)
+// 'name' = ime in priimek (draggable)
 
-function ffRenderChat() {
-  const chat = document.getElementById('ff-chat-preview');
-  if (!chat) return;
+let currentDatetimePosition = 'first'; // derived from flowOrder position
 
-  // Fixed steps (non-draggable)
-  const fixedBefore = [
-    '👋 Pozdravi stranko in pokaže storitve',
-    '📅 Stranka izbere datum' + (currentBookingMode === 'exact_time' ? '' : ''),
-    ...(currentBookingMode === 'exact_time' ? ['🕐 Stranka izbere uro'] : []),
-  ];
-  const fixedAfter = [
-    '👤 Stranka vpiše ime in priimek',
-    '✅ Potrditev in oddaja rezervacije',
-  ];
-
-  let html = '';
-
-  // Fixed before
-  fixedBefore.forEach(txt => {
-    html += `<div class="ff-bubble-fixed">${txt}</div>`;
-  });
-
-  // Draggable custom fields
-  if (currentFormFields.length === 0) {
-    html += `<div style="text-align:center;padding:10px;font-size:.75rem;color:#aaa;border:2px dashed #ddd;border-radius:12px;">+ Dodaj vprašanja spodaj levo</div>`;
+function buildFlowOrder() {
+  // Build ordered list of moveable items based on currentFormFields and currentDatetimePosition
+  // Order: datetime block + form fields + name, interleaved by datetime_position
+  const items = [];
+  if (currentDatetimePosition === 'first') {
+    items.push({ type: 'datetime' });
+    currentFormFields.forEach((f, i) => items.push({ type: 'field', idx: i, field: f }));
+    items.push({ type: 'name' });
   } else {
-    currentFormFields.forEach((f, i) => {
-      const typeLabel = {text:'kratko',textarea:'dolgo',number:'število'}[f.type] || f.type;
-      html += `<div class="ff-bubble-drag" draggable="true"
-        data-idx="${i}"
-        ondragstart="ffDragStart(event,${i})"
-        ondragover="ffDragOver(event)"
-        ondrop="ffDrop(event,${i})"
-        ondragleave="ffDragLeave(event)"
-        ondragend="ffDragEnd(event)">
-        <div class="ff-bub-top">
-          <span class="ff-drag-handle">⠿</span>
-          <span class="ff-bub-label">❓ ${f.label}</span>
-          <div class="ff-bub-actions">
-            <span class="ff-bub-req ${f.required ? 'yes' : 'no'}" onclick="ffToggleReq(${i})" title="Klikni za preklop" style="cursor:pointer">${f.required ? 'obvezno' : 'opcijsko'}</span>
-            <button class="ff-bub-del" onclick="ffRemove(${i})" title="Odstrani">✕</button>
-          </div>
-        </div>
-        <div class="ff-bub-hint">${typeLabel} odgovor</div>
-      </div>`;
-    });
+    currentFormFields.forEach((f, i) => items.push({ type: 'field', idx: i, field: f }));
+    items.push({ type: 'datetime' });
+    items.push({ type: 'name' });
   }
+  return items;
+}
 
-  // Fixed after
-  fixedAfter.forEach(txt => {
-    html += `<div class="ff-bubble-fixed">${txt}</div>`;
+function applyFlowOrder(items) {
+  // Extract form fields in new order
+  const newFields = items.filter(it => it.type === 'field').map(it => it.field);
+  currentFormFields = newFields;
+  // Detect datetime position
+  const dtIdx = items.findIndex(it => it.type === 'datetime');
+  const firstFieldIdx = items.findIndex(it => it.type === 'field');
+  if (firstFieldIdx === -1 || dtIdx < firstFieldIdx) {
+    currentDatetimePosition = 'first';
+  } else {
+    currentDatetimePosition = 'last';
+  }
+}
+
+function ffRender() {
+  renderFlowBuilder();
+}
+
+let _dragSrc = null;
+
+function renderFlowBuilder() {
+  const container = document.getElementById('flow-builder');
+  if (!container) return;
+  container.innerHTML = '';
+
+  // Read active pill directly from DOM as source of truth
+  const activePill = document.querySelector('.booking-mode-pill.active');
+  const activeMode = activePill ? activePill.dataset.mode : currentBookingMode;
+  const isInquiry = activeMode === 'inquiry';
+
+  // Fixed: welcome
+  container.appendChild(makeFixedRow('🎉', 'Pozdravi stranko in pokaže storitve'));
+
+  const moveableItems = buildFlowOrder();
+
+  moveableItems.forEach((item, pos) => {
+    if (item.type === 'datetime' && isInquiry) return; // inquiry has its own date flow
+
+    const row = document.createElement('div');
+    row.dataset.pos = pos;
+    row.draggable = true;
+
+    if (item.type === 'datetime') {
+      row.className = 'flow-row flow-row-dt';
+      row.innerHTML = `
+        <span class="flow-drag-handle" title="Povleci"></span>
+        <span class="flow-icon">📅</span>
+        <span class="flow-label">Stranka izbere datum &amp; uro</span>
+        <span class="flow-badge flow-badge-dt">datum/ura</span>
+      `;
+    } else if (item.type === 'name') {
+      row.className = 'flow-row flow-row-name';
+      row.innerHTML = `
+        <span class="flow-drag-handle" title="Povleci"></span>
+        <span class="flow-icon">👤</span>
+        <span class="flow-label">Stranka vpiše ime in priimek</span>
+        <span class="flow-badge flow-badge-name">ime</span>
+      `;
+    } else {
+      const f = item.field;
+      const reqBadge = f.required
+        ? '<span class="flow-badge flow-badge-req">obvezno</span>'
+        : '<span class="flow-badge flow-badge-opt">opcijsko</span>';
+      row.className = 'flow-row flow-row-field';
+      row.innerHTML = `
+        <span class="flow-drag-handle" title="Povleci"></span>
+        <span class="flow-icon">❓</span>
+        <span class="flow-label">${escHtml(f.label)}</span>
+        <span class="flow-badge flow-badge-type">${FIELD_TYPE_LABELS[f.type] || f.type}</span>
+        ${reqBadge}
+        <button class="ff-del" title="Odstrani" onclick="ffRemoveByField(event, '${f.id}')">✕</button>
+      `;
+    }
+
+    // Drag events
+    row.addEventListener('dragstart', e => {
+      _dragSrc = pos;
+      e.dataTransfer.effectAllowed = 'move';
+      row.style.opacity = '0.45';
+    });
+    row.addEventListener('dragend', () => { row.style.opacity = ''; });
+    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.style.background = 'rgba(124,58,237,0.1)'; });
+    row.addEventListener('dragleave', () => { row.style.background = ''; });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.style.background = '';
+      if (_dragSrc === null || _dragSrc === pos) return;
+      const items2 = buildFlowOrder().filter(it => !(it.type === 'datetime' && isInquiry));
+      const srcItem = items2[_dragSrc];
+      items2.splice(_dragSrc, 1);
+      items2.splice(pos, 0, srcItem);
+      applyFlowOrder(items2);
+      _dragSrc = null;
+      renderFlowBuilder();
+    });
+
+    container.appendChild(row);
   });
 
-  chat.innerHTML = html;
+  // Fixed: confirm
+  container.appendChild(makeFixedRow('✅', 'Potrditev in oddaja rezervacije'));
 }
 
-let ffDragIdx = null;
-function ffDragStart(e, idx) {
-  ffDragIdx = idx;
-  e.target.classList.add('dragging');
-  e.dataTransfer.effectAllowed = 'move';
+function makeFixedRow(icon, label) {
+  const row = document.createElement('div');
+  row.className = 'flow-row flow-row-fixed';
+  row.innerHTML = `<span class="flow-icon" style="opacity:.5">${icon}</span><span class="flow-label" style="opacity:.5">${label}</span>`;
+  return row;
 }
-function ffDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-  e.currentTarget.classList.add('drag-over');
-}
-function ffDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-function ffDragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.ff-bubble-drag').forEach(b => b.classList.remove('drag-over')); }
-function ffDrop(e, toIdx) {
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  if (ffDragIdx === null || ffDragIdx === toIdx) return;
-  const tmp = currentFormFields[ffDragIdx];
-  currentFormFields.splice(ffDragIdx, 1);
-  currentFormFields.splice(toIdx, 0, tmp);
-  ffDragIdx = null;
-  ffRenderChat();
-}
-function ffToggleReq(idx) {
-  currentFormFields[idx].required = !currentFormFields[idx].required;
-  ffRenderChat();
-}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function ffAddField() {
   const label = document.getElementById('ff-new-label').value.trim();
@@ -1115,12 +1133,18 @@ function ffAddField() {
   currentFormFields.push({ id, label, type, required });
   document.getElementById('ff-new-label').value = '';
   document.getElementById('ff-new-required').checked = false;
-  ffRender();
+  renderFlowBuilder();
+}
+
+function ffRemoveByField(e, fieldId) {
+  e.stopPropagation();
+  currentFormFields = currentFormFields.filter(f => f.id !== fieldId);
+  renderFlowBuilder();
 }
 
 function ffRemove(idx) {
   currentFormFields.splice(idx, 1);
-  ffRender();
+  renderFlowBuilder();
 }
 
 function ffMove(idx, dir) {
@@ -1129,7 +1153,7 @@ function ffMove(idx, dir) {
   const tmp = currentFormFields[idx];
   currentFormFields[idx] = currentFormFields[newIdx];
   currentFormFields[newIdx] = tmp;
-  ffRender();
+  renderFlowBuilder();
 }
 
 function ffSetMode(mode) {
@@ -1141,17 +1165,25 @@ function ffSetMode(mode) {
   if (hint) hint.textContent = BOOKING_MODE_HINTS[mode] || '';
   const inqGroup = document.getElementById('inquiry-msg-group');
   if (inqGroup) inqGroup.style.display = mode === 'inquiry' ? 'block' : 'none';
+  renderFlowBuilder();
 }
 
 function ffLoadFromData(data) {
   currentFormFields = Array.isArray(data.form_fields) ? JSON.parse(JSON.stringify(data.form_fields)) : [];
-  ffSetMode(data.booking_mode || 'exact_time');
+  currentDatetimePosition = data.datetime_position === 'last' ? 'last' : 'first';
+  currentBookingMode = (data.booking_mode && BOOKING_MODE_HINTS[data.booking_mode]) ? data.booking_mode : 'exact_time';
+  document.querySelectorAll('.booking-mode-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.mode === currentBookingMode);
+  });
+  const hint = document.getElementById('booking-mode-hint');
+  if (hint) hint.textContent = BOOKING_MODE_HINTS[currentBookingMode] || '';
+  const inqGroup = document.getElementById('inquiry-msg-group');
+  if (inqGroup) inqGroup.style.display = currentBookingMode === 'inquiry' ? 'block' : 'none';
   if (data.inquiry_confirmation_message) {
     const el = document.getElementById('inquiry-confirmation-message');
     if (el) el.value = data.inquiry_confirmation_message;
   }
-  ffRender();
-  // Wire up mode pills
+  renderFlowBuilder();
   document.querySelectorAll('.booking-mode-pill').forEach(p => {
     p.onclick = () => ffSetMode(p.dataset.mode);
   });
@@ -1162,6 +1194,7 @@ async function saveFormFields() {
   btn.disabled = true; btn.textContent = 'Shranjujem...';
   const body = {
     booking_mode: currentBookingMode,
+    datetime_position: currentDatetimePosition,
     form_fields: currentFormFields
   };
   const inqMsg = document.getElementById('inquiry-confirmation-message');

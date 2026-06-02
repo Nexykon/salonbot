@@ -389,8 +389,7 @@ async function transcribeAudio(mediaId, waToken) {
     throw new Error(`Audio download failed: ${e.message}`);
   }
   if (!audioBuffer || audioBuffer.length < 100) {
-    console.warn(`Whisper: audio too short (${audioBuffer?.length ?? 0} bytes), skipping`);
-    return null;
+    throw new Error(`Audio too short or empty (${audioBuffer?.length ?? 0} bytes)`);
   }
 
   // 3. Pošlji Whisper API

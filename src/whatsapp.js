@@ -192,12 +192,23 @@ function adminPendingButtons(to, booking) {
   };
 }
 
-// Potrditveno sporočilo stranki — navadno besedilo (brez Meta template)
+// Template za stranko — potrjena rezervacija (24/7, ne glede na sejo)
+// Zahteva odobren Meta template "salon_rezervacija_potrjena" (en_US)
 function customerConfirmTemplate(to, date, time, salonName) {
-  const name = salonName || 'Salon';
   return {
-    messaging_product: 'whatsapp', to, type: 'text',
-    text: { body: `✅ Vaša rezervacija je potrjena!\n\n📅 ${date} ob ${time}\n📍 ${name}\n\nHvala! Vidimo se! 😊` }
+    messaging_product: 'whatsapp', to, type: 'template',
+    template: {
+      name: 'salon_rezervacija_potrjena',
+      language: { code: 'sl' },
+      components: [{
+        type: 'body',
+        parameters: [
+          { type: 'text', text: date },
+          { type: 'text', text: time },
+          { type: 'text', text: salonName || 'Salon' }
+        ]
+      }]
+    }
   };
 }
 
