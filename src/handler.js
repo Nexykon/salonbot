@@ -523,6 +523,80 @@ async function handleMessage(msgObj, salon) {
     return;
   }
 
+  // ── Step 5 / final_confirm — ustvari rezervacijo ──
+  if ((iId === 'final_confirm') || (sess.step === 5 && iId === 'final_confirm')) {
+    const s = session.get(from);
+    if (!s.selectedDate || !s.selectedTime || !s.serviceId || !s.customerName) {
+      await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Zacnite znova.'));
+      session.clear(from);
+      return;
+    }
+    const svc = services.find(sv => sv.id === s.serviceId);
+    const fa = s.formAnswers && Object.keys(s.formAnswers).length ? s.formAnswers : {};
+    const faJson = Object.keys(fa).length ? JSON.stringify(fa) : null;
+
+    const bookingData = {
+      customer_phone: from,
+      customer_name: s.customerName,
+      salon_id: salon.id,
+      service_id: s.serviceId,
+      booking_date: s.selectedDate,
+      booking_time: s.selectedTime + ':00',
+      status: 'pending',
+      notes: '',
+      form_answers: faJson
+    };
+    if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
+
+    const booking = await db.createBookingIfFree(bookingData);
+    const ref6 = (booking.id || '').slice(-6);
+    const fDate = fmtDate(s.selectedDate);
+    const fTime = (s.selectedTime || '').substring(0, 5);
+    session.clear(from);
+
+    // Potrditev stranki
+    const custMsg = salon.booking_confirmation_message ||
+      `Rezervacija potrjena! ✅\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}\n\nRef: *${ref6}*\n\nDo takrat! 🌸`;
+    await wa.send(phoneId, token, wa.textMsg(from, custMsg));
+
+    // Obvesti admina glede na nastavitve notify_whatsapp / notify_email
+    const doWA    = salon.notify_whatsapp !== false && salonAdminPhone;
+    const doEmail = salon.notify_email    !== false && salon.owner_email;
+
+    if (doWA) {
+      const aSum = Object.entries(fa).map(([k, v]) => `${k}: ${v}`).join('\n');
+      const adminMsg =
+        `🆕 *Nova rezervacija*\n\n` +
+        `👤 ${s.customerName}\n` +
+        `📞 +${from}\n` +
+        `💼 ${svc ? svc.name : '-'}\n` +
+        `📅 ${fDate} ob ${fTime}\n` +
+        `🔑 Ref: *${ref6}*` +
+        (aSum ? `\n\n📋 *Odgovori na vprašanja:*\n${aSum}` : '');
+      wa.send(phoneId, token, wa.textMsg(salonAdminPhone, adminMsg))
+        .catch(e => console.error('[booking] Admin WA err:', e.message));
+    }
+
+    if (doEmail) {
+      mail.sendBookingNotification(salon, s.customerName, from, s.selectedDate, fTime, ref6, 'WhatsApp rezervacija', fa)
+        .catch(e => console.error('[booking] Admin email err:', e.message));
+    }
+
+    if (!doWA && !doEmail) {
+      console.warn(`[booking] ${ref6} — ni nastavljenega kanala za obvestila (salon ${salon.id})`);
+    }
+
+    console.log(`[booking] Created ${ref6} for ${s.customerName} on ${s.selectedDate} ${fTime}`);
+    return;
+  }
+
+  // ── final_cancel — prekliči ──
+  if (iId === 'final_cancel') {
+    session.clear(from);
+    await wa.send(phoneId, token, wa.textMsg(from, 'Rezervacija preklicana. Ce zelite rezervirati znova, nam pisˇite.'));
+    return;
+  }
+
   // ── Service selection ──
   if (iId.startsWith('svc_')) {
     const svcId = iId.replace('svc_', '');

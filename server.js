@@ -119,6 +119,8 @@ function publicSalon(salon) {
     max_advance_days: salon.max_advance_days || 30,
     booking_mode: normalizeBookingMode(salon.booking_mode),
     datetime_position: salon.datetime_position === 'last' ? 'last' : 'first',
+    notify_whatsapp: salon.notify_whatsapp !== false,
+    notify_email: salon.notify_email !== false,
     form_fields: safeFormFields(salon.form_fields, salon),
     inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.'
   };
@@ -576,7 +578,9 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'form_fields',
     'inquiry_confirmation_message',
     'review_message',
-    'reactivation_message'
+    'reactivation_message',
+    'notify_whatsapp',
+    'notify_email'
   ];
   const updates = {};
   for (const key of allowed) {

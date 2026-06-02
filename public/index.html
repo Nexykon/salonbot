@@ -11,7 +11,7 @@
 :root{
   --bg:#ffffff;
   --bg2:#f5f4ff;
-  --p:#7c3aed;--p2:#6d28d9;--p3:rgba(124,58,237,0.08);
+  --p:#25D366;--p2:#1aab50;--p3:rgba(37,211,102,0.08);
   --green:#25d366;
   --text:#111118;--muted:#6b6b80;
   --border:#e8e7f0;--card:#ffffff;
@@ -19,7 +19,7 @@
 }
 html{font-size:16px;scroll-behavior:smooth}
 body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#f0f0f6}::-webkit-scrollbar-thumb{background:rgba(124,58,237,0.3);border-radius:2px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#f0f0f6}::-webkit-scrollbar-thumb{background:rgba(37,211,102,0.3);border-radius:2px}
 a{text-decoration:none;color:inherit}
 
 /* LAYOUT */
@@ -27,7 +27,7 @@ a{text-decoration:none;color:inherit}
 
 /* BUTTONS */
 .btn-p{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:100px;background:var(--p);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
-.btn-p:hover{background:var(--p2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,58,237,0.3)}
+.btn-p:hover{background:var(--p2);transform:translateY(-2px);box-shadow:0 8px 28px rgba(37,211,102,0.3)}
 .btn-o{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:100px;background:transparent;color:var(--text);font-size:15px;font-weight:600;border:1.5px solid var(--border);cursor:pointer;transition:all .2s;text-decoration:none}
 .btn-o:hover{border-color:var(--p);color:var(--p);background:var(--p3)}
 
@@ -45,19 +45,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 
 /* HERO */
 #hero{min-height:100vh;padding-top:68px;display:flex;align-items:center;background:var(--bg);position:relative;overflow:hidden}
-.hero-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(124,58,237,0.08) 1.5px,transparent 1.5px);background-size:32px 32px;pointer-events:none;z-index:0}
+.hero-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(37,211,102,0.08) 1.5px,transparent 1.5px);background-size:32px 32px;pointer-events:none;z-index:0}
 
 /* FLOATING CHAT BUBBLES */
 .float-bubbles{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden;}
 .fb{position:absolute;display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-radius:18px;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,0.13),0 2px 8px rgba(0,0,0,0.07),0 0 0 1px rgba(0,0,0,0.04);min-width:190px;max-width:250px;animation:fb-float linear infinite;opacity:0;backdrop-filter:blur(8px)}
 .fb.fb-dark{background:#1f2c34}
 .fb-row{display:flex;align-items:flex-end;gap:8px}
-.fb-av{width:24px;height:24px;border-radius:7px;background:#7c3aed;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.fb-av{width:24px;height:24px;border-radius:7px;background:#25D366;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .fb-msg{font-size:12px;line-height:1.45;color:#111;font-weight:500}
 .fb.fb-dark .fb-msg{color:#e9edef}
 .fb-time{font-size:9px;color:#aaa;margin-top:2px;text-align:right}
 .fb.fb-dark .fb-time{color:rgba(255,255,255,.35)}
-.fb-chip{display:inline-block;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:100px;margin-top:4px}
+.fb-chip{display:inline-block;background:#25D366;color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:100px;margin-top:4px}
 .fb-green{background:#005c4b;color:#e9edef;font-size:12px;padding:6px 10px;border-radius:10px 10px 2px 10px;font-weight:500}
 
 @keyframes fb-float{
@@ -68,12 +68,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 }
 .hero-in{position:relative;z-index:10;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:80px;max-width:1080px;margin:0 auto;padding:80px 48px;width:100%}
 
-.hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:100px;background:var(--p3);border:1px solid rgba(124,58,237,0.2);font-size:12px;font-weight:700;color:var(--p);letter-spacing:.05em;text-transform:uppercase;margin-bottom:28px}
+.hero-badge{display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:100px;background:var(--p3);border:1px solid rgba(37,211,102,0.2);font-size:12px;font-weight:700;color:var(--p);letter-spacing:.05em;text-transform:uppercase;margin-bottom:28px}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--p);animation:bdot 2s ease-in-out infinite}
 @keyframes bdot{0%,100%{opacity:1}50%{opacity:.3}}
 
 .hero-h1{font-size:clamp(36px,4vw,58px);font-weight:900;line-height:1.06;letter-spacing:-1.5px;margin-bottom:22px;color:var(--text)}
-.hero-h1 .acc{background:linear-gradient(110deg,#7c3aed 0%,#a78bfa 60%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-h1 .acc{background:linear-gradient(110deg,#25D366 0%,#a78bfa 60%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero-sub{font-size:17px;line-height:1.75;color:var(--muted);max-width:440px;margin-bottom:36px;font-weight:400}
 .hero-btns{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:48px}
 .hero-proof{display:flex;align-items:center;gap:12px}
@@ -157,12 +157,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 
 /* ANIMATED GRADIENT BORDER on feat cards */
 .feat-card{position:relative}
-.feat-card::before{content:'';position:absolute;inset:-1.5px;border-radius:21px;padding:1.5px;background:linear-gradient(135deg,rgba(124,58,237,0),rgba(124,58,237,0),rgba(124,58,237,0));transition:background .4s;z-index:0;pointer-events:none}
-.feat-card:hover::before{background:linear-gradient(135deg,rgba(124,58,237,0.6),rgba(6,182,212,0.4),rgba(124,58,237,0.6))}
+.feat-card::before{content:'';position:absolute;inset:-1.5px;border-radius:21px;padding:1.5px;background:linear-gradient(135deg,rgba(37,211,102,0),rgba(37,211,102,0),rgba(37,211,102,0));transition:background .4s;z-index:0;pointer-events:none}
+.feat-card:hover::before{background:linear-gradient(135deg,rgba(37,211,102,0.6),rgba(6,182,212,0.4),rgba(37,211,102,0.6))}
 .feat-card>*{position:relative;z-index:1}
 
 /* STEP NUMBER PULSE */
-@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(124,58,237,0.4)}70%{box-shadow:0 0 0 16px rgba(124,58,237,0)}100%{box-shadow:0 0 0 0 rgba(124,58,237,0)}}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(37,211,102,0.4)}70%{box-shadow:0 0 0 16px rgba(37,211,102,0)}100%{box-shadow:0 0 0 0 rgba(37,211,102,0)}}
 .step-num{animation:pulse-ring 2.5s ease-out infinite}
 .step:nth-child(2) .step-num{animation-delay:.4s}
 .step:nth-child(3) .step-num{animation-delay:.8s}
@@ -191,8 +191,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 #features{padding:100px 0;background:var(--bg);position:relative;overflow:hidden}
 .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 .feat-card{background:#fff;border:1.5px solid var(--border);border-radius:20px;padding:36px 32px;transition:border-color .25s,transform .25s,box-shadow .25s}
-.feat-card:hover{border-color:rgba(124,58,237,0.35);transform:translateY(-4px);box-shadow:0 16px 48px rgba(124,58,237,0.1)}
-.feat-ico{width:52px;height:52px;border-radius:14px;background:var(--p3);border:1.5px solid rgba(124,58,237,.15);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
+.feat-card:hover{border-color:rgba(37,211,102,0.35);transform:translateY(-4px);box-shadow:0 16px 48px rgba(37,211,102,0.1)}
+.feat-ico{width:52px;height:52px;border-radius:14px;background:var(--p3);border:1.5px solid rgba(37,211,102,.15);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:20px}
 .feat-t{font-size:18px;font-weight:700;margin-bottom:10px;color:var(--text)}
 .feat-d{font-size:14px;color:var(--muted);line-height:1.7}
 
@@ -201,7 +201,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;position:relative}
 .steps::before{content:'';position:absolute;top:28px;left:calc(16.66% + 16px);right:calc(16.66% + 16px);height:2px;background:linear-gradient(90deg,var(--p),#06b6d4);border-radius:2px;z-index:0}
 .step{text-align:center;position:relative;z-index:1}
-.step-num{width:56px;height:56px;border-radius:50%;background:var(--p);color:#fff;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 24px rgba(124,58,237,0.3)}
+.step-num{width:56px;height:56px;border-radius:50%;background:var(--p);color:#fff;font-size:20px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 24px rgba(37,211,102,0.3)}
 .step-t{font-size:18px;font-weight:700;margin-bottom:10px;color:var(--text)}
 .step-d{font-size:14px;color:var(--muted);line-height:1.65}
 
@@ -210,7 +210,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 .price-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start}
 .pcard{background:#fff;border:1.5px solid var(--border);border-radius:24px;padding:40px 36px;position:relative;overflow:hidden;transition:transform .3s,box-shadow .3s,border-color .3s;display:flex;flex-direction:column}
 .pcard:hover{transform:translateY(-5px);box-shadow:0 24px 64px rgba(0,0,0,0.1);border-color:#d1c4f7}
-.pcard.hot{background:linear-gradient(160deg,#1a0e2e 0%,#120b22 60%,#0e0a1f 100%);border:1.5px solid rgba(124,58,237,.5);color:#fff}
+.pcard.hot{background:linear-gradient(160deg,#1a0e2e 0%,#120b22 60%,#0e0a1f 100%);border:1.5px solid rgba(37,211,102,.5);color:#fff}
 .pcard.hot .pname{color:rgba(255,255,255,.6)}
 .pcard.hot .pprice .n{color:#fff}
 .pcard.hot .pprice sup{color:rgba(255,255,255,.5)}
@@ -218,10 +218,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 .pcard.hot .pdesc{color:rgba(255,255,255,.5)}
 .pcard.hot .pdiv{border-color:rgba(255,255,255,.1)}
 .pcard.hot .plist li{color:rgba(255,255,255,.7)}
-.pcard.hot:hover{box-shadow:0 0 80px rgba(124,58,237,.25),0 32px 80px rgba(0,0,0,.4);border-color:rgba(124,58,237,.8);transform:translateY(-7px)}
+.pcard.hot:hover{box-shadow:0 0 80px rgba(37,211,102,.25),0 32px 80px rgba(0,0,0,.4);border-color:rgba(37,211,102,.8);transform:translateY(-7px)}
 .pcard.hot::after{content:'';position:absolute;top:-60%;left:-60%;width:60%;height:220%;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.04) 50%,transparent 60%);animation:card-shine 4s ease-in-out infinite;pointer-events:none}
 @keyframes card-shine{0%,100%{left:-60%}50%{left:160%}}
-.pbadge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff;font-size:11px;font-weight:700;padding:5px 20px;border-radius:0 0 12px 12px;white-space:nowrap;letter-spacing:.04em;box-shadow:0 4px 20px rgba(124,58,237,.4)}
+.pbadge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#25D366,#1aab50);color:#fff;font-size:11px;font-weight:700;padding:5px 20px;border-radius:0 0 12px 12px;white-space:nowrap;letter-spacing:.04em;box-shadow:0 4px 20px rgba(37,211,102,.4)}
 .pname{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
 .pprice{margin-bottom:8px}
 .pprice sup{font-size:20px;font-weight:700;vertical-align:top;margin-top:10px;display:inline-block;color:var(--muted)}
@@ -236,17 +236,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:500;height:68px;display:flex;ali
 .pbtn-o{background:transparent;border:1.5px solid var(--border);color:var(--text)}
 .pbtn-o:hover{border-color:var(--p);color:var(--p);background:var(--p3)}
 .pbtn-f{background:var(--p);color:#fff}
-.pbtn-f:hover{background:var(--p2);box-shadow:0 8px 24px rgba(124,58,237,.4)}
+.pbtn-f:hover{background:var(--p2);box-shadow:0 8px 24px rgba(37,211,102,.4)}
 
 /* CTA */
 #cta{padding:100px 0;background:linear-gradient(160deg,#1a0e2e 0%,#0e0a1f 100%);text-align:center;position:relative;overflow:hidden}
-.cta-glow{position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(124,58,237,.25),transparent 65%);pointer-events:none}
+.cta-glow{position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(37,211,102,.25),transparent 65%);pointer-events:none}
 .cta-in{max-width:680px;margin:0 auto;position:relative;z-index:1}
 .cta-in .sec-tag{color:#a78bfa}
 .cta-in .sec-h{color:#fff}
 .cta-in .sec-s{color:rgba(255,255,255,.5)}
 .cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:40px;margin-bottom:24px}
-.trial-badge{display:inline-block;font-size:20px;font-weight:800;color:#a78bfa;letter-spacing:-.3px;margin-bottom:28px;padding:12px 28px;border:1.5px solid rgba(167,139,250,0.35);border-radius:100px;background:rgba(124,58,237,0.12)}
+.trial-badge{display:inline-block;font-size:20px;font-weight:800;color:#a78bfa;letter-spacing:-.3px;margin-bottom:28px;padding:12px 28px;border:1.5px solid rgba(167,139,250,0.35);border-radius:100px;background:rgba(37,211,102,0.12)}
 .cta-note{font-size:15px;color:rgba(255,255,255,.45);letter-spacing:.02em;font-weight:500}
 .btn-w{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:100px;background:rgba(255,255,255,.08);color:#fff;font-size:15px;font-weight:600;border:1.5px solid rgba(255,255,255,.15);cursor:pointer;transition:all .2s;text-decoration:none}
 .btn-w:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
@@ -291,10 +291,10 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
     <a class="logo" href="#">
       <div class="logo-ico">
         <svg width="34" height="34" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="34" height="34" rx="9" fill="#7c3aed"/>
+          <rect width="34" height="34" rx="9" fill="#25D366"/>
           <rect x="8" y="9" width="18" height="16" rx="4" fill="white"/>
           <polygon points="11,25 8,30 17,25" fill="white"/>
-          <polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/>
+          <polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/>
         </svg></div><span>Flow<span style="color:var(--p)">Tiq</span></span></a>
     <div class="nav-r">
       <a href="#features">Funkcije</a>
@@ -314,15 +314,15 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
   <div class="hero-in">
     <div class="hero-text">
       <div class="hero-badge"><span class="badge-dot"></span>Avtomatizacija rezervacij</div>
-      <h1 class="hero-h1">Rezervacije<br>na avtopilotu.<br><span class="acc">24/7 na WhatsApp.</span></h1>
-      <p class="hero-sub">Stranke pišejo na WhatsApp — FlowTiq samodejno rezervira termin, pošlje potrditev in opomnik. Brez zamujenih klicev, brez ročnega dela.</p>
+      <h1 class="hero-h1">Vsak zamešan klic<br>je izgubljena<br><span class="acc">stranka.</span></h1>
+      <p class="hero-sub">FlowTiq sprejema rezervacije 24/7 prek WhatsApp, pošilja opomnike, prosi za recenzije in reaktivira stranke — vse avtomatsko. Vi se samo posvetite delu.</p>
       <div class="hero-btns">
         <a href="mailto:hello@flowtiq.si" class="btn-p">Rezervirajte demo →</a>
         <a href="#features" class="btn-o">Kako deluje</a>
       </div>
       <div class="hero-proof">
         <div class="proof-avs">
-          <div class="proof-av" style="background:#7c3aed">M</div>
+          <div class="proof-av" style="background:#25D366">M</div>
           <div class="proof-av" style="background:#4f46e5">A</div>
           <div class="proof-av" style="background:#06b6d4">S</div>
           <div class="proof-av" style="background:#10b981">T</div>
@@ -424,32 +424,32 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
   <div class="mq-track">
     <div class="mq-item"><div class="mq-dot"></div>WhatsApp Bot</div>
     <div class="mq-item"><div class="mq-dot"></div>Samodejne rezervacije</div>
-    <div class="mq-item"><div class="mq-dot"></div>E-poštni opomniki</div>
-    <div class="mq-item"><div class="mq-dot"></div>SMS opozorila</div>
-    <div class="mq-item"><div class="mq-dot"></div>Pametna avtomatizacija</div>
-    <div class="mq-item"><div class="mq-dot"></div>Aktiven 24/7</div>
-    <div class="mq-item"><div class="mq-dot"></div>Večkanalno</div>
+    <div class="mq-item"><div class="mq-dot"></div>Opomnik dan prej</div>
+    <div class="mq-item"><div class="mq-dot"></div>Recenzije na avtopilotu</div>
+    <div class="mq-item"><div class="mq-dot"></div>Reaktivacija po 8 tednih</div>
+    <div class="mq-item"><div class="mq-dot"></div>Lasten koledar</div>
+    <div class="mq-item"><div class="mq-dot"></div>Brez Google Koledarja</div>
     <div class="mq-item"><div class="mq-dot"></div>Nič zamujenih strank</div>
     <div class="mq-item"><div class="mq-dot"></div>WhatsApp Bot</div>
     <div class="mq-item"><div class="mq-dot"></div>Samodejne rezervacije</div>
-    <div class="mq-item"><div class="mq-dot"></div>E-poštni opomniki</div>
-    <div class="mq-item"><div class="mq-dot"></div>SMS opozorila</div>
-    <div class="mq-item"><div class="mq-dot"></div>Pametna avtomatizacija</div>
-    <div class="mq-item"><div class="mq-dot"></div>Aktiven 24/7</div>
-    <div class="mq-item"><div class="mq-dot"></div>Večkanalno</div>
+    <div class="mq-item"><div class="mq-dot"></div>Opomnik dan prej</div>
+    <div class="mq-item"><div class="mq-dot"></div>Recenzije na avtopilotu</div>
+    <div class="mq-item"><div class="mq-dot"></div>Reaktivacija po 8 tednih</div>
+    <div class="mq-item"><div class="mq-dot"></div>Lasten koledar</div>
+    <div class="mq-item"><div class="mq-dot"></div>Brez Google Koledarja</div>
     <div class="mq-item"><div class="mq-dot"></div>Nič zamujenih strank</div>
   </div>
 </div>
 
 <!-- STATS -->
 <div id="stats">
-  <div class="orb" style="width:350px;height:350px;top:-80px;left:-80px;background:rgba(124,58,237,0.18);animation-delay:0s"></div>
+  <div class="orb" style="width:350px;height:350px;top:-80px;left:-80px;background:rgba(37,211,102,0.18);animation-delay:0s"></div>
   <div class="orb" style="width:250px;height:250px;bottom:-60px;right:-40px;background:rgba(6,182,212,0.15);animation-delay:-7s"></div>
   <div class="wrap" style="position:relative;z-index:1">
     <div class="stats-grid">
       <div class="stat"><div class="stat-v">24/7</div><div class="stat-l">Vedno aktivno,<br>nikoli ne spi</div></div>
       <div class="stat"><div class="stat-v" data-count="2" data-prefix="&lt;" data-suffix="s">&lt;2s</div><div class="stat-l">Povprečni<br>odzivni čas</div></div>
-      <div class="stat"><div class="stat-v" data-count="98" data-suffix="%">98%</div><div class="stat-l">Uspešnost<br>rezervacij</div></div>
+      <div class="stat"><div class="stat-v" data-count="30" data-suffix="%">30%</div><div class="stat-l">Manj no-show-ov<br>z opomniki</div></div>
       <div class="stat"><div class="stat-v" data-count="50" data-suffix="+">50+</div><div class="stat-l">Salonov uporablja<br>FlowTiq</div></div>
     </div>
   </div>
@@ -457,44 +457,44 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
 
 <!-- FEATURES -->
 <section id="features">
-  <div class="orb" style="width:500px;height:500px;top:0;right:-150px;background:rgba(124,58,237,0.15);animation-delay:-4s"></div>
+  <div class="orb" style="width:500px;height:500px;top:0;right:-150px;background:rgba(37,211,102,0.15);animation-delay:-4s"></div>
   <div class="orb" style="width:350px;height:350px;bottom:0;left:-100px;background:rgba(6,182,212,0.13);animation-delay:-11s"></div>
   <div class="wrap" style="position:relative;z-index:1">
     <div class="sec-center reveal">
       <div class="sec-tag">⚡ Funkcije</div>
-      <h2 class="sec-h">Vse na enem mestu.<br>Nič ročnega dela.</h2>
-      <p class="sec-s">FlowTiq prevzame komunikacijo s strankami — od prvega sporočila do potrjene rezervacije. Vi se posvetite delu, ne administraciji.</p>
+      <h2 class="sec-h">En bot. Cel krog.</h2>
+      <p class="sec-s">Rezervacija → potrditev → opomnik → recenzija → reaktivacija. FlowTiq pokrije celoten cikel stranke — vse avtomatsko, vi ne naredite ničesar.</p>
     </div>
     <div class="feat-grid">
       <div class="feat-card reveal" style="--d:0s">
         <div class="feat-ico">💬</div>
-        <h3 class="feat-t">WhatsApp Bot</h3>
-        <p class="feat-d">Stranke pišejo na vašo WhatsApp številko kot vedno. Bot odgovori v sekundah, rezervira termin in odgovori na pogosta vprašanja — povsem naravno.</p>
+        <h3 class="feat-t">WhatsApp Bot 24/7</h3>
+        <p class="feat-d">Stranke pišejo na vašo WhatsApp številko kot vedno. Bot odgovori v sekundah in jih vodi skozi celoten postopek rezervacije — brez vas.</p>
       </div>
       <div class="feat-card reveal" style="--d:.1s">
         <div class="feat-ico">📅</div>
-        <h3 class="feat-t">Pametni urnik</h3>
-        <p class="feat-d">Bot vedno ve, kdaj ste prosti. Sinhronizira se z vašim urnikom v realnem času in rezervira pravo uro — brez dvojnih terminov, brez zmede.</p>
+        <h3 class="feat-t">Lasten koledar</h3>
+        <p class="feat-d">Vsi termini v FlowTiq dashboardu — brez Google Koledarja, brez Excela. Bot vedno ve kdaj ste prosti in ne dopusti dvojnih rezervacij.</p>
       </div>
       <div class="feat-card reveal" style="--d:.2s">
         <div class="feat-ico">🔔</div>
-        <h3 class="feat-t">Samodejni opomniki</h3>
-        <p class="feat-d">Manj izostankov, več prihodkov. FlowTiq pošlje potrditev takoj ob rezervaciji, opomnik dan prej in zahvalo po terminu.</p>
+        <h3 class="feat-t">Opomnik dan prej</h3>
+        <p class="feat-d">Do 30% manj no-show-ov. Bot samodejno pošlje opomnik dan pred terminom — samo za rezervacije narejene vsaj teden vnaprej.</p>
       </div>
       <div class="feat-card reveal" style="--d:.3s">
         <div class="feat-ico">📧</div>
-        <h3 class="feat-t">E-pošta in SMS</h3>
-        <p class="feat-d">Ne glede na to, kje je vaša stranka — potrditev pride prek WhatsApp-a, e-pošte ali SMS-a. Vedno pravočasno, vedno zanesljivo.</p>
+        <h3 class="feat-t">Recenzije &amp; reaktivacija</h3>
+        <p class="feat-d">2h po terminu bot prosi za Google recenzijo. Stranke ki 8 tednov niso prišle dobijo personalizirano sporočilo — brez vašega dela.</p>
       </div>
       <div class="feat-card reveal" style="--d:.4s">
         <div class="feat-ico">📊</div>
         <h3 class="feat-t">Pregled v realnem času</h3>
-        <p class="feat-d">Vse rezervacije, stranke in statistike na enem mestu. Kadarkoli preverite, kaj se dogaja — iz telefona ali računalnika.</p>
+        <p class="feat-d">Vse rezervacije, statistike in nastavitve v enem dashboardu. Admin naročila dodaja, potrjuje in prekliče — kar prek WhatsApp sporočila.</p>
       </div>
       <div class="feat-card reveal" style="--d:.5s">
         <div class="feat-ico">🔧</div>
         <h3 class="feat-t">Hitra postavitev</h3>
-        <p class="feat-d">V manj kot 30 minutah ste v živo. Povežete WhatsApp številko, nastavite urnik in FlowTiq je pripravljen sprejemati stranke.</p>
+        <p class="feat-d">Nastavitev v 24 urah — vi izpolnite obrazec, mi nastavimo vse ostalo. Nobene nove aplikacije, nobenih integracij. Samo WhatsApp ki ga stranke že imajo.</p>
       </div>
     </div>
   </div>
@@ -502,7 +502,7 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
 
 <!-- HOW IT WORKS -->
 <section id="how">
-  <div class="orb" style="width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(124,58,237,0.12);animation-delay:-6s"></div>
+  <div class="orb" style="width:400px;height:400px;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(37,211,102,0.12);animation-delay:-6s"></div>
   <div class="orb" style="width:200px;height:200px;top:-40px;right:10%;background:rgba(16,185,129,0.18);animation-delay:-2s"></div>
   <div class="wrap" style="position:relative;z-index:1">
     <div class="sec-center reveal">
@@ -518,13 +518,13 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
       </div>
       <div class="step reveal" style="--d:.2s">
         <div class="step-num">2</div>
-        <h3 class="step-t">Nastavite urnik</h3>
-        <p class="step-d">Poveste nam delovni čas, storitve in cene. FlowTiq se prilagodi vašemu salonu — ne obratno.</p>
+        <h3 class="step-t">Nastavite salon</h3>
+        <p class="step-d">Poveste nam delovni čas in storitve. FlowTiq se prilagodi vašemu salonu — ne obratno. Vse v preprosti nadzorni plošči.</p>
       </div>
       <div class="step reveal-right" style="--d:.4s">
         <div class="step-num">3</div>
         <h3 class="step-t">FlowTiq prevzame</h3>
-        <p class="step-d">Od tega trenutka bot sprejema stranke, potrjuje termine in pošilja opomnike. Vi se osredotočite na delo.</p>
+        <p class="step-d">Od tega trenutka bot sprejema rezervacije, pošilja opomnike, zbira recenzije in reaktivira stranke. Vi se osredotočite na delo.</p>
       </div>
     </div>
   </div>
@@ -537,8 +537,8 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
   <div class="wrap">
     <div class="cta-in">
       <div class="sec-tag">⚡ Začnite danes</div>
-      <h2 class="sec-h">Manj administracije.<br>Več zadovoljnih strank.</h2>
-      <p class="sec-s">Pridružite se salonom, ki so zamenjali ročno usklajevanje za pametno avtomatizacijo. Postavitev v manj kot 30 minutah.</p>
+      <h2 class="sec-h">Prvih 5 salonov<br>testira brezplačno.</h2>
+      <p class="sec-s">30 dni brezplačno, nastavitev v 24 urah, brez kreditne kartice. Pridružite se salonom ki so zamenjali zamešane klice za pametno avtomatizacijo.</p>
       <div class="trial-badge">✦ 14-dnevni brezplačni preizkus</div>
       <div class="cta-btns">
         <a href="mailto:hello@flowtiq.si" class="btn-p" style="font-size:16px;padding:15px 40px">Rezervirajte brezplačni demo →</a>
@@ -554,7 +554,7 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
   <div class="wrap">
     <div class="foot-in">
       <div class="foot-logo" style="display:flex;align-items:center;gap:8px">
-        <svg width="24" height="24" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg><span>Flow<span style="color:var(--p)">Tiq</span></span>
+        <svg width="24" height="24" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg><span>Flow<span style="color:var(--p)">Tiq</span></span>
       </div>
       <div class="foot-copy">© 2026 FlowTiq. Vse pravice pridržane.</div>
       <div class="foot-links">
@@ -576,15 +576,15 @@ footer{border-top:1px solid var(--border);padding:40px 0;background:#fff}
   if(!container) return;
 
   var cards = [
-    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg></div><div><div class="fb-msg">Živjo! Bi rada rezervirala termin 💇</div><div class="fb-time">14:22</div></div></div>`},
+    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg></div><div><div class="fb-msg">Živjo! Bi rada rezervirala termin 💇</div><div class="fb-time">14:22</div></div></div>`},
     {dark:true,  html:`<div class="fb-msg" style="color:#e9edef">Imam prosto ob <b>16:30</b> ali <b>17:00</b> 😊</div><div class="fb-time">14:22</div>`},
-    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg></div><div><div class="fb-msg">✅ Rezervacija potrjena!</div><div class="fb-chip">Petek 16:30</div><div class="fb-time">14:23</div></div></div>`},
-    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg></div><div><div class="fb-msg">Opomnik: jutri ob 10:00 imate termin 🔔</div><div class="fb-time">09:00</div></div></div>`},
+    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg></div><div><div class="fb-msg">✅ Rezervacija potrjena!</div><div class="fb-chip">Petek 16:30</div><div class="fb-time">14:23</div></div></div>`},
+    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg></div><div><div class="fb-msg">Opomnik: jutri ob 10:00 imate termin 🔔</div><div class="fb-time">09:00</div></div></div>`},
     {dark:true,  html:`<div class="fb-msg" style="color:#e9edef">Hvala za opomnik! Se vidimo 👋</div><div class="fb-time">09:01</div>`},
-    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg></div><div><div class="fb-msg">Vaš termin je bil potrjen. Plačilo: <b>45€</b></div><div class="fb-time">15:10</div></div></div>`},
+    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg></div><div><div class="fb-msg">Vaš termin je bil potrjen. Plačilo: <b>45€</b></div><div class="fb-time">15:10</div></div></div>`},
     {dark:true,  html:`<div class="fb-green">V petek po 16h, prosim 🙏</div><div class="fb-time" style="color:rgba(134,188,109,.6)">14:23</div>`},
-    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg></div><div><div class="fb-msg">Dobrodošli! Kako vam lahko pomagam danes? 😊</div><div class="fb-time">10:05</div></div></div>`},
-    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#7c3aed"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#7c3aed"/></svg></div><div><div class="fb-msg">Termin je bil prestavljen na <b>sredo ob 14:00</b> ✓</div><div class="fb-time">11:30</div></div></div>`},
+    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg></div><div><div class="fb-msg">Dobrodošli! Kako vam lahko pomagam danes? 😊</div><div class="fb-time">10:05</div></div></div>`},
+    {dark:false, html:`<div class="fb-row"><div class="fb-av"><svg width="16" height="16" viewBox="0 0 34 34" fill="none"><rect width="34" height="34" rx="9" fill="#25D366"/><rect x="8" y="9" width="18" height="16" rx="4" fill="white"/><polygon points="11,25 8,30 17,25" fill="white"/><polygon points="18,14 13,21 16.5,21 12,28 22,19.5 18.5,19.5 23,14" fill="#25D366"/></svg></div><div><div class="fb-msg">Termin je bil prestavljen na <b>sredo ob 14:00</b> ✓</div><div class="fb-time">11:30</div></div></div>`},
     {dark:true,  html:`<div class="fb-green">16:30 prosim ✓</div><div class="fb-time" style="color:rgba(134,188,109,.6)">14:24</div>`},
   ];
 
