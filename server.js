@@ -574,7 +574,9 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'booking_mode',
     'datetime_position',
     'form_fields',
-    'inquiry_confirmation_message'
+    'inquiry_confirmation_message',
+    'review_message',
+    'reactivation_message'
   ];
   const updates = {};
   for (const key of allowed) {

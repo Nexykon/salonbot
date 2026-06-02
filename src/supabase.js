@@ -498,6 +498,49 @@ async function deleteServiceById(serviceId) {
   await axios.delete(`${BASE}/sb_services?id=eq.${serviceId}`, { headers: HEADERS });
 }
 
+// ─── Scheduler helpers ────────────────────────────────────
+
+// Posodobi polja na booking-u
+async function updateBookingFields(id, fields) {
+  await axios.patch(
+    `${BASE}/sb_bookings?id=eq.${id}`,
+    fields,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+}
+
+// Termini za jutri kjer reminder_sent = false, created_at > 7 dni nazaj
+async function getBookingsForReminder(salonId, tomorrow) {
+  const sevenDaysAgo = new Date(tomorrow + 'T00:00:00');
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const cutoff = sevenDaysAgo.toISOString().split('T')[0];
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${tomorrow}&status=eq.confirmed&reminder_sent=eq.false&created_at=lte.${cutoff}T23:59:59Z`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
+// Termini ki so bili danes (za recenzijo) kjer review_sent = false
+async function getBookingsForReview(salonId, date) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date}&status=eq.confirmed&review_sent=eq.false`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
+// Stranke ki zadnjič so bile pred točno 8 tedni (56 dni)
+async function getBookingsForReactivation(salonId, date56ago) {
+  // Poiščemo stranke kjer je zadnji confirmed booking točno na ta datum
+  // in od takrat nimajo nobene nove rezervacije
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${date56ago}&status=eq.confirmed`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
 module.exports = {
   getSalon, getSalonById, getSalonBySlug, resolveSalon, getSalonByPhoneId,
   getAllSalons, createSalon, createService, createServicesFromPreset,
@@ -511,6 +554,7 @@ module.exports = {
   addSlot, removeSlot, getPendingBookings,
   getKnowledge, addKnowledge, deleteKnowledge,
   getDailyStats, getBookedTimesForDate,
+  updateBookingFields, getBookingsForReminder, getBookingsForReview, getBookingsForReactivation,
   logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken,
   updateSalonSettings,

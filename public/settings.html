@@ -1055,12 +1055,16 @@ function renderFlowBuilder() {
     row.draggable = true;
 
     if (item.type === 'datetime') {
+      const dtLabel = (activeMode === 'date_only')
+        ? 'Stranka izbere datum'
+        : 'Stranka izbere datum &amp; uro';
+      const dtBadge = (activeMode === 'date_only') ? 'datum' : 'datum/ura';
       row.className = 'flow-row flow-row-dt';
       row.innerHTML = `
         <span class="flow-drag-handle" title="Povleci"></span>
         <span class="flow-icon">📅</span>
-        <span class="flow-label">Stranka izbere datum &amp; uro</span>
-        <span class="flow-badge flow-badge-dt">datum/ura</span>
+        <span class="flow-label">${dtLabel}</span>
+        <span class="flow-badge flow-badge-dt">${dtBadge}</span>
       `;
     } else if (item.type === 'name') {
       row.className = 'flow-row flow-row-name';
