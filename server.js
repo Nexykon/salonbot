@@ -287,6 +287,31 @@ app.post('/stripe/webhook', async (req, res) => {
         const subId = sub.subscription || sub.id;
         await db.updateSubscriptionStatus(subId, 'inactive');
         console.log('Subscription deactivated:', subId);
+
+        // Obvesti FlowTiq ownerja
+        try {
+          const cancelledSalon = await db.getSalonByStripeSubId(subId);
+          const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'nexon.crypto@gmail.com';
+          const reason = event.type === 'invoice.payment_failed' ? 'Neuspešno plačilo' : 'Stranka odpovedala';
+          const waNumberId = cancelledSalon?.whatsapp_phone_number_id || 'ni nastavljen';
+          await mail.sendEmail(ownerEmail,
+            `⚠️ Odpoved naročnine — ${cancelledSalon?.name || subId}`,
+            [
+              `Salon je odpovedal naročnino ali plačilo ni uspelo.`,
+              ``,
+              `Salon: ${cancelledSalon?.name || '-'}`,
+              `Email: ${cancelledSalon?.owner_email || '-'}`,
+              `WhatsApp Phone Number ID: ${waNumberId}`,
+              `Admin telefon: ${cancelledSalon?.admin_phone || '-'}`,
+              `Razlog: ${reason}`,
+              `Stripe Sub ID: ${subId}`,
+              ``,
+              `UKREPAJ: Odstrani WhatsApp številko (Phone Number ID: ${waNumberId}) iz Meta Business Manager.`,
+            ].join('\n')
+          );
+        } catch (notifyErr) {
+          console.error('Cancellation notify error:', notifyErr.message);
+        }
         break;
       }
       case 'customer.subscription.created':

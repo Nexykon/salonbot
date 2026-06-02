@@ -80,6 +80,11 @@ async function updateSalonStripe(salonId, stripeCustomerId, stripeSubId, status,
   return r.data[0];
 }
 
+async function getSalonByStripeSubId(stripeSubId) {
+  const r = await axios.get(`${BASE}/sb_salons?stripe_subscription_id=eq.${stripeSubId}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
 async function updateSubscriptionStatus(stripeSubId, status) {
   await axios.patch(
     `${BASE}/sb_salons?stripe_subscription_id=eq.${stripeSubId}`,
@@ -555,6 +560,7 @@ module.exports = {
   getKnowledge, addKnowledge, deleteKnowledge,
   getDailyStats, getBookedTimesForDate,
   updateBookingFields, getBookingsForReminder, getBookingsForReview, getBookingsForReactivation,
+  getSalonByStripeSubId,
   logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonByToken,
   updateSalonSettings,
