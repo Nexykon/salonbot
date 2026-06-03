@@ -70,9 +70,10 @@ async function sendReviewRequests() {
       const phoneId = salon.whatsapp_phone_number_id;
       const token = process.env.WA_TOKEN;
 
+      const reviewLink = salon.review_link || '';
       const reviewMsg = salon.review_message ||
         `Hvala za obisk! 🌟 Bi nam pomagali z oceno na Google? Vsaka recenzija nam ogromno pomeni.\n\n` +
-        `👉 https://g.page/r/ZAMENJAJ_Z_LINKOM/review\n\n` +
+        (reviewLink ? `👉 ${reviewLink}\n\n` : '') +
         `Hvala lepa! 🙏`;
 
       const bookings = await db.getBookingsForReview(salon.id, today);

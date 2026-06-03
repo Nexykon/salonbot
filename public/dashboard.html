@@ -34,7 +34,7 @@
   .login-box {
     background: var(--bg2); border: 1px solid var(--border); border-radius: 20px;
     padding: 48px; width: 400px; text-align: center;
-    box-shadow: 0 8px 60px rgba(124,58,237,0.12);
+    box-shadow: 0 0 60px rgba(124,58,237,0.1);
   }
   .login-logo { font-size: 48px; margin-bottom: 16px; }
   .login-box h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
@@ -42,7 +42,6 @@
   .login-box input {
     width: 100%; padding: 14px 16px; background: var(--bg3); border: 1px solid var(--border);
     border-radius: 10px; color: var(--text); font-size: 15px; margin-bottom: 12px; outline: none;
-    font-family: inherit;
   }
   .login-box input:focus { border-color: var(--accent); }
   .btn-primary {
@@ -69,7 +68,7 @@
   .header-user { font-size: 13px; color: var(--text2); }
   .preview-select {
     max-width: 180px; padding: 8px 10px; border-radius: 8px;
-    background: var(--bg3); border: 1px solid var(--border);
+    background: rgba(255,255,255,0.06); border: 1px solid var(--border);
     color: var(--text); font-size: 13px; outline: none;
   }
   .btn-logout {
@@ -203,7 +202,7 @@
   .studio-footer {
     display: flex; gap: 12px; justify-content: space-between; align-items: center;
     padding: 16px 28px; border-top: 1px solid var(--border);
-    background: var(--bg2); flex-shrink: 0;
+    background: rgba(12,14,24,0.96); flex-shrink: 0;
     grid-column: 1;
     grid-row: 2;
   }
@@ -250,20 +249,20 @@
     overflow-y: auto;
     padding: 24px 28px 28px;
     overscroll-behavior: contain;
-    scrollbar-color: rgba(124,58,237,0.4) var(--bg3);
+    scrollbar-color: rgba(167,139,250,0.65) rgba(255,255,255,0.06);
   }
   .studio-preview {
-    border-left: 1px solid var(--border);
-    background:
-      radial-gradient(circle at 50% 0%, rgba(16,185,129,0.12), transparent 32%),
-      linear-gradient(180deg, rgba(8,17,15,0.98), #050b0a);
-    padding: 24px 22px;
-    overflow-y: auto;
+    border-left: 1px solid rgba(124,58,237,0.12);
+    background: linear-gradient(160deg, #f7f5ff 0%, #ece8ff 100%);
+    padding: 18px 16px 0;
+    overflow: hidden;
     min-height: 0;
     grid-column: 2;
     grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
   }
-  .studio-kicker { font-size: 12px; color: var(--accent2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .studio-kicker { font-size: 11px; color: #7c3aed; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; flex-shrink: 0; }
   .studio-subtitle { color: var(--text2); font-size: 13px; margin-top: 4px; }
   /* studio-section, studio-section-title: redefined in STUDIO SECTION REDESIGN block below */
   .studio-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -295,72 +294,243 @@
   .btn-danger-soft {
     border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.1); color: var(--red);
   }
+  /* ── PHONE MOCKUP ─────────────────────────────────────────── */
   .phone-preview {
-    width: 100%; max-width: 318px; margin: 12px auto 0;
-    border: 1px solid rgba(255,255,255,0.12); border-radius: 34px;
-    background: #07110e; box-shadow: 0 24px 70px rgba(0,0,0,0.45);
-    padding: 14px;
+    width: 100%; max-width: 290px; margin: 0 auto;
+    border-radius: 44px;
+    background: linear-gradient(145deg, #d8d8de 0%, #c8c8cf 50%, #bbbbc3 100%);
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.14),
+      inset 0 1px 0 rgba(255,255,255,0.6),
+      inset 0 -1px 0 rgba(0,0,0,0.12),
+      0 24px 56px rgba(124,58,237,0.14),
+      0 8px 20px rgba(0,0,0,0.12);
+    padding: 10px;
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
-  .phone-top {
-    height: 34px; display: flex; align-items: center; justify-content: center;
-    color: rgba(255,255,255,0.42); font-size: 11px;
+  /* volume buttons left */
+  .phone-preview::before {
+    content: '';
+    position: absolute;
+    left: -4px; top: 90px;
+    width: 4px; height: 32px;
+    background: linear-gradient(180deg, #c8c8cf, #b8b8bf);
+    border-radius: 3px 0 0 3px;
+    box-shadow: 0 44px 0 #c1c1c8, 0 -44px 0 rgba(0,0,0,0) ;
   }
+  /* power button right */
+  .phone-preview::after {
+    content: '';
+    position: absolute;
+    right: -4px; top: 110px;
+    width: 4px; height: 52px;
+    background: linear-gradient(180deg, #c8c8cf, #b8b8bf);
+    border-radius: 0 3px 3px 0;
+  }
+  .phone-inner {
+    background: #fff;
+    border-radius: 32px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* status bar */
+  .phone-statusbar {
+    background: #075E54;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 14px 4px;
+    font-size: 10px; font-weight: 700; color: #fff;
+  }
+  .phone-statusbar .sb-time { font-size: 11px; font-weight: 800; }
+  .phone-statusbar .sb-icons { display: flex; gap: 4px; align-items: center; }
+  .sb-signal { display: flex; gap: 1px; align-items: flex-end; }
+  .sb-bar { background: #fff; border-radius: 1px; width: 3px; }
+  /* notch pill */
+  .phone-notch {
+    position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+    width: 76px; height: 22px;
+    background: #1c1c1f;
+    border-radius: 20px;
+    z-index: 10;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  /* WA header */
   .wa-header {
-    display: flex; align-items: center; gap: 10px; padding: 10px 8px 14px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
+    background: #075E54;
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 12px 10px;
   }
+  .wa-back { color: rgba(255,255,255,0.85); font-size: 18px; line-height: 1; margin-right: -2px; }
   .wa-avatar {
-    width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #22d3ee);
-    display: flex; align-items: center; justify-content: center; color: #04110d; font-weight: 900;
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #25d366, #128c7e);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 900; font-size: 14px;
+    flex-shrink: 0;
+    border: 1.5px solid rgba(255,255,255,0.25);
   }
-  .wa-name { font-size: 13px; font-weight: 800; }
-  .wa-status { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
-  .wa-chat { padding: 16px 6px 8px; min-height: 390px; }
+  .wa-info { flex: 1; min-width: 0; }
+  .wa-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+  .wa-status { font-size: 10px; color: rgba(255,255,255,0.72); margin-top: 1px; }
+  .wa-header-icons { display: flex; gap: 14px; color: rgba(255,255,255,0.85); font-size: 15px; }
+  /* chat area */
+  .wa-chat {
+    background-color: #e5ddd5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='60' cy='20' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='20' cy='60' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3C/svg%3E");
+    padding: 10px 8px 12px;
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  /* sent (user) bubble */
+  .wa-bubble-sent {
+    background: #dcf8c6;
+    border-radius: 12px 12px 5px 12px;
+    padding: 8px 10px 6px;
+    font-size: 12px; line-height: 1.45;
+    color: #111; max-width: 82%;
+    margin-left: auto;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    position: relative;
+    margin-bottom: 4px;
+  }
+  .wa-bubble-sent::after {
+    content: '';
+    position: absolute; bottom: 0; right: -6px;
+    border: 6px solid transparent;
+    border-bottom: 0; border-left: 6px solid #dcf8c6;
+  }
+  .wa-step-label {
+    text-align: center; margin: 8px 0 4px;
+  }
+  .wa-step-label span {
+    background: rgba(255,255,255,0.75);
+    border-radius: 8px; padding: 2px 8px;
+    font-size: 9.5px; color: #666; font-weight: 600;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.07);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  /* date chip */
+  .wa-date-chip {
+    text-align: center; margin-bottom: 10px;
+  }
+  .wa-date-chip span {
+    background: rgba(255,255,255,0.88);
+    border-radius: 8px; padding: 3px 10px;
+    font-size: 10px; color: #5a5a5a; font-weight: 500;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  /* received bubble */
   .wa-bubble {
-    background: #12372d; border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px 16px 16px 5px; padding: 12px; font-size: 13px; line-height: 1.45;
-    color: #e8fff5; box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+    background: #fff;
+    border-radius: 0 12px 12px 12px;
+    padding: 8px 10px 6px;
+    font-size: 12.5px; line-height: 1.45;
+    color: #111; max-width: 90%;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+    position: relative;
   }
+  .wa-bubble::before {
+    content: '';
+    position: absolute; top: 0; left: -7px;
+    border: 7px solid transparent;
+    border-top: 0; border-right: 7px solid #fff;
+    border-top-left-radius: 2px;
+  }
+  .wa-bubble-time {
+    text-align: right; font-size: 9.5px;
+    color: rgba(0,0,0,0.38); margin-top: 3px;
+  }
+  /* service list inside bubble */
   .wa-list {
-    margin-top: 10px; background: rgba(255,255,255,0.04); border-radius: 14px; overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.08);
+    margin-top: 8px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 10px; overflow: hidden;
+    background: #f9f9f9;
   }
-  .wa-list-title { padding: 10px 12px; font-size: 12px; font-weight: 800; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.08); }
-  .wa-list-row { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .wa-list-title {
+    padding: 7px 10px; font-size: 10px; font-weight: 800;
+    color: #555; border-bottom: 1px solid rgba(0,0,0,0.07);
+    text-transform: uppercase; letter-spacing: 0.03em;
+    background: #f0f0f0;
+  }
+  .wa-list-row {
+    padding: 8px 10px; border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex; justify-content: space-between; align-items: center;
+  }
   .wa-list-row:last-child { border-bottom: none; }
-  .wa-service-name { font-size: 13px; font-weight: 800; color: #fff; }
-  .wa-service-meta { font-size: 11px; color: rgba(255,255,255,0.58); margin-top: 3px; }
+  .wa-service-name { font-size: 12px; font-weight: 700; color: #1a1a1a; }
+  .wa-service-meta { font-size: 10px; color: #777; margin-top: 1px; }
+  /* call-to-action button */
   .wa-button {
-    margin-top: 10px; border-radius: 999px; padding: 9px 12px; text-align: center;
-    background: rgba(34,211,238,0.12); color: #67e8f9; font-size: 12px; font-weight: 800;
+    margin-top: 1px;
+    background: #fff;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    border-radius: 0 0 10px 10px;
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 12px; font-weight: 700;
+    color: #128C7E;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  /* bottom WA nav bar */
+  .wa-inputbar {
+    background: #f0f0f0;
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px;
+    border-top: 1px solid rgba(0,0,0,0.08);
+  }
+  .wa-input-pill {
+    flex: 1; background: #fff; border-radius: 22px;
+    padding: 6px 12px; font-size: 11px; color: #aaa;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.07);
+  }
+  .wa-send-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #25d366;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; flex-shrink: 0;
   }
 
   /* MODERN FLOWTIQ REFRESH */
   body {
-    background: var(--bg);
-    background-image: radial-gradient(rgba(124,58,237,0.06) 1.5px, transparent 1.5px);
-    background-size: 32px 32px;
+    background:
+      radial-gradient(circle at 12% 0%, rgba(124,58,237,0.22), transparent 34%),
+      radial-gradient(circle at 88% 6%, rgba(6,182,212,0.14), transparent 30%),
+      linear-gradient(180deg, #05060c 0%, #080912 48%, #06070d 100%);
   }
   body::before {
-    content: none;
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent 70%);
   }
   #login-screen, #app { position: relative; z-index: 1; }
   header {
-    background: rgba(255,255,255,0.90);
+    background: rgba(8,10,20,0.72);
     backdrop-filter: blur(22px) saturate(160%);
-    border-bottom-color: var(--border);
+    border-bottom-color: rgba(255,255,255,0.07);
   }
   main { max-width: 1360px; }
   .stat-card, .table-wrap, .cal-wrap, .day-detail, .modal, .studio-section {
-    background: var(--bg2);
-    border-color: var(--border);
-    box-shadow: 0 2px 24px rgba(0,0,0,0.06);
+    background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+    border-color: rgba(255,255,255,0.085);
+    box-shadow: 0 20px 70px rgba(0,0,0,0.22);
   }
   .stat-card { border-radius: 18px; }
-  .stat-card::before { height: 2px; background: linear-gradient(90deg, var(--accent), #a78bfa); }
-  thead { background: var(--bg3); }
-  td { border-top-color: var(--border); }
-  tr:hover td { background: rgba(124,58,237,0.04); }
+  .stat-card::before { height: 1px; background: linear-gradient(90deg, transparent, rgba(167,139,250,0.85), rgba(34,211,238,0.75), transparent); }
+  thead { background: rgba(255,255,255,0.035); }
+  td { border-top-color: rgba(255,255,255,0.06); }
+  tr:hover td { background: rgba(124,58,237,0.07); }
   .btn-add, .btn-save, .btn-primary {
     background: linear-gradient(135deg, #7c3aed, #06b6d4);
     box-shadow: 0 12px 28px rgba(124,58,237,0.22);
@@ -368,14 +538,16 @@
   .btn-add:hover, .btn-save:hover, .btn-primary:hover {
     background: linear-gradient(135deg, #8b5cf6, #22d3ee);
   }
-
+  .btn-action, .btn-soft, .btn-cancel, .btn-logout, .plan-select {
+    backdrop-filter: blur(12px);
+  }
   .form-group input, .form-group select, .form-group textarea, .service-row input {
-    background: var(--bg3);
-    border-color: var(--border);
+    background: rgba(5,7,14,0.72);
+    border-color: rgba(255,255,255,0.09);
   }
   .modal-overlay {
-    background: rgba(0,0,0,0.45);
-    backdrop-filter: blur(8px);
+    background: rgba(1,2,8,0.76);
+    backdrop-filter: blur(12px);
   }
 
   /* TOAST */
@@ -517,7 +689,7 @@
   /* ── STUDIO SECTION REDESIGN ── */
   .studio-section {
     border: 1px solid var(--border);
-    background: var(--bg2);
+    background: rgba(255,255,255,0.015);
     border-radius: 16px;
     padding: 0;
     margin-top: 16px;
@@ -526,8 +698,8 @@
   .studio-section-head {
     display: flex; align-items: center; gap: 14px;
     padding: 16px 20px 14px;
-    border-bottom: 1px solid var(--border);
-    background: var(--bg3);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.02);
   }
   .studio-section-icon {
     width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
@@ -561,7 +733,7 @@
   .config-step {
     display: flex; gap: 16px; align-items: flex-start;
     padding: 18px 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
   }
   .config-step:last-child { border-bottom: none; padding-bottom: 0; }
   .config-step:first-child { padding-top: 0; }
@@ -597,7 +769,7 @@
   .booking-mode-check {
     position: absolute; top: 10px; right: 10px;
     width: 18px; height: 18px; border-radius: 50%;
-    border: 2px solid var(--border);
+    border: 2px solid rgba(255,255,255,0.15);
     display: flex; align-items: center; justify-content: center; transition: all 0.16s;
   }
   .booking-mode-card.selected .booking-mode-check { background: var(--accent); border-color: var(--accent); }
@@ -623,8 +795,8 @@
   /* ── CLOSING MESSAGE PREVIEW ── */
   .closing-msg-preview {
     margin-top: 10px; padding: 14px; border-radius: 12px;
-    background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2);
-    font-size: 12px; color: var(--text2); line-height: 1.55; display: none;
+    background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.18);
+    font-size: 12px; color: rgba(255,255,255,0.65); line-height: 1.55; display: none;
   }
   .closing-msg-preview.visible { display: block; }
   .closing-msg-preview-label {
@@ -718,7 +890,7 @@
       <div class="header-title" style="background:linear-gradient(135deg,#a855f7,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Flow<span style="-webkit-text-fill-color:transparent;">Tiq</span> <span style="font-size:13px;font-weight:400;-webkit-text-fill-color:var(--text2);">Admin</span></div>
     </div>
     <div class="header-right">
-      <span class="header-user" id="header-user">Tomaž</span>
+      <span class="header-user" id="header-user"></span>
       <button class="btn-logout" onclick="changeMasterPassword()">Geslo</button>
       <button class="btn-logout" onclick="logout()">Odjava</button>
     </div>
@@ -1164,32 +1336,50 @@
       <div class="studio-preview">
         <div class="studio-kicker">Predogled za stranko</div>
         <div class="phone-preview">
-          <div class="phone-top">WhatsApp</div>
-          <div class="wa-header">
-            <div class="wa-avatar">F</div>
-            <div>
-              <div class="wa-name" id="bs-preview-name">FlowTiq bot</div>
-              <div class="wa-status" id="bs-preview-phone">online</div>
-            </div>
-          </div>
-          <div class="wa-chat">
-            <div class="wa-bubble">
-              <div id="bs-preview-greeting">Pozdravljeni! Izberite storitev:</div>
-              <div class="wa-list">
-                <div class="wa-list-title">Storitve</div>
-                <div id="bs-preview-services"></div>
+          <div class="phone-notch"></div>
+          <div class="phone-inner">
+            <!-- status bar -->
+            <div class="phone-statusbar">
+              <span class="sb-time">9:41</span>
+              <div class="sb-icons">
+                <div class="sb-signal">
+                  <div class="sb-bar" style="height:3px"></div>
+                  <div class="sb-bar" style="height:5px"></div>
+                  <div class="sb-bar" style="height:7px"></div>
+                  <div class="sb-bar" style="height:9px"></div>
+                </div>
+                <svg width="13" height="10" viewBox="0 0 13 10" fill="white" opacity="0.9"><rect x="0" y="3" width="10" height="7" rx="1.5" fill="none" stroke="white" stroke-width="1.2"/><rect x="1" y="4" width="6" height="5" rx="0.5"/><rect x="10.5" y="4.5" width="1.5" height="3" rx="0.75"/></svg>
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="white" opacity="0.9"><path d="M5.5 0C2.46 0 0 2.46 0 5.5S2.46 11 5.5 11 11 8.54 11 5.5 8.54 0 5.5 0zm0 1a4.47 4.47 0 013.18 1.32C7.4 3.6 6.5 4.24 5.5 4.24c-1 0-1.9-.63-3.18-1.92A4.47 4.47 0 015.5 1z" opacity="0.5"/><circle cx="5.5" cy="5.5" r="1.4"/></svg>
               </div>
-              <div class="wa-button">Izberi storitev</div>
+            </div>
+            <!-- WA header -->
+            <div class="wa-header">
+              <span class="wa-back">‹</span>
+              <div class="wa-avatar" id="bs-preview-avatar">F</div>
+              <div class="wa-info">
+                <div class="wa-name" id="bs-preview-name">Salon</div>
+                <div class="wa-status" id="bs-preview-phone">online</div>
+              </div>
+              <div class="wa-header-icons">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.47 11.47 0 003.59.57 1 1 0 011 1V21a1 1 0 01-1 1A17 17 0 013 5a1 1 0 011-1h3.5a1 1 0 011 1 11.47 11.47 0 00.57 3.59 1 1 0 01-.25 1.01z"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+              </div>
+            </div>
+            <!-- chat — full conversation, populated by updateBotStudioPreview() -->
+            <div class="wa-chat" id="bs-preview-chat">
+              <div class="wa-date-chip"><span>Danes</span></div>
+            </div>
+            <!-- input bar -->
+            <div class="wa-inputbar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="#aaa"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zm4.24 16L12 15.45 7.77 18l1.12-4.81-3.73-3.23 4.92-.42L12 5l1.92 4.53 4.92.42-3.73 3.23L16.23 18z"/></svg>
+              <div class="wa-input-pill">Sporočilo</div>
+              <div class="wa-send-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="studio-section" style="margin-top:18px;">
-          <div class="studio-section-title" style="font-size:12px;color:var(--text3);margin-bottom:10px;">📋 Aktivna konfiguracija</div>
-          <div id="preview-config-summary" style="font-size:12px;line-height:1.7;color:var(--text2);">
-            <!-- Populated by updateBotStudioPreview() -->
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -1199,6 +1389,17 @@
 <div id="toast"></div>
 
 <script>
+// ── TOAST ─────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg, type = 'info', duration = 3000) {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  clearTimeout(_toastTimer);
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  _toastTimer = setTimeout(() => { el.className = ''; }, duration);
+}
+
 const API_BASE = window.location.origin;
 let apiKey = '';
 let masterToken = '';
@@ -1387,6 +1588,12 @@ async function loadApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     document.getElementById('login-error').style.display = 'none';
+    // Show logged-in email in header
+    try {
+      var payload = JSON.parse(atob(masterToken.split('.')[1]));
+      var userEl = document.getElementById('header-user');
+      if (userEl && payload.email) userEl.textContent = payload.email;
+    } catch(e) {}
     salonsData = await res.json();
     renderAll();
     loadErrors();
@@ -1407,6 +1614,18 @@ function apiFetch(path, options = {}) {
 }
 
 // ── RENDER ────────────────────────────────────────────────
+async function refreshSalons() {
+  try {
+    const res = await apiFetch('/salons');
+    if (res.ok) {
+      salonsData = await res.json();
+      renderAll();
+    }
+  } catch (e) {
+    showToast('Napaka pri osvežitvi: ' + e.message, 'error');
+  }
+}
+
 function renderAll() {
   renderStats();
   renderPreviewSelect();
@@ -1483,7 +1702,6 @@ function renderTable() {
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
-          <button class="btn-action btn-msg" onclick="manageSalonServices('${s.id}')">Storitve</button>
         </div>
       </td>
     </tr>`;
@@ -1707,7 +1925,7 @@ function closeBotStudio() {
 }
 
 function collectBotStudioServices() {
-  return [...document.querySelectorAll('.service-row')].map(row => ({
+  return [...document.querySelectorAll('#bs-services .service-row')].map(row => ({
     id: row.dataset.id || null,
     name: row.querySelector('[data-field="name"]').value.trim(),
     price: parseFloat(row.querySelector('[data-field="price"]').value || 0),
@@ -1782,6 +2000,10 @@ function renderFormFields() {
         <option value="false" ${!f.required ? 'selected' : ''}>Ne</option>
         <option value="true" ${f.required ? 'selected' : ''}>Da</option>
       </select>
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <button class="icon-btn" title="Gor" onclick="moveFormField('${esc(f._localId)}',-1)" style="font-size:.65rem;padding:2px 5px;">▲</button>
+        <button class="icon-btn" title="Dol" onclick="moveFormField('${esc(f._localId)}',1)" style="font-size:.65rem;padding:2px 5px;">▼</button>
+      </div>
       <button class="icon-btn" title="Odstrani vprašanje" onclick="removeFormField('${esc(f._localId)}')">×</button>
     </div>
   `).join('');
@@ -1811,6 +2033,18 @@ function removeFormField(localId) {
   updateBotStudioPreview();
 }
 
+function moveFormField(localId, dir) {
+  const idx = botStudio.formFields.findIndex(f => f._localId === localId);
+  if (idx < 0) return;
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= botStudio.formFields.length) return;
+  const tmp = botStudio.formFields[idx];
+  botStudio.formFields[idx] = botStudio.formFields[newIdx];
+  botStudio.formFields[newIdx] = tmp;
+  renderFormFields();
+  updateBotStudioPreview();
+}
+
 function applyFormPreset() {
   botStudio.formFields = defaultFormFieldsForType(document.getElementById('bs-business-type').value || 'custom');
   renderFormFields();
@@ -1834,53 +2068,117 @@ async function applyBotStudioPreset() {
 
 
 function updateBotStudioPreview() {
-  var name = document.getElementById('bs-name') ? document.getElementById('bs-name').value : 'FlowTiq bot';
-  var phone = document.getElementById('bs-bot-phone') ? document.getElementById('bs-bot-phone').value : 'online';
-  var greeting = document.getElementById('bs-greeting') ? document.getElementById('bs-greeting').value : 'Pozdravljeni! Izberite storitev:';
+  var name     = (document.getElementById('bs-name') || {}).value || 'Bot';
+  var phone    = (document.getElementById('bs-bot-phone') || {}).value || 'online';
+  var greeting = (document.getElementById('bs-greeting') || {}).value || 'Pozdravljeni! Izberite storitev:';
   var services = collectBotStudioServices();
-  var mode = getSelectedBookingMode();
-  var modeInfo = BOOKING_MODES.find(function(m) { return m.value === mode; }) || BOOKING_MODES[0];
-  var fields = collectFormFields();
-  var closingMsgEl = document.getElementById('bs-inquiry-message');
-  var closingMsg = closingMsgEl ? closingMsgEl.value.trim() : '';
+  var mode     = getSelectedBookingMode();
+  var fields   = collectFormFields();
+  var closingMsg = ((document.getElementById('bs-inquiry-message') || {}).value || '').trim();
 
-  document.getElementById('bs-preview-name').textContent = name || 'FlowTiq bot';
-  document.getElementById('bs-preview-phone').textContent = phone || 'online';
-  document.getElementById('bs-preview-greeting').textContent = greeting || 'Pozdravljeni! Izberite storitev:';
+  // header
+  var nameEl = document.getElementById('bs-preview-name');
+  if (nameEl) nameEl.textContent = name;
+  var phoneEl = document.getElementById('bs-preview-phone');
+  if (phoneEl) phoneEl.textContent = phone || 'online';
+  var avatarEl = document.getElementById('bs-preview-avatar');
+  if (avatarEl) avatarEl.textContent = (name || 'B').charAt(0).toUpperCase();
 
-  var svcHtml = '';
+  // ── build full conversation ──────────────────────────────
+  function botBubble(html, time) {
+    return '<div class="wa-bubble" style="margin-bottom:6px">' + html +
+      '<div class="wa-bubble-time">' + (time||'') + ' ✓✓</div></div>';
+  }
+  function userBubble(txt, time) {
+    return '<div class="wa-bubble-sent">' + esc(txt) +
+      '<div class="wa-bubble-time" style="color:rgba(0,0,0,0.4)">' + (time||'') + ' ✓✓</div></div>';
+  }
+  function stepLabel(txt) {
+    return '<div class="wa-step-label"><span>' + txt + '</span></div>';
+  }
+
+  // service list html
+  var svcRows = '';
   if (services.length) {
     services.slice(0, 8).forEach(function(s) {
-      var dur = Number.isFinite(s.duration_minutes) ? s.duration_minutes : 0;
-      var pr = Number.isFinite(s.price) ? s.price : 0;
-      svcHtml += '<div class="wa-list-row">' +
-        '<div class="wa-service-name">' + esc(s.name).substring(0, 28) + '</div>' +
-        '<div class="wa-service-meta">' + dur + ' min · ' + pr + ' EUR</div>' +
-        '</div>';
+      svcRows += '<div class="wa-list-row"><div>' +
+        '<div class="wa-service-name">' + esc(s.name).substring(0,26) + '</div>' +
+        '<div class="wa-service-meta">' + (s.duration_minutes||0) + ' min · ' + (s.price||0) + ' EUR</div>' +
+        '</div></div>';
     });
   } else {
-    svcHtml = '<div class="wa-list-row"><div class="wa-service-meta">Dodaj storitve, da se prikažejo tukaj.</div></div>';
+    svcRows = '<div class="wa-list-row"><div class="wa-service-meta" style="color:#aaa">Dodaj storitve zgoraj…</div></div>';
   }
-  document.getElementById('bs-preview-services').innerHTML = svcHtml;
 
-  var summary = document.getElementById('preview-config-summary');
-  if (summary) {
-    var fieldsText = fields.length > 0 ? fields.map(function(f) { return f.label || '—'; }).join(', ') : '— nobenih —';
-    var closingText = closingMsg ? ('"' + closingMsg.substring(0, 60) + (closingMsg.length > 60 ? '…' : '') + '"') : '— ni nastavljeno —';
-    summary.innerHTML =
-      '<div style="margin-bottom:8px">' +
-        '<span style="color:var(--text3)">Način termina:</span><br>' +
-        '<strong style="color:var(--accent2)">' + modeInfo.icon + ' ' + modeInfo.title + '</strong>' +
-        '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + modeInfo.desc + '</div>' +
-      '</div>' +
-      '<div style="margin-bottom:8px">' +
-        '<span style="color:var(--text3)">Dodatna vprašanja:</span><br>' +
-        '<strong>' + fieldsText + '</strong>' +
-      '</div>' +
-      '<div>' +
-        '<span style="color:var(--text3)">Zaključno sporočilo:</span><br>' +
-        '<strong>' + closingText + '</strong>' +
-      '</div>';
+  var firstSvc = services.length ? services[0].name : 'Striženje';
+
+  var chatHtml = '<div class="wa-date-chip"><span>Danes</span></div>';
+
+  // 1. Bot greeting + services
+  chatHtml += botBubble(
+    '<div style="margin-bottom:6px">' + esc(greeting) + '</div>' +
+    '<div class="wa-list"><div class="wa-list-title">Storitve</div>' + svcRows + '</div>' +
+    '<div class="wa-button"><svg width="12" height="12" viewBox="0 0 24 24" fill="#128C7E"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg> Izberi storitev</div>',
+    '9:41'
+  );
+
+  // 2. User picks service
+  chatHtml += stepLabel('Stranka izbere storitev');
+  chatHtml += userBubble(firstSvc, '9:42');
+
+  // 3. Booking mode specific flow
+  if (mode === 'exact_time') {
+    chatHtml += stepLabel('Bot vpraša za datum');
+    chatHtml += botBubble('Kateri datum vam ustreza? (npr. jutri, 28.5., ponedeljek…)', '9:42');
+    chatHtml += userBubble('Jutri, 23.5.', '9:43');
+    chatHtml += stepLabel('Bot vpraša za uro');
+    chatHtml += botBubble('Ob kateri uri? (npr. 10:00, 14:30…)', '9:43');
+    chatHtml += userBubble('10:00', '9:44');
+  } else if (mode === 'date_only') {
+    chatHtml += stepLabel('Bot vpraša za datum');
+    chatHtml += botBubble('Kateri datum vam ustreza? (npr. jutri, 28.5., ponedeljek…)', '9:42');
+    chatHtml += userBubble('Jutri, 23.5.', '9:43');
+  } else if (mode === 'inquiry') {
+    chatHtml += stepLabel('Bot vpraša za okvirni datum');
+    chatHtml += botBubble('Kdaj bi željeli priti? (npr. v petek, naslednji teden…)', '9:42');
+    chatHtml += userBubble('V petek ali soboto', '9:43');
+    chatHtml += stepLabel('Bot vpraša za okvirno uro');
+    chatHtml += botBubble('Ob kateri uri? (npr. 10:00, popoldne…)', '9:43');
+    chatHtml += userBubble('Popoldne', '9:44');
+  } else if (mode === 'month_only') {
+    chatHtml += stepLabel('Bot vpraša za mesec');
+    chatHtml += botBubble('V katerem mesecu bi željeli termin? (npr. junij, julij…)', '9:42');
+    chatHtml += userBubble('Junij', '9:43');
+  }
+
+  // 4. Custom form fields
+  var t = 45;
+  fields.forEach(function(f) {
+    var hh = Math.floor(t/60), mm = t%60;
+    var ts = '9:' + (mm < 10 ? '0'+mm : mm);
+    chatHtml += stepLabel('Bot vpraša: ' + f.label);
+    var req = f.required ? '' : ' <span style="color:#aaa;font-size:10px">(opcijsko)</span>';
+    chatHtml += botBubble(esc(f.label) + ':' + req, ts);
+    chatHtml += userBubble(f.type === 'textarea' ? 'Želim mali tattoo na zapestju, cvetlična motivika.' : 'Odgovor stranke…', ts);
+    t += 1;
+  });
+
+  // 5. Name
+  chatHtml += stepLabel('Bot vpraša za ime');
+  chatHtml += botBubble('Vpišite vaše ime in priimek:', '9:50');
+  chatHtml += userBubble('Jana Novak', '9:51');
+
+  // 6. Confirmation
+  chatHtml += stepLabel('Zaključno sporočilo bota');
+  var confirmMsg = closingMsg || (mode === 'inquiry'
+    ? 'Rezervacija je potrjena! Vas kontaktiram čim prej. 🎨'
+    : 'Termin je rezerviran! Do takrat lep pozdrav. 😊');
+  chatHtml += botBubble(esc(confirmMsg), '9:51');
+
+  var chatEl = document.getElementById('bs-preview-chat');
+  if (chatEl) {
+    chatEl.innerHTML = chatHtml;
+    chatEl.scrollTop = 0; // start from top
   }
 }
 
@@ -2001,4 +2299,29 @@ async function saveSalon() {
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
-    btn.disabled =
+    btn.disabled = false;
+    btn.innerHTML = 'Ustvari salon →';
+  }
+}
+
+// ── AUTO-INIT ─────────────────────────────────────────────
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var resetParam = params.get('reset');
+  if (resetParam) {
+    showResetPassword();
+  } else {
+    var saved = sessionStorage.getItem('ft_master_token');
+    if (saved) {
+      masterToken = saved;
+      loadApp();
+    } else {
+      localStorage.removeItem('master_token');
+      localStorage.removeItem('api_key');
+      localStorage.removeItem('ft_master_token');
+    }
+  }
+})();
+</script>
+</body>
+</html>
