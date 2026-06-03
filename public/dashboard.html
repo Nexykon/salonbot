@@ -1445,6 +1445,7 @@ async function loginMaster() {
     if (!res.ok || data.role !== 'master') throw new Error(data.error || 'Prijava ni uspela.');
     masterToken = data.token;
     sessionStorage.setItem('ft_master_token', masterToken);
+    localStorage.setItem('ft_master_token', masterToken);
     document.getElementById('login-error').style.display = 'none';
     loadApp();
   } catch (e) {
@@ -1531,6 +1532,7 @@ async function verifyAdminOtp() {
     if (!res.ok || data.role !== 'master') throw new Error(data.error || 'Ta stevilka ni master admin.');
     masterToken = data.token;
     sessionStorage.setItem('ft_master_token', masterToken);
+    localStorage.setItem('ft_master_token', masterToken);
     document.getElementById('login-error').style.display = 'none';
     loadApp();
   } catch (e) {
@@ -2233,9 +2235,8 @@ async function saveBotStudio() {
         await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/services', { method: 'POST', body: payload }));
       }
     }
-    closeBotStudio();
     await refreshSalons();
-    showToast('Bot je posodobljen', 'success');
+    showToast('Bot je posodobljen ✅', 'success');
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
@@ -2311,9 +2312,10 @@ async function saveSalon() {
   if (resetParam) {
     showResetPassword();
   } else {
-    var saved = sessionStorage.getItem('ft_master_token');
+    var saved = sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_master_token');
     if (saved) {
       masterToken = saved;
+      sessionStorage.setItem('ft_master_token', saved);
       loadApp();
     } else {
       localStorage.removeItem('master_token');

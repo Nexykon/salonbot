@@ -652,7 +652,7 @@
 <script>
 const settingsParams = new URLSearchParams(window.location.search);
 const previewSalonId = settingsParams.get('salonId') || '';
-let ownerToken = sessionStorage.getItem('ft_owner_token') || '';
+let ownerToken = sessionStorage.getItem('ft_owner_token') || localStorage.getItem('ft_owner_token') || '';
 let masterToken = settingsParams.get('master_token') || sessionStorage.getItem('ft_master_token') || '';
 let salonPhone = '';
 let selectedDays = new Set();
@@ -834,6 +834,7 @@ async function loginWithPassword() {
     if (!r.ok) throw new Error(data.error || 'Prijava ni uspela');
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token', ownerToken);
+    localStorage.setItem('ft_owner_token', ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
@@ -880,6 +881,7 @@ async function verifyOtp() {
     }
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token', ownerToken);
+    localStorage.setItem('ft_owner_token', ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     showToast(e.message, 'error');

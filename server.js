@@ -766,7 +766,14 @@ app.get('/api/settings', async (req, res) => {
       bot_phone_display: salon.bot_phone_display || '',
       business_type: salon.business_type || '',
       business_slug: salon.business_slug || '',
-      owner_email: salon.owner_email || ''
+      owner_email: salon.owner_email || '',
+      booking_mode: normalizeBookingMode(salon.booking_mode),
+      datetime_position: salon.datetime_position === 'last' ? 'last' : 'first',
+      form_fields: safeFormFields(salon.form_fields, salon),
+      inquiry_confirmation_message: salon.inquiry_confirmation_message || '',
+      notify_whatsapp: salon.notify_whatsapp !== false,
+      notify_email: salon.notify_email !== false,
+      review_link: salon.review_link || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -777,11 +784,16 @@ app.patch('/api/settings', async (req, res) => {
   if (!salon) return;
   try {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
-      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days'];
+      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
+      'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
+      'notify_whatsapp', 'notify_email', 'review_link', 'review_message', 'reactivation_message'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
+    if (updates.booking_mode) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
+    if (updates.datetime_position) updates.datetime_position = updates.datetime_position === 'last' ? 'last' : 'first';
+    if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
     await db.updateSalonSettings(salon.id, updates);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
