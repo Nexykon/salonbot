@@ -869,16 +869,16 @@ async function saveManualBooking(dateStr) {
 }
 
 // ── Login ──────────────────────────────────────────────────
-document.getElementById('login-phone').addEventListener('keydown', e => {
+document.getElementById('login-phone')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') requestOtp();
 });
-document.getElementById('login-code').addEventListener('keydown', e => {
+document.getElementById('login-code')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') verifyOtp();
 });
-document.getElementById('login-email').addEventListener('keydown', e => {
+document.getElementById('login-email')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') loginWithPassword();
 });
-document.getElementById('login-password').addEventListener('keydown', e => {
+document.getElementById('login-password')?.addEventListener('keydown', e => {
   if (e.key === 'Enter') loginWithPassword();
 });
 
