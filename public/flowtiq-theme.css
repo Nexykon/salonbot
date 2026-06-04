@@ -6,8 +6,8 @@
   --bg2: #ffffff !important;
   --bg3: #f0eeff !important;
   --border: #e8e7f0 !important;
-  --accent: #7c3aed !important;
-  --accent2: #6d28d9 !important;
+  --accent: #25D366 !important;
+  --accent2: #1aab50 !important;
   --green: #059669 !important;
   --yellow: #d97706 !important;
   --red: #dc2626 !important;
@@ -16,8 +16,8 @@
   --text3: #a0a0b0 !important;
   --surface: #ffffff !important;
   --surface2: #f0eeff !important;
-  --purple: #7c3aed !important;
-  --purple-light: #6d28d9 !important;
+  --purple: #25D366 !important;
+  --purple-light: #1aab50 !important;
 }
 
 *, body {
@@ -26,7 +26,7 @@
 
 body {
   background-color: #f8f7ff !important;
-  background-image: radial-gradient(rgba(124,58,237,0.07) 1.5px, transparent 1.5px) !important;
+  background-image: radial-gradient(rgba(37,211,102,0.07) 1.5px, transparent 1.5px) !important;
   background-size: 32px 32px !important;
   color: #111118 !important;
 }
@@ -43,12 +43,12 @@ header, .header {
 
 /* Login box */
 #login-screen {
-  background: radial-gradient(ellipse at 50% 50%, rgba(124,58,237,0.07) 0%, transparent 70%) !important;
+  background: radial-gradient(ellipse at 50% 50%, rgba(37,211,102,0.07) 0%, transparent 70%) !important;
 }
 .login-box, .login-wrap .login-box {
   background: #ffffff !important;
   border: 1px solid #e8e7f0 !important;
-  box-shadow: 0 8px 48px rgba(124,58,237,0.10) !important;
+  box-shadow: 0 8px 48px rgba(37,211,102,0.10) !important;
   color: #111118 !important;
 }
 .login-box h1, .login-box h2 { color: #111118 !important; }
@@ -70,14 +70,14 @@ header, .header {
 }
 
 .stat-card::before {
-  background: linear-gradient(90deg, #7c3aed, #a78bfa) !important;
+  background: linear-gradient(90deg, #25D366, #25D366) !important;
 }
 
 /* Table */
 thead, .cal-header-cell { background: #f0eeff !important; }
 th { color: #6b6b80 !important; }
 td { border-top-color: #e8e7f0 !important; color: #111118 !important; }
-tr:hover td { background: rgba(124,58,237,0.04) !important; }
+tr:hover td { background: rgba(37,211,102,0.04) !important; }
 
 /* Inputs */
 .form-group input, .form-group select, .form-group textarea,
@@ -88,7 +88,7 @@ tr:hover td { background: rgba(124,58,237,0.04) !important; }
 }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus,
 input:focus, select:focus, textarea:focus {
-  border-color: #7c3aed !important;
+  border-color: #25D366 !important;
   outline: none !important;
 }
 input::placeholder, textarea::placeholder { color: #a0a0b0 !important; }
@@ -96,9 +96,9 @@ select option { background: #ffffff !important; color: #111118 !important; }
 
 /* Buttons */
 .btn-primary, .btn-add, .btn-save {
-  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  background: linear-gradient(135deg, #25D366, #1aab50) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(124,58,237,0.25) !important;
+  box-shadow: 0 4px 16px rgba(37,211,102,0.25) !important;
 }
 .btn-cancel, .btn-logout {
   background: transparent !important;
@@ -121,10 +121,10 @@ select option { background: #ffffff !important; color: #111118 !important; }
   border-color: #e8e7f0 !important;
   background: #f8f7ff !important;
 }
-.booking-mode-card:hover { border-color: rgba(124,58,237,0.4) !important; background: rgba(124,58,237,0.04) !important; }
-.booking-mode-card.selected { border-color: #7c3aed !important; background: rgba(124,58,237,0.08) !important; }
+.booking-mode-card:hover { border-color: rgba(37,211,102,0.4) !important; background: rgba(37,211,102,0.04) !important; }
+.booking-mode-card.selected { border-color: #25D366 !important; background: rgba(37,211,102,0.08) !important; }
 .booking-mode-title, .booking-mode-desc { color: #111118 !important; }
-.booking-mode-card.selected .booking-mode-title { color: #7c3aed !important; }
+.booking-mode-card.selected .booking-mode-title { color: #25D366 !important; }
 .booking-mode-check { border-color: #e8e7f0 !important; }
 
 /* Config steps */
@@ -146,11 +146,11 @@ select option { background: #ffffff !important; color: #111118 !important; }
 
 /* Calendar */
 .cal-nav-btn { background: #f0eeff !important; border-color: #e8e7f0 !important; color: #111118 !important; }
-.cal-nav-btn:hover { background: #7c3aed !important; border-color: #7c3aed !important; color: #fff !important; }
+.cal-nav-btn:hover { background: #25D366 !important; border-color: #25D366 !important; color: #fff !important; }
 .cal-month-title { color: #111118 !important; }
 .cal-cell { color: #111118 !important; }
 .cal-day-num { color: #6b6b80 !important; }
-.cal-cell:hover { background: rgba(124,58,237,0.05) !important; }
+.cal-cell:hover { background: rgba(37,211,102,0.05) !important; }
 
 /* Text colors */
 .stat-label, .header-user, .salon-owner, .studio-subtitle,
@@ -158,11 +158,11 @@ select option { background: #ffffff !important; color: #111118 !important; }
 .stat-value, .salon-name, .section-title { color: #111118 !important; }
 
 /* Brand text */
-.brand { background: linear-gradient(135deg,#7c3aed,#06b6d4) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
+.brand { background: linear-gradient(135deg,#25D366,#06b6d4) !important; -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important; }
 
 /* Day toggle */
 .day-toggle { background: #f0eeff !important; border-color: #e8e7f0 !important; color: #6b6b80 !important; }
-.day-toggle.active { background: #7c3aed !important; border-color: #7c3aed !important; color: #fff !important; }
+.day-toggle.active { background: #25D366 !important; border-color: #25D366 !important; color: #fff !important; }
 
 /* Closing msg preview */
 .closing-msg-preview { color: #6b6b80 !important; }
@@ -170,4 +170,12 @@ select option { background: #ffffff !important; color: #111118 !important; }
 /* Scrollbar */
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: #f0eeff; }
-::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(37,211,102,0.3); border-radius: 3px; }
+
+/* Skrij WhatsApp login sekcijo */
+.login-box p:nth-of-type(2),
+#login-phone,
+#login-phone ~ *,
+button[onclick="requestOtp()"],
+#otp-group,
+#otp-verify-btn { display: none !important; }
