@@ -2315,4 +2315,13 @@ async function saveSalon() {
       whatsapp_account_id: waid,
       bot_phone_display: botnum,
       business_type: businessType,
-      bus
+      bus    } else {
+      localStorage.removeItem('master_token');
+      localStorage.removeItem('api_key');
+      localStorage.removeItem('ft_master_token');
+    }
+  }
+})();
+</script>
+</body>
+</html>

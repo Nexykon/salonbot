@@ -1181,4 +1181,293 @@ function renderFlowBuilder() {
   container.innerHTML = '';
 
   // Read active pill directly from DOM as source of truth
-  const activePill = document.qu
+  const activePill = document.qufunction escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function ffAddField() {
+  const label = document.getElementById('ff-new-label').value.trim();
+  if (!label) { showToast('Vnesite besedilo vprašanja', 'error'); return; }
+  const type = document.getElementById('ff-new-type').value;
+  const required = document.getElementById('ff-new-required').checked;
+  const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '_').substring(0, 30) + '_' + Date.now().toString(36);
+  currentFormFields.push({ id, label, type, required });
+  document.getElementById('ff-new-label').value = '';
+  document.getElementById('ff-new-required').checked = false;
+  renderFlowBuilder();
+}
+
+function ffRemoveByField(e, fieldId) {
+  e.stopPropagation();
+  currentFormFields = currentFormFields.filter(f => f.id !== fieldId);
+  renderFlowBuilder();
+}
+
+function ffRemove(idx) {
+  currentFormFields.splice(idx, 1);
+  renderFlowBuilder();
+}
+
+function ffMove(idx, dir) {
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= currentFormFields.length) return;
+  const tmp = currentFormFields[idx];
+  currentFormFields[idx] = currentFormFields[newIdx];
+  currentFormFields[newIdx] = tmp;
+  renderFlowBuilder();
+}
+
+function ffSetMode(mode) {
+  currentBookingMode = mode;
+  document.querySelectorAll('.booking-mode-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.mode === mode);
+  });
+  const hint = document.getElementById('booking-mode-hint');
+  if (hint) hint.textContent = BOOKING_MODE_HINTS[mode] || '';
+  const inqGroup = document.getElementById('inquiry-msg-group');
+  if (inqGroup) inqGroup.style.display = mode === 'inquiry' ? 'block' : 'none';
+  renderFlowBuilder();
+}
+
+function ffLoadFromData(data) {
+  currentFormFields = Array.isArray(data.form_fields) ? JSON.parse(JSON.stringify(data.form_fields)) : [];
+  currentDatetimePosition = data.datetime_position === 'last' ? 'last' : 'first';
+  currentBookingMode = (data.booking_mode && BOOKING_MODE_HINTS[data.booking_mode]) ? data.booking_mode : 'exact_time';
+  document.querySelectorAll('.booking-mode-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.mode === currentBookingMode);
+  });
+  const hint = document.getElementById('booking-mode-hint');
+  if (hint) hint.textContent = BOOKING_MODE_HINTS[currentBookingMode] || '';
+  const inqGroup = document.getElementById('inquiry-msg-group');
+  if (inqGroup) inqGroup.style.display = currentBookingMode === 'inquiry' ? 'block' : 'none';
+  if (data.inquiry_confirmation_message) {
+    const el = document.getElementById('inquiry-confirmation-message');
+    if (el) el.value = data.inquiry_confirmation_message;
+  }
+  const rl = document.getElementById('review-link');
+  if (rl) rl.value = data.review_link || '';
+  renderFlowBuilder();
+  document.querySelectorAll('.booking-mode-pill').forEach(p => {
+    p.onclick = () => ffSetMode(p.dataset.mode);
+  });
+}
+
+async function saveFormFields() {
+  const btn = document.getElementById('ff-save-btn');
+  btn.disabled = true; btn.textContent = 'Shranjujem...';
+  const body = {
+    booking_mode: currentBookingMode,
+    datetime_position: currentDatetimePosition,
+    form_fields: currentFormFields
+  };
+  const inqMsg = document.getElementById('inquiry-confirmation-message');
+  if (inqMsg && inqMsg.value.trim()) body.inquiry_confirmation_message = inqMsg.value.trim();
+  const reviewLinkEl = document.getElementById('review-link');
+  if (reviewLinkEl) body.review_link = reviewLinkEl.value.trim();
+  try {
+    const r = await fetch(scopedPath('/api/settings'), {
+      method: 'PATCH',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Napaka');
+    showToast('Vprašalnik shranjen!', 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Shrani vprašalnik';
+  }
+}
+
+// ── Toast ──────────────────────────────────────────────────
+async function changePassword() {
+  const current = document.getElementById('current-password').value;
+  const next = document.getElementById('new-password').value;
+  if (next.length < 8) { showToast('Novo geslo mora imeti vsaj 8 znakov', 'error'); return; }
+  try {
+    const r = await fetch(scopedPath('/api/settings/password'), {
+      method: 'PATCH',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ current_password: current, new_password: next })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || 'Gesla ni bilo mogoče zamenjati');
+    document.getElementById('current-password').value = '';
+    document.getElementById('new-password').value = '';
+    showToast('Geslo je zamenjano', 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Services ───────────────────────────────────────────────
+async function loadServices() {
+  const headers = authHeaders();
+  try {
+    const r = await fetch(scopedPath('/api/settings/services'), { headers });
+    if (!r.ok) { document.getElementById('services-list').innerHTML = '<div class="service-empty">Napaka pri nalaganju storitev.</div>'; return; }
+    const services = await r.json();
+    renderServices(services);
+  } catch (e) {
+    document.getElementById('services-list').innerHTML = '<div class="service-empty">Napaka pri nalaganju storitev.</div>';
+  }
+}
+
+function renderServices(services) {
+  const el = document.getElementById('services-list');
+  if (!services.length) {
+    el.innerHTML = '<div class="service-empty">Ni storitev. Dodajte jih v admin panelu.</div>';
+    return;
+  }
+  el.innerHTML = services.map(svc => {
+    const dur = svc.duration_minutes || '';
+    const price = svc.price ? `${svc.price} €` : '';
+    return `
+      <div class="service-row" id="srow-${svc.id}">
+        <div class="service-info">
+          <div class="service-name">${svc.name || '—'}</div>
+          ${price ? `<div class="service-price">${price}</div>` : ''}
+        </div>
+        <div class="dur-input-wrap">
+          <input class="dur-input" type="number" min="5" max="480" step="5"
+            value="${dur}" placeholder="min" id="dur-${svc.id}"
+            onkeydown="if(event.key==='Enter') saveDuration('${svc.id}')">
+          <span class="dur-label">min</span>
+          <button class="dur-save-btn" id="dbtn-${svc.id}" onclick="saveDuration('${svc.id}')">Shrani</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function saveDuration(svcId) {
+  const input = document.getElementById('dur-' + svcId);
+  const btn = document.getElementById('dbtn-' + svcId);
+  const dur = parseInt(input.value);
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+
+  btn.textContent = '…';
+  const headers = { 'Content-Type': 'application/json' };
+  Object.assign(headers, authHeaders());
+
+  try {
+    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), {
+      method: 'PATCH', headers,
+      body: JSON.stringify({ duration_minutes: dur })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    btn.textContent = '✓ Shranjeno';
+    btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2500);
+  } catch (e) {
+    btn.textContent = 'Shrani';
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
+// ── Auto-login if token saved ──────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderServices(services) {
+  const el = document.getElementById('services-list');
+  const addBox = `
+    <div class="form-row" style="margin-bottom:12px">
+      <div class="form-group"><label>Nova storitev</label><input type="text" id="new-service-name" placeholder="npr. Striženje"></div>
+      <div class="form-group"><label>Cena (€)</label><input type="number" id="new-service-price" min="0" step="1" placeholder="40"></div>
+    </div>
+    <div class="form-group"><label>Trajanje (minute)</label><input type="number" id="new-service-duration" min="5" max="480" step="5" placeholder="60"></div>
+    <button class="btn btn-secondary" onclick="addService()" style="margin-bottom:16px">Dodaj storitev</button>
+  `;
+  if (!services.length) {
+    el.innerHTML = addBox + '<div class="service-empty">Ni storitev. Dodajte prvo storitev.</div>';
+    return;
+  }
+  el.innerHTML = addBox + services.map(svc => `
+    <div class="service-row" id="srow-${svc.id}">
+      <div class="service-info">
+        <input class="dur-input" style="width:180px;text-align:left" type="text" id="name-${svc.id}" value="${escHtml(svc.name || '')}">
+        <input class="dur-input" style="width:86px;margin-top:6px" type="number" min="0" step="1" id="price-${svc.id}" value="${svc.price || 0}"> €
+      </div>
+      <div class="dur-input-wrap">
+        <input class="dur-input" type="number" min="5" max="480" step="5" value="${svc.duration_minutes || ''}" placeholder="min" id="dur-${svc.id}" onkeydown="if(event.key==='Enter') saveService('${svc.id}')">
+        <span class="dur-label">min</span>
+        <button class="dur-save-btn" id="dbtn-${svc.id}" onclick="saveService('${svc.id}')">Shrani</button>
+        <button class="dur-save-btn" onclick="deleteService('${svc.id}')">Izklopi</button>
+      </div>
+    </div>`).join('');
+}
+
+async function addService() {
+  const name = document.getElementById('new-service-name').value.trim();
+  const price = parseFloat(document.getElementById('new-service-price').value);
+  const dur = parseInt(document.getElementById('new-service-duration').value);
+  if (!name) { showToast('Vpišite ime storitve', 'error'); return; }
+  if (isNaN(price) || price < 0) { showToast('Vpišite veljavno ceno', 'error'); return; }
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+  const headers = { 'Content-Type': 'application/json' };
+  Object.assign(headers, authHeaders());
+  try {
+    const r = await fetch(scopedPath('/api/settings/services'), { method: 'POST', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    showToast('Storitev dodana', 'success');
+    loadServices();
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+async function saveService(svcId) {
+  const dur = parseInt(document.getElementById('dur-' + svcId).value);
+  const price = parseFloat(document.getElementById('price-' + svcId).value);
+  const name = document.getElementById('name-' + svcId).value.trim();
+  const btn = document.getElementById('dbtn-' + svcId);
+  if (!name) { showToast('Ime storitve je obvezno', 'error'); return; }
+  if (isNaN(price) || price < 0) { showToast('Cena ni veljavna', 'error'); return; }
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+  btn.textContent = '…';
+  const headers = { 'Content-Type': 'application/json' };
+  Object.assign(headers, authHeaders());
+  try {
+    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), { method: 'PATCH', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    btn.textContent = '✓ Shranjeno';
+    btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2000);
+  } catch (e) {
+    btn.textContent = 'Shrani';
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
+async function deleteService(svcId) {
+  if (!confirm('Izklopiti to storitev? Stranke je ne bodo več videle.')) return;
+  const r = await fetch(scopedPath('/api/settings/services/' + svcId), {
+    method: 'DELETE', headers: authHeaders()
+  });
+  if (r.ok) {
+    showToast('Storitev odstranjena', 'info');
+    await loadServices();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    showToast('Napaka: ' + (d.error || '?'), 'error');
+  }
+}
+
+// ── Auto-init ────────────────────────────────────────────────
+(function init() {
+  const stored = sessionStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token');
+  if (stored) {
+    document.getElementById('auth-token').value = stored;
+    doLogin(stored);
+  } else if (previewSalonId && masterToken) {
+    doLogin(masterToken);
+  }
+})();
+</script>
+</body>
+</html>
