@@ -288,111 +288,34 @@
     background: linear-gradient(135deg, rgba(37,211,102,0.28), rgba(6,182,212,0.14));
   }
   .tab-hidden { display: none !important; }
-  /* ── CALENDAR ─────────────────────────────────────────────── */
-  .cal-toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 12px; margin-bottom: 20px;
-  }
-  .cal-nav-btn {
-    width: 40px; height: 40px; border-radius: 50%;
-    border: 1.5px solid var(--border); background: var(--surface);
-    color: var(--text); cursor: pointer; font-size: 20px; line-height: 1;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.18s; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  }
-  .cal-nav-btn:hover { background: var(--purple); color: #fff; border-color: var(--purple); transform: scale(1.08); }
-  .cal-month-title { font-size: 1.1rem; font-weight: 900; color: var(--text); letter-spacing: -0.3px; }
-  .cal-legend {
-    display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
-    color: var(--muted); font-size: 0.75rem; font-weight: 600; margin-top: 4px;
-  }
-  .cal-leg-item { display: flex; align-items: center; gap: 5px; }
-  .cal-leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-  .cal-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    border-radius: 16px; overflow: hidden;
-    border: 1.5px solid var(--border);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
-  }
-  .cal-header-cell {
-    padding: 10px 4px; text-align: center;
-    font-size: 0.7rem; font-weight: 800; color: var(--muted);
-    background: var(--surface2); letter-spacing: 0.5px; text-transform: uppercase;
-    border-bottom: 1.5px solid var(--border);
-  }
-  .cal-cell {
-    min-height: 90px; padding: 8px 6px;
-    background: var(--surface); cursor: pointer;
-    border-right: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s;
-    position: relative;
-  }
-  .cal-cell:nth-child(7n) { border-right: none; }
-  .cal-cell:hover { background: rgba(37,211,102,0.06); }
-  .cal-cell.selected { background: rgba(37,211,102,0.10); box-shadow: inset 0 0 0 2px var(--purple); }
-  .cal-cell.today .cal-day-num {
-    background: var(--purple); color: #fff;
-    border-radius: 50%; width: 24px; height: 24px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.78rem;
-  }
-  .cal-cell.other-month { opacity: .4; cursor: default; background: var(--surface2); }
-  .cal-day-num {
-    font-size: 0.78rem; font-weight: 700; color: var(--text);
-    margin-bottom: 5px; width: 24px; height: 24px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .cal-event {
-    display: block; padding: 2px 6px; border-radius: 6px;
-    font-size: 0.68rem; font-weight: 700; margin-bottom: 3px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    line-height: 1.6;
-  }
-  .cal-event.confirmed { background: rgba(37,211,102,0.15); color: #0d7a40; border-left: 2px solid #25D366; }
-  .cal-event.pending { background: rgba(245,158,11,0.14); color: #b45309; border-left: 2px solid #f59e0b; }
-  .cal-event.cancelled { background: rgba(239,68,68,0.10); color: #b91c1c; border-left: 2px solid #ef4444; opacity: .7; }
-
-  /* ── DAY DETAIL ───────────────────────────────────────────── */
-  .day-detail {
-    display: none; margin-top: 20px;
-    background: var(--surface); border: 1.5px solid var(--border);
-    border-radius: 16px; padding: 20px;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.05);
-    animation: slideDown 0.2s ease;
-  }
-  @keyframes slideDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
-  .day-detail.open { display: block; }
-  .day-booking-item {
-    padding: 14px 0; border-bottom: 1px solid var(--border);
-  }
-  .day-booking-item:last-child { border-bottom: none; }
-  .day-booking-top { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; }
-  .day-booking-time {
-    background: rgba(37,211,102,0.12); color: var(--purple-light);
-    font-weight: 800; font-size: 0.85rem; padding: 4px 10px;
-    border-radius: 8px; white-space: nowrap; flex-shrink: 0;
-  }
-  .day-booking-name { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; }
-  .day-booking-meta {
-    color: var(--muted); font-size: 0.8rem;
-    display: flex; flex-direction: column; gap: 2px;
-  }
-  .day-booking-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .small-btn {
-    padding: 7px 14px; border-radius: 10px;
-    border: 1.5px solid var(--border); background: var(--surface2);
-    color: var(--text); cursor: pointer; font-weight: 700; font-size: 0.82rem;
-    transition: all 0.15s;
-  }
-  .small-btn:hover { transform: translateY(-1px); }
-  .small-btn.ok { color: #0d7a40; border-color: rgba(37,211,102,.4); background: rgba(37,211,102,.08); }
-  .small-btn.ok:hover { background: rgba(37,211,102,.18); }
-  .small-btn.bad { color: var(--red); border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.06); }
-  .small-btn.bad:hover { background: rgba(239,68,68,.14); }
+  .cal-toolbar { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px; }
+  .cal-nav-btn { width:38px;height:38px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:18px; }
+  .cal-month-title { font-weight:900; }
+  .cal-legend { display:flex;gap:12px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:0.78rem; }
+  .cal-leg-item { display:flex;align-items:center;gap:6px; }
+  .cal-leg-dot { width:9px;height:9px;border-radius:50%; }
+  .cal-grid { display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border);border-top:1px solid var(--border);border-radius:14px;overflow:hidden; }
+  .cal-header-cell { padding:10px;text-align:center;font-size:0.72rem;font-weight:900;color:var(--muted);background:var(--surface2);border-right:1px solid var(--border);border-bottom:1px solid var(--border); }
+  .cal-cell { min-height:92px;padding:8px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;background:rgba(5,7,14,0.38); }
+  .cal-cell:hover,.cal-cell.selected { background:rgba(37,211,102,0.12); }
+  .cal-cell.other-month { opacity:.35;cursor:default; }
+  .cal-day-num { font-size:.82rem;font-weight:800;color:var(--muted);margin-bottom:6px; }
+  .cal-event { display:block;padding:3px 6px;border-radius:6px;font-size:.72rem;font-weight:800;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .cal-event.confirmed { background:rgba(34,197,94,0.18);color:var(--green); }
+  .cal-event.pending { background:rgba(245,158,11,0.18);color:#fbbf24; }
+  .cal-event.cancelled { background:rgba(239,68,68,0.12);color:var(--red);opacity:.7; }
+  .day-detail { display:none;margin-top:16px; }
+  .day-detail.open { display:block; }
+  .day-booking-item { padding:14px 0;border-bottom:1px solid var(--border); }
+  .day-booking-top { display:flex;gap:12px;justify-content:space-between;align-items:flex-start; }
+  .day-booking-time { color:var(--purple-light);font-weight:900; }
+  .day-booking-name { font-weight:800;margin-bottom:4px; }
+  .day-booking-meta { color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:3px; }
+  .day-booking-actions { display:flex;gap:8px;margin-top:10px;flex-wrap:wrap; }
+  .small-btn { padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-weight:800; }
+  .small-btn.ok { color:var(--green);border-color:rgba(34,197,94,.3); }
+  .small-btn.bad { color:var(--red);border-color:rgba(239,68,68,.3); }
   .manual-booking-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px; }
-  .manual-booking-grid .dur-input { width:100%; text-align:left; padding:10px 12px; }
 
   /* Modern FlowTiq polish */
   body {
@@ -1490,4 +1413,62 @@ async function addService() {
   const headers = { 'Content-Type': 'application/json' };
   Object.assign(headers, authHeaders());
   try {
-    const r = await fetch(scopedPath('/api/settings/services'),
+    const r = await fetch(scopedPath('/api/settings/services'), { method: 'POST', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    showToast('Storitev dodana', 'success');
+    loadServices();
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+async function saveService(svcId) {
+  const dur = parseInt(document.getElementById('dur-' + svcId).value);
+  const price = parseFloat(document.getElementById('price-' + svcId).value);
+  const name = document.getElementById('name-' + svcId).value.trim();
+  const btn = document.getElementById('dbtn-' + svcId);
+  if (!name) { showToast('Ime storitve je obvezno', 'error'); return; }
+  if (isNaN(price) || price < 0) { showToast('Cena ni veljavna', 'error'); return; }
+  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
+  btn.textContent = '…';
+  const headers = { 'Content-Type': 'application/json' };
+  Object.assign(headers, authHeaders());
+  try {
+    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), { method: 'PATCH', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error);
+    btn.textContent = '✓ Shranjeno';
+    btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2000);
+  } catch (e) {
+    btn.textContent = 'Shrani';
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
+async function deleteService(svcId) {
+  if (!confirm('Izklopiti to storitev? Stranke je ne bodo več videle.')) return;
+  const r = await fetch(scopedPath('/api/settings/services/' + svcId), {
+    method: 'DELETE', headers: authHeaders()
+  });
+  if (r.ok) {
+    showToast('Storitev odstranjena', 'info');
+    await loadServices();
+  } else {
+    const d = await r.json().catch(() => ({}));
+    showToast('Napaka: ' + (d.error || '?'), 'error');
+  }
+}
+
+// ── Auto-init ────────────────────────────────────────────────
+(function init() {
+  const stored = sessionStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token');
+  if (stored) {
+    document.getElementById('auth-token').value = stored;
+    doLogin(stored);
+  } else if (previewSalonId && masterToken) {
+    doLogin(masterToken);
+  }
+})();
+</script>
+</body>
+</html>
