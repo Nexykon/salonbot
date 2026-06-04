@@ -423,7 +423,9 @@
 
 <!-- APP -->
 <div id="app" style="display:none">
-  <div class="container">
+<div class="app-layout">
+<div class="app-main">
+  <div class="container" style="max-width:100%;padding:32px 20px 60px">
     <div class="salon-bar">
       <div class="salon-bar-name" id="salon-display-name">—</div>
       <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
@@ -660,6 +662,7 @@
     <button class="btn btn-secondary" onclick="doLogout()">Odjava</button>
   </div>
 </div>
+</div>
 <div class="app-sidebar">
   <div class="sidebar-label">📱 Predogled za stranko</div>
   <div style="width:100%;max-width:290px;border-radius:44px;background:linear-gradient(145deg,#d8d8de,#bbbbc3);box-shadow:0 0 0 1px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.6),0 24px 56px rgba(0,0,0,0.15);padding:10px;position:relative;display:flex;flex-direction:column;">
@@ -709,7 +712,7 @@
     </div>
   </div>
 </div>
-
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -964,25 +967,53 @@ async function loadSettings() {
 
 
 function updateSettingsPreview(data) {
-  const name = data?.name || document.getElementById('salon-name')?.value || 'Salon';
-  const greeting = data?.greeting_message || document.getElementById('welcome-msg-input')?.value || 'Pozdravljeni! Sem vaš digitalni asistent za naročanje. Izberite storitev:';
-  
-  const avatarEl = document.getElementById('prev-avatar');
-  if (avatarEl) avatarEl.textContent = (name[0] || 'S').toUpperCase();
-  
-  const nameEl = document.getElementById('prev-name');
-  if (nameEl) nameEl.textContent = name;
-  
-  const greetEl = document.getElementById('prev-greeting-text');
-  if (greetEl) greetEl.textContent = greeting;
-  
+  const name = document.getElementById('salon-name')?.value || data?.name || 'Salon';
+  const greeting = document.getElementById('welcome-msg-input')?.value || data?.greeting_message || 'Pozdravljeni! Sem avtomatski asistent za naročanje. Katero storitev želite?';
+
+  document.querySelectorAll('#prev-avatar').forEach(el => el.textContent = (name[0] || 'S').toUpperCase());
+  document.querySelectorAll('#prev-name').forEach(el => el.textContent = name);
+  document.querySelectorAll('#prev-greeting-text').forEach(el => el.textContent = greeting);
+
   // Storitve
-  const svcList = document.getElementById('prev-services-list');
-  if (svcList && calServices && calServices.length) {
-    svcList.innerHTML = '<div class="wa-list-title">Storitve</div>' +
-      calServices.slice(0,4).map(s => `<div class="wa-list-row">${s.name}</div>`).join('') +
-      '<div class="wa-button">Izberite storitev ›</div>';
+  const svcs = (typeof calServices !== 'undefined' && calServices.length) ? calServices : [];
+  document.querySelectorAll('#prev-svc-rows').forEach(el => {
+    el.innerHTML = svcs.length
+      ? svcs.slice(0,5).map(s => `<div style="padding:7px 9px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:11px"><div style="font-weight:700;color:#1a1a1a">${s.name}</div><div style="font-size:9.5px;color:#888;margin-top:1px">${s.duration_minutes} min${s.price ? ' · ' + s.price + ' EUR' : ''}</div></div>`).join('')
+      : '<div style="padding:8px 9px;font-size:11px;color:#888">Ni storitev</div>';
+  });
+
+  // Zgradi vprašanja iz currentFormFields - samo bot sporočila
+  const chat = document.getElementById('prev-chat');
+  if (!chat) return;
+
+  // Odstrani stara dinamična vprašanja
+  chat.querySelectorAll('.prev-dynamic-q').forEach(el => el.remove());
+
+  const fields = (typeof currentFormFields !== 'undefined') ? currentFormFields : [];
+  const mode = (typeof currentBookingMode !== 'undefined') ? currentBookingMode : 'exact_time';
+  const dtPos = (typeof currentDatetimePosition !== 'undefined') ? currentDatetimePosition : 'last';
+
+  const questions = [];
+
+  // Sestavi vrstni red: name + custom fields + datetime (glede na pozicijo)
+  const dtQ = { label: mode === 'date_only' ? 'Kateri datum vam ustreza? (npr. jutri, 28.5.)' : 'Kateri datum in ura vam ustreza? (npr. jutri, 28.5. ob 14:00)', type: 'datetime' };
+  const nameQ = { label: 'Kakšno je vaše ime in priimek?', type: 'name' };
+
+  if (mode !== 'inquiry') {
+    if (dtPos === 'first') questions.push(dtQ);
+    questions.push(nameQ);
+    fields.forEach(f => questions.push(f));
+    if (dtPos !== 'first') questions.push(dtQ);
+  } else {
+    questions.push(nameQ);
+    fields.forEach(f => questions.push(f));
   }
+
+  const bubble = (text) => `<div class="prev-dynamic-q" style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px"><div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>${text}<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">✓✓</div></div>`;
+
+  questions.forEach(q => {
+    chat.insertAdjacentHTML('beforeend', bubble(q.label));
+  });
 }
 
 async function doLogin(token) {
@@ -1198,6 +1229,7 @@ function applyFlowOrder(items) {
 
 function ffRender() {
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 let _dragSrc = null;
@@ -1313,17 +1345,20 @@ function ffAddField() {
   document.getElementById('ff-new-label').value = '';
   document.getElementById('ff-new-required').checked = false;
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffRemoveByField(e, fieldId) {
   e.stopPropagation();
   currentFormFields = currentFormFields.filter(f => f.id !== fieldId);
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffRemove(idx) {
   currentFormFields.splice(idx, 1);
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffMove(idx, dir) {
@@ -1333,6 +1368,7 @@ function ffMove(idx, dir) {
   currentFormFields[idx] = currentFormFields[newIdx];
   currentFormFields[newIdx] = tmp;
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffSetMode(mode) {
@@ -1347,6 +1383,7 @@ function ffSetMode(mode) {
   const bkgGroup = document.getElementById('booking-msg-group');
   if (bkgGroup) bkgGroup.style.display = (mode === 'exact_time' || mode === 'date_only') ? 'block' : 'none';
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffLoadFromData(data) {
