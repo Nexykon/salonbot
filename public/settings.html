@@ -521,7 +521,7 @@
       <div class="card-title">🏪 Podatki salona</div>
       <div class="form-group">
         <label>Ime salona (kot se prikaže strankam)</label>
-        <input type="text" id="salon-name" placeholder="npr. Salon Vita">
+        <input type="text" id="salon-name" oninput="updateSettingsPreview()" placeholder="npr. Salon Vita">
       </div>
     </div>
 
@@ -608,50 +608,6 @@
     </div>
 
 
-    <!-- PREDOGLED -->
-    <div class="card owner-panel preview-panel tab-hidden" id="preview-card">
-      <div class="card-title">📱 Predogled WhatsApp pogovora</div>
-      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;margin-top:-8px">Tako izgleda pogovor za stranko. Posodobi se ob shranjevanju nastavitev.</p>
-      <div class="preview-phone-wrap">
-        <div class="phone-preview">
-          <div class="phone-notch"></div>
-          <div class="phone-inner">
-            <div class="phone-statusbar">
-              <span>9:41</span>
-              <span>▲▲▲ ■</span>
-            </div>
-            <div class="wa-header">
-              <div class="wa-avatar" id="prev-avatar">F</div>
-              <div class="wa-info">
-                <div class="wa-name" id="prev-name">Salon</div>
-                <div class="wa-status">online</div>
-              </div>
-            </div>
-            <div class="wa-chat" id="prev-chat">
-              <div class="wa-bubble" id="prev-greeting-bubble">
-                <span id="prev-greeting-text">Pozdravljeni! Sem vaš digitalni asistent za naročanje. Izberite storitev:</span>
-                <div class="wa-list" id="prev-services-list">
-                  <div class="wa-list-title">Storitve</div>
-                  <div class="wa-list-row" id="prev-svc-1">Nalagam storitve...</div>
-                </div>
-                <div class="wa-button">Izberite storitev ›</div>
-                <div class="wa-bubble-time">9:41 ✓✓</div>
-              </div>
-              <div class="wa-bubble-sent">Manikura
-                <div class="wa-bubble-time">9:41 ✓✓</div>
-              </div>
-              <div class="wa-bubble">Izberite datum:
-                <div class="wa-bubble-time">9:42 ✓✓</div>
-              </div>
-            </div>
-            <div class="wa-inputbar">
-              <div class="wa-input-pill">Sporočilo...</div>
-              <div class="wa-send-btn">➤</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Storitve & trajanje -->
     <div class="card owner-panel services-panel tab-hidden" id="services-card">
@@ -706,6 +662,57 @@
     <button class="btn btn-secondary" onclick="doLogout()">Odjava</button>
   </div>
 </div>
+<div class="app-sidebar">
+  <div class="sidebar-label">📱 Predogled za stranko</div>
+  <div style="width:100%;max-width:290px;border-radius:44px;background:linear-gradient(145deg,#d8d8de,#bbbbc3);box-shadow:0 0 0 1px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.6),0 24px 56px rgba(0,0,0,0.15);padding:10px;position:relative;display:flex;flex-direction:column;">
+    <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:72px;height:20px;background:#1c1c1f;border-radius:20px;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>
+    <div style="position:absolute;left:-4px;top:88px;width:4px;height:30px;background:#c0c0c8;border-radius:3px 0 0 3px;box-shadow:0 42px 0 #c0c0c8"></div>
+    <div style="position:absolute;right:-4px;top:108px;width:4px;height:50px;background:#c0c0c8;border-radius:0 3px 3px 0"></div>
+    <div style="background:#fff;border-radius:32px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);display:flex;flex-direction:column;">
+      <div style="background:#075E54;padding:7px 16px 4px;display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:800;color:#fff">
+        <span>9:41</span><span style="letter-spacing:1px;font-size:9px">▲▲▲ ■</span>
+      </div>
+      <div style="background:#075E54;display:flex;align-items:center;gap:8px;padding:8px 12px 10px">
+        <span style="font-size:16px;color:rgba(255,255,255,0.85)">‹</span>
+        <div id="prev-avatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.25)">S</div>
+        <div style="flex:1">
+          <div id="prev-name" style="font-size:13px;font-weight:700;color:#fff">Salon</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.72)">online</div>
+        </div>
+        <span style="color:rgba(255,255,255,0.8);font-size:13px">📞 ⋮</span>
+      </div>
+      <div id="prev-chat" style="background-color:#e5ddd5;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3C/svg%3E&quot;);padding:10px 8px 10px;max-height:420px;overflow-y:auto;">
+        <div style="text-align:center;margin-bottom:10px"><span style="background:rgba(255,255,255,0.88);border-radius:8px;padding:3px 10px;font-size:9px;color:#5a5a5a;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.08)">Danes</span></div>
+        <div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px">
+          <div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>
+          <span id="prev-greeting-text">Pozdravljeni! Sem avtomatski asistent za naročanje. Katero storitev želite?</span>
+          <div id="prev-svc-list" style="margin-top:8px;border:1px solid rgba(0,0,0,0.08);border-radius:9px;overflow:hidden;background:#f9f9f9">
+            <div style="padding:5px 9px;font-size:9px;font-weight:800;color:#555;border-bottom:1px solid rgba(0,0,0,0.07);text-transform:uppercase;letter-spacing:0.04em;background:#f0f0f0">Storitve</div>
+            <div id="prev-svc-rows"><div style="padding:8px 9px;font-size:11px;color:#888">Nalagam...</div></div>
+            <div style="padding:7px 9px;text-align:center;font-size:11px;font-weight:700;color:#128C7E;border-top:1px solid rgba(0,0,0,0.07)">≡ Izberi storitev</div>
+          </div>
+          <div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">9:41 ✓✓</div>
+        </div>
+        <div style="text-align:center;margin:8px 0 5px"><span style="background:rgba(255,255,255,0.75);border-radius:7px;padding:2px 8px;font-size:8.5px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Stranka izbere storitev</span></div>
+        <div id="prev-user-svc" style="background:#dcf8c6;border-radius:11px 11px 4px 11px;padding:8px 10px 5px;font-size:12px;color:#111;max-width:78%;margin-left:auto;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-bottom:7px">Strizenje<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:3px">9:42 ✓✓</div></div>
+        <div style="text-align:center;margin:8px 0 5px"><span style="background:rgba(255,255,255,0.75);border-radius:7px;padding:2px 8px;font-size:8.5px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Bot vpraša za datum</span></div>
+        <div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px">
+          <div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>
+          Kateri datum vam ustreza? (npr. jutri, 28.5., ponedeljek...)
+          <div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">9:42 ✓✓</div>
+        </div>
+        <div style="background:#dcf8c6;border-radius:11px 11px 4px 11px;padding:8px 10px 5px;font-size:12px;color:#111;max-width:78%;margin-left:auto;box-shadow:0 1px 2px rgba(0,0,0,0.1)">Jutri, 23.5.<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:3px">9:43 ✓✓</div></div>
+      </div>
+      <div style="background:#f0f0f0;display:flex;align-items:center;gap:7px;padding:6px 9px;border-top:1px solid rgba(0,0,0,0.08)">
+        <span style="font-size:18px;color:#aaa">☺</span>
+        <div style="flex:1;background:#fff;border-radius:20px;padding:6px 12px;font-size:11px;color:#bbb;box-shadow:0 1px 2px rgba(0,0,0,0.07)">Sporočilo...</div>
+        <div style="width:32px;height:32px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">➤</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
 
 <div class="toast" id="toast"></div>
 
@@ -759,6 +766,7 @@ async function loadCalendar() {
   calBookings = await r.json();
   const sr = await fetch(scopedPath('/api/settings/services'), { headers: authHeaders() });
   calServices = sr.ok ? await sr.json() : [];
+  updateSettingsPreview();
   renderCalendar();
 }
 
@@ -1207,7 +1215,7 @@ function renderFlowBuilder() {
   welcomeRow.className = 'flow-row flow-row-fixed';
   welcomeRow.style.cssText = 'cursor:default;display:flex;align-items:center;gap:10px;';
   const savedGreeting = (typeof currentSettings !== 'undefined' && currentSettings?.greeting_message) || '';
-  welcomeRow.innerHTML = '<span class="flow-icon">🎉</span><input id="welcome-msg-input" class="dur-input" style="flex:1;width:auto;text-align:left;font-size:0.85rem;" placeholder="Pozdravi stranko in pokaže storitve" value="' + escHtml(savedGreeting) + '">';
+  welcomeRow.innerHTML = '<span class="flow-icon">🎉</span><input id="welcome-msg-input" oninput="updateSettingsPreview()" class="dur-input" style="flex:1;width:auto;text-align:left;font-size:0.85rem;" placeholder="Pozdravi stranko in pokaže storitve" value="' + escHtml(savedGreeting) + '">';
   container.appendChild(welcomeRow);
 
   const moveableItems = buildFlowOrder();
