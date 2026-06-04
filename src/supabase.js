@@ -160,8 +160,14 @@ async function markSlotBooked(slotId) {
 }
 
 async function getBooking(ref) {
-  // ref = last 6 chars of booking ID
-  const r = await axios.get(`${BASE}/sb_bookings?id=like.*${ref}&order=created_at.desc&limit=1`, { headers: HEADERS });
+  // ref = last 6 chars of booking ID — cast uuid to text for LIKE
+  const r = await axios.get(`${BASE}/sb_bookings?id=like.*${ref}&order=created_at.desc&limit=1`, {
+    headers: { ...HEADERS, 'Accept-Profile': 'public' }
+  }).catch(async () => {
+    // fallback: fetch all and filter in JS
+    const all = await axios.get(`${BASE}/sb_bookings?order=created_at.desc&limit=200`, { headers: HEADERS });
+    return { data: all.data.filter(b => (b.id || '').endsWith(ref)) };
+  });
   return r.data[0];
 }
 
@@ -171,11 +177,12 @@ async function getBookingById(id) {
 }
 
 async function getBookingForSalon(salonId, ref) {
+  // UUID type doesn't support LIKE in PostgREST — filter in JS
   const r = await axios.get(
-    `${BASE}/sb_bookings?salon_id=eq.${salonId}&id=like.*${ref}&order=created_at.desc&limit=1`,
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&order=created_at.desc&limit=500`,
     { headers: HEADERS }
   );
-  return r.data[0];
+  return r.data.find(b => (b.id || '').endsWith(ref)) || null;
 }
 
 async function updateBookingStatus(id, status) {
