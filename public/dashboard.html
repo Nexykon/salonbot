@@ -303,7 +303,7 @@
       0 0 0 1px rgba(0,0,0,0.14),
       inset 0 1px 0 rgba(255,255,255,0.6),
       inset 0 -1px 0 rgba(0,0,0,0.12),
-      0 24px 56px rgba(37,211,102,0.14),
+      0 24px 56px rgba(124,58,237,0.14),
       0 8px 20px rgba(0,0,0,0.12);
     padding: 10px;
     position: relative;
@@ -502,7 +502,7 @@
   /* MODERN FLOWTIQ REFRESH */
   body {
     background:
-      radial-gradient(circle at 12% 0%, rgba(37,211,102,0.22), transparent 34%),
+      radial-gradient(circle at 12% 0%, rgba(124,58,237,0.22), transparent 34%),
       radial-gradient(circle at 88% 6%, rgba(6,182,212,0.14), transparent 30%),
       linear-gradient(180deg, #05060c 0%, #080912 48%, #06070d 100%);
   }
@@ -533,7 +533,7 @@
   tr:hover td { background: rgba(37,211,102,0.07); }
   .btn-add, .btn-save, .btn-primary {
     background: linear-gradient(135deg, #25D366, #06b6d4);
-    box-shadow: 0 12px 28px rgba(37,211,102,0.22);
+    box-shadow: 0 12px 28px rgba(124,58,237,0.22);
   }
   .btn-add:hover, .btn-save:hover, .btn-primary:hover {
     background: linear-gradient(135deg, #8b5cf6, #22d3ee);
@@ -560,7 +560,7 @@
   #toast.show { opacity: 1; transform: none; }
   #toast.success { background: rgba(16,185,129,0.9); color: white; }
   #toast.error { background: rgba(239,68,68,0.9); color: white; }
-  #toast.info { background: rgba(37,211,102,0.9); color: white; }
+  #toast.info { background: rgba(124,58,237,0.9); color: white; }
 
   /* LOADING */
   .spinner {
@@ -616,8 +616,8 @@
     border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
     cursor: pointer; transition: background 0.15s; position: relative;
   }
-  .cal-cell:hover { background: rgba(37,211,102,0.06); }
-  .cal-cell.today { background: rgba(37,211,102,0.06); }
+  .cal-cell:hover { background: rgba(124,58,237,0.06); }
+  .cal-cell.today { background: rgba(124,58,237,0.06); }
   .cal-cell.today .cal-day-num { color: var(--accent2); font-weight: 800; }
   .cal-cell.other-month { opacity: 0.3; cursor: default; }
   .cal-cell.other-month:hover { background: none; }
@@ -705,7 +705,7 @@
     width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     font-size: 17px;
-    background: rgba(37,211,102,0.14); border: 1px solid rgba(37,211,102,0.22);
+    background: rgba(124,58,237,0.14); border: 1px solid rgba(124,58,237,0.22);
   }
   .studio-section-info { flex: 1; min-width: 0; }
   .studio-section-title { font-size: 14px; font-weight: 800; margin-bottom: 0; color: var(--text); }
@@ -741,7 +741,7 @@
     width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; margin-top: 1px;
     display: flex; align-items: center; justify-content: center;
     font-size: 12px; font-weight: 900; color: var(--accent2);
-    background: rgba(37,211,102,0.18); border: 1.5px solid rgba(37,211,102,0.35);
+    background: rgba(124,58,237,0.18); border: 1.5px solid rgba(37,211,102,0.35);
   }
   .config-step-body { flex: 1; min-width: 0; }
   .config-step-title {
@@ -763,7 +763,7 @@
   }
   .booking-mode-card:hover { border-color: rgba(37,211,102,0.4); background: rgba(37,211,102,0.05); }
   .booking-mode-card.selected {
-    border-color: var(--accent); background: rgba(37,211,102,0.11);
+    border-color: var(--accent); background: rgba(124,58,237,0.11);
     box-shadow: 0 0 0 3px rgba(37,211,102,0.1);
   }
   .booking-mode-check {
@@ -1259,7 +1259,7 @@
              ══════════════════════════════════════════════════════ -->
         <div class="studio-section master-section" id="bs-booking-config-section">
           <div class="studio-section-head">
-            <div class="studio-section-icon" style="background:rgba(37,211,102,0.25);border-color:rgba(37,211,102,0.45);">🎛</div>
+            <div class="studio-section-icon" style="background:rgba(37,211,102,0.25);border-color:rgba(124,58,237,0.45);">🎛</div>
             <div class="studio-section-info">
               <div class="studio-section-title">Konfiguracija rezervacij</div>
               <div class="studio-section-desc">Nastavi, kako bot zbira termin. Lastnik tega ne vidi in ne more spremeniti.</div>
@@ -1445,7 +1445,6 @@ async function loginMaster() {
     if (!res.ok || data.role !== 'master') throw new Error(data.error || 'Prijava ni uspela.');
     masterToken = data.token;
     sessionStorage.setItem('ft_master_token', masterToken);
-    localStorage.setItem('ft_master_token', masterToken);
     document.getElementById('login-error').style.display = 'none';
     loadApp();
   } catch (e) {
@@ -1532,41 +1531,11 @@ async function verifyAdminOtp() {
     if (!res.ok || data.role !== 'master') throw new Error(data.error || 'Ta stevilka ni master admin.');
     masterToken = data.token;
     sessionStorage.setItem('ft_master_token', masterToken);
-    localStorage.setItem('ft_master_token', masterToken);
     document.getElementById('login-error').style.display = 'none';
     loadApp();
   } catch (e) {
     document.getElementById('login-error').textContent = e.message;
     document.getElementById('login-error').style.display = 'block';
-  }
-}
-
-// ── Change plan ───────────────────────────────────────────
-async function changePlan(salonId, newPlan) {
-  try {
-    await readApiJson(await apiFetch(`/api/salons/${salonId}/plan`, {
-      method: 'PATCH',
-      body: JSON.stringify({ plan: newPlan })
-    }));
-    showToast('Plan posodobljen', 'success');
-    await refreshSalons();
-  } catch (e) {
-    showToast('Napaka: ' + e.message, 'error');
-    await refreshSalons(); // reset select to original
-  }
-}
-
-// ── Set trial / activate / deactivate ─────────────────────
-async function setSubscriptionStatus(salonId, status) {
-  try {
-    await readApiJson(await apiFetch(`/api/admin/salons/${salonId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status })
-    }));
-    showToast('Status posodobljen', 'success');
-    await refreshSalons();
-  } catch (e) {
-    showToast('Napaka: ' + e.message, 'error');
   }
 }
 
@@ -2264,8 +2233,9 @@ async function saveBotStudio() {
         await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/services', { method: 'POST', body: payload }));
       }
     }
+    closeBotStudio();
     await refreshSalons();
-    showToast('Bot je posodobljen ✅', 'success');
+    showToast('Bot je posodobljen', 'success');
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
@@ -2315,7 +2285,37 @@ async function saveSalon() {
       whatsapp_account_id: waid,
       bot_phone_display: botnum,
       business_type: businessType,
-      bus    } else {
+      business_slug: slug,
+      plan: plan
+    };
+    if (password) salonData.owner_password = password;
+    await readApiJson(await apiFetch('/api/admin/salons', {
+      method: 'POST',
+      body: JSON.stringify(salonData)
+    }));
+    closeModal();
+    await refreshSalons();
+    showToast('Salon uspešno ustvarjen!', 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Ustvari salon →';
+  }
+}
+
+// ── AUTO-INIT ─────────────────────────────────────────────
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var resetParam = params.get('reset');
+  if (resetParam) {
+    showResetPassword();
+  } else {
+    var saved = sessionStorage.getItem('ft_master_token');
+    if (saved) {
+      masterToken = saved;
+      loadApp();
+    } else {
       localStorage.removeItem('master_token');
       localStorage.removeItem('api_key');
       localStorage.removeItem('ft_master_token');
