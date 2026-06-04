@@ -371,6 +371,41 @@
     .form-row { grid-template-columns: 1fr; }
     .container { padding: 20px 16px 60px; }
   }
+
+  /* ── 2-COL STICKY LAYOUT ───────────────────────────────── */
+  #app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+  .app-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 32px;
+    align-items: start;
+  }
+  .app-main {
+    min-width: 0;
+    padding: 28px 0 80px;
+  }
+  .app-sidebar {
+    position: sticky;
+    top: 76px;
+    padding: 28px 0 40px 0;
+    align-self: start;
+  }
+  .sidebar-label {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+  }
+  @media (max-width: 860px) {
+    .app-layout { grid-template-columns: 1fr; }
+    .app-sidebar { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -425,7 +460,7 @@
 <div id="app" style="display:none">
 <div class="app-layout">
 <div class="app-main">
-  <div class="container" style="max-width:100%;padding:32px 20px 60px">
+  <div class="container" style="max-width:100%;padding:0">
     <div class="salon-bar">
       <div class="salon-bar-name" id="salon-display-name">—</div>
       <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
