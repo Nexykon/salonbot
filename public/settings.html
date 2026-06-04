@@ -128,10 +128,10 @@
     font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
   }
   .btn-primary {
-    background: linear-gradient(135deg, var(--purple), var(--purple-light));
+    background: #25D366;
     color: white; box-shadow: 0 4px 20px rgba(37,211,102,0.35);
   }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,211,102,0.5); }
+  .btn-primary:hover { background: #1aab50; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,211,102,0.5); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .btn-secondary {
     background: var(--surface); border: 1px solid var(--border);
@@ -408,13 +408,13 @@
       <input type="password" id="login-password" placeholder="Vaše geslo" autocomplete="current-password">
     </div>
     <button class="btn btn-primary" onclick="loginWithPassword()" style="margin-top:8px">Vstopi</button>
-    <p>Vnesite svojo WhatsApp telefonsko številko s katero ste registrirani v FlowTiq sistemu.</p>
-    <div class="form-group" style="text-align:left">
+    <p style="display:none">Vnesite svojo WhatsApp telefonsko številko s katero ste registrirani v FlowTiq sistemu.</p>
+    <div class="form-group" style="text-align:left;display:none">
       <label>Vaša telefonska številka</label>
       <input type="tel" id="login-phone" placeholder="npr. 38641123456" style="margin-bottom:12px">
       <div class="form-hint">Format: koda države + številka brez + (npr. 38641123456)</div>
     </div>
-    <button class="btn btn-primary" onclick="requestOtp()" style="margin-top:8px">Pošlji WhatsApp kodo</button>
+    <button class="btn btn-primary" onclick="requestOtp()" style="margin-top:8px;display:none">Pošlji WhatsApp kodo</button>
     <div class="form-group" id="otp-group" style="text-align:left;display:none;margin-top:16px">
       <label>6-mestna koda</label>
       <input type="text" id="login-code" placeholder="123456" inputmode="numeric" maxlength="6">
