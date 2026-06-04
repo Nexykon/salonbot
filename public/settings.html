@@ -535,7 +535,29 @@
           </div>
         </label>
       </div>
+      <!-- Auto confirm -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:12px">
+          <input type="checkbox" id="auto-confirm" style="accent-color:var(--green);width:18px;height:18px">
+          <div>
+            <div style="font-weight:700;font-size:0.95rem">✅ Samodejno potrdi rezervacijo</div>
+            <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Če odkljukano: rezervacija se potrdi takoj. Če ne: prejmeš obvestilo in ročno potrdiš.</div>
+          </div>
+        </label>
+      </div>
       <button class="btn btn-primary" onclick="saveNotifySettings()" style="margin-top:18px" id="notify-save-btn">💾 Shrani nastavitve obvestil</button>
+    </div>
+
+    <!-- Block lista -->
+    <div class="card owner-panel settings-panel">
+      <div class="card-title">🚫 Blokirana lista</div>
+      <div class="form-hint" style="margin-bottom:16px">Telefonske številke ki ne morejo naročiti termina (brez klicne kode, npr. 041123456)</div>
+      <div id="blocked-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="tel" id="block-new-phone" placeholder="npr. 38641123456" class="dur-input" style="flex:1">
+        <button class="btn btn-secondary" onclick="addBlockedPhone()" style="padding:10px 16px;font-size:0.875rem;margin-top:0">+ Dodaj</button>
+      </div>
+      <button class="btn btn-primary" onclick="saveBlockedPhones()" style="margin-top:14px" id="block-save-btn">💾 Shrani block listo</button>
     </div>
 
     <!-- Obrazec / vprašalnik -->
@@ -915,6 +937,10 @@ function loadUI(data) {
   document.getElementById('salon-name').value = data.name || '';
   document.getElementById('notify-whatsapp').checked = data.notify_whatsapp !== false;
   document.getElementById('notify-email').checked = data.notify_email !== false;
+  const ac = document.getElementById('auto-confirm');
+  if (ac) ac.checked = data.auto_confirm !== false;
+  blockedPhones = Array.isArray(data.blocked_phones) ? [...data.blocked_phones] : [];
+  renderBlockedList();
   document.getElementById('hours-start').value = (data.working_hours_start || '08:00').substring(0,5);
   document.getElementById('hours-end').value = (data.working_hours_end || '19:00').substring(0,5);
   document.getElementById('break-between').value = data.break_between_minutes || 0;
@@ -990,7 +1016,7 @@ async function saveNotifySettings() {
     const r = await fetch(scopedPath('/api/settings'), {
       method: 'PATCH',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ notify_whatsapp: wa, notify_email: em })
+      body: JSON.stringify({ notify_whatsapp: wa, notify_email: em, auto_confirm: document.getElementById('auto-confirm').checked })
     });
     if (!r.ok) throw new Error((await r.json()).error || 'Napaka');
     showToast('Nastavitve obvestil shranjene!', 'success');
@@ -998,6 +1024,57 @@ async function saveNotifySettings() {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = '💾 Shrani nastavitve obvestil';
+  }
+}
+
+// ── Block lista ────────────────────────────────────────────
+let blockedPhones = [];
+
+function renderBlockedList() {
+  const el = document.getElementById('blocked-list');
+  if (!el) return;
+  if (!blockedPhones.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">Ni blokiranih številk.</div>';
+    return;
+  }
+  el.innerHTML = blockedPhones.map((p, i) => `
+    <div style="display:flex;align-items:center;gap:10px;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:10px;padding:10px 14px">
+      <span style="flex:1;font-size:0.9rem;font-weight:600">+${p}</span>
+      <button onclick="removeBlockedPhone(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:1.1rem;opacity:.7">✕</button>
+    </div>
+  `).join('');
+}
+
+function addBlockedPhone() {
+  const inp = document.getElementById('block-new-phone');
+  const num = (inp.value || '').replace(/\D/g, '');
+  if (!num) { showToast('Vnesite telefonsko številko', 'error'); return; }
+  if (blockedPhones.includes(num)) { showToast('Številka je že na listi', 'error'); return; }
+  blockedPhones.push(num);
+  inp.value = '';
+  renderBlockedList();
+}
+
+function removeBlockedPhone(idx) {
+  blockedPhones.splice(idx, 1);
+  renderBlockedList();
+}
+
+async function saveBlockedPhones() {
+  const btn = document.getElementById('block-save-btn');
+  btn.disabled = true; btn.textContent = 'Shranjujem...';
+  try {
+    const r = await fetch(scopedPath('/api/settings'), {
+      method: 'PATCH',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ blocked_phones: blockedPhones })
+    });
+    if (!r.ok) throw new Error((await r.json()).error || 'Napaka');
+    showToast('Block lista shranjena!', 'success');
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 Shrani block listo';
   }
 }
 

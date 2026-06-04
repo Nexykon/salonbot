@@ -1541,6 +1541,35 @@ async function verifyAdminOtp() {
   }
 }
 
+// ── Change plan ───────────────────────────────────────────
+async function changePlan(salonId, newPlan) {
+  try {
+    await readApiJson(await apiFetch(`/api/salons/${salonId}/plan`, {
+      method: 'PATCH',
+      body: JSON.stringify({ plan: newPlan })
+    }));
+    showToast('Plan posodobljen', 'success');
+    await refreshSalons();
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+    await refreshSalons(); // reset select to original
+  }
+}
+
+// ── Set trial / activate / deactivate ─────────────────────
+async function setSubscriptionStatus(salonId, status) {
+  try {
+    await readApiJson(await apiFetch(`/api/admin/salons/${salonId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    }));
+    showToast('Status posodobljen', 'success');
+    await refreshSalons();
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  }
+}
+
 function logout() {
   sessionStorage.removeItem('ft_master_token');
   localStorage.removeItem('sb_api_key');

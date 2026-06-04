@@ -121,6 +121,8 @@ function publicSalon(salon) {
     datetime_position: salon.datetime_position === 'last' ? 'last' : 'first',
     notify_whatsapp: salon.notify_whatsapp !== false,
     notify_email: salon.notify_email !== false,
+    auto_confirm: salon.auto_confirm !== false,
+    blocked_phones: Array.isArray(salon.blocked_phones) ? salon.blocked_phones : [],
     review_link: salon.review_link || '',
     form_fields: safeFormFields(salon.form_fields, salon),
     inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.'
@@ -568,6 +570,17 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
   }
 });
 
+// ─── Set subscription status (trial/active/inactive) ────────
+app.patch('/api/admin/salons/:id/status', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const { status } = req.body;
+  if (!['trial', 'active', 'inactive'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  try {
+    await db.updateSalonSettings(req.params.id, { subscription_status: status });
+    res.json({ success: true, status });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // ─── Error log (admin dashboard) ─────────────────────────────
 app.get('/api/admin/salons/:id/settings', async (req, res) => {
   if (!adminAuth(req, res)) return;
@@ -607,7 +620,9 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'review_link',
     'reactivation_message',
     'notify_whatsapp',
-    'notify_email'
+    'notify_email',
+    'auto_confirm',
+    'blocked_phones'
   ];
   const updates = {};
   for (const key of allowed) {
