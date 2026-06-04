@@ -1335,7 +1335,11 @@ app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
         ).catch(e => console.error('[email] dashboard confirm:', e.message));
       }
     }
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    console.error('[confirm]', detail);
+    res.status(500).json({ error: detail });
+  }
 });
 
 app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
@@ -1367,7 +1371,11 @@ app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
         )).catch(e => console.error('Dashboard cancel WA err:', e.message));
       }
     }
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    console.error('[cancel]', detail);
+    res.status(500).json({ error: detail });
+  }
 });
 
 // ─── Admin: manual booking ─────────────────────────────────────
