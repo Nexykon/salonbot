@@ -278,7 +278,7 @@
   .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .owner-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .owner-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
   .owner-tab {
     padding: 13px 16px; border-radius: 14px; border: 1px solid var(--border);
     background: var(--surface2); color: var(--muted); font-weight: 800; cursor: pointer;
@@ -434,9 +434,7 @@
 
     <div class="owner-tabs">
       <button class="owner-tab active" id="tab-settings" onclick="showOwnerTab('settings')">Nastavitve</button>
-      <button class="owner-tab" id="tab-services" onclick="showOwnerTab('services')">Storitve</button>
       <button class="owner-tab" id="tab-calendar" onclick="showOwnerTab('calendar')">Koledar</button>
-      <button class="owner-tab" id="tab-preview" onclick="showOwnerTab('preview')">📱 Predogled</button>
     </div>
 
     <!-- Delovni čas -->
@@ -610,7 +608,7 @@
 
 
     <!-- Storitve & trajanje -->
-    <div class="card owner-panel services-panel tab-hidden" id="services-card">
+    <div class="card owner-panel settings-panel" id="services-card">
       <div class="card-title">⏱️ Storitve &amp; trajanje
         <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Trajanje določa zasedenost v koledarju</span>
       </div>
@@ -757,7 +755,10 @@ function showOwnerTab(tab) {
   document.querySelectorAll('.owner-panel').forEach(p => p.classList.add('tab-hidden'));
   document.querySelectorAll('.' + tab + '-panel').forEach(p => p.classList.remove('tab-hidden'));
   if (tab === 'calendar') loadCalendar();
-  if (tab === 'services') loadServices();
+  if (tab === 'settings') loadServices();
+  // Pokaži/skrij sidebar s predogledom
+  const sidebar = document.querySelector('.app-sidebar');
+  if (sidebar) sidebar.style.display = tab === 'settings' ? '' : 'none';
 }
 
 async function loadCalendar() {
@@ -1063,6 +1064,7 @@ function loadUI(data) {
   loadServices();
   ffLoadFromData(data);
   updateSettingsPreview(data);
+  loadServices();
 }
 
 // ── Preview ────────────────────────────────────────────────
