@@ -426,13 +426,17 @@
   <div class="container">
     <div class="salon-bar">
       <div class="salon-bar-name" id="salon-display-name">—</div>
-      <div class="salon-bar-status">✅ Aktivno</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+        <div class="salon-bar-status">✅ Aktivno</div>
+        <button onclick="doLogout()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='';this.style.color=''">Odjava</button>
+      </div>
     </div>
 
     <div class="owner-tabs">
       <button class="owner-tab active" id="tab-settings" onclick="showOwnerTab('settings')">Nastavitve</button>
       <button class="owner-tab" id="tab-services" onclick="showOwnerTab('services')">Storitve</button>
       <button class="owner-tab" id="tab-calendar" onclick="showOwnerTab('calendar')">Koledar</button>
+      <button class="owner-tab" id="tab-preview" onclick="showOwnerTab('preview')">📱 Predogled</button>
     </div>
 
     <!-- Delovni čas -->
@@ -601,6 +605,52 @@
       </div>
 
       <button class="btn btn-primary" onclick="saveFormFields()" style="margin-top:18px;width:100%" id="ff-save-btn">💾 Shrani vprašalnik</button>
+    </div>
+
+
+    <!-- PREDOGLED -->
+    <div class="card owner-panel preview-panel tab-hidden" id="preview-card">
+      <div class="card-title">📱 Predogled WhatsApp pogovora</div>
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px;margin-top:-8px">Tako izgleda pogovor za stranko. Posodobi se ob shranjevanju nastavitev.</p>
+      <div class="preview-phone-wrap">
+        <div class="phone-preview">
+          <div class="phone-notch"></div>
+          <div class="phone-inner">
+            <div class="phone-statusbar">
+              <span>9:41</span>
+              <span>▲▲▲ ■</span>
+            </div>
+            <div class="wa-header">
+              <div class="wa-avatar" id="prev-avatar">F</div>
+              <div class="wa-info">
+                <div class="wa-name" id="prev-name">Salon</div>
+                <div class="wa-status">online</div>
+              </div>
+            </div>
+            <div class="wa-chat" id="prev-chat">
+              <div class="wa-bubble" id="prev-greeting-bubble">
+                <span id="prev-greeting-text">Pozdravljeni! Sem vaš digitalni asistent za naročanje. Izberite storitev:</span>
+                <div class="wa-list" id="prev-services-list">
+                  <div class="wa-list-title">Storitve</div>
+                  <div class="wa-list-row" id="prev-svc-1">Nalagam storitve...</div>
+                </div>
+                <div class="wa-button">Izberite storitev ›</div>
+                <div class="wa-bubble-time">9:41 ✓✓</div>
+              </div>
+              <div class="wa-bubble-sent">Manikura
+                <div class="wa-bubble-time">9:41 ✓✓</div>
+              </div>
+              <div class="wa-bubble">Izberite datum:
+                <div class="wa-bubble-time">9:42 ✓✓</div>
+              </div>
+            </div>
+            <div class="wa-inputbar">
+              <div class="wa-input-pill">Sporočilo...</div>
+              <div class="wa-send-btn">➤</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Storitve & trajanje -->
@@ -903,6 +953,29 @@ async function loadSettings() {
 }
 
 
+
+function updateSettingsPreview(data) {
+  const name = data?.name || document.getElementById('salon-name')?.value || 'Salon';
+  const greeting = data?.greeting_message || document.getElementById('welcome-msg-input')?.value || 'Pozdravljeni! Sem vaš digitalni asistent za naročanje. Izberite storitev:';
+  
+  const avatarEl = document.getElementById('prev-avatar');
+  if (avatarEl) avatarEl.textContent = (name[0] || 'S').toUpperCase();
+  
+  const nameEl = document.getElementById('prev-name');
+  if (nameEl) nameEl.textContent = name;
+  
+  const greetEl = document.getElementById('prev-greeting-text');
+  if (greetEl) greetEl.textContent = greeting;
+  
+  // Storitve
+  const svcList = document.getElementById('prev-services-list');
+  if (svcList && calServices && calServices.length) {
+    svcList.innerHTML = '<div class="wa-list-title">Storitve</div>' +
+      calServices.slice(0,4).map(s => `<div class="wa-list-row">${s.name}</div>`).join('') +
+      '<div class="wa-button">Izberite storitev ›</div>';
+  }
+}
+
 async function doLogin(token) {
   if (!token) return;
   const isMaster = localStorage.getItem('ft_master_token') === token || sessionStorage.getItem('ft_master_token') === token;
@@ -981,6 +1054,7 @@ function loadUI(data) {
   updatePreview();
   loadServices();
   ffLoadFromData(data);
+  updateSettingsPreview(data);
 }
 
 // ── Preview ────────────────────────────────────────────────
