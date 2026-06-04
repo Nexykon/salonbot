@@ -583,12 +583,11 @@
         <button class="btn btn-secondary" onclick="ffAddField()" style="padding:8px 14px;font-size:0.85rem;margin-top:0">+ Dodaj</button>
       </div>
 
-      <!-- Booking confirmation message (exact_time / date_only) -->
+      <!-- Booking confirmation message -->
       <div id="booking-msg-group" class="form-group" style="margin-top:18px;display:none">
         <label>Sporočilo po oddaji rezervacije</label>
         <input type="text" id="booking-confirmation-message" placeholder="Hvala! Rezervacija je prejeta. Potrdili jo bomo v kratkem." class="dur-input" style="width:100%">
       </div>
-
       <!-- Inquiry confirmation message -->
       <div id="inquiry-msg-group" class="form-group" style="margin-top:18px;display:none">
         <label>Sporočilo po oddaji povpraševanja</label>
@@ -681,9 +680,7 @@ if (settingsParams.get('master_token')) {
   const cleanUrl = previewSalonId ? `/settings.html?salonId=${encodeURIComponent(previewSalonId)}` : '/settings.html';
   history.replaceState(null, '', cleanUrl);
 }
-localStorage.removeItem('ft_owner_token');
-localStorage.removeItem('ft_master_token');
-localStorage.removeItem('ft_salon_phone');
+
 document.getElementById('login-phone')?.closest('.form-group')?.style.setProperty('display', 'none', 'important');
 document.querySelector('button[onclick="requestOtp()"]')?.style.setProperty('display', 'none', 'important');
 
@@ -845,6 +842,7 @@ async function loginWithPassword() {
     if (!r.ok) throw new Error(data.error || 'Prijava ni uspela');
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token', ownerToken);
+    localStorage.setItem('ft_owner_token', ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
@@ -891,6 +889,7 @@ async function verifyOtp() {
     }
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token', ownerToken);
+    localStorage.setItem('ft_owner_token', ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     showToast(e.message, 'error');
@@ -901,6 +900,25 @@ async function loadSettings() {
   const r = await fetch(scopedPath('/api/settings'), { headers: authHeaders() });
   if (!r.ok) throw new Error('Prijava ni uspela');
   return r.json();
+}
+
+
+async function doLogin(token) {
+  if (!token) return;
+  const isMaster = localStorage.getItem('ft_master_token') === token || sessionStorage.getItem('ft_master_token') === token;
+  if (isMaster) { masterToken = token; } else { ownerToken = token; }
+  try {
+    const data = await loadSettings();
+    if (isMaster) { localStorage.setItem('ft_master_token', token); }
+    else { localStorage.setItem('ft_owner_token', token); }
+    loadUI(data);
+  } catch (e) {
+    sessionStorage.removeItem('ft_owner_token');
+    sessionStorage.removeItem('ft_master_token');
+    localStorage.removeItem('ft_owner_token');
+    localStorage.removeItem('ft_master_token');
+    ownerToken = ''; masterToken = '';
+  }
 }
 
 function doLogout() {
@@ -1263,11 +1281,11 @@ function ffLoadFromData(data) {
     if (el) el.value = data.inquiry_confirmation_message;
   }
   if (data.booking_confirmation_message) {
-    const el = document.getElementById('booking-confirmation-message');
-    if (el) el.value = data.booking_confirmation_message;
+    const el2 = document.getElementById('booking-confirmation-message');
+    if (el2) el2.value = data.booking_confirmation_message;
   }
-  const bkgGroup = document.getElementById('booking-msg-group');
-  if (bkgGroup) bkgGroup.style.display = (currentBookingMode === 'exact_time' || currentBookingMode === 'date_only') ? 'block' : 'none';
+  const bkgGroup2 = document.getElementById('booking-msg-group');
+  if (bkgGroup2) bkgGroup2.style.display = (currentBookingMode === 'exact_time' || currentBookingMode === 'date_only') ? 'block' : 'none';
   const rl = document.getElementById('review-link');
   if (rl) rl.value = data.review_link || '';
   renderFlowBuilder();
@@ -1488,7 +1506,7 @@ async function deleteService(svcId) {
 
 // ── Auto-init ────────────────────────────────────────────────
 (function init() {
-  const stored = sessionStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token');
+  const stored = localStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || sessionStorage.getItem('ft_owner_token');
   if (stored) {
     document.getElementById('auth-token').value = stored;
     doLogin(stored);
