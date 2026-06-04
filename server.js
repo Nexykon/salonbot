@@ -800,7 +800,7 @@ app.patch('/api/settings', async (req, res) => {
   try {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
       'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
-      'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
+      'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message', 'booking_confirmation_message',
       'notify_whatsapp', 'notify_email', 'review_link', 'review_message', 'reactivation_message'];
     const updates = {};
     for (const key of allowed) {

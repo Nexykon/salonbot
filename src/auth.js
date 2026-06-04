@@ -46,14 +46,16 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(String(token || '')).digest('hex');
 }
 
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_KEY || 'flowtiq-fallback-secret';
+const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 dni
+
 function createSession(salonId, role = 'owner', identity = {}) {
-  const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, {
-    salonId,
-    role,
-    ...identity,
-    expiresAt: Date.now() + 12 * 60 * 60 * 1000
-  });
+  const payload = JSON.stringify({ salonId, role, ...identity, expiresAt: Date.now() + SESSION_TTL });
+  const payloadB64 = Buffer.from(payload).toString('base64url');
+  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
+  const token = `${payloadB64}.${sig}`;
+  // Ohrani tudi in-memory za backward compatibility
+  sessions.set(token, { salonId, role, ...identity, expiresAt: Date.now() + SESSION_TTL });
   return token;
 }
 
@@ -77,6 +79,23 @@ function verifyOtp(phone, code) {
 
 function getSession(token) {
   const cleanToken = String(token || '').replace(/^Bearer\s+/i, '').trim();
+
+  // Preskusi HMAC token (novi format: payload.sig)
+  const dotIdx = cleanToken.lastIndexOf('.');
+  if (dotIdx > 0) {
+    const payloadB64 = cleanToken.slice(0, dotIdx);
+    const sig = cleanToken.slice(dotIdx + 1);
+    const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
+    if (sig === expectedSig) {
+      try {
+        const session = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+        if (session.expiresAt < Date.now()) return null;
+        return session;
+      } catch { return null; }
+    }
+  }
+
+  // Fallback: stari in-memory token
   const session = sessions.get(cleanToken);
   if (!session) return null;
   if (session.expiresAt < Date.now()) {
