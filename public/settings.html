@@ -27,7 +27,7 @@
     background: var(--bg); color: var(--text);
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     min-height: 100vh;
-    background-image: radial-gradient(rgba(124,58,237,0.06) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(rgba(37,211,102,0.06) 1.5px, transparent 1.5px);
     background-size: 32px 32px;
   }
   body::before {
@@ -42,7 +42,7 @@
     position: sticky; top: 0; z-index: 100;
   }
   .logo { width: 36px; height: 36px; }
-  .brand { font-size: 1.2rem; font-weight: 800; background: linear-gradient(135deg,#a855f7,#06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .brand { font-size: 1.2rem; font-weight: 800; background: linear-gradient(135deg,#25D366,#06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .brand-sub { font-size: 0.8rem; color: var(--muted); font-weight: 400; -webkit-text-fill-color: var(--muted); }
 
   /* Login */
@@ -52,7 +52,7 @@
   .login-box {
     background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
     padding: 40px; width: 100%; max-width: 420px; text-align: center;
-    box-shadow: 0 8px 40px rgba(124,58,237,0.1);
+    box-shadow: 0 8px 40px rgba(37,211,102,0.1);
   }
   .login-icon { font-size: 3rem; margin-bottom: 20px; }
   .login-box h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
@@ -104,9 +104,9 @@
     user-select: none;
   }
   .day-toggle.active {
-    background: rgba(124,58,237,0.25); border-color: var(--purple);
+    background: rgba(37,211,102,0.25); border-color: var(--purple);
     color: var(--purple-light);
-    box-shadow: 0 0 12px rgba(124,58,237,0.2);
+    box-shadow: 0 0 12px rgba(37,211,102,0.2);
   }
 
   /* Interval pills */
@@ -118,7 +118,7 @@
     cursor: pointer; transition: all 0.15s;
   }
   .interval-pill.active {
-    background: rgba(124,58,237,0.25); border-color: var(--purple);
+    background: rgba(37,211,102,0.25); border-color: var(--purple);
     color: var(--purple-light);
   }
 
@@ -129,9 +129,9 @@
   }
   .btn-primary {
     background: linear-gradient(135deg, var(--purple), var(--purple-light));
-    color: white; box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+    color: white; box-shadow: 0 4px 20px rgba(37,211,102,0.35);
   }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(124,58,237,0.5); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(37,211,102,0.5); }
   .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .btn-secondary {
     background: var(--surface); border: 1px solid var(--border);
@@ -145,7 +145,7 @@
   }
   .preview-box .preview-title { font-size: 0.78rem; color: var(--cyan); font-weight: 700; margin-bottom: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
   .preview-slots { display: flex; gap: 6px; flex-wrap: wrap; }
-  .preview-slot { padding: 5px 10px; background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); border-radius: 8px; font-size: 0.8rem; color: var(--purple-light); font-weight: 600; }
+  .preview-slot { padding: 5px 10px; background: rgba(37,211,102,0.15); border: 1px solid rgba(37,211,102,0.3); border-radius: 8px; font-size: 0.8rem; color: var(--purple-light); font-weight: 600; }
 
   /* Toast */
   .toast {
@@ -183,7 +183,7 @@
     font-size: 0.85rem; cursor: pointer; transition: all .15s;
   }
   .booking-mode-pill.active {
-    background: rgba(124,58,237,0.25); border-color: var(--purple);
+    background: rgba(37,211,102,0.25); border-color: var(--purple);
     color: var(--purple-light); font-weight: 600;
   }
   .ff-field-row {
@@ -220,8 +220,8 @@
   }
   .flow-row-dt:active { cursor: grabbing; }
   .flow-row-field {
-    background: rgba(124,58,237,0.1);
-    border-color: rgba(124,58,237,0.3);
+    background: rgba(37,211,102,0.1);
+    border-color: rgba(37,211,102,0.3);
     border-left: 3px solid var(--purple);
     cursor: grab;
   }
@@ -253,22 +253,22 @@
   .flow-badge-name { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
   .flow-badge-req { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
   .flow-badge-opt { background: rgba(107,107,128,0.12); color: var(--muted); border: 1px solid rgba(107,107,128,0.2); }
-  .flow-badge-type { background: rgba(124,58,237,0.12); color: var(--purple-light); border: 1px solid rgba(124,58,237,0.2); }
+  .flow-badge-type { background: rgba(37,211,102,0.12); color: var(--purple-light); border: 1px solid rgba(37,211,102,0.2); }
   .flow-row .ff-del { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1rem; padding: 0 4px; opacity: .6; margin-left: 2px; }
   .flow-row .ff-del:hover { opacity: 1; }
 
       .dur-save-btn {
     padding: 8px 14px; border-radius: 9px; font-size: 0.8rem; font-weight: 700;
-    background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.35);
+    background: rgba(37,211,102,0.2); border: 1px solid rgba(37,211,102,0.35);
     color: var(--purple-light); cursor: pointer; transition: all 0.15s; white-space: nowrap;
   }
-  .dur-save-btn:hover { background: rgba(124,58,237,0.35); }
+  .dur-save-btn:hover { background: rgba(37,211,102,0.35); }
   .dur-save-btn.saved { background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.3); color: var(--green); }
   .service-empty { color: var(--muted); font-size: 0.9rem; padding: 16px 0; text-align: center; }
 
   /* Salon name bar */
   .salon-bar {
-    background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.25);
+    background: rgba(37,211,102,0.1); border: 1px solid rgba(37,211,102,0.25);
     border-radius: 12px; padding: 14px 18px; margin-bottom: 24px;
     display: flex; align-items: center; justify-content: space-between;
   }
@@ -285,7 +285,7 @@
   }
   .owner-tab.active {
     color: #fff; border-color: rgba(167,139,250,0.5);
-    background: linear-gradient(135deg, rgba(124,58,237,0.28), rgba(6,182,212,0.14));
+    background: linear-gradient(135deg, rgba(37,211,102,0.28), rgba(6,182,212,0.14));
   }
   .tab-hidden { display: none !important; }
   /* ── CALENDAR ─────────────────────────────────────────────── */
@@ -392,11 +392,12 @@
   .small-btn.bad { color: var(--red); border-color: rgba(239,68,68,.3); background: rgba(239,68,68,.06); }
   .small-btn.bad:hover { background: rgba(239,68,68,.14); }
   .manual-booking-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px; }
+  .manual-booking-grid .dur-input { width:100%; text-align:left; padding:10px 12px; }
 
   /* Modern FlowTiq polish */
   body {
     background:
-      radial-gradient(circle at 12% 0%, rgba(124,58,237,0.2), transparent 34%),
+      radial-gradient(circle at 12% 0%, rgba(37,211,102,0.2), transparent 34%),
       radial-gradient(circle at 88% 8%, rgba(6,182,212,0.14), transparent 32%),
       linear-gradient(180deg, #05060c 0%, #090a13 48%, #06070d 100%);
   }
@@ -426,14 +427,14 @@
     border-color: var(--border);
   }
   .btn-primary {
-    background: linear-gradient(135deg, #7c3aed, #06b6d4);
-    box-shadow: 0 12px 28px rgba(124,58,237,0.24);
+    background: linear-gradient(135deg, #25D366, #06b6d4);
+    box-shadow: 0 12px 28px rgba(37,211,102,0.24);
   }
   .btn-primary:hover {
-    box-shadow: 0 16px 34px rgba(6,182,212,0.2), 0 12px 28px rgba(124,58,237,0.24);
+    box-shadow: 0 16px 34px rgba(6,182,212,0.2), 0 12px 28px rgba(37,211,102,0.24);
   }
   .day-toggle.active, .interval-pill.active {
-    background: linear-gradient(135deg, rgba(124,58,237,0.24), rgba(6,182,212,0.14));
+    background: linear-gradient(135deg, rgba(37,211,102,0.24), rgba(6,182,212,0.14));
     border-color: rgba(167,139,250,0.48);
     color: #d8b4fe;
   }
@@ -450,7 +451,7 @@
   <svg class="logo" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#7c3aed"/>
+        <stop offset="0%" stop-color="#25D366"/>
         <stop offset="100%" stop-color="#06b6d4"/>
       </linearGradient>
     </defs>
@@ -596,7 +597,7 @@
       <div class="card-title">🔔 Obvestila o novih rezervacijah</div>
       <div class="form-hint" style="margin-bottom:16px">Kam želite prejemati obvestila ko pride nova rezervacija?</div>
       <div style="display:flex;flex-direction:column;gap:12px">
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:rgba(124,58,237,0.06);border:1px solid rgba(124,58,237,0.2);border-radius:12px">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:rgba(37,211,102,0.06);border:1px solid rgba(37,211,102,0.2);border-radius:12px">
           <input type="checkbox" id="notify-whatsapp" style="accent-color:var(--purple);width:18px;height:18px">
           <div>
             <div style="font-weight:700;font-size:0.95rem">📱 WhatsApp (admin telefon)</div>
@@ -641,7 +642,7 @@
       </div>
 
       <!-- Add field -->
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px;background:rgba(124,58,237,0.06);border-radius:12px;border:1px dashed rgba(124,58,237,0.25)">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px;background:rgba(37,211,102,0.06);border-radius:12px;border:1px dashed rgba(37,211,102,0.25)">
         <input type="text" id="ff-new-label" placeholder="Novo vprašanje (npr. Alergije?)" class="dur-input" style="flex:1;min-width:180px">
         <select id="ff-new-type" class="dur-input" style="width:auto">
           <option value="text">Kratko besedilo</option>
@@ -1229,7 +1230,7 @@ function renderFlowBuilder() {
       row.style.opacity = '0.45';
     });
     row.addEventListener('dragend', () => { row.style.opacity = ''; });
-    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.style.background = 'rgba(124,58,237,0.1)'; });
+    row.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; row.style.background = 'rgba(37,211,102,0.1)'; });
     row.addEventListener('dragleave', () => { row.style.background = ''; });
     row.addEventListener('drop', e => {
       e.preventDefault();
@@ -1489,62 +1490,4 @@ async function addService() {
   const headers = { 'Content-Type': 'application/json' };
   Object.assign(headers, authHeaders());
   try {
-    const r = await fetch(scopedPath('/api/settings/services'), { method: 'POST', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error);
-    showToast('Storitev dodana', 'success');
-    loadServices();
-  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
-}
-
-async function saveService(svcId) {
-  const dur = parseInt(document.getElementById('dur-' + svcId).value);
-  const price = parseFloat(document.getElementById('price-' + svcId).value);
-  const name = document.getElementById('name-' + svcId).value.trim();
-  const btn = document.getElementById('dbtn-' + svcId);
-  if (!name) { showToast('Ime storitve je obvezno', 'error'); return; }
-  if (isNaN(price) || price < 0) { showToast('Cena ni veljavna', 'error'); return; }
-  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
-  btn.textContent = '…';
-  const headers = { 'Content-Type': 'application/json' };
-  Object.assign(headers, authHeaders());
-  try {
-    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), { method: 'PATCH', headers, body: JSON.stringify({ name, price, duration_minutes: dur }) });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error);
-    btn.textContent = '✓ Shranjeno';
-    btn.classList.add('saved');
-    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2000);
-  } catch (e) {
-    btn.textContent = 'Shrani';
-    showToast('Napaka: ' + e.message, 'error');
-  }
-}
-
-async function deleteService(svcId) {
-  if (!confirm('Izklopiti to storitev? Stranke je ne bodo več videle.')) return;
-  const r = await fetch(scopedPath('/api/settings/services/' + svcId), {
-    method: 'DELETE', headers: authHeaders()
-  });
-  if (r.ok) {
-    showToast('Storitev odstranjena', 'info');
-    await loadServices();
-  } else {
-    const d = await r.json().catch(() => ({}));
-    showToast('Napaka: ' + (d.error || '?'), 'error');
-  }
-}
-
-// ── Auto-init ────────────────────────────────────────────────
-(function init() {
-  const stored = sessionStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token');
-  if (stored) {
-    document.getElementById('auth-token').value = stored;
-    doLogin(stored);
-  } else if (previewSalonId && masterToken) {
-    doLogin(masterToken);
-  }
-})();
-</script>
-</body>
-</html>
+    const r = await fetch(scopedPath('/api/settings/services'),
