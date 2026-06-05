@@ -689,7 +689,7 @@
               <div id="prev-avatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;flex-shrink:0">S</div>
               <div><div id="prev-name" style="font-size:13px;font-weight:700;color:#fff">Salon</div><div style="font-size:10px;color:rgba(255,255,255,0.72)">online</div></div>
             </div>
-            <div id="prev-chat" style="background-color:#e5ddd5;padding:10px 8px;max-height:480px;overflow-y:auto;scroll-behavior:smooth;">
+            <div id="prev-chat" style="background-color:#e5ddd5;padding:10px 8px;height:420px;overflow-y:scroll;scroll-behavior:smooth;">
               <div style="text-align:center;margin-bottom:10px"><span style="background:rgba(255,255,255,0.88);border-radius:8px;padding:3px 10px;font-size:9px;color:#5a5a5a;font-weight:500">Danes</span></div>
               <div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px">
                 <div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>
@@ -1582,14 +1582,12 @@ function updateSettingsPreview(data){
   });
   const qEl=document.getElementById("prev-questions");
   if(!qEl)return;
-  qEl.innerHTML="";
-  // Oznaka načina
-  const modeLabels={"exact_time":"📅 Točen termin","date_only":"📆 Samo datum","inquiry":"💬 Povpraševanje"};
-  const modeChip=`<div style="text-align:center;margin:8px 0 4px"><span style="background:rgba(37,211,102,0.15);border-radius:7px;padding:2px 10px;font-size:9px;color:#0d7a40;font-weight:700;border:1px solid rgba(37,211,102,0.3)">${modeLabels[mode]||mode}</span></div>`;
-  qEl.innerHTML=modeChip;
   const fields=(typeof currentFormFields!=="undefined")?currentFormFields:[];
   const mode=(typeof currentBookingMode!=="undefined")?currentBookingMode:"exact_time";
   const dtPos=(typeof currentDatetimePosition!=="undefined")?currentDatetimePosition:"last";
+  // Oznaka načina
+  const modeLabels={"exact_time":"📅 Točen termin","date_only":"📆 Samo datum","inquiry":"💬 Povpraševanje"};
+  qEl.innerHTML=`<div style="text-align:center;margin:8px 0 4px"><span style="background:rgba(37,211,102,0.15);border-radius:7px;padding:2px 10px;font-size:9px;color:#0d7a40;font-weight:700;border:1px solid rgba(37,211,102,0.3)">${modeLabels[mode]||mode}</span></div>`;
   const qs=[];
   const dtQ=mode==="date_only"?"Kateri datum vam ustreza?":"Kateri datum in ura vam ustreza?";
   if(mode!=="inquiry"){if(dtPos==="first")qs.push(dtQ);qs.push("Kakšno je vaše ime in priimek?");fields.forEach(f=>qs.push(f.label));if(dtPos!=="first")qs.push(dtQ);}else{qs.push("Kakšno je vaše ime in priimek?");fields.forEach(f=>qs.push(f.label));}
