@@ -753,8 +753,10 @@ function scopedPath(path) {
 }
 
 function showOwnerTab(tab) {
-  document.querySelectorAll('.owner-panel').forEach(p => p.classList.add('tab-hidden'));
-  document.querySelectorAll('.' + tab + '-panel').forEach(p => p.classList.remove('tab-hidden'));
+  try {
+    document.querySelectorAll('.owner-panel').forEach(p => p && p.classList.add('tab-hidden'));
+    document.querySelectorAll('.' + tab + '-panel').forEach(p => p && p.classList.remove('tab-hidden'));
+  } catch(e) {}
   if(tab==='calendar') loadCalendar();
   if(tab==='settings') loadServices();
 }
@@ -773,7 +775,7 @@ function calChangeMonth(delta) {
   if (calMonth < 0) { calMonth = 11; calYear--; }
   if (calMonth > 11) { calMonth = 0; calYear++; }
   selectedCalDate = null;
-  document.getElementById('day-detail').classList.remove('open');
+  document.getElementById('day-detail')?.classList.remove('open');
   loadCalendar();
 }
 
@@ -1053,6 +1055,7 @@ function updatePreview() {
   }
   const extra = Math.floor((endMins - (sh*60+sm)) / selectedInterval) - slots.length;
   const el = document.getElementById('preview-slots');
+  if (!el) return;
   el.innerHTML = slots.map(s => `<span class="preview-slot">${s}</span>`).join('')
     + (extra > 0 ? `<span style="color:var(--muted);font-size:0.8rem;align-self:center"> +${extra} več</span>` : '');
 }
