@@ -1172,6 +1172,7 @@ function applyFlowOrder(items) {
 
 function ffRender() {
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 let _dragSrc = null;
@@ -1281,17 +1282,20 @@ function ffAddField() {
   document.getElementById('ff-new-label').value = '';
   document.getElementById('ff-new-required').checked = false;
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffRemoveByField(e, fieldId) {
   e.stopPropagation();
   currentFormFields = currentFormFields.filter(f => f.id !== fieldId);
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffRemove(idx) {
   currentFormFields.splice(idx, 1);
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffMove(idx, dir) {
@@ -1301,6 +1305,7 @@ function ffMove(idx, dir) {
   currentFormFields[idx] = currentFormFields[newIdx];
   currentFormFields[newIdx] = tmp;
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffSetMode(mode) {
@@ -1313,6 +1318,7 @@ function ffSetMode(mode) {
   const inqGroup = document.getElementById('inquiry-msg-group');
   if (inqGroup) inqGroup.style.display = mode === 'inquiry' ? 'block' : 'none';
   renderFlowBuilder();
+  updateSettingsPreview();
 }
 
 function ffLoadFromData(data) {
