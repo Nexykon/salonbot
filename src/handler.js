@@ -277,15 +277,6 @@ async function handleMessage(msgObj, salon) {
   const sess = session.get(from);
   const services = await db.getServices(salon.id);
 
-  // ── Block list check ──────────────────────────────────────
-  const blockedPhones = Array.isArray(salon.blocked_phones) ? salon.blocked_phones : [];
-  const cleanFrom = String(from).replace(/\D/g, '');
-  if (blockedPhones.some(p => String(p).replace(/\D/g, '') === cleanFrom)) {
-    console.log(`[blocked] ${from} is on block list for salon ${salon.id}`);
-    return; // molče ignoriramo
-  }
-
-  const autoConfirm = salon.auto_confirm !== false;
   const VALID_MODES = ['exact_time', 'date_only', 'inquiry', 'month_only'];
   const bookingMode = VALID_MODES.includes(salon.booking_mode) ? salon.booking_mode : 'exact_time';
   const datetimePosition = salon.datetime_position === 'last' ? 'last' : 'first';
@@ -544,7 +535,6 @@ async function handleMessage(msgObj, salon) {
     const fa = s.formAnswers && Object.keys(s.formAnswers).length ? s.formAnswers : {};
     const faJson = Object.keys(fa).length ? JSON.stringify(fa) : null;
 
-    const bookingStatus = autoConfirm ? 'confirmed' : 'pending';
     const bookingData = {
       customer_phone: from,
       customer_name: s.customerName,
@@ -552,7 +542,7 @@ async function handleMessage(msgObj, salon) {
       service_id: s.serviceId,
       booking_date: s.selectedDate,
       booking_time: s.selectedTime + ':00',
-      status: bookingStatus,
+      status: 'pending',
       notes: '',
       form_answers: faJson
     };

@@ -562,14 +562,6 @@
           </div>
         </label>
       </div>
-        <label style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px">
-          <input type="checkbox" id="auto-confirm" style="accent-color:#f59e0b;width:18px;height:18px">
-          <div>
-            <div style="font-weight:700;font-size:0.95rem">⚡ Avtomatska potrditev</div>
-            <div style="font-size:0.8rem;color:var(--muted);margin-top:2px">Rezervacija se potrdi takoj brez ročne odobritve</div>
-          </div>
-        </label>
-      </div>
       <button class="btn btn-primary" onclick="saveNotifySettings()" style="margin-top:18px" id="notify-save-btn">💾 Shrani nastavitve obvestil</button>
     </div>
 
@@ -1034,7 +1026,6 @@ function loadUI(data) {
   document.getElementById('salon-name').value = data.name || '';
   document.getElementById('notify-whatsapp').checked = data.notify_whatsapp !== false;
   document.getElementById('notify-email').checked = data.notify_email !== false;
-  const acEl=document.getElementById('auto-confirm');if(acEl)acEl.checked=data.auto_confirm!==false;
   document.getElementById('hours-start').value = (data.working_hours_start || '08:00').substring(0,5);
   document.getElementById('hours-end').value = (data.working_hours_end || '19:00').substring(0,5);
   document.getElementById('break-between').value = data.break_between_minutes || 0;
@@ -1112,7 +1103,7 @@ async function saveNotifySettings() {
     const r = await fetch(scopedPath('/api/settings'), {
       method: 'PATCH',
       headers: authHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ notify_whatsapp: wa, notify_email: em, auto_confirm: document.getElementById('auto-confirm')?.checked??true })
+      body: JSON.stringify({ notify_whatsapp: wa, notify_email: em })
     });
     if (!r.ok) throw new Error((await r.json()).error || 'Napaka');
     showToast('Nastavitve obvestil shranjene!', 'success');
@@ -1642,23 +1633,4 @@ function updateSettingsPreview(data){
   const mode=(typeof currentBookingMode!=="undefined")?currentBookingMode:"exact_time";
   const dtPos=(typeof currentDatetimePosition!=="undefined")?currentDatetimePosition:"last";
   const modeLabels={"exact_time":"📅 Točen termin","date_only":"📆 Samo datum","inquiry":"💬 Povpraševanje"};
-  const qs=[];
-  const dtQ=mode==="date_only"?"Kateri datum vam ustreza?":"Kateri datum in ura vam ustreza?";
-  if(mode!=="inquiry"){if(dtPos==="first")qs.push(dtQ);qs.push("Kakšno je vaše ime in priimek?");fields.forEach(f=>qs.push(f.label));if(dtPos!=="first")qs.push(dtQ);}else{qs.push("Kakšno je vaše ime in priimek?");fields.forEach(f=>qs.push(f.label));}
-  const b=t=>`<div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px"><div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>${t}<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">✓✓</div></div>`;
-  qEl.innerHTML=`<div style="text-align:center;margin:4px 0 8px"><span style="background:rgba(37,211,102,0.15);border-radius:7px;padding:2px 10px;font-size:9px;color:#0d7a40;font-weight:700;border:1px solid rgba(37,211,102,0.3)">${modeLabels[mode]||mode}</span></div>`+qs.map(b).join("");
-}
-
-// ── Auto-init ────────────────────────────────────────────────
-(function init() {
-  const stored=localStorage.getItem('ft_master_token')||localStorage.getItem('ft_owner_token')||sessionStorage.getItem('ft_master_token')||sessionStorage.getItem('ft_owner_token');
-  if (stored) {
-    document.getElementById('auth-token').value = stored;
-    doLogin(stored);
-  } else if (previewSalonId && masterToken) {
-    doLogin(masterToken);
-  }
-})();
-</script>
-</body>
-</html>
+  const qs=

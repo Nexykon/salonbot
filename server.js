@@ -1,4 +1,4 @@
-require('dotenv').config(); // v2
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
@@ -121,8 +121,6 @@ function publicSalon(salon) {
     datetime_position: salon.datetime_position === 'last' ? 'last' : 'first',
     notify_whatsapp: salon.notify_whatsapp !== false,
     notify_email: salon.notify_email !== false,
-    auto_confirm: salon.auto_confirm !== false,
-    blocked_phones: Array.isArray(salon.blocked_phones) ? salon.blocked_phones : [],
     review_link: salon.review_link || '',
     form_fields: safeFormFields(salon.form_fields, salon),
     inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.'
@@ -570,17 +568,6 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
   }
 });
 
-// ─── Set subscription status (trial/active/inactive) ────────
-app.patch('/api/admin/salons/:id/status', async (req, res) => {
-  if (!adminAuth(req, res)) return;
-  const { status } = req.body;
-  if (!['trial', 'active', 'inactive'].includes(status)) return res.status(400).json({ error: 'Invalid status' });
-  try {
-    await db.updateSalonSettings(req.params.id, { subscription_status: status });
-    res.json({ success: true, status });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
 // ─── Error log (admin dashboard) ─────────────────────────────
 app.get('/api/admin/salons/:id/settings', async (req, res) => {
   if (!adminAuth(req, res)) return;
@@ -620,9 +607,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'review_link',
     'reactivation_message',
     'notify_whatsapp',
-    'notify_email',
-    'auto_confirm',
-    'blocked_phones'
+    'notify_email'
   ];
   const updates = {};
   for (const key of allowed) {
@@ -800,7 +785,7 @@ app.patch('/api/settings', async (req, res) => {
   try {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
       'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
-      'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message', 'booking_confirmation_message',
+      'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'notify_whatsapp', 'notify_email', 'review_link', 'review_message', 'reactivation_message'];
     const updates = {};
     for (const key of allowed) {
@@ -1335,11 +1320,7 @@ app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
         ).catch(e => console.error('[email] dashboard confirm:', e.message));
       }
     }
-  } catch (err) {
-    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-    console.error('[confirm]', detail);
-    res.status(500).json({ error: detail });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
@@ -1371,11 +1352,7 @@ app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
         )).catch(e => console.error('Dashboard cancel WA err:', e.message));
       }
     }
-  } catch (err) {
-    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-    console.error('[cancel]', detail);
-    res.status(500).json({ error: detail });
-  }
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ─── Admin: manual booking ─────────────────────────────────────
@@ -1415,4 +1392,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`FlowTiq server running on port ${PORT}`);
 });
-
