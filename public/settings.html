@@ -621,7 +621,7 @@
     </div>
 
 </div>
-    <div class="card owner-panel calendar-panel tab-hidden" id="calendar-card">
+    <div class="card owner-panel calendar-panel" id="calendar-card">
       <div class="card-title">Koledar rezervacij</div>
       <div class="cal-toolbar">
         <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
@@ -1037,8 +1037,7 @@ function loadUI(data) {
   updatePreview();
   loadServices();
   ffLoadFromData(data);
-  loadServices();
-  loadCalendar();
+  showOwnerTab("calendar");
 }
 
 // ── Preview ────────────────────────────────────────────────
