@@ -278,7 +278,7 @@
   .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .owner-tabs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  .owner-tabs { display:none; }
   .owner-tab {
     padding: 13px 16px; border-radius: 14px; border: 1px solid var(--border);
     background: var(--surface2); color: var(--muted); font-weight: 800; cursor: pointer;
@@ -288,26 +288,26 @@
     background: linear-gradient(135deg, rgba(37,211,102,0.28), rgba(6,182,212,0.14));
   }
   .tab-hidden { display: none !important; }
-  .cal-toolbar { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px; }
-  .cal-nav-btn { width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all 0.18s;box-shadow:0 1px 4px rgba(0,0,0,0.06); }
-  .cal-nav-btn:hover { background:var(--purple);color:#fff;border-color:var(--purple);transform:scale(1.08); }
-  .cal-month-title { font-size:1.1rem;font-weight:900;color:var(--text);letter-spacing:-0.3px; }
-  .cal-legend { display:flex;gap:14px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:0.75rem;font-weight:600;margin-top:4px; }
-  .cal-leg-item { display:flex;align-items:center;gap:5px; }
-  .cal-leg-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
-  .cal-grid { display:grid;grid-template-columns:repeat(7,1fr);border-radius:16px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,0.05); }
-  .cal-header-cell { padding:10px 4px;text-align:center;font-size:0.7rem;font-weight:800;color:var(--muted);background:var(--surface2);letter-spacing:0.5px;text-transform:uppercase;border-bottom:1.5px solid var(--border); }
-  .cal-cell { min-height:90px;padding:8px 6px;background:var(--surface);cursor:pointer;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background 0.15s; }
-  .cal-cell:nth-child(7n) { border-right:none; }
-  .cal-cell:hover { background:rgba(37,211,102,0.06); }
-  .cal-cell.selected { background:rgba(37,211,102,0.10);box-shadow:inset 0 0 0 2px var(--purple); }
-  .cal-cell.today .cal-day-num { background:var(--purple);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:0.78rem; }
-  .cal-cell.other-month { opacity:.4;cursor:default;background:var(--surface2); }
-  .cal-day-num { font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:5px;width:24px;height:24px;display:flex;align-items:center;justify-content:center; }
-  .cal-event { display:block;padding:2px 6px;border-radius:6px;font-size:0.68rem;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6; }
-  .cal-event.confirmed { background:rgba(37,211,102,0.15);color:#0d7a40;border-left:2px solid #25D366; }
-  .cal-event.pending { background:rgba(245,158,11,0.14);color:#b45309;border-left:2px solid #f59e0b; }
-  .cal-event.cancelled { background:rgba(239,68,68,0.10);color:#b91c1c;border-left:2px solid #ef4444;opacity:.7; }
+  .cal-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+  .cal-nav-btn{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all 0.18s}
+  .cal-nav-btn:hover{background:var(--purple);color:#fff;border-color:var(--purple)}
+  .cal-month-title{font-size:1.1rem;font-weight:900;color:var(--text)}
+  .cal-legend{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:0.75rem;font-weight:600;margin-top:4px}
+  .cal-leg-item{display:flex;align-items:center;gap:5px}
+  .cal-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);border-radius:16px;overflow:hidden;border:1.5px solid var(--border);box-shadow:0 2px 16px rgba(0,0,0,0.05)}
+  .cal-header-cell{padding:10px 4px;text-align:center;font-size:0.7rem;font-weight:800;color:var(--muted);background:var(--surface2);letter-spacing:0.5px;text-transform:uppercase;border-bottom:1.5px solid var(--border)}
+  .cal-cell{min-height:90px;padding:8px 6px;background:var(--surface);cursor:pointer;border-right:1px solid var(--border);border-bottom:1px solid var(--border);transition:background 0.15s}
+  .cal-cell:nth-child(7n){border-right:none}
+  .cal-cell:hover{background:rgba(37,211,102,0.06)}
+  .cal-cell.selected{background:rgba(37,211,102,0.10);box-shadow:inset 0 0 0 2px var(--purple)}
+  .cal-cell.today .cal-day-num{background:var(--purple);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:0.78rem}
+  .cal-cell.other-month{opacity:.4;cursor:default;background:var(--surface2)}
+  .cal-day-num{font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:5px;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+  .cal-event{display:block;padding:2px 6px;border-radius:6px;font-size:0.68rem;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6}
+  .cal-event.confirmed{background:rgba(37,211,102,0.15);color:#0d7a40;border-left:2px solid #25D366}
+  .cal-event.pending{background:rgba(245,158,11,0.14);color:#b45309;border-left:2px solid #f59e0b}
+  .cal-event.cancelled{background:rgba(239,68,68,0.10);color:#b91c1c;border-left:2px solid #ef4444;opacity:.7}
   .day-detail { display:none;margin-top:16px; }
   .day-detail.open { display:block; }
   .day-booking-item { padding:14px 0;border-bottom:1px solid var(--border); }
@@ -372,40 +372,18 @@
     .container { padding: 20px 16px 60px; }
   }
 
-  /* ── 2-COL STICKY LAYOUT ───────────────────────────────── */
-  #app {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-  }
-  .app-layout {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 32px;
-    align-items: start;
-  }
-  .app-main {
-    min-width: 0;
-    padding: 28px 0 80px;
-  }
-  .app-sidebar {
-    position: sticky;
-    top: 76px;
-    padding: 28px 0 40px 0;
-    align-self: start;
-  }
-  .sidebar-label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 14px;
-  }
-  @media (max-width: 860px) {
-    .app-layout { grid-template-columns: 1fr; }
-    .app-sidebar { display: none; }
-  }
+  .settings-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:2000;align-items:center;justify-content:center}
+  .settings-overlay.open{display:flex!important}
+  .settings-modal{background:#fff;border:1px solid var(--border);border-radius:20px;width:min(1100px,96vw);height:min(860px,94vh);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 80px rgba(0,0,0,0.25);animation:smIn 0.22s ease}
+  @keyframes smIn{from{opacity:0;transform:translateY(-12px) scale(0.98)}to{opacity:1;transform:none}}
+  .settings-modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 28px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .settings-modal-title{font-size:1.2rem;font-weight:800}
+  .settings-modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:8px;transition:all 0.15s}
+  .settings-modal-close:hover{background:var(--border);color:var(--text)}
+  .settings-modal-body{display:grid;grid-template-columns:1fr 300px;flex:1;min-height:0;overflow:hidden}
+  .settings-modal-left{overflow-y:auto;padding:24px 28px 80px}
+  .settings-modal-right{border-left:1px solid var(--border);padding:20px 14px;overflow-y:auto;background:var(--surface2)}
+  .sidebar-label{font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -458,61 +436,19 @@
 
 <!-- APP -->
 <div id="app" style="display:none">
-<div class="app-layout">
-<div class="app-main">
-  <div class="container" style="max-width:100%;padding:0">
+  <div class="container">
     <div class="salon-bar">
       <div class="salon-bar-name" id="salon-display-name">—</div>
-      <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
-        <div class="salon-bar-status">✅ Aktivno</div>
-        <button onclick="doLogout()" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.78rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='';this.style.color=''">Odjava</button>
-      </div>
+      <div class="salon-bar-status">✅ Aktivno</div>
     </div>
 
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div class="salon-bar-name" id="salon-display-name-2" style="font-size:1.1rem;font-weight:800"></div>
-      <button onclick="openSettingsModal()" style="display:flex;align-items:center;gap:8px;padding:10px 18px;background:var(--purple);color:#fff;border:none;border-radius:12px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='#1aab50'" onmouseout="this.style.background='var(--purple)'">⚙️ Nastavitve</button>
+      <div id="salon-display-name-2" style="font-size:1.1rem;font-weight:800"></div>
+      <button onclick="openSettingsModal()" style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--purple);color:#fff;border:none;border-radius:12px;font-size:0.88rem;font-weight:700;cursor:pointer">⚙️ Nastavitve</button>
     </div>
 
     <!-- Delovni čas -->
-    <div class="card owner-panel calendar-panel tab-hidden" id="calendar-card">
-      <div class="card-title">Koledar rezervacij</div>
-      <div class="cal-toolbar">
-        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
-        <div>
-          <div class="cal-month-title" id="cal-title">—</div>
-          <div class="cal-legend" style="margin-top:6px">
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--green)"></span>Potrjeno</div>
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#f59e0b"></span>V čakanju</div>
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--red)"></span>Odpovedano</div>
-          </div>
-        </div>
-        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
-      </div>
-      <div id="cal-grid" class="cal-grid"></div>
-      <div class="day-detail" id="day-detail">
-        <div class="card-title" id="day-detail-title" style="margin-top:16px">—</div>
-        <div id="day-detail-list"></div>
-      </div>
-
-    <button class="btn btn-secondary" onclick="doLogout()" style="margin-top:16px">Odjava</button>
-  </div>
-</div>
-
-
-<!-- SETTINGS MODAL -->
-<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettingsModal()">
-  <div class="settings-modal">
-    <div class="settings-modal-header">
-      <div>
-        <div class="settings-modal-title">⚙️ Nastavitve salona</div>
-        <div style="font-size:0.82rem;color:var(--muted);margin-top:2px">Spremembe so vidne takoj po shranjevanju.</div>
-      </div>
-      <button class="settings-modal-close" onclick="closeSettingsModal()">✕</button>
-    </div>
-    <div class="settings-modal-body">
-      <div class="settings-modal-left">
-
+<div id="settings-panels-src">
     <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
 
@@ -594,7 +530,7 @@
       <div class="card-title">🏪 Podatki salona</div>
       <div class="form-group">
         <label>Ime salona (kot se prikaže strankam)</label>
-        <input type="text" id="salon-name" oninput="updateSettingsPreview()" placeholder="npr. Salon Vita">
+        <input type="text" id="salon-name" placeholder="npr. Salon Vita">
       </div>
     </div>
 
@@ -660,11 +596,6 @@
         <button class="btn btn-secondary" onclick="ffAddField()" style="padding:8px 14px;font-size:0.85rem;margin-top:0">+ Dodaj</button>
       </div>
 
-      <!-- Booking confirmation message -->
-      <div id="booking-msg-group" class="form-group" style="margin-top:18px;display:none">
-        <label>Sporočilo po oddaji rezervacije</label>
-        <input type="text" id="booking-confirmation-message" placeholder="Hvala! Rezervacija je prejeta. Potrdili jo bomo v kratkem." class="dur-input" style="width:100%">
-      </div>
       <!-- Inquiry confirmation message -->
       <div id="inquiry-msg-group" class="form-group" style="margin-top:18px;display:none">
         <label>Sporočilo po oddaji povpraševanja</label>
@@ -680,8 +611,6 @@
       <button class="btn btn-primary" onclick="saveFormFields()" style="margin-top:18px;width:100%" id="ff-save-btn">💾 Shrani vprašalnik</button>
     </div>
 
-
-
     <!-- Storitve & trajanje -->
     <div class="card owner-panel settings-panel" id="services-card">
       <div class="card-title">⏱️ Storitve &amp; trajanje
@@ -691,56 +620,96 @@
       <div class="form-hint" style="margin-top:14px">💡 Bot bo pri rezervaciji avtomatsko blokiral točno toliko časa kot traja storitev — npr. barvanje 2h zapolni 10:00–12:00.</div>
     </div>
 
-        <button class="btn btn-primary owner-panel settings-panel" onclick="saveSettings()" id="save-btn" style="width:100%;margin-top:8px">💾 Shrani nastavitve</button>
-      </div>
-      <div class="settings-modal-right">
-        <div class="sidebar-label">📱 Predogled za stranko</div>
-<div style="width:100%;max-width:290px;border-radius:44px;background:linear-gradient(145deg,#d8d8de,#bbbbc3);box-shadow:0 0 0 1px rgba(0,0,0,0.14),inset 0 1px 0 rgba(255,255,255,0.6),0 24px 56px rgba(0,0,0,0.15);padding:10px;position:relative;display:flex;flex-direction:column;">
-    <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:72px;height:20px;background:#1c1c1f;border-radius:20px;z-index:10;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>
-    <div style="position:absolute;left:-4px;top:88px;width:4px;height:30px;background:#c0c0c8;border-radius:3px 0 0 3px;box-shadow:0 42px 0 #c0c0c8"></div>
-    <div style="position:absolute;right:-4px;top:108px;width:4px;height:50px;background:#c0c0c8;border-radius:0 3px 3px 0"></div>
-    <div style="background:#fff;border-radius:32px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);display:flex;flex-direction:column;">
-      <div style="background:#075E54;padding:7px 16px 4px;display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:800;color:#fff">
-        <span>9:41</span><span style="letter-spacing:1px;font-size:9px">▲▲▲ ■</span>
-      </div>
-      <div style="background:#075E54;display:flex;align-items:center;gap:8px;padding:8px 12px 10px">
-        <span style="font-size:16px;color:rgba(255,255,255,0.85)">‹</span>
-        <div id="prev-avatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;flex-shrink:0;border:1.5px solid rgba(255,255,255,0.25)">S</div>
-        <div style="flex:1">
-          <div id="prev-name" style="font-size:13px;font-weight:700;color:#fff">Salon</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.72)">online</div>
-        </div>
-        <span style="color:rgba(255,255,255,0.8);font-size:13px">📞 ⋮</span>
-      </div>
-      <div id="prev-chat" style="background-color:#e5ddd5;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='rgba(0,0,0,0.04)'/%3E%3C/svg%3E&quot;);padding:10px 8px 10px;max-height:420px;overflow-y:auto;">
-        <div style="text-align:center;margin-bottom:10px"><span style="background:rgba(255,255,255,0.88);border-radius:8px;padding:3px 10px;font-size:9px;color:#5a5a5a;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,0.08)">Danes</span></div>
-        <div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px">
-          <div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>
-          <span id="prev-greeting-text">Pozdravljeni! Sem avtomatski asistent za naročanje. Katero storitev želite?</span>
-          <div id="prev-svc-list" style="margin-top:8px;border:1px solid rgba(0,0,0,0.08);border-radius:9px;overflow:hidden;background:#f9f9f9">
-            <div style="padding:5px 9px;font-size:9px;font-weight:800;color:#555;border-bottom:1px solid rgba(0,0,0,0.07);text-transform:uppercase;letter-spacing:0.04em;background:#f0f0f0">Storitve</div>
-            <div id="prev-svc-rows"><div style="padding:8px 9px;font-size:11px;color:#888">Nalagam...</div></div>
-            <div style="padding:7px 9px;text-align:center;font-size:11px;font-weight:700;color:#128C7E;border-top:1px solid rgba(0,0,0,0.07)">≡ Izberi storitev</div>
+</div>
+    <div class="card owner-panel calendar-panel tab-hidden" id="calendar-card">
+      <div class="card-title">Koledar rezervacij</div>
+      <div class="cal-toolbar">
+        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
+        <div>
+          <div class="cal-month-title" id="cal-title">—</div>
+          <div class="cal-legend" style="margin-top:6px">
+            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--green)"></span>Potrjeno</div>
+            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#f59e0b"></span>V čakanju</div>
+            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--red)"></span>Odpovedano</div>
           </div>
-          <div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">9:41 ✓✓</div>
         </div>
-        <div style="text-align:center;margin:8px 0 5px"><span style="background:rgba(255,255,255,0.75);border-radius:7px;padding:2px 8px;font-size:8.5px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Stranka izbere storitev</span></div>
-        <div id="prev-user-svc" style="background:#dcf8c6;border-radius:11px 11px 4px 11px;padding:8px 10px 5px;font-size:12px;color:#111;max-width:78%;margin-left:auto;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-bottom:7px">Strizenje<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:3px">9:42 ✓✓</div></div>
-        <div style="text-align:center;margin:8px 0 5px"><span style="background:rgba(255,255,255,0.75);border-radius:7px;padding:2px 8px;font-size:8.5px;color:#666;font-weight:700;text-transform:uppercase;letter-spacing:0.05em">Bot vpraša za datum</span></div>
-        <div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px">
-          <div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>
-          Kateri datum vam ustreza? (npr. jutri, 28.5., ponedeljek...)
-          <div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">9:42 ✓✓</div>
-        </div>
-        <div style="background:#dcf8c6;border-radius:11px 11px 4px 11px;padding:8px 10px 5px;font-size:12px;color:#111;max-width:78%;margin-left:auto;box-shadow:0 1px 2px rgba(0,0,0,0.1)">Jutri, 23.5.<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:3px">9:43 ✓✓</div></div>
+        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
       </div>
-      <div style="background:#f0f0f0;display:flex;align-items:center;gap:7px;padding:6px 9px;border-top:1px solid rgba(0,0,0,0.08)">
-        <span style="font-size:18px;color:#aaa">☺</span>
-        <div style="flex:1;background:#fff;border-radius:20px;padding:6px 12px;font-size:11px;color:#bbb;box-shadow:0 1px 2px rgba(0,0,0,0.07)">Sporočilo...</div>
-        <div style="width:32px;height:32px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">➤</div>
+      <div id="cal-grid" class="cal-grid"></div>
+      <div class="day-detail" id="day-detail">
+        <div class="card-title" id="day-detail-title" style="margin-top:16px">—</div>
+        <div id="day-detail-list"></div>
       </div>
     </div>
-  
+
+    <button class="btn btn-primary owner-panel settings-panel" onclick="saveSettings()" id="save-btn">💾 Shrani nastavitve</button>
+    <div class="card owner-panel settings-panel">
+      <div class="card-title">Dostop do dashboarda</div>
+      <div class="form-group">
+        <label>Email za prijavo</label>
+        <input type="email" id="owner-email" disabled>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Trenutno geslo</label>
+          <input type="password" id="current-password" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label>Novo geslo</label>
+          <input type="password" id="new-password" autocomplete="new-password" placeholder="Najmanj 8 znakov">
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="changePassword()">Zamenjaj geslo</button>
+    </div>
+
+    <button class="btn btn-secondary" onclick="doLogout()">Odjava</button>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettingsModal()">
+  <div class="settings-modal">
+    <div class="settings-modal-header">
+      <div>
+        <div class="settings-modal-title">⚙️ Nastavitve salona</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-top:2px">Spremembe so vidne takoj po shranjevanju.</div>
+      </div>
+      <button class="settings-modal-close" onclick="closeSettingsModal()">✕</button>
+    </div>
+    <div class="settings-modal-body">
+      <div class="settings-modal-left" id="settings-modal-left"></div>
+      <div class="settings-modal-right">
+        <div class="sidebar-label">📱 Predogled za stranko</div>
+        <div style="width:100%;max-width:270px;border-radius:44px;background:linear-gradient(145deg,#d8d8de,#bbbbc3);box-shadow:0 0 0 1px rgba(0,0,0,0.14),0 24px 56px rgba(0,0,0,0.15);padding:10px;position:relative;display:flex;flex-direction:column;">
+          <div style="position:absolute;top:14px;left:50%;transform:translateX(-50%);width:72px;height:20px;background:#1c1c1f;border-radius:20px;z-index:10"></div>
+          <div style="background:#fff;border-radius:32px;overflow:hidden;display:flex;flex-direction:column;">
+            <div style="background:#075E54;padding:7px 16px 4px;display:flex;justify-content:space-between;font-size:10px;font-weight:800;color:#fff"><span>9:41</span><span>▲▲▲ ■</span></div>
+            <div style="background:#075E54;display:flex;align-items:center;gap:8px;padding:8px 12px 10px">
+              <span style="font-size:16px;color:rgba(255,255,255,0.85)">‹</span>
+              <div id="prev-avatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#25d366,#128c7e);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;flex-shrink:0">S</div>
+              <div><div id="prev-name" style="font-size:13px;font-weight:700;color:#fff">Salon</div><div style="font-size:10px;color:rgba(255,255,255,0.72)">online</div></div>
+            </div>
+            <div id="prev-chat" style="background-color:#e5ddd5;padding:10px 8px;max-height:400px;overflow-y:auto;">
+              <div style="text-align:center;margin-bottom:10px"><span style="background:rgba(255,255,255,0.88);border-radius:8px;padding:3px 10px;font-size:9px;color:#5a5a5a;font-weight:500">Danes</span></div>
+              <div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px">
+                <div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>
+                <span id="prev-greeting-text">Pozdravljeni! Sem avtomatski asistent za naročanje.</span>
+                <div id="prev-svc-list" style="margin-top:8px;border:1px solid rgba(0,0,0,0.08);border-radius:9px;overflow:hidden;background:#f9f9f9">
+                  <div style="padding:5px 9px;font-size:9px;font-weight:800;color:#555;border-bottom:1px solid rgba(0,0,0,0.07);text-transform:uppercase;background:#f0f0f0">Storitve</div>
+                  <div id="prev-svc-rows"><div style="padding:8px 9px;font-size:11px;color:#888">Nalagam...</div></div>
+                  <div style="padding:7px 9px;text-align:center;font-size:11px;font-weight:700;color:#128C7E;border-top:1px solid rgba(0,0,0,0.07)">≡ Izberi storitev</div>
+                </div>
+                <div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">9:41 ✓✓</div>
+              </div>
+              <div id="prev-questions"></div>
+            </div>
+            <div style="background:#f0f0f0;display:flex;align-items:center;gap:7px;padding:6px 9px;border-top:1px solid rgba(0,0,0,0.08)">
+              <span style="font-size:18px;color:#aaa">☺</span>
+              <div style="flex:1;background:#fff;border-radius:20px;padding:6px 12px;font-size:11px;color:#bbb">Sporočilo...</div>
+              <div style="width:32px;height:32px;border-radius:50%;background:#25d366;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">➤</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -788,11 +757,8 @@ function showOwnerTab(tab) {
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelectorAll('.owner-panel').forEach(p => p.classList.add('tab-hidden'));
   document.querySelectorAll('.' + tab + '-panel').forEach(p => p.classList.remove('tab-hidden'));
-  if (tab === 'calendar') loadCalendar();
-  if (tab === 'settings') loadServices();
-  // Pokaži/skrij sidebar s predogledom
-  const sidebar = document.querySelector('.app-sidebar');
-  if (sidebar) sidebar.style.display = tab === 'settings' ? '' : 'none';
+  if(tab==='calendar')loadCalendar();
+  if(tab==='settings')loadServices();
 }
 
 async function loadCalendar() {
@@ -801,7 +767,6 @@ async function loadCalendar() {
   calBookings = await r.json();
   const sr = await fetch(scopedPath('/api/settings/services'), { headers: authHeaders() });
   calServices = sr.ok ? await sr.json() : [];
-  updateSettingsPreview();
   renderCalendar();
 }
 
@@ -934,8 +899,8 @@ async function loginWithPassword() {
     }
     if (!r.ok) throw new Error(data.error || 'Prijava ni uspela');
     ownerToken = data.token;
-    sessionStorage.setItem('ft_owner_token', ownerToken);
-    localStorage.setItem('ft_owner_token', ownerToken);
+    sessionStorage.setItem('ft_owner_token',ownerToken);
+    localStorage.setItem('ft_owner_token',ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
@@ -981,8 +946,8 @@ async function verifyOtp() {
       return;
     }
     ownerToken = data.token;
-    sessionStorage.setItem('ft_owner_token', ownerToken);
-    localStorage.setItem('ft_owner_token', ownerToken);
+    sessionStorage.setItem('ft_owner_token',ownerToken);
+    localStorage.setItem('ft_owner_token',ownerToken);
     loadUI(await loadSettings());
   } catch (e) {
     showToast(e.message, 'error');
@@ -996,86 +961,21 @@ async function loadSettings() {
 }
 
 
-
-
-function openSettingsModal() {
-  document.getElementById('settings-overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  updateSettingsPreview();
-}
-function closeSettingsModal() {
-  document.getElementById('settings-overlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-function updateSettingsPreview(data) {
-  const name = document.getElementById('salon-name')?.value || data?.name || 'Salon';
-  const greeting = document.getElementById('welcome-msg-input')?.value || data?.greeting_message || 'Pozdravljeni! Sem avtomatski asistent za naročanje. Katero storitev želite?';
-
-  document.querySelectorAll('#prev-avatar').forEach(el => el.textContent = (name[0] || 'S').toUpperCase());
-  document.querySelectorAll('#prev-name').forEach(el => el.textContent = name);
-  document.querySelectorAll('#prev-greeting-text').forEach(el => el.textContent = greeting);
-
-  // Storitve
-  const svcs = (typeof calServices !== 'undefined' && calServices.length) ? calServices : [];
-  document.querySelectorAll('#prev-svc-rows').forEach(el => {
-    el.innerHTML = svcs.length
-      ? svcs.slice(0,5).map(s => `<div style="padding:7px 9px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:11px"><div style="font-weight:700;color:#1a1a1a">${s.name}</div><div style="font-size:9.5px;color:#888;margin-top:1px">${s.duration_minutes} min${s.price ? ' · ' + s.price + ' EUR' : ''}</div></div>`).join('')
-      : '<div style="padding:8px 9px;font-size:11px;color:#888">Ni storitev</div>';
-  });
-
-  // Zgradi vprašanja iz currentFormFields - samo bot sporočila
-  const chat = document.getElementById('prev-chat');
-  if (!chat) return;
-
-  // Odstrani stara dinamična vprašanja
-  chat.querySelectorAll('.prev-dynamic-q').forEach(el => el.remove());
-
-  const fields = (typeof currentFormFields !== 'undefined') ? currentFormFields : [];
-  const mode = (typeof currentBookingMode !== 'undefined') ? currentBookingMode : 'exact_time';
-  const dtPos = (typeof currentDatetimePosition !== 'undefined') ? currentDatetimePosition : 'last';
-
-  const questions = [];
-
-  // Sestavi vrstni red: name + custom fields + datetime (glede na pozicijo)
-  const dtQ = { label: mode === 'date_only' ? 'Kateri datum vam ustreza? (npr. jutri, 28.5.)' : 'Kateri datum in ura vam ustreza? (npr. jutri, 28.5. ob 14:00)', type: 'datetime' };
-  const nameQ = { label: 'Kakšno je vaše ime in priimek?', type: 'name' };
-
-  if (mode !== 'inquiry') {
-    if (dtPos === 'first') questions.push(dtQ);
-    questions.push(nameQ);
-    fields.forEach(f => questions.push(f));
-    if (dtPos !== 'first') questions.push(dtQ);
-  } else {
-    questions.push(nameQ);
-    fields.forEach(f => questions.push(f));
-  }
-
-  const bubble = (text) => `<div class="prev-dynamic-q" style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px"><div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>${text}<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">✓✓</div></div>`;
-
-  questions.forEach(q => {
-    chat.insertAdjacentHTML('beforeend', bubble(q.label));
-  });
-}
-
-async function doLogin(token) {
-  if (!token) return;
-  const isMaster = localStorage.getItem('ft_master_token') === token || sessionStorage.getItem('ft_master_token') === token;
-  if (isMaster) { masterToken = token; } else { ownerToken = token; }
-  try {
-    const data = await loadSettings();
-    if (isMaster) { localStorage.setItem('ft_master_token', token); }
-    else { localStorage.setItem('ft_owner_token', token); }
+async function doLogin(token){
+  if(!token)return;
+  const isMaster=localStorage.getItem('ft_master_token')===token||sessionStorage.getItem('ft_master_token')===token;
+  if(isMaster){masterToken=token;}else{ownerToken=token;}
+  try{
+    const data=await loadSettings();
+    if(isMaster)localStorage.setItem('ft_master_token',token);
+    else localStorage.setItem('ft_owner_token',token);
     loadUI(data);
-  } catch (e) {
-    sessionStorage.removeItem('ft_owner_token');
-    sessionStorage.removeItem('ft_master_token');
-    localStorage.removeItem('ft_owner_token');
-    localStorage.removeItem('ft_master_token');
-    ownerToken = ''; masterToken = '';
+  }catch(e){
+    sessionStorage.removeItem('ft_owner_token');sessionStorage.removeItem('ft_master_token');
+    localStorage.removeItem('ft_owner_token');localStorage.removeItem('ft_master_token');
+    ownerToken='';masterToken='';
   }
 }
-
 function doLogout() {
   sessionStorage.removeItem('ft_owner_token');
   sessionStorage.removeItem('ft_master_token');
@@ -1091,8 +991,8 @@ function doLogout() {
 function loadUI(data) {
   document.getElementById('login-wrap').style.display = 'none';
   document.getElementById('app').style.display = 'block';
-  document.getElementById('salon-display-name').textContent = data.name || 'Salon';
-  const dn2 = document.getElementById('salon-display-name-2'); if(dn2) dn2.textContent = data.name || 'Salon';
+  document.getElementById('salon-display-name').textContent=data.name||'Salon';
+  const _dn2=document.getElementById('salon-display-name-2');if(_dn2)_dn2.textContent=data.name||'Salon';
   const emailEl = document.getElementById('owner-email');
   if (emailEl) emailEl.value = data.owner_email || '';
   document.getElementById('salon-name').value = data.name || '';
@@ -1137,10 +1037,7 @@ function loadUI(data) {
   updatePreview();
   loadServices();
   ffLoadFromData(data);
-  updateSettingsPreview(data);
   loadServices();
-  // Prikaži koledar kot default
-  document.querySelector("#calendar-card")?.classList.remove("tab-hidden");
   loadCalendar();
 }
 
@@ -1201,7 +1098,7 @@ async function saveSettings() {
     booking_interval_minutes: selectedInterval,
     break_between_minutes: parseInt(document.getElementById('break-between').value),
     max_advance_days: parseInt(document.getElementById('max-advance').value),
-    greeting_message: (document.getElementById('welcome-msg-input')?.value || '').trim() || null
+    greeting_message: (document.getElementById('welcome-msg-input')?.value||'').trim()||null
   };
 
   if (!body.working_days) { showToast('Izberite vsaj en delovni dan', 'error'); btn.disabled=false; btn.textContent='💾 Shrani nastavitve'; return; }
@@ -1275,7 +1172,6 @@ function applyFlowOrder(items) {
 
 function ffRender() {
   renderFlowBuilder();
-  updateSettingsPreview();
 }
 
 let _dragSrc = null;
@@ -1290,13 +1186,7 @@ function renderFlowBuilder() {
   const activeMode = activePill ? activePill.dataset.mode : currentBookingMode;
   const isInquiry = activeMode === 'inquiry';
 
-  // Fixed: welcome (editable)
-  const welcomeRow = document.createElement('div');
-  welcomeRow.className = 'flow-row flow-row-fixed';
-  welcomeRow.style.cssText = 'cursor:default;display:flex;align-items:center;gap:10px;';
-  const savedGreeting = (typeof currentSettings !== 'undefined' && currentSettings?.greeting_message) || '';
-  welcomeRow.innerHTML = '<span class="flow-icon">🎉</span><input id="welcome-msg-input" oninput="updateSettingsPreview()" class="dur-input" style="flex:1;width:auto;text-align:left;font-size:0.85rem;" placeholder="Pozdravi stranko in pokaže storitve" value="' + escHtml(savedGreeting) + '">';
-  container.appendChild(welcomeRow);
+  const welcomeRow=document.createElement('div');welcomeRow.className='flow-row flow-row-fixed';welcomeRow.style.cssText='cursor:default;display:flex;align-items:center;gap:10px;';const savedGreeting=(typeof currentSettings!=='undefined'&&currentSettings?.greeting_message)||'';welcomeRow.innerHTML='<span class="flow-icon">🎉</span><input id="welcome-msg-input" class="dur-input" style="flex:1;width:auto;text-align:left;font-size:0.85rem;" placeholder="Pozdravi stranko in pokaže storitve" value="'+escHtml(savedGreeting)+'">';container.appendChild(welcomeRow);
 
   const moveableItems = buildFlowOrder();
 
@@ -1391,20 +1281,17 @@ function ffAddField() {
   document.getElementById('ff-new-label').value = '';
   document.getElementById('ff-new-required').checked = false;
   renderFlowBuilder();
-  updateSettingsPreview();
 }
 
 function ffRemoveByField(e, fieldId) {
   e.stopPropagation();
   currentFormFields = currentFormFields.filter(f => f.id !== fieldId);
   renderFlowBuilder();
-  updateSettingsPreview();
 }
 
 function ffRemove(idx) {
   currentFormFields.splice(idx, 1);
   renderFlowBuilder();
-  updateSettingsPreview();
 }
 
 function ffMove(idx, dir) {
@@ -1414,7 +1301,6 @@ function ffMove(idx, dir) {
   currentFormFields[idx] = currentFormFields[newIdx];
   currentFormFields[newIdx] = tmp;
   renderFlowBuilder();
-  updateSettingsPreview();
 }
 
 function ffSetMode(mode) {
@@ -1426,10 +1312,7 @@ function ffSetMode(mode) {
   if (hint) hint.textContent = BOOKING_MODE_HINTS[mode] || '';
   const inqGroup = document.getElementById('inquiry-msg-group');
   if (inqGroup) inqGroup.style.display = mode === 'inquiry' ? 'block' : 'none';
-  const bkgGroup = document.getElementById('booking-msg-group');
-  if (bkgGroup) bkgGroup.style.display = (mode === 'exact_time' || mode === 'date_only') ? 'block' : 'none';
   renderFlowBuilder();
-  updateSettingsPreview();
 }
 
 function ffLoadFromData(data) {
@@ -1447,12 +1330,6 @@ function ffLoadFromData(data) {
     const el = document.getElementById('inquiry-confirmation-message');
     if (el) el.value = data.inquiry_confirmation_message;
   }
-  if (data.booking_confirmation_message) {
-    const el2 = document.getElementById('booking-confirmation-message');
-    if (el2) el2.value = data.booking_confirmation_message;
-  }
-  const bkgGroup2 = document.getElementById('booking-msg-group');
-  if (bkgGroup2) bkgGroup2.style.display = (currentBookingMode === 'exact_time' || currentBookingMode === 'date_only') ? 'block' : 'none';
   const rl = document.getElementById('review-link');
   if (rl) rl.value = data.review_link || '';
   renderFlowBuilder();
@@ -1471,8 +1348,6 @@ async function saveFormFields() {
   };
   const inqMsg = document.getElementById('inquiry-confirmation-message');
   if (inqMsg && inqMsg.value.trim()) body.inquiry_confirmation_message = inqMsg.value.trim();
-  const bkgMsg = document.getElementById('booking-confirmation-message');
-  if (bkgMsg) body.booking_confirmation_message = bkgMsg.value.trim() || null;
   const reviewLinkEl = document.getElementById('review-link');
   if (reviewLinkEl) body.review_link = reviewLinkEl.value.trim();
   try {
@@ -1671,9 +1546,46 @@ async function deleteService(svcId) {
   }
 }
 
+
+function openSettingsModal(){
+  const dest=document.getElementById("settings-modal-left");
+  const src=document.getElementById("settings-panels-src");
+  if(dest&&src&&dest.children.length===0){while(src.firstChild)dest.appendChild(src.firstChild);}
+  document.getElementById("settings-overlay").classList.add("open");
+  document.body.style.overflow="hidden";
+  loadServices();
+  updateSettingsPreview();
+}
+function closeSettingsModal(){
+  document.getElementById("settings-overlay").classList.remove("open");
+  document.body.style.overflow="";
+}
+function updateSettingsPreview(data){
+  const name=document.getElementById("salon-name")?.value||data?.name||"Salon";
+  const greeting=document.getElementById("welcome-msg-input")?.value||data?.greeting_message||"Pozdravljeni! Sem avtomatski asistent za naročanje. Katero storitev želite?";
+  document.querySelectorAll("#prev-avatar").forEach(el=>el.textContent=(name[0]||"S").toUpperCase());
+  document.querySelectorAll("#prev-name").forEach(el=>el.textContent=name);
+  document.querySelectorAll("#prev-greeting-text").forEach(el=>el.textContent=greeting);
+  const svcs=(typeof calServices!=="undefined"&&calServices.length)?calServices:[];
+  document.querySelectorAll("#prev-svc-rows").forEach(el=>{
+    el.innerHTML=svcs.length?svcs.slice(0,5).map(s=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:11px"><div style="font-weight:700;color:#1a1a1a">${s.name}</div><div style="font-size:9.5px;color:#888;margin-top:1px">${s.duration_minutes} min${s.price?" · "+s.price+" EUR":""}</div></div>`).join(""):"<div style=\"padding:8px 9px;font-size:11px;color:#888\">Ni storitev</div>";
+  });
+  const qEl=document.getElementById("prev-questions");
+  if(!qEl)return;
+  qEl.innerHTML="";
+  const fields=(typeof currentFormFields!=="undefined")?currentFormFields:[];
+  const mode=(typeof currentBookingMode!=="undefined")?currentBookingMode:"exact_time";
+  const dtPos=(typeof currentDatetimePosition!=="undefined")?currentDatetimePosition:"last";
+  const qs=[];
+  const dtQ=mode==="date_only"?"Kateri datum vam ustreza?":"Kateri datum in ura vam ustreza?";
+  if(mode!=="inquiry"){if(dtPos==="first")qs.push(dtQ);qs.push("Kakšno je vaše ime in priimek?");fields.forEach(f=>qs.push(f.label));if(dtPos!=="first")qs.push(dtQ);}else{qs.push("Kakšno je vaše ime in priimek?");fields.forEach(f=>qs.push(f.label));}
+  const b=t=>`<div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px"><div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>${t}<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">✓✓</div></div>`;
+  qEl.innerHTML=qs.map(b).join("");
+}
+
 // ── Auto-init ────────────────────────────────────────────────
 (function init() {
-  const stored = localStorage.getItem('ft_master_token') || localStorage.getItem('ft_owner_token') || sessionStorage.getItem('ft_master_token') || sessionStorage.getItem('ft_owner_token');
+  const stored=localStorage.getItem('ft_master_token')||localStorage.getItem('ft_owner_token')||sessionStorage.getItem('ft_master_token')||sessionStorage.getItem('ft_owner_token');
   if (stored) {
     document.getElementById('auth-token').value = stored;
     doLogin(stored);
