@@ -1590,11 +1590,16 @@ async function deleteService(svcId) {
 }
 
 
+const SM_TABS = ['general','form','services','security'];
+
 function smSwitchTab(tab) {
   document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  document.querySelectorAll('.sm-panel').forEach(p => p.classList.toggle('sm-active', p.id === 'sm-panel-' + tab));
+  SM_TABS.forEach(t => {
+    const p = document.getElementById('sm-panel-' + t);
+    if (p) p.style.display = (t === tab) ? 'block' : 'none';
+  });
   if (tab === 'services') loadServices();
-  // Scroll to top of left column
+  if (tab === 'form') { renderFlowBuilder(); updateSettingsPreview(); }
   const left = document.getElementById('settings-modal-left');
   if (left) left.scrollTop = 0;
 }
@@ -1604,6 +1609,11 @@ function openSettingsModal(){
   const src=document.getElementById("settings-panels-src");
   if(dest&&src&&dest.children.length===0){while(src.firstChild)dest.appendChild(src.firstChild);}
   if(dest)dest.querySelectorAll(".owner-panel").forEach(p=>p.classList.remove("tab-hidden"));
+  // Force-hide all panels first, then show general
+  SM_TABS.forEach(t => {
+    const p = document.getElementById('sm-panel-' + t);
+    if (p) p.style.display = 'none';
+  });
   smSwitchTab('general');
   const ov=document.getElementById("settings-overlay");
   if(ov){ov.style.cssText="display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center";}
