@@ -380,15 +380,11 @@
   .settings-modal-title{font-size:1.2rem;font-weight:800}
   .settings-modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:8px;transition:all 0.15s}
   .settings-modal-close:hover{background:var(--border);color:var(--text)}
-  .sm-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;overflow-x:auto}
-  .sm-tab-btn{padding:13px 22px;border:none;background:none;font-size:0.88rem;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:all 0.15s}
-  .sm-tab-btn.active{color:var(--purple-light);border-bottom-color:var(--purple);background:rgba(37,211,102,0.06)}
-  .sm-tab-btn:hover:not(.active){color:var(--text);background:rgba(37,211,102,0.04)}
   .settings-modal-body{display:grid;grid-template-columns:1fr 300px;flex:1;min-height:0;overflow:hidden}
   .settings-modal-left{overflow-y:auto;padding:24px 28px 80px}
   .settings-modal-right{border-left:1px solid var(--border);padding:20px 14px;overflow-y:auto;background:var(--surface2)}
   .sidebar-label{font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px}
-  .sm-panel{display:none}.sm-panel.sm-active{display:block}
+  .sm-panel-header{font-size:0.72rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;padding:20px 0 10px;border-top:1px solid var(--border);margin-top:8px}
 </style>
 </head>
 <body>
@@ -457,7 +453,7 @@
 
     <!-- Delovni čas -->
 <div id="settings-panels-src">
-    <div class="sm-panel sm-active" id="sm-panel-general">
+    <div id="sm-panel-general">
     <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
 
@@ -570,7 +566,8 @@
     </div><!-- /sm-panel-general -->
 
     <!-- Vprašalnik -->
-    <div class="sm-panel" id="sm-panel-form">
+    <div id="sm-panel-form">
+    <div class="sm-panel-header">📝 Vprašalnik ob naročilu</div>
     <div class="card owner-panel settings-panel" id="form-fields-card">
       <div class="card-title">📝 Vprašalnik ob naročilu
         <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Vprašanja, ki jih bot postavi stranki</span>
@@ -628,7 +625,8 @@
     </div><!-- /sm-panel-form -->
 
     <!-- Storitve -->
-    <div class="sm-panel" id="sm-panel-services">
+    <div id="sm-panel-services">
+    <div class="sm-panel-header">⏱️ Storitve &amp; trajanje</div>
     <div class="card owner-panel settings-panel" id="services-card">
       <div class="card-title">⏱️ Storitve &amp; trajanje
         <span style="font-size:0.75rem;color:var(--muted);font-weight:400;margin-left:auto">Trajanje določa zasedenost v koledarju</span>
@@ -639,7 +637,8 @@
     </div><!-- /sm-panel-services -->
 
     <!-- Varnost -->
-    <div class="sm-panel" id="sm-panel-security">
+    <div id="sm-panel-security">
+    <div class="sm-panel-header">🔒 Varnost</div>
     <div class="card owner-panel settings-panel">
       <div class="card-title">🔒 Varnost — Dostop do dashboarda</div>
       <div class="form-group">
@@ -698,12 +697,7 @@
       </div>
       <button class="settings-modal-close" onclick="closeSettingsModal()">✕</button>
     </div>
-    <div class="sm-tabs">
-      <button class="sm-tab-btn active" data-tab="general" onclick="smSwitchTab('general')">⚙️ Splošno</button>
-      <button class="sm-tab-btn" data-tab="form" onclick="smSwitchTab('form')">📝 Vprašalnik</button>
-      <button class="sm-tab-btn" data-tab="services" onclick="smSwitchTab('services')">⏱️ Storitve</button>
-      <button class="sm-tab-btn" data-tab="security" onclick="smSwitchTab('security')">🔒 Varnost</button>
-    </div>
+
     <div class="settings-modal-body">
       <div class="settings-modal-left" id="settings-modal-left"></div>
       <div class="settings-modal-right">
@@ -1581,34 +1575,15 @@ async function deleteService(svcId) {
 }
 
 
-const SM_TABS = ['general','form','services','security'];
-
-function smSwitchTab(tab) {
-  document.querySelectorAll('.sm-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  SM_TABS.forEach(t => {
-    const p = document.getElementById('sm-panel-' + t);
-    if (p) p.style.display = (t === tab) ? 'block' : 'none';
-  });
-  if (tab === 'services') loadServices();
-  if (tab === 'form') { renderFlowBuilder(); updateSettingsPreview(); }
-  const left = document.getElementById('settings-modal-left');
-  if (left) left.scrollTop = 0;
-}
-
 function openSettingsModal(){
   const dest=document.getElementById("settings-modal-left");
   const src=document.getElementById("settings-panels-src");
   if(dest&&src&&dest.children.length===0){while(src.firstChild)dest.appendChild(src.firstChild);}
   if(dest)dest.querySelectorAll(".owner-panel").forEach(p=>p.classList.remove("tab-hidden"));
-  // Force-hide all panels first, then show general
-  SM_TABS.forEach(t => {
-    const p = document.getElementById('sm-panel-' + t);
-    if (p) p.style.display = 'none';
-  });
-  smSwitchTab('general');
   const ov=document.getElementById("settings-overlay");
   if(ov){ov.style.cssText="display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center";}
   document.body.style.overflow="hidden";
+  renderFlowBuilder();
   loadServices();
   updateSettingsPreview();
 }
