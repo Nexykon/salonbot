@@ -753,12 +753,10 @@ function scopedPath(path) {
 }
 
 function showOwnerTab(tab) {
-  document.querySelectorAll('.owner-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('tab-' + tab).classList.add('active');
   document.querySelectorAll('.owner-panel').forEach(p => p.classList.add('tab-hidden'));
   document.querySelectorAll('.' + tab + '-panel').forEach(p => p.classList.remove('tab-hidden'));
-  if(tab==='calendar')loadCalendar();
-  if(tab==='settings')loadServices();
+  if(tab==='calendar') loadCalendar();
+  if(tab==='settings') loadServices();
 }
 
 async function loadCalendar() {
