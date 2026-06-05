@@ -120,6 +120,9 @@ function publicSalon(salon) {
     booking_mode: normalizeBookingMode(salon.booking_mode),
     datetime_position: salon.datetime_position === 'last' ? 'last' : 'first',
     notify_whatsapp: salon.notify_whatsapp !== false,
+    auto_confirm: salon.auto_confirm === true,
+    notify_calendar: salon.notify_calendar === true,
+    google_calendar_id: salon.google_calendar_id || null,
     notify_email: salon.notify_email !== false,
     review_link: salon.review_link || '',
     form_fields: safeFormFields(salon.form_fields, salon),
@@ -606,7 +609,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'review_message',
     'review_link',
     'reactivation_message',
-    'notify_whatsapp',
+    'notify_whatsapp', 'auto_confirm', 'notify_calendar', 'google_calendar_id',
     'notify_email'
   ];
   const updates = {};
@@ -772,6 +775,9 @@ app.get('/api/settings', async (req, res) => {
       form_fields: safeFormFields(salon.form_fields, salon),
       inquiry_confirmation_message: salon.inquiry_confirmation_message || '',
       notify_whatsapp: salon.notify_whatsapp !== false,
+    auto_confirm: salon.auto_confirm === true,
+    notify_calendar: salon.notify_calendar === true,
+    google_calendar_id: salon.google_calendar_id || null,
       notify_email: salon.notify_email !== false,
       review_link: salon.review_link || ''
     });

@@ -330,7 +330,7 @@ async function handleMessage(msgObj, salon) {
       booking_date: bDate,
       booking_time: bTime,
       duration_minutes: 0,
-      status: 'pending',
+      status: salon.auto_confirm === true ? 'confirmed' : 'pending',
       notes: '',
       form_answers: JSON.stringify(formAnswers || {})
     };
