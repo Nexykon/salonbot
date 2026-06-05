@@ -756,7 +756,7 @@ function showOwnerTab(tab) {
   try {
     document.querySelectorAll('.owner-panel').forEach(p => p && p.classList.add('tab-hidden'));
     document.querySelectorAll('.' + tab + '-panel').forEach(p => p && p.classList.remove('tab-hidden'));
-  } catch(e) {}
+  } catch(_e) {}
   if(tab==='calendar') loadCalendar();
   if(tab==='settings') loadServices();
 }
