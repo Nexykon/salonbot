@@ -454,8 +454,45 @@
     </div>
 
     <!-- Delovni čas -->
-<div id="settings-panels-src">
-    <div id="sm-panel-general">
+<!-- settings content moved to modal -->
+    <div class="card owner-panel calendar-panel tab-hidden" id="calendar-card">
+      <div class="card-title">Koledar rezervacij</div>
+      <div class="cal-toolbar">
+        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
+        <div>
+          <div class="cal-month-title" id="cal-title">—</div>
+          <div class="cal-legend" style="margin-top:6px">
+            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--green)"></span>Potrjeno</div>
+            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#f59e0b"></span>V čakanju</div>
+            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--red)"></span>Odpovedano</div>
+          </div>
+        </div>
+        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
+      </div>
+      <div id="cal-grid" class="cal-grid"></div>
+      <div class="day-detail" id="day-detail">
+        <div class="card-title" id="day-detail-title" style="margin-top:16px">—</div>
+        <div id="day-detail-list"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettingsModal()">
+  <div class="settings-modal">
+    <div class="settings-modal-header">
+      <div>
+        <div class="settings-modal-title">⚙️ Nastavitve salona</div>
+        <div style="font-size:0.82rem;color:var(--muted);margin-top:2px">Spremembe so vidne takoj po shranjevanju.</div>
+      </div>
+      <button class="settings-modal-close" onclick="closeSettingsModal()">✕</button>
+    </div>
+
+    <div class="settings-modal-body">
+      <div class="settings-modal-left" id="settings-modal-left">
+<div id="sm-panel-general">
     <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
 
@@ -570,13 +607,7 @@
       </div>
       <button class="btn btn-primary" onclick="saveNotifySettings()" style="margin-top:18px" id="notify-save-btn">💾 Shrani nastavitve obvestil</button>
     </div>
-
-    <button class="btn btn-primary owner-panel settings-panel" onclick="saveSettings()" id="save-btn">💾 Shrani nastavitve</button>
-
-    </div><!-- /sm-panel-general -->
-
-    <!-- Vprašalnik -->
-    <div id="sm-panel-form">
+<div id="sm-panel-form">
     <div class="sm-panel-header">📝 Vprašalnik ob naročilu</div>
     <div class="card owner-panel settings-panel" id="form-fields-card">
       <div class="card-title">📝 Vprašalnik ob naročilu
@@ -632,10 +663,8 @@
       <button class="btn btn-primary" onclick="saveFormFields()" style="margin-top:18px;width:100%" id="ff-save-btn">💾 Shrani vprašalnik</button>
     </div>
 
-    </div><!-- /sm-panel-form -->
-
-    <!-- Storitve -->
-    <div id="sm-panel-services">
+    </div>
+<div id="sm-panel-services">
     <div class="sm-panel-header">⏱️ Storitve &amp; trajanje</div>
     <div class="card owner-panel settings-panel" id="services-card">
       <div class="card-title">⏱️ Storitve &amp; trajanje
@@ -644,10 +673,8 @@
       <div id="services-list"><div class="service-empty">Nalagam storitve…</div></div>
       <div class="form-hint" style="margin-top:14px">💡 Bot bo pri rezervaciji avtomatsko blokiral točno toliko časa kot traja storitev — npr. barvanje 2h zapolni 10:00–12:00.</div>
     </div>
-    </div><!-- /sm-panel-services -->
-
-    <!-- Varnost -->
-    <div id="sm-panel-security">
+    </div>
+<div id="sm-panel-security">
     <div class="sm-panel-header">🔒 Varnost</div>
     <div class="card owner-panel settings-panel">
       <div class="card-title">🔒 Varnost — Dostop do dashboarda</div>
@@ -670,46 +697,8 @@
         <button class="btn btn-secondary" onclick="doLogout()" style="color:var(--red);border-color:rgba(220,38,38,0.3)">Odjava</button>
       </div>
     </div>
-    </div><!-- /sm-panel-security -->
-
-</div><!-- /settings-panels-src -->
-    <div class="card owner-panel calendar-panel tab-hidden" id="calendar-card">
-      <div class="card-title">Koledar rezervacij</div>
-      <div class="cal-toolbar">
-        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
-        <div>
-          <div class="cal-month-title" id="cal-title">—</div>
-          <div class="cal-legend" style="margin-top:6px">
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--green)"></span>Potrjeno</div>
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#f59e0b"></span>V čakanju</div>
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--red)"></span>Odpovedano</div>
-          </div>
-        </div>
-        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
-      </div>
-      <div id="cal-grid" class="cal-grid"></div>
-      <div class="day-detail" id="day-detail">
-        <div class="card-title" id="day-detail-title" style="margin-top:16px">—</div>
-        <div id="day-detail-list"></div>
-      </div>
     </div>
-
-  </div>
 </div>
-
-<!-- SETTINGS MODAL -->
-<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettingsModal()">
-  <div class="settings-modal">
-    <div class="settings-modal-header">
-      <div>
-        <div class="settings-modal-title">⚙️ Nastavitve salona</div>
-        <div style="font-size:0.82rem;color:var(--muted);margin-top:2px">Spremembe so vidne takoj po shranjevanju.</div>
-      </div>
-      <button class="settings-modal-close" onclick="closeSettingsModal()">✕</button>
-    </div>
-
-    <div class="settings-modal-body">
-      <div class="settings-modal-left" id="settings-modal-left"></div>
       <div class="settings-modal-right">
         <div class="sidebar-label">📱 Predogled za stranko</div>
         <div style="width:100%;max-width:270px;border-radius:44px;background:linear-gradient(145deg,#d8d8de,#bbbbc3);box-shadow:0 0 0 1px rgba(0,0,0,0.14),0 24px 56px rgba(0,0,0,0.15);padding:10px;position:relative;display:flex;flex-direction:column;">
@@ -1591,17 +1580,6 @@ async function deleteService(svcId) {
 
 
 function openSettingsModal(){
-  const dest=document.getElementById("settings-modal-left");
-  const src=document.getElementById("settings-panels-src");
-  // Move panels into modal on first open
-  if(dest&&src&&dest.children.length===0){while(src.firstChild)dest.appendChild(src.firstChild);}
-  // Force-show everything: remove tab-hidden, clear any inline display:none
-  if(dest){
-    dest.querySelectorAll(".tab-hidden").forEach(p=>p.classList.remove("tab-hidden"));
-    dest.querySelectorAll(".owner-panel,.card,.sm-panel,[id^='sm-panel-']").forEach(p=>{
-      if(p.style.display==='none')p.style.display='';
-    });
-  }
   const ov=document.getElementById("settings-overlay");
   if(ov){ov.style.cssText="display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center";}
   document.body.style.overflow="hidden";
