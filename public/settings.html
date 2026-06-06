@@ -1593,8 +1593,15 @@ async function deleteService(svcId) {
 function openSettingsModal(){
   const dest=document.getElementById("settings-modal-left");
   const src=document.getElementById("settings-panels-src");
+  // Move panels into modal on first open
   if(dest&&src&&dest.children.length===0){while(src.firstChild)dest.appendChild(src.firstChild);}
-  if(dest)dest.querySelectorAll(".owner-panel").forEach(p=>p.classList.remove("tab-hidden"));
+  // Force-show everything: remove tab-hidden, clear any inline display:none
+  if(dest){
+    dest.querySelectorAll(".tab-hidden").forEach(p=>p.classList.remove("tab-hidden"));
+    dest.querySelectorAll(".owner-panel,.card,.sm-panel,[id^='sm-panel-']").forEach(p=>{
+      if(p.style.display==='none')p.style.display='';
+    });
+  }
   const ov=document.getElementById("settings-overlay");
   if(ov){ov.style.cssText="display:flex!important;position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center";}
   document.body.style.overflow="hidden";
