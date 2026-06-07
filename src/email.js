@@ -97,7 +97,8 @@ async function sendWelcomeEmail(salon, setupUrl) {
 }
 
 async function sendBookingNotification(salon, customerName, phone, date, time, ref6, sourceLabel, formAnswers = {}) {
-  const answerLines = Object.entries(formAnswers || {}).map(([key, value]) => `${key}: ${value}`);
+  const parsedAnswers = typeof formAnswers === 'string' ? JSON.parse(formAnswers || '{}') : (formAnswers || {});
+  const answerLines = Object.entries(parsedAnswers).map(([key, value]) => `• ${key}: ${value}`);
   const subject = `Nova rezervacija - ${salon.name || 'FlowTiq'}`;
   const text = [
     `Nova ${sourceLabel || 'rezervacija'}`,

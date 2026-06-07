@@ -836,8 +836,12 @@ function showDayDetail(dateStr) {
   const rows = active.length ? active.map(b => {
     const ref = (b.id || '').slice(-6);
     const t = (b.booking_time || '').substring(0,5);
-    const answers = b.form_answers && typeof b.form_answers === 'object'
-      ? Object.entries(b.form_answers).map(([k,v]) => `<span>${escHtml(k)}: ${escHtml(v)}</span>`).join('')
+    let answersObj = {};
+    try { answersObj = b.form_answers ? (typeof b.form_answers === 'object' ? b.form_answers : JSON.parse(b.form_answers)) : {}; } catch(e){}
+    const answers = Object.keys(answersObj).length
+      ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.08)">' +
+        Object.entries(answersObj).map(([k,v]) => `<span style="display:block"><b>${escHtml(k)}:</b> ${escHtml(String(v))}</span>`).join('') +
+        '</div>'
       : '';
     return `<div class="day-booking-item"><div class="day-booking-top"><div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div><div style="flex:1"><div class="day-booking-name">${b.customer_name || '?'}</div><div class="day-booking-meta"><span>Telefon: ${b.customer_phone || '-'}</span><span>Status: ${b.status || 'pending'}</span><span>Ref: ${ref}</span>${answers}</div></div></div><div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${ref}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${ref}')">Odpovej</button></div></div>`;
   }).join('') : '<div class="service-empty">Ni rezervacij za ta dan.</div>';

@@ -193,14 +193,23 @@ async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, 
   const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
   const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
   try {
+    const answersText = Object.keys(formAnswers || {}).length
+      ? `\n\n📋 Odgovori strank:\n${Object.entries(formAnswers).map(([k,v]) => `• ${k}: ${v}`).join('\n')}`
+      : '';
     await wa.send(phoneId, token, wa.adminBookingNotif(to, customerName, phone, date, time, ref6));
+    // Send form answers as separate text message if any
+    if (answersText) {
+      try { await wa.send(phoneId, token, wa.textMsg(to, `📋 Odgovori za rezervacijo ${ref6}:${answersText}`)); } catch(e){}
+    }
   } catch (e) {
     try {
       await wa.send(phoneId, token, wa.adminBookingNotifSession(to, customerName, phone, date, time, ref6));
+      if (answersText) {
+        try { await wa.send(phoneId, token, wa.textMsg(to, `📋 Odgovori za rezervacijo ${ref6}:${answersText}`)); } catch(e){}
+      }
     } catch (e2) {
       await wa.send(phoneId, token, wa.textMsg(to,
-        `Nova ${sourceLabel || 'rezervacija'}\n\n${customerName}\n+${phone}\n${date} ob ${time}\nRef: ${ref6}` +
-        (Object.keys(formAnswers || {}).length ? `\n\nDodatni odgovori:\n${Object.entries(formAnswers).map(([k,v]) => `${k}: ${v}`).join('\n')}` : '')
+        `Nova ${sourceLabel || 'rezervacija'}\n\n${customerName}\n+${phone}\n${date} ob ${time}\nRef: ${ref6}` + answersText
       ));
     }
   }
