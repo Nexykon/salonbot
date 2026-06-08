@@ -529,18 +529,7 @@ async function handleMessage(msgObj, salon) {
         `✅ Naročilo oddano! Čakamo na potrditev picerije.\n\n🔑 Ref: *#${ref6}*\n\nKo bomo potrdili, vam sporočimo čas dostave. 🍕`
       ));
 
-      // Notify admin
-      if (salonAdminPhone) {
-        try {
-          await wa.send(phoneId, token, wa.deliveryAdminNotif(salonAdminPhone, from, fmtCart(cart), s.deliveryAddress, total, ref6));
-        } catch (e) {
-          wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-            `🍕 NOVO NAROČILO #${ref6}\n\n${fmtCart(cart)}\n\nNaslov: ${s.deliveryAddress}\nSkupaj: ${total} €\nStranka: +${from}\n\nSprejmi: *#cas ${ref6} 30*`
-          )).catch(() => {});
-        }
-      } else {
-        console.warn('[delivery] No admin phone set for salon', salon.id);
-      }
+      // Admin notifications skipped for delivery mode — orders managed via dashboard
       return;
     }
 
