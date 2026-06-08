@@ -1413,6 +1413,89 @@ app.post('/api/admin/bookings', async (req, res) => {
 
 // ─── Start server ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
+// ══════════════════════════════════════════════════════════════
+// DELIVERY DASHBOARD ENDPOINTS
+// ══════════════════════════════════════════════════════════════
+
+// GET /api/orders — vrne naročila za lastnikov salon
+app.get('/api/orders', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const status = req.query.status || 'all';
+    const today = new Date().toISOString().slice(0, 10);
+    let url = `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?salon_id=eq.${salon.id}&order=created_at.desc&limit=50`;
+    if (status === 'pending') url += '&status=eq.pending';
+    else if (status === 'today') url += `&booking_date=eq.${today}`;
+    else url += `&booking_date=gte.${today}`;
+    const { default: axios } = await import('axios');
+    const r = await axios.get(url, {
+      headers: {
+        apikey: process.env.SUPABASE_KEY,
+        Authorization: 'Bearer ' + process.env.SUPABASE_KEY
+      }
+    });
+    res.json(r.data);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/orders/:id/accept — sprejmi naročilo + pošlji čas dostave stranki
+app.post('/api/orders/:id/accept', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const minutes = parseInt(req.body.minutes) || 30;
+    const booking = await db.getBookingForSalon(salon.id, req.params.id.slice(-6));
+    // Also try by full ID
+    const bookingFull = booking || await (async () => {
+      const { default: axios } = await import('axios');
+      const r = await axios.get(
+        `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?id=eq.${req.params.id}&salon_id=eq.${salon.id}`,
+        { headers: { apikey: process.env.SUPABASE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_KEY } }
+      );
+      return r.data[0] || null;
+    })();
+    if (!bookingFull) return res.status(404).json({ error: 'Naročilo ni najdeno' });
+    await db.updateBookingStatus(bookingFull.id, 'confirmed');
+    // Notify customer via WA
+    if (bookingFull.customer_phone) {
+      const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+      const token = process.env.WA_TOKEN;
+      wa.send(phoneId, token, wa.textMsg(bookingFull.customer_phone,
+        `🍕 Vaše naročilo je potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala za naročilo! 😊`
+      )).catch(e => console.error('[delivery accept] WA err:', e.message));
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/orders/:id/reject — zavrni naročilo
+app.post('/api/orders/:id/reject', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const booking = await (async () => {
+      const { default: axios } = await import('axios');
+      const r = await axios.get(
+        `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?id=eq.${req.params.id}&salon_id=eq.${salon.id}`,
+        { headers: { apikey: process.env.SUPABASE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_KEY } }
+      );
+      return r.data[0] || null;
+    })();
+    if (!booking) return res.status(404).json({ error: 'Naročilo ni najdeno' });
+    await db.updateBookingStatus(booking.id, 'cancelled');
+    if (booking.customer_phone) {
+      const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+      const token = process.env.WA_TOKEN;
+      wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+        `Žal vaše naročilo ni bilo sprejeto. Za več informacij nas pokličite. 😔`
+      )).catch(() => {});
+    }
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
 app.listen(PORT, () => {
   console.log(`FlowTiq server running on port ${PORT}`);
 });

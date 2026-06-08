@@ -1031,6 +1031,11 @@ async function loginWithPassword() {
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token',ownerToken);
     localStorage.setItem('ft_owner_token',ownerToken);
+    // Redirect to correct dashboard based on booking_mode
+    if (data.salon && data.salon.booking_mode === 'delivery') {
+      window.location.href = '/delivery.html?token=' + encodeURIComponent(ownerToken);
+      return;
+    }
     loadUI(await loadSettings());
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
