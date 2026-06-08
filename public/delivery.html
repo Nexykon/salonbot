@@ -517,39 +517,107 @@ async function rejectOrder(id, ref) {
 }
 
 // ── MENU ────────────────────────────────────────────────
+let allServices = [];
+
 async function loadMenu() {
   try {
     const r = await fetch('/api/settings/services',{headers:{'Authorization':'Bearer '+ownerToken}});
-    const services = await r.json();
-    const el = document.getElementById('menu-list');
-    if (!Array.isArray(services)||!services.length) {
-      el.innerHTML='<div class="empty-state"><span class="emoji">🍽️</span><p>Meni je prazen</p></div>'; return;
-    }
-    // Grupiranje po kategorijah
-    const catOrder = ['Pice','Mesne jedi','Vegetarijanske jedi','Solate','Dodatki','Sladice','Pijača','Ostalo'];
-    const grouped = {};
-    services.forEach(s => {
-      const c = s.category || 'Ostalo';
-      if (!grouped[c]) grouped[c] = [];
-      grouped[c].push(s);
-    });
-    const orderedCats = [
-      ...catOrder.filter(c => grouped[c]),
-      ...Object.keys(grouped).filter(c => !catOrder.includes(c))
-    ];
-    el.innerHTML = orderedCats.map(cat => `
-      <div style="margin-bottom:6px;">
-        <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 4px 6px;">${cat}</div>
-        ${grouped[cat].map(s=>`
-          <div class="menu-item">
+    allServices = await r.json();
+    renderMenu();
+  } catch(e) {}
+}
+
+function renderMenu() {
+  const el = document.getElementById('menu-list');
+  if (!Array.isArray(allServices)||!allServices.length) {
+    el.innerHTML='<div class="empty-state"><span class="emoji">🍽️</span><p>Meni je prazen</p></div>'; return;
+  }
+  // Sortiraj po sort_order
+  const svcs = [...allServices].sort((a,b) => (a.sort_order||0) - (b.sort_order||0));
+  // Grupiraj — vrstni red kategorij = min sort_order prve storitve v njej
+  const grouped = {};
+  const catMinOrder = {};
+  svcs.forEach(s => {
+    const c = s.category || 'Ostalo';
+    if (!grouped[c]) { grouped[c] = []; catMinOrder[c] = s.sort_order||0; }
+    grouped[c].push(s);
+  });
+  const orderedCats = Object.keys(grouped).sort((a,b) => catMinOrder[a] - catMinOrder[b]);
+
+  el.innerHTML = orderedCats.map((cat, catIdx) => {
+    const isFirstCat = catIdx === 0;
+    const isLastCat  = catIdx === orderedCats.length - 1;
+    const items = grouped[cat];
+    return `
+      <div style="margin-bottom:8px;" data-cat="${cat}">
+        <div style="display:flex;align-items:center;gap:6px;padding:8px 4px 4px;">
+          <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;flex:1">${cat}</span>
+          <button onclick="moveCat('${cat}','up')" ${isFirstCat?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px;color:var(--muted);opacity:${isFirstCat?'.3':'1'}">↑</button>
+          <button onclick="moveCat('${cat}','down')" ${isLastCat?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px;color:var(--muted);opacity:${isLastCat?'.3':'1'}">↓</button>
+        </div>
+        ${items.map((s, idx) => `
+          <div class="menu-item" style="gap:8px;">
+            <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+              <button onclick="moveItem('${s.id}','${cat}','up')" ${idx===0?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:5px;width:24px;height:22px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1;opacity:${idx===0?'.3':'1'}">↑</button>
+              <button onclick="moveItem('${s.id}','${cat}','down')" ${idx===items.length-1?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:5px;width:24px;height:22px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1;opacity:${idx===items.length-1?'.3':'1'}">↓</button>
+            </div>
             <div class="menu-item-info">
               <div class="menu-item-name">${s.name}</div>
               ${s.description?`<div class="menu-item-desc">${s.description}</div>`:''}
             </div>
             <div class="menu-item-price">${s.price} €</div>
           </div>`).join('')}
-      </div>`).join('');
-  } catch(e) {}
+      </div>`;
+  }).join('');
+}
+
+async function saveOrder() {
+  const items = allServices.map((s,i) => ({ id: s.id, sort_order: s.sort_order||i }));
+  await fetch('/api/settings/services/reorder', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
+    body: JSON.stringify({ items })
+  });
+}
+
+function moveItem(id, cat, dir) {
+  const svcs = [...allServices].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const catItems = svcs.filter(s=>(s.category||'Ostalo')===cat);
+  const idx = catItems.findIndex(s=>s.id===id);
+  const swapIdx = dir==='up' ? idx-1 : idx+1;
+  if (swapIdx < 0 || swapIdx >= catItems.length) return;
+  // Swap sort_order
+  const a = allServices.find(s=>s.id===catItems[idx].id);
+  const b = allServices.find(s=>s.id===catItems[swapIdx].id);
+  const tmp = a.sort_order; a.sort_order = b.sort_order; b.sort_order = tmp;
+  // Ensure unique sort_orders if both are 0
+  if (a.sort_order === b.sort_order) { a.sort_order += dir==='up'?1:-1; }
+  renderMenu();
+  saveOrder();
+}
+
+function moveCat(cat, dir) {
+  const svcs = [...allServices].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const grouped = {};
+  svcs.forEach(s=>{ const c=s.category||'Ostalo'; if(!grouped[c])grouped[c]=[]; grouped[c].push(s); });
+  const catMinOrder = {};
+  Object.keys(grouped).forEach(c=>{ catMinOrder[c]=Math.min(...grouped[c].map(s=>s.sort_order||0)); });
+  const orderedCats = Object.keys(grouped).sort((a,b)=>catMinOrder[a]-catMinOrder[b]);
+  const catIdx = orderedCats.indexOf(cat);
+  const swapCatIdx = dir==='up' ? catIdx-1 : catIdx+1;
+  if (swapCatIdx < 0 || swapCatIdx >= orderedCats.length) return;
+  const swapCat = orderedCats[swapCatIdx];
+  // Collect all sort_orders from both categories and redistribute
+  const catItems  = grouped[cat].map(s=>s.id);
+  const swapItems = grouped[swapCat].map(s=>s.id);
+  const allOrders = [...grouped[cat], ...grouped[swapCat]].map(s=>s.sort_order||0).sort((a,b)=>a-b);
+  // Assign: if moving up, swap cat gets lower orders; if moving down, swap cat gets lower orders
+  const movingCatOrders  = dir==='up' ? allOrders.slice(0, catItems.length) : allOrders.slice(swapItems.length);
+  const swapCatOrders    = dir==='up' ? allOrders.slice(catItems.length)   : allOrders.slice(0, swapItems.length);
+  grouped[cat].forEach((s,i)=>{ const item=allServices.find(x=>x.id===s.id); if(item) item.sort_order=movingCatOrders[i]||i; });
+  grouped[swapCat].forEach((s,i)=>{ const item=allServices.find(x=>x.id===s.id); if(item) item.sort_order=swapCatOrders[i]||i; });
+  renderMenu();
+  saveOrder();
 }
 function addMenuItem() {
   document.getElementById('add-item-modal').classList.add('open');

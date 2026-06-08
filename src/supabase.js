@@ -301,11 +301,12 @@ async function markSlotFree(slotId) {
   );
 }
 
-async function updateServiceById(serviceId, price, durationMinutes, name) {
+async function updateServiceById(serviceId, price, durationMinutes, name, sortOrder) {
   const updates = {};
   if (name !== undefined && name !== null) updates.name = String(name).trim();
-  if (price !== undefined && price !== null) updates.price = Math.round(price);
+  if (price !== undefined && price !== null) updates.price = Number(price);
   if (durationMinutes !== undefined && durationMinutes !== null) updates.duration_minutes = Math.round(durationMinutes);
+  if (sortOrder !== undefined && sortOrder !== null) updates.sort_order = Math.round(sortOrder);
   if (!Object.keys(updates).length) return null;
   await axios.patch(
     `${BASE}/sb_services?id=eq.${serviceId}`,

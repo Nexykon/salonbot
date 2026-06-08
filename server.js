@@ -868,6 +868,20 @@ app.post('/api/settings/services', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// POST /api/settings/services/reorder — posodobi vrstni red (batch)
+app.post('/api/settings/services/reorder', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  const { items } = req.body; // [{id, sort_order}, ...]
+  if (!Array.isArray(items)) return res.status(400).json({ error: 'items array required' });
+  try {
+    await Promise.all(items.map(({ id, sort_order }) =>
+      db.updateServiceById(id, undefined, undefined, undefined, sort_order)
+    ));
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // PATCH /api/settings/services/:id — posodobi storitev
 app.patch('/api/settings/services/:id', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
