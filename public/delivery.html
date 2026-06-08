@@ -464,7 +464,7 @@ function renderOrders(orders) {
         <span class="order-time">${time}</span>
       </div>
       <div class="order-body">
-        <div class="order-items" style="${isPending?'font-weight:700;font-size:15px;color:#111;':''}">${items}</div>
+        <div class="order-items" style="${isPending?'font-weight:700;font-size:15px;color:#111;':''}">${items.replace(/\n/g,'<br>')}</div>
         <div class="order-address">📍 ${address}</div>
         <div class="order-total" style="${isPending?'font-size:17px;':''}">${total}</div>
         ${custName ? `<div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px;">👤 ${custName}</div>` : ''}
