@@ -98,7 +98,7 @@ function safeFormFields(value, salon) {
 }
 
 function normalizeBookingMode(mode) {
-  return ['exact_time', 'date_only', 'inquiry', 'month_only'].includes(mode) ? mode : 'exact_time';
+  return ['exact_time', 'date_only', 'inquiry', 'month_only', 'sales', 'delivery'].includes(mode) ? mode : 'exact_time';
 }
 
 function publicSalon(salon) {
