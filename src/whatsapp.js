@@ -261,23 +261,42 @@ function salesConfirmButtons(to, salonName, salonType, email) {
 // ══════════════════════════════════════════════════════
 
 function deliveryMenuList(to, services, salon, cartSummary) {
-  // Max 9 items + 1 checkout row = 10 (WA limit)
-  const itemRows = services.slice(0, 9).map(s => ({
-    id: 'menu_' + s.id,
-    title: s.name.substring(0, 24),
-    description: ((s.description ? s.description + ' | ' : '') + (s.price ? s.price + ' €' : '')).substring(0, 72)
+  // Grupiranje po kategorijah — vsaka je svoja sekcija
+  const categoryOrder = ['Pice', 'Mesne jedi', 'Vegetarijanske jedi', 'Solate', 'Dodatki', 'Sladice', 'Pijača', 'Ostalo'];
+  const grouped = {};
+  for (const s of services) {
+    const cat = s.category || 'Ostalo';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(s);
+  }
+  // Uredi kategorije po predpisanem vrstnem redu
+  const orderedCats = [
+    ...categoryOrder.filter(c => grouped[c]),
+    ...Object.keys(grouped).filter(c => !categoryOrder.includes(c))
+  ];
+  const itemSections = orderedCats.map(cat => ({
+    title: cat,
+    rows: grouped[cat].slice(0, 10).map(s => ({
+      id: 'menu_' + s.id,
+      title: (s.name).substring(0, 24),
+      description: ((s.description ? s.description + ' · ' : '') + (s.price ? s.price + ' €' : '')).substring(0, 72)
+    }))
   }));
-  const checkoutRow = { id: 'delivery_checkout', title: '✅ Zaključi naročilo', description: 'Nadaljuj na vnos podatkov' };
-  const rows = [...itemRows, checkoutRow];
+  // Checkout sekcija na dnu
+  const checkoutSection = {
+    title: '─────────────',
+    rows: [{ id: 'delivery_checkout', title: '✅ Zaključi naročilo', description: cartSummary ? 'Košarica: ' + cartSummary : 'Nadaljuj na vnos podatkov' }]
+  };
+  const sections = [...itemSections, checkoutSection];
   const bodyText = cartSummary
-    ? '🛒 V košarici: ' + cartSummary + '\n\nDodajte še artikel ali zaključite:'
+    ? '🛒 *V košarici:* ' + cartSummary + '\n\nDodajte še artikel ali zaključite naročilo:'
     : '👇 Izberite artikel iz menija:';
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
       body: { text: bodyText },
-      action: { button: 'Odpri meni', sections: [{ title: 'Meni', rows }] }
+      action: { button: 'Odpri meni', sections }
     }
   };
 }

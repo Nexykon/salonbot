@@ -853,13 +853,15 @@ app.get('/api/settings/services', async (req, res) => {
 app.post('/api/settings/services', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  const { name, price, duration_minutes } = req.body;
+  const { name, price, duration_minutes, description, category } = req.body;
   if (!name) return res.status(400).json({ error: 'Ime storitve je obvezno' });
   try {
     const svc = await db.createService(salon.id, {
       name: name.trim(),
       price: parseFloat(price) || 0,
-      duration_minutes: parseInt(duration_minutes) || 60,
+      duration_minutes: parseInt(duration_minutes) || 0,
+      description: description || '',
+      category: category || 'Ostalo',
       is_active: true
     });
     res.json(svc);
