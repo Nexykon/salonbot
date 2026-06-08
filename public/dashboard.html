@@ -981,11 +981,9 @@
     <div class="section-header">
       <div class="section-title">Saloni</div>
       <button class="btn-add" onclick="openAddModal()">
-        <span>+</span> Nov salon
+        <span>+</span> Nova stranka
       </button>
-      <button class="btn-add" style="background:linear-gradient(135deg,#25D366,#06b6d4);margin-left:8px" onclick="addFlowTiqSalon()">
-        ⚡ Dodaj FlowTiq
-      </button>
+      
     </div>
 
     <div class="table-wrap">
@@ -1068,16 +1066,19 @@
 
 <!-- ADD SALON MODAL -->
 <div class="modal-overlay" id="add-modal">
-  <div class="modal">
+  <div class="modal" style="max-width:680px">
     <div class="modal-header">
-      <div class="modal-title">➕ Nov salon</div>
+      <div class="modal-title">➕ Nova stranka</div>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
 
+    <!-- KORAK 1: PODJETJE -->
+    <div class="studio-section-head" style="padding:16px 0 8px"><div class="studio-section-icon">🏢</div><div class="studio-section-info"><div class="studio-section-title">Podatki o podjetju</div></div></div>
+
     <div class="form-row">
       <div class="form-group">
-        <label>Ime salona *</label>
-        <input type="text" id="f-name" placeholder="Salon Vita">
+        <label>Ime podjetja *</label>
+        <input type="text" id="f-name" placeholder="Pizzeria Roma / Frizer Ana / ...">
       </div>
       <div class="form-group">
         <label>Paket *</label>
@@ -1092,28 +1093,39 @@
       <div class="form-group">
         <label>Panoga *</label>
         <select id="f-business-type">
-          <option value="cosmetics">Kozmeticni studii</option>
-          <option value="fitness">Fitness & trenerji</option>
-          <option value="wellness">Wellness centri</option>
-          <option value="veterinary">Veterinarji</option>
-          <option value="optical">Optiki</option>
-          <option value="physiotherapy">Fizioterapevti</option>
-          <option value="photography">Fotografi</option>
-          <option value="hair">Frizer</option>
-          <option value="beauty">Nohti / Beauty</option>
-          <option value="massage">Masaže</option>
-          <option value="tattoo">Tattoo studio</option>
-          <option value="dentist">Zobozdravstvo</option>
-          <option value="custom">Custom</option>
+          <option value="hair">Frizerstvo ✂️</option>
+          <option value="beauty">Nohti / Beauty 💅</option>
+          <option value="cosmetics">Kozmetični studio 💆</option>
+          <option value="massage">Masaže 🧘</option>
+          <option value="tattoo">Tattoo / Piercing 🎨</option>
+          <option value="fitness">Fitness & trenerji 💪</option>
+          <option value="wellness">Wellness center 🌿</option>
+          <option value="dentist">Zobozdravstvo 🦷</option>
+          <option value="veterinary">Veterinar 🐾</option>
+          <option value="physiotherapy">Fizioterapija 🏥</option>
+          <option value="optical">Optika 👓</option>
+          <option value="photography">Fotografija 📷</option>
+          <option value="restaurant">Restavracija / Picerija 🍕</option>
+          <option value="custom">Drugo / Custom</option>
         </select>
-        <div class="form-hint">Panoga napolni prave začetne storitve in besedila bota.</div>
+        <div class="form-hint">Panoga nastavi začetne storitve in besedila bota.</div>
       </div>
       <div class="form-group">
-        <label>Booking slug</label>
-        <input type="text" id="f-slug" placeholder="salon-vita">
-        <div class="form-hint">Pusti prazno za samodejno povezavo iz imena.</div>
+        <label>Način delovanja bota *</label>
+        <select id="f-booking-mode">
+          <option value="exact_time">📅 Rezervacija — točen termin</option>
+          <option value="date_only">📆 Rezervacija — samo datum</option>
+          <option value="inquiry">💬 Povpraševanje (brez termina)</option>
+          <option value="month_only">🗓️ Rezervacija — samo mesec</option>
+          <option value="sales">💰 Prodaja / Naročilo storitve</option>
+          <option value="delivery">🍕 Razvoz / Dostava</option>
+        </select>
+        <div class="form-hint">Rezervacija = termini, Razvoz = meni + naslov, Prodaja = leads/naročila.</div>
       </div>
     </div>
+
+    <!-- KORAK 2: KONTAKT -->
+    <div class="studio-section-head" style="padding:16px 0 8px"><div class="studio-section-icon">👤</div><div class="studio-section-info"><div class="studio-section-title">Lastnik / Kontakt</div></div></div>
 
     <div class="form-row">
       <div class="form-group">
@@ -1122,37 +1134,47 @@
       </div>
       <div class="form-group">
         <label>Email *</label>
-        <input type="email" id="f-email" placeholder="ana@salon.si">
+        <input type="email" id="f-email" placeholder="ana@podjetje.si">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Admin WhatsApp (za obvestila o naročilih)</label>
+        <input type="text" id="f-phone" placeholder="38641123456">
+        <div class="form-hint">Koda države + številka, brez + — na to številko dobi obvestila.</div>
+      </div>
+      <div class="form-group">
+        <label>Začetno geslo <span style="color:var(--text3);font-weight:400">(opcijsko)</span></label>
+        <input type="password" id="f-password" placeholder="Pusti prazno → lastnik dobi email link" autocomplete="new-password">
+      </div>
+    </div>
+
+    <!-- KORAK 3: WHATSAPP -->
+    <div class="studio-section-head" style="padding:16px 0 8px"><div class="studio-section-icon">💬</div><div class="studio-section-info"><div class="studio-section-title">WhatsApp nastavitve</div></div></div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>WhatsApp Phone Number ID *</label>
+        <input type="text" id="f-waid" placeholder="123456789012345">
+        <div class="form-hint">Meta Developer Console → WhatsApp → API Setup → Phone Number ID</div>
+      </div>
+      <div class="form-group">
+        <label>Bot telefonska številka (za stranke)</label>
+        <input type="text" id="f-botnum" placeholder="+386 XX XXX XXX">
+        <div class="form-hint">Številka ki jo stranke shranijo v imenik.</div>
       </div>
     </div>
 
     <div class="form-group">
-      <label>Začetno geslo za dashboard <span style="color:var(--text3);font-weight:400">(opcijsko)</span></label>
-      <input type="password" id="f-password" placeholder="Pusti prazno — lastnik dobi email z linkom" autocomplete="new-password">
-      <div class="form-hint">Če pustiš prazno, lastnik samodejno dobi welcome email z linkom za nastavitev gesla.</div>
-    </div>
-
-    <div class="form-group">
-        <label>Kontakt WhatsApp telefon</label>
-      <input type="text" id="f-phone" placeholder="38641123456">
-      <div class="form-hint">Format: koda države + številka, brez + (npr. 38641123456)</div>
-    </div>
-
-    <div class="form-group">
-      <label>WhatsApp Phone Number ID</label>
-      <input type="text" id="f-waid" placeholder="123456789012345">
-      <div class="form-hint">Iz Meta Developer Console → WhatsApp → API Setup</div>
-    </div>
-
-    <div class="form-group">
-      <label>Bot telefonska številka (za prikaz stranki)</label>
-      <input type="text" id="f-botnum" placeholder="+386 XX XXX XXX">
-      <div class="form-hint">Številka ki jo stranke shranijo v imenik</div>
+      <label>URL slug <span style="color:var(--text3);font-weight:400">(opcijsko)</span></label>
+      <input type="text" id="f-slug" placeholder="pizzeria-roma">
+      <div class="form-hint">Pusti prazno za samodejno generiranje iz imena.</div>
     </div>
 
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal()">Prekliči</button>
-      <button class="btn-save" id="save-btn" onclick="saveSalon()">Ustvari salon →</button>
+      <button class="btn-save" id="save-btn" onclick="saveSalon()">Ustvari stranko →</button>
     </div>
   </div>
 </div>
@@ -1796,7 +1818,7 @@ async function deleteSalon(id, name) {
     headers: { 'Authorization': 'Bearer ' + masterToken }
   });
   const d = await r.json();
-  if (d.success) { showToast('Salon izbrisan.', 'success'); await loadSalons(); }
+  if (d.success) { showToast('Stranka izbrisana.', 'success'); await refreshSalons(); }
   else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
 }
 
@@ -2367,43 +2389,57 @@ async function saveSalon() {
   var name = document.getElementById('f-name').value.trim();
   var email = document.getElementById('f-email').value.trim();
   var password = document.getElementById('f-password').value;
-  var phone = document.getElementById('f-phone').value.trim();
+  var phone = document.getElementById('f-phone').value.trim().replace(/[^\d]/g, '');
   var plan = document.getElementById('f-plan').value;
   var businessType = document.getElementById('f-business-type').value;
+  var bookingMode = document.getElementById('f-booking-mode').value;
   var slug = document.getElementById('f-slug').value.trim();
   var owner = document.getElementById('f-owner').value.trim();
   var waid = document.getElementById('f-waid').value.trim();
   var botnum = document.getElementById('f-botnum').value.trim();
-  if (!name || !email) { showToast('Ime salona in email sta obvezna', 'error'); return; }
+  if (!name || !email) { showToast('Ime podjetja in email sta obvezna', 'error'); return; }
+  if (!waid) { showToast('WhatsApp Phone Number ID je obvezen', 'error'); return; }
   if (password && password.length < 8) { showToast('Geslo mora imeti vsaj 8 znakov', 'error'); return; }
   var btn = document.getElementById('save-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
+  btn.innerHTML = '<span class="spinner"></span> Ustvarjam...';
   try {
-    var salonData = {
+    var payload = {
       name: name,
       owner_name: owner,
       owner_email: email,
-      phone_number: phone,
-      whatsapp_account_id: waid,
+      admin_phone: phone,
+      whatsapp_phone_number_id: waid,
       bot_phone_display: botnum,
       business_type: businessType,
       business_slug: slug,
       plan: plan
     };
-    if (password) salonData.owner_password = password;
-    await readApiJson(await apiFetch('/api/admin/salons', {
+    if (password) payload.owner_password = password;
+    // Create via onboard endpoint (sets up services + preset)
+    const res = await fetch('/onboard', {
       method: 'POST',
-      body: JSON.stringify(salonData)
-    }));
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + masterToken },
+      body: JSON.stringify(payload)
+    });
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || 'Neznana napaka');
+    // Set booking_mode if not default
+    if (bookingMode !== 'exact_time' && d.salon_id) {
+      await fetch(`/api/admin/salons/${d.salon_id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + masterToken },
+        body: JSON.stringify({ booking_mode: bookingMode })
+      });
+    }
     closeModal();
     await refreshSalons();
-    showToast('Salon uspešno ustvarjen!', 'success');
+    showToast('✅ Stranka uspešno ustvarjena!', 'success');
   } catch (e) {
     showToast('Napaka: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = 'Ustvari salon →';
+    btn.innerHTML = 'Ustvari stranko →';
   }
 }
 
