@@ -1793,7 +1793,7 @@ async function deleteSalon(id, name) {
   if (!confirm(`Res želite izbrisati salon "${name}"?\nTo bo trajno izbrisalo VSE podatke (rezervacije, storitve...).`)) return;
   const r = await fetch(`/api/admin/salons/${id}`, {
     method: 'DELETE',
-    headers: { 'x-admin-key': adminKey }
+    headers: { 'Authorization': 'Bearer ' + masterToken }
   });
   const d = await r.json();
   if (d.success) { showToast('Salon izbrisan.', 'success'); await loadSalons(); }
@@ -1805,7 +1805,7 @@ async function addFlowTiqSalon() {
   if (!confirm('Ustvari FlowTiq sales salon?\n\nPhone ID: 1152382777962508\nBooking mode: sales')) return;
   const r = await fetch('/onboard', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + masterToken },
     body: JSON.stringify({
       name: 'FlowTiq',
       owner_name: 'FlowTiq Admin',
@@ -1824,7 +1824,7 @@ async function addFlowTiqSalon() {
     // Now set booking_mode = 'sales' via PATCH
     await fetch(`/api/admin/salons/${d.salon_id}/settings`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + masterToken },
       body: JSON.stringify({ booking_mode: 'sales' })
     });
   } else { showToast('Napaka: ' + (d.error || 'Neznana'), 'error'); }
