@@ -599,8 +599,6 @@ async function handleMessage(msgObj, salon) {
       }
     }
 
-    }
-
     if (doEmail) {
       if (autoConfirm) {
         mail.sendBookingNotification(salon, s.customerName, from, s.selectedDate, fTime, ref6, 'WhatsApp rezervacija', fa)
