@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>FlowTiq — Dostava</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f8f7ff;
+  --surface: #ffffff;
+  --surface2: #f0eeff;
+  --border: #e8e7f0;
+  --purple: #25D366;
+  --purple-light: #1aab50;
+  --cyan: #06b6d4;
+  --text: #111118;
+  --muted: #6b6b80;
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --radius: 16px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  background-image: radial-gradient(rgba(37,211,102,0.06) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+}
+
+/* HEADER */
+.header {
+  padding: 16px 24px; display: flex; align-items: center; gap: 14px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.92); backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo { width: 36px; height: 36px; flex-shrink: 0; }
+.brand { font-size: 1.15rem; font-weight: 800; background: linear-gradient(135deg,#25D366,#06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.brand-sub { font-size: 0.78rem; color: var(--muted); font-weight: 400; -webkit-text-fill-color: var(--muted); }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.pending-badge { background: linear-gradient(135deg,#25D366,#06b6d4); color: #fff; border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; display: none; }
+.logout-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 14px; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; transition: .2s; }
+.logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+/* LOGIN */
+.login-wrap { min-height: calc(100vh - 65px); display: flex; align-items: center; justify-content: center; padding: 24px; }
+.login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 40px 32px; width: 100%; max-width: 400px; box-shadow: 0 8px 40px rgba(37,211,102,0.08); text-align: center; }
+.login-icon { font-size: 44px; margin-bottom: 16px; }
+.login-box h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; }
+.login-box > p { color: var(--muted); font-size: 0.88rem; margin-bottom: 24px; }
+.form-group { text-align: left; margin-bottom: 14px; }
+.form-group label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.form-group input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 0.95rem; padding: 11px 14px; outline: none; font-family: inherit; transition: .2s; }
+.form-group input:focus { border-color: var(--purple); }
+.btn { display: block; width: 100%; padding: 13px; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; border: none; transition: .2s; font-family: inherit; }
+.btn-primary { background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: #fff; box-shadow: 0 4px 20px rgba(37,211,102,0.3); margin-top: 4px; }
+.btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.login-error { background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.2); border-radius: 10px; padding: 10px 14px; color: var(--red); font-size: 13px; margin-top: 12px; display: none; text-align: left; }
+
+/* TABS */
+.tabs { display: flex; background: rgba(255,255,255,.92); border-bottom: 1px solid var(--border); position: sticky; top: 69px; z-index: 99; backdrop-filter: blur(20px); }
+.tab { flex: 1; padding: 13px 4px; text-align: center; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; transition: .2s; letter-spacing: .01em; }
+.tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+.tab-icon { display: block; font-size: 17px; margin-bottom: 3px; }
+
+/* MAIN CONTENT */
+.main { padding: 20px 20px 80px; max-width: 680px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* SECTION HEADER */
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-size: 1.1rem; font-weight: 800; }
+.refresh-btn { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: .2s; }
+.refresh-btn:hover { border-color: var(--purple); color: var(--purple); }
+.refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* FILTER CHIPS */
+.filter-row { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
+.filter-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; white-space: nowrap; flex-shrink: 0; font-family: inherit; transition: .2s; }
+.filter-chip.active { background: rgba(37,211,102,.12); border-color: var(--purple); color: var(--purple); }
+
+/* ORDER CARDS */
+.order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.order-card.pending { border-left: 3px solid var(--yellow); }
+.order-card.confirmed { border-left: 3px solid var(--green); }
+.order-card.cancelled { border-left: 3px solid var(--red); opacity: .65; }
+
+.order-head { padding: 14px 16px 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.order-ref { background: var(--surface2); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 800; color: var(--muted); font-family: monospace; }
+.order-status { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 800; }
+.status-pending { background: rgba(217,119,6,.1); color: var(--yellow); }
+.status-confirmed { background: rgba(5,150,105,.1); color: var(--green); }
+.status-cancelled { background: rgba(220,38,38,.1); color: var(--red); }
+.order-time { margin-left: auto; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.order-body { padding: 0 16px 16px; }
+.order-items { font-size: 14px; color: var(--text); margin-bottom: 8px; line-height: 1.65; font-weight: 500; }
+.order-address { font-size: 13px; color: var(--muted); margin-bottom: 4px; display: flex; gap: 5px; }
+.order-total { font-size: 15px; font-weight: 800; color: var(--purple); margin-bottom: 12px; }
+.order-phone { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.order-actions { display: flex; gap: 8px; }
+.btn-accept { flex: 1; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: #fff; border: none; border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: .2s; }
+.btn-accept:hover { opacity: .85; }
+.btn-reject { flex: 0 0 auto; background: var(--surface2); border: 1px solid var(--border); color: var(--red); border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: .2s; }
+.btn-reject:hover { background: rgba(220,38,38,.08); border-color: var(--red); }
+
+.empty-state { text-align: center; padding: 52px 20px; color: var(--muted); }
+.empty-state .emoji { font-size: 48px; display: block; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; font-weight: 500; }
+
+/* MENU ITEMS */
+.menu-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.menu-item-info { flex: 1; }
+.menu-item-name { font-weight: 700; font-size: 15px; }
+.menu-item-desc { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.menu-item-price { font-weight: 800; font-size: 15px; color: var(--purple); white-space: nowrap; }
+.btn-add { width: 100%; background: var(--surface); border: 1.5px dashed var(--purple); border-radius: var(--radius); padding: 14px; color: var(--purple); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; margin-top: 6px; transition: .2s; }
+.btn-add:hover { background: rgba(37,211,102,.06); }
+
+/* SETTINGS */
+.settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+.settings-card-title { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
+.s-row { margin-bottom: 14px; }
+.s-row label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.s-row input, .s-row textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; resize: vertical; transition: .2s; }
+.s-row input:focus, .s-row textarea:focus { border-color: var(--purple); }
+.btn-save { width: 100%; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 20px rgba(37,211,102,.25); }
+
+/* ETA MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(17,17,24,.5); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-sheet { background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 0 0; padding: 28px 24px 40px; width: 100%; max-width: 520px; box-shadow: 0 -8px 40px rgba(0,0,0,.12); }
+.modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; }
+.modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+.time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.time-chip { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 4px; text-align: center; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: .2s; color: var(--text); }
+.time-chip:hover, .time-chip.selected { background: rgba(37,211,102,.1); border-color: var(--purple); color: var(--purple); }
+.custom-row { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+.custom-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text); font-size: 15px; outline: none; font-family: inherit; transition: .2s; }
+.custom-row input:focus { border-color: var(--purple); }
+.custom-row span { color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.modal-btns { display: flex; gap: 10px; }
+.btn-modal-ok { flex: 1; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.btn-modal-cancel { flex: 0 0 auto; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 12px; padding: 14px 18px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px 20px; font-size: 14px; font-weight: 700; z-index: 999; opacity: 0; transition: .3s; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,.12); color: var(--text); }
+.toast.show { opacity: 1; }
+.toast.success { border-color: var(--purple); color: var(--green); }
+.toast.error { border-color: var(--red); color: var(--red); }
+
+@media(max-width: 600px) {
+  .header { padding: 12px 14px; }
+  .brand { font-size: 1rem; }
+  .main { padding: 16px 14px 80px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <svg class="logo" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#25D366"/>
+        <stop offset="100%" stop-color="#06b6d4"/>
+      </linearGradient>
+    </defs>
+    <rect width="56" height="56" rx="16" fill="url(#hg)"/>
+    <path d="M33 10L19 28h11l-7 18L41 26H30z" fill="white"/>
+  </svg>
+  <div>
+    <div class="brand">FlowTiq <span class="brand-sub" id="salon-name">Dostava</span></div>
+  </div>
+  <div class="header-right">
+    <span class="pending-badge" id="pending-badge">0</span>
+    <button class="logout-btn" id="logout-btn" style="display:none" onclick="doLogout()">Odjava</button>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-box">
+      <div class="login-icon">🍕</div>
+      <h2>Dostava portal</h2>
+      <p>Vpišite se z email naslovom in geslom, ki ste ju prejeli ob registraciji.</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="vas@email.si" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label>Geslo</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" id="login-btn" onclick="doLogin()">Vstopi →</button>
+      <div class="login-error" id="login-error">Napačen email ali geslo.</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('orders')">
+      <span class="tab-icon">📦</span>Naročila
+    </div>
+    <div class="tab" onclick="switchTab('menu')">
+      <span class="tab-icon">🍽️</span>Meni
+    </div>
+    <div class="tab" onclick="switchTab('settings')">
+      <span class="tab-icon">⚙️</span>Nastavitve
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- NAROČILA -->
+    <div class="tab-content active" id="tab-orders">
+      <div class="section-header">
+        <div class="section-title">Naročila</div>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadOrders()">
+          <svg id="refresh-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+          Osveži
+        </button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-chip active" onclick="setFilter('today','f-today')" id="f-today">Danes</button>
+        <button class="filter-chip" onclick="setFilter('pending','f-pending')" id="f-pending">V čakanju</button>
+        <button class="filter-chip" onclick="setFilter('all','f-all')" id="f-all">Vse</button>
+      </div>
+      <div id="orders-list"></div>
+    </div>
+
+    <!-- MENI -->
+    <div class="tab-content" id="tab-menu">
+      <div class="section-header">
+        <div class="section-title">Meni</div>
+      </div>
+      <div id="menu-list"></div>
+      <button class="btn-add" onclick="addMenuItem()">+ Dodaj artikel</button>
+    </div>
+
+    <!-- NASTAVITVE -->
+    <div class="tab-content" id="tab-settings">
+      <div class="settings-card">
+        <div class="settings-card-title">Osnovno</div>
+        <div class="s-row">
+          <label>Ime podjetja</label>
+          <input type="text" id="s-name" placeholder="Pizzeria Roma">
+        </div>
+        <div class="s-row">
+          <label>Pozdravno sporočilo bota</label>
+          <textarea id="s-greeting" rows="3" placeholder="Dobrodošli! Izberite iz menija..."></textarea>
+        </div>
+        <div class="s-row">
+          <label>Bot telefonska številka (za prikaz)</label>
+          <input type="text" id="s-botnum" placeholder="+386 XX XXX XXX">
+        </div>
+      </div>
+      <button class="btn-save" onclick="saveSettings()">💾 Shrani nastavitve</button>
+    </div>
+  </div>
+</div>
+
+<!-- ETA MODAL -->
+<div class="modal-overlay" id="eta-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">⏱️ Čas dostave</div>
+    <div class="modal-sub">Izberite ali vnesite predviden čas dostave za stranko</div>
+    <div class="time-grid">
+      <button class="time-chip" onclick="selectTime(this,20)">20 min</button>
+      <button class="time-chip" onclick="selectTime(this,30)">30 min</button>
+      <button class="time-chip" onclick="selectTime(this,45)">45 min</button>
+      <button class="time-chip" onclick="selectTime(this,60)">60 min</button>
+    </div>
+    <div class="custom-row">
+      <input type="number" id="custom-min" placeholder="Npr. 35" min="5" max="120">
+      <span>minut do dostave</span>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-modal-cancel" onclick="closeModal()">Prekliči</button>
+      <button class="btn-modal-ok" onclick="confirmAccept()">✅ Potrdi &amp; obvesti stranko</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ownerToken = '';
+let currentFilter = 'today';
+let pendingAcceptId = null;
+let pollInterval = null;
+
+// ── AUTH ────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { showToast('Vnesite email in geslo', 'error'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Prijavljam...';
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pass})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Prijava ni uspela');
+    if (d.role === 'master') { window.location.href = '/dashboard.html'; return; }
+    if (!d.salon || d.salon.booking_mode !== 'delivery') {
+      window.location.href = '/settings.html'; return;
+    }
+    ownerToken = d.token;
+    localStorage.setItem('ft_delivery_token', ownerToken);
+    showApp(d.salon.name);
+  } catch(e) {
+    const el = document.getElementById('login-error');
+    el.textContent = e.message; el.style.display = 'block';
+  } finally { btn.disabled = false; btn.textContent = 'Vstopi →'; }
+}
+
+function doLogout() {
+  localStorage.removeItem('ft_delivery_token');
+  clearInterval(pollInterval);
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = '';
+  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('salon-name').textContent = 'Dostava';
+}
+
+function showApp(name) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  document.getElementById('logout-btn').style.display = '';
+  document.getElementById('salon-name').textContent = name || 'Dostava';
+  loadOrders(); loadMenu(); loadSettingsData();
+  pollInterval = setInterval(loadOrders, 30000);
+}
+
+// ── TABS ────────────────────────────────────────────────
+function switchTab(tab) {
+  const tabs = ['orders','menu','settings'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.tab-content').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+}
+
+// ── ORDERS ──────────────────────────────────────────────
+function setFilter(f, btnId) {
+  currentFilter = f;
+  ['f-today','f-pending','f-all'].forEach(id => document.getElementById(id).classList.toggle('active', id===btnId));
+  loadOrders();
+}
+
+async function loadOrders() {
+  document.getElementById('refresh-btn').classList.add('spinning');
+  try {
+    const r = await fetch('/api/orders?status=' + currentFilter, {headers:{'Authorization':'Bearer '+ownerToken}});
+    const orders = await r.json();
+    renderOrders(Array.isArray(orders) ? orders : []);
+    const n = (Array.isArray(orders) ? orders : []).filter(o=>o.status==='pending').length;
+    const badge = document.getElementById('pending-badge');
+    badge.textContent = n; badge.style.display = n > 0 ? '' : 'none';
+    document.title = n > 0 ? `(${n}) Naročila — FlowTiq` : 'Naročila — FlowTiq';
+  } catch(e) { showToast('Napaka pri nalaganju', 'error'); }
+  document.getElementById('refresh-btn').classList.remove('spinning');
+}
+
+function renderOrders(orders) {
+  const el = document.getElementById('orders-list');
+  if (!orders.length) {
+    el.innerHTML = '<div class="empty-state"><span class="emoji">📭</span><p>Ni naročil za prikaz</p></div>';
+    return;
+  }
+  const statusLabel = {pending:'V čakanju', confirmed:'Potrjeno', cancelled:'Zavrnjeno'};
+  const statusCls   = {pending:'status-pending', confirmed:'status-confirmed', cancelled:'status-cancelled'};
+  el.innerHTML = orders.map(o => {
+    const fa      = safeJson(o.form_answers);
+    const items   = fa.narocilo || '—';
+    const address = fa.naslov   || '—';
+    const total   = fa.skupaj   || '—';
+    const ref6    = (o.id||'').slice(-6).toUpperCase();
+    const time    = formatTime(o.created_at || o.booking_date);
+    const actions = o.status === 'pending' ? `
+      <div class="order-actions">
+        <button class="btn-accept" onclick="openModal('${o.id}')">✅ Sprejmi naročilo</button>
+        <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Zavrni</button>
+      </div>` : '';
+    return `<div class="order-card ${o.status||''}">
+      <div class="order-head">
+        <span class="order-ref">#${ref6}</span>
+        <span class="order-status ${statusCls[o.status]||''}">${statusLabel[o.status]||o.status}</span>
+        <span class="order-time">${time}</span>
+      </div>
+      <div class="order-body">
+        <div class="order-items">${items}</div>
+        <div class="order-address">📍 ${address}</div>
+        <div class="order-total">Skupaj: ${total}</div>
+        <div class="order-phone">📞 +${o.customer_phone||'—'}</div>
+        ${actions}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function safeJson(s) { try { return typeof s==='string'?JSON.parse(s):(s||{}); } catch{return{};} }
+function formatTime(s) { if(!s) return ''; try { return new Date(s).toLocaleTimeString('sl',{hour:'2-digit',minute:'2-digit'}); } catch{return s;} }
+
+// ── ETA MODAL ───────────────────────────────────────────
+function openModal(id) {
+  pendingAcceptId = id;
+  document.getElementById('custom-min').value = '';
+  document.querySelectorAll('.time-chip').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('eta-modal').classList.add('open');
+}
+function closeModal() { document.getElementById('eta-modal').classList.remove('open'); pendingAcceptId=null; }
+function selectTime(el, min) {
+  document.querySelectorAll('.time-chip').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('custom-min').value = min;
+}
+async function confirmAccept() {
+  const minutes = parseInt(document.getElementById('custom-min').value) || 30;
+  if (!pendingAcceptId) return;
+  try {
+    const r = await fetch('/api/orders/'+pendingAcceptId+'/accept', {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
+      body: JSON.stringify({minutes})
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error||'Napaka');
+    closeModal(); showToast('✅ Naročilo sprejeto! Stranka obveščena.','success');
+    loadOrders();
+  } catch(e) { showToast('Napaka: '+e.message,'error'); }
+}
+async function rejectOrder(id, ref) {
+  if (!confirm(`Zavrniti naročilo #${ref}?`)) return;
+  try {
+    const r = await fetch('/api/orders/'+id+'/reject',{method:'POST',headers:{'Authorization':'Bearer '+ownerToken}});
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error||'Napaka');
+    showToast('Naročilo zavrnjeno','error'); loadOrders();
+  } catch(e) { showToast('Napaka: '+e.message,'error'); }
+}
+
+// ── MENU ────────────────────────────────────────────────
+async function loadMenu() {
+  try {
+    const r = await fetch('/api/settings/services',{headers:{'Authorization':'Bearer '+ownerToken}});
+    const services = await r.json();
+    const el = document.getElementById('menu-list');
+    if (!Array.isArray(services)||!services.length) {
+      el.innerHTML='<div class="empty-state"><span class="emoji">🍽️</span><p>Meni je prazen</p></div>'; return;
+    }
+    el.innerHTML = services.map(s=>`
+      <div class="menu-item">
+        <div class="menu-item-info">
+          <div class="menu-item-name">${s.name}</div>
+          ${s.description?`<div class="menu-item-desc">${s.description}</div>`:''}
+        </div>
+        <div class="menu-item-price">${s.price} €</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+function addMenuItem() {
+  const name = prompt('Ime artikla:'); if(!name) return;
+  const price = prompt('Cena (€):'); if(!price) return;
+  const desc = prompt('Opis (opcijsko):') || '';
+  fetch('/api/settings/services',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
+    body:JSON.stringify({name,price:parseFloat(price),description:desc,duration_minutes:0})
+  }).then(r=>r.json()).then(d=>{
+    if(d.id||d.success){showToast('Artikel dodan!','success');loadMenu();}
+    else showToast('Napaka: '+(d.error||''),'error');
+  });
+}
+
+// ── SETTINGS ────────────────────────────────────────────
+async function loadSettingsData() {
+  try {
+    const r = await fetch('/api/settings',{headers:{'Authorization':'Bearer '+ownerToken}});
+    const d = await r.json();
+    document.getElementById('s-name').value = d.name||'';
+    document.getElementById('s-greeting').value = d.greeting_message||'';
+    document.getElementById('s-botnum').value = d.bot_phone_display||'';
+  } catch(e) {}
+}
+async function saveSettings() {
+  try {
+    const r = await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
+      body:JSON.stringify({name:document.getElementById('s-name').value,greeting_message:document.getElementById('s-greeting').value,bot_phone_display:document.getElementById('s-botnum').value})
+    });
+    showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');
+  } catch(e){showToast('Napaka','error');}
+}
+
+// ── TOAST ────────────────────────────────────────────────
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast '+type+' show';
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ── INIT ─────────────────────────────────────────────────
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const urlToken=params.get('token');
+  if(urlToken){localStorage.setItem('ft_delivery_token',urlToken);history.replaceState({},'','/delivery.html');}
+  const saved=localStorage.getItem('ft_delivery_token');
+  if(saved){
+    ownerToken=saved;
+    fetch('/api/settings',{headers:{'Authorization':'Bearer '+saved}})
+      .then(r=>r.ok?r.json():null)
+      .then(d=>{
+        if(d&&d.booking_mode==='delivery') showApp(d.name);
+        else localStorage.removeItem('ft_delivery_token');
+      }).catch(()=>{});
+  }
+  document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+})();
+</script>
+</body>
+</html>
