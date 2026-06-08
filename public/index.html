@@ -263,6 +263,32 @@ document.addEventListener('DOMContentLoaded', async function() {
   setTimeout(function() { injectFooterLinks(); obs2.disconnect(); }, 4500);
 })();
 </script>
+<script>
+(function() {
+  var WA_URL = 'https://wa.me/38640599185?text=Pozdravljeni%2C%20zanima%20me%20FlowTiq%20za%20moj%20salon.';
+  function wireWaButtons() {
+    document.querySelectorAll('a, button').forEach(function(el) {
+      var txt = el.textContent || '';
+      if (txt.toLowerCase().indexOf('whatsapp') > -1 || txt.indexOf('nam na') > -1) {
+        if (el.tagName === 'A') {
+          el.href = WA_URL;
+          el.target = '_blank';
+          el.rel = 'noopener noreferrer';
+        } else if (!el.dataset.waWired) {
+          el.dataset.waWired = '1';
+          el.addEventListener('click', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            window.open(WA_URL, '_blank');
+          });
+        }
+      }
+    });
+  }
+  var obs = new MutationObserver(wireWaButtons);
+  obs.observe(document.documentElement, { childList: true, subtree: true });
+  setTimeout(function() { wireWaButtons(); obs.disconnect(); }, 5000);
+})();
+</script>
 
 </body>
 </html>

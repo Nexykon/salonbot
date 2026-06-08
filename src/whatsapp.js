@@ -212,4 +212,47 @@ function customerConfirmTemplate(to, date, time, salonName) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate };
+
+function salesTypeList(to) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'list',
+      body: { text: 'Kakšna je vaša dejavnost?' },
+      action: {
+        button: 'Izberi vrsto',
+        sections: [{
+          title: 'Vrsta salona',
+          rows: [
+            { id: 'stype_frizerstvo', title: 'Frizerstvo ✂️' },
+            { id: 'stype_kozmetika', title: 'Kozmetika 💆' },
+            { id: 'stype_nohti', title: 'Nohti 💅' },
+            { id: 'stype_tattoo', title: 'Tattoo / Piercing 🎨' },
+            { id: 'stype_masaze', title: 'Masaže 🧘' },
+            { id: 'stype_drugo', title: 'Drugo' }
+          ]
+        }]
+      }
+    }
+  };
+}
+
+function salesConfirmButtons(to, salonName, salonType, email) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: `🎉 Odlično! Tukaj je povzetek naročila:\n\n🏪 Salon: ${salonName}\n📋 Vrsta: ${salonType}\n📧 Email: ${email}\n\n💰 *FlowTiq naročnina: 60€/mesec*\n✅ Vključuje: WhatsApp bot + admin panel + email obvestila + neomejene rezervacije\n🛠️ Nastavitev v 24h po naročilu\n\nPotrjujete naročilo?`
+      },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'sales_confirm', title: '✅ Da, naročim!' } },
+          { type: 'reply', reply: { id: 'sales_cancel', title: '❌ Ne, hvala' } }
+        ]
+      }
+    }
+  };
+}
+
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons };

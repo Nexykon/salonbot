@@ -983,6 +983,9 @@
       <button class="btn-add" onclick="openAddModal()">
         <span>+</span> Nov salon
       </button>
+      <button class="btn-add" style="background:linear-gradient(135deg,#25D366,#06b6d4);margin-left:8px" onclick="addFlowTiqSalon()">
+        ⚡ Dodaj FlowTiq
+      </button>
     </div>
 
     <div class="table-wrap">
@@ -1760,6 +1763,7 @@ function renderTable() {
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
+          <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.08)" onclick="deleteSalon('${s.id}','${s.name}')">🗑️ Briši</button>
         </div>
       </td>
     </tr>`;
@@ -1782,6 +1786,48 @@ async function activateSalon(id) {
       showToast('Napaka pri aktivaciji', 'error');
     }
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+
+async function deleteSalon(id, name) {
+  if (!confirm(`Res želite izbrisati salon "${name}"?\nTo bo trajno izbrisalo VSE podatke (rezervacije, storitve...).`)) return;
+  const r = await fetch(`/api/admin/salons/${id}`, {
+    method: 'DELETE',
+    headers: { 'x-admin-key': adminKey }
+  });
+  const d = await r.json();
+  if (d.success) { showToast('Salon izbrisan.', 'success'); await loadSalons(); }
+  else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
+}
+
+
+async function addFlowTiqSalon() {
+  if (!confirm('Ustvari FlowTiq sales salon?\n\nPhone ID: 1152382777962508\nBooking mode: sales')) return;
+  const r = await fetch('/onboard', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+    body: JSON.stringify({
+      name: 'FlowTiq',
+      owner_name: 'FlowTiq Admin',
+      owner_email: 'nexon.crypto@gmail.com',
+      admin_phone: '',
+      whatsapp_phone_number_id: '1152382777962508',
+      bot_phone_display: '+386 40 599 185',
+      business_type: 'other',
+      plan: 'pro'
+    })
+  });
+  const d = await r.json();
+  if (d.success) {
+    showToast('FlowTiq salon ustvarjen!', 'success');
+    await loadSalons();
+    // Now set booking_mode = 'sales' via PATCH
+    await fetch(`/api/admin/salons/${d.salon_id}/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-key': adminKey },
+      body: JSON.stringify({ booking_mode: 'sales' })
+    });
+  } else { showToast('Napaka: ' + (d.error || 'Neznana'), 'error'); }
 }
 
 async function deactivateSalon(id) {

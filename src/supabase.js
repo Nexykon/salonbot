@@ -553,8 +553,19 @@ async function getBookingsForReactivation(salonId, date56ago) {
   return r.data;
 }
 
+
+async function deleteSalon(salonId) {
+  // Delete related records first
+  await axios.delete(`${BASE}/sb_bookings?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
+  await axios.delete(`${BASE}/sb_services?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
+  await axios.delete(`${BASE}/sb_knowledge?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
+  await axios.delete(`${BASE}/sb_errors?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
+  const r = await axios.delete(`${BASE}/sb_salons?id=eq.${salonId}`, { headers: HEADERS });
+  return r.data;
+}
+
 module.exports = {
-  getSalon, getSalonById, getSalonBySlug, resolveSalon, getSalonByPhoneId,
+  getSalon, getSalonById, deleteSalon, getSalonBySlug, resolveSalon, getSalonByPhoneId,
   getAllSalons, createSalon, createService, createServicesFromPreset,
   updateSalonStripe, updateSubscriptionStatus, logInvoice,
   getServices, getServiceById, getAvailableSlots,

@@ -417,6 +417,18 @@ app.post('/onboard', async (req, res) => {
   }
 });
 
+
+// ─── Delete salon (master admin only) ──────────────────────────
+app.delete('/api/admin/salons/:id', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    await db.deleteSalon(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Owner password setup (via email link) ───────────────────
 app.get('/api/owner/setup-check', async (req, res) => {
   const { token } = req.query;

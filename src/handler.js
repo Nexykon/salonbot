@@ -274,6 +274,93 @@ async function handleMessage(msgObj, salon) {
   }
 
   // ── CUSTOMER FLOW ────────────────────────────────────────────
+
+  // ══════════════════════════════════════════════════════
+  // SALES BOT FLOW (booking_mode = 'sales')
+  // ══════════════════════════════════════════════════════
+  if (salon.booking_mode === 'sales') {
+    const sess = session.get(from);
+
+    // Step 201: got salon name → ask business type
+    if (sess.step === 201 && msgText) {
+      session.set(from, { ...sess, step: 202, salonName: msgText.trim() });
+      await wa.send(phoneId, token, wa.salesTypeList(from));
+      return;
+    }
+
+    // Step 202: got business type (button) → ask email
+    if (sess.step === 202) {
+      const typeMap = {
+        stype_frizerstvo: 'Frizerstvo ✂️', stype_kozmetika: 'Kozmetika 💆',
+        stype_nohti: 'Nohti 💅', stype_tattoo: 'Tattoo / Piercing 🎨',
+        stype_masaze: 'Masaže 🧘', stype_drugo: 'Drugo'
+      };
+      const sType = typeMap[iId] || msgText.trim() || 'Ni navedeno';
+      session.set(from, { ...sess, step: 203, salonType: sType });
+      await wa.send(phoneId, token, wa.textMsg(from, '📧 Na kateri email vam pošljemo dostop in račun?'));
+      return;
+    }
+
+    // Step 203: got email → show pricing + confirm
+    if (sess.step === 203 && msgText) {
+      const email = msgText.trim();
+      session.set(from, { ...sess, step: 204, email });
+      await wa.send(phoneId, token, wa.salesConfirmButtons(from, sess.salonName, sess.salonType, email));
+      return;
+    }
+
+    // Step 204: confirmed → save lead, notify admin
+    if (iId === 'sales_confirm') {
+      const s = session.get(from);
+      const today = new Date().toISOString().slice(0, 10);
+      const leadData = {
+        customer_phone: from,
+        customer_name: s.salonName || 'Neznano',
+        salon_id: salon.id,
+        booking_date: today,
+        booking_time: '00:00:00',
+        status: 'confirmed',
+        notes: `NAROCILO FlowTiq | Vrsta: ${s.salonType || '-'} | Email: ${s.email || '-'}`,
+        form_answers: JSON.stringify({ 'Salon': s.salonName, 'Vrsta': s.salonType, 'Email': s.email })
+      };
+      await db.createBooking(leadData).catch(e => console.error('[sales] save lead failed:', e.message));
+      session.clear(from);
+
+      // Notify admin via WA
+      if (salonAdminPhone) {
+        const msg = `🎉 *NOVO NAROČILO FlowTiq!*\n\n🏪 Salon: ${s.salonName}\n📋 Vrsta: ${s.salonType}\n📞 Tel: +${from}\n📧 Email: ${s.email}\n\nNastavite jim salon in pošljite dostop!`;
+        wa.send(phoneId, token, wa.textMsg(salonAdminPhone, msg)).catch(() => {});
+      }
+      // Notify via email
+      if (salon.owner_email) {
+        mail.sendBookingNotification && mail.sendBookingNotification(
+          salon, s.salonName, from, today, '—', 'FlowTiq naročnina'
+        ).catch(e => console.error('[sales] email failed:', e.message));
+      }
+
+      await wa.send(phoneId, token, wa.textMsg(from,
+        `✅ *Naročilo sprejeto!*\n\nHvala, ${s.salonName}! 🎉\n\nV 24 urah vas kontaktiramo na ${s.email} in nastavimo vaš FlowTiq bot.\n\nDo takrat! 🌸 — Ekipa FlowTiq`
+      ));
+      return;
+    }
+
+    // Step 204: cancelled
+    if (iId === 'sales_cancel') {
+      session.clear(from);
+      await wa.send(phoneId, token, wa.textMsg(from, 'Ni problema! Če se premislite, smo tukaj. 😊'));
+      return;
+    }
+
+    // Default / new session: welcome + ask salon name
+    session.set(from, { step: 201 });
+    await wa.send(phoneId, token, wa.textMsg(from,
+      `👋 Pozdravljeni! Sem *FlowTiq* — WhatsApp rezervacijski bot za salone.\n\nVaše stranke rezervirajo termine 24/7 brez klicev in SMS-ov. Vi pa vse upravljate prek preprostega admin panela.\n\n🚀 Začnemo z nastavitvijo? Kako se imenuje vaš salon?`
+    ));
+    return;
+  }
+  // ══════════════════════════════════════════════════════
+
+
   const sess = session.get(from);
   const services = await db.getServices(salon.id);
 
