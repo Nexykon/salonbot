@@ -1424,10 +1424,12 @@ app.get('/api/orders', async (req, res) => {
   try {
     const status = req.query.status || 'all';
     const today = new Date().toISOString().slice(0, 10);
-    let url = `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?salon_id=eq.${salon.id}&order=created_at.desc&limit=50`;
+    // FIFO: pending naročila — najstarejše najprej; ostalo — najnovejše najprej
+    const orderDir = status === 'pending' ? 'asc' : 'desc';
+    let url = `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?salon_id=eq.${salon.id}&order=created_at.${orderDir}&limit=100`;
     if (status === 'pending') url += '&status=eq.pending';
-    else if (status === 'today') url += `&booking_date=eq.${today}`;
-    else url += `&booking_date=gte.${today}`;
+    else if (status === 'today') url += `&booking_date=eq.${today}&status=neq.pending`;
+    else if (status === 'all') url += `&booking_date=gte.${today}`;
     const { default: axios } = await import('axios');
     const r = await axios.get(url, {
       headers: {

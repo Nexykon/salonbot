@@ -260,17 +260,23 @@ function salesConfirmButtons(to, salonName, salonType, email) {
 // DELIVERY BOT FUNCTIONS (booking_mode = 'delivery')
 // ══════════════════════════════════════════════════════
 
-function deliveryMenuList(to, services, salon) {
-  const rows = services.map(s => ({
+function deliveryMenuList(to, services, salon, cartSummary) {
+  // Max 9 items + 1 checkout row = 10 (WA limit)
+  const itemRows = services.slice(0, 9).map(s => ({
     id: 'menu_' + s.id,
     title: s.name.substring(0, 24),
-    description: (s.price ? s.price + ' €' : '').substring(0, 72)
-  })).slice(0, 10);
+    description: ((s.description ? s.description + ' | ' : '') + (s.price ? s.price + ' €' : '')).substring(0, 72)
+  }));
+  const checkoutRow = { id: 'delivery_checkout', title: '✅ Zaključi naročilo', description: 'Nadaljuj na vnos podatkov' };
+  const rows = [...itemRows, checkoutRow];
+  const bodyText = cartSummary
+    ? '🛒 V košarici: ' + cartSummary + '\n\nDodajte še artikel ali zaključite:'
+    : '👇 Izberite artikel iz menija:';
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
-      body: { text: salon.greeting_message || '🍕 Dobrodošli! Izberite iz menija:' },
+      body: { text: bodyText },
       action: { button: 'Odpri meni', sections: [{ title: 'Meni', rows }] }
     }
   };

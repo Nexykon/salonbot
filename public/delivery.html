@@ -87,10 +87,20 @@ body {
 .filter-chip.active { background: rgba(37,211,102,.12); border-color: var(--purple); color: var(--purple); }
 
 /* ORDER CARDS */
-.order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
-.order-card.pending { border-left: 3px solid var(--yellow); }
-.order-card.confirmed { border-left: 3px solid var(--green); }
-.order-card.cancelled { border-left: 3px solid var(--red); opacity: .65; }
+.order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: .2s; }
+.order-card.pending {
+  border: 2px solid #f59e0b;
+  border-left: 5px solid #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 4px 20px rgba(245,158,11,.18);
+  animation: pulse-pending 2.5s ease-in-out infinite;
+}
+@keyframes pulse-pending {
+  0%,100% { box-shadow: 0 4px 20px rgba(245,158,11,.18); }
+  50% { box-shadow: 0 4px 28px rgba(245,158,11,.38); }
+}
+.order-card.confirmed { border-left: 4px solid var(--green); opacity: .75; }
+.order-card.cancelled { border-left: 4px solid var(--red); opacity: .5; }
 
 .order-head { padding: 14px 16px 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .order-ref { background: var(--surface2); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 800; color: var(--muted); font-family: monospace; }
@@ -382,28 +392,34 @@ function renderOrders(orders) {
   }
   const statusLabel = {pending:'V čakanju', confirmed:'Potrjeno', cancelled:'Zavrnjeno'};
   const statusCls   = {pending:'status-pending', confirmed:'status-confirmed', cancelled:'status-cancelled'};
+  // FIFO: pending naročila so že sortirana asc (najstarejše najprej) s strani strežnika
+  let pendingIdx = 0;
   el.innerHTML = orders.map(o => {
-    const fa      = safeJson(o.form_answers);
-    const items   = fa.narocilo || '—';
-    const address = fa.naslov   || '—';
-    const total   = fa.skupaj   || '—';
-    const ref6    = (o.id||'').slice(-6).toUpperCase();
-    const time    = formatTime(o.created_at || o.booking_date);
-    const actions = o.status === 'pending' ? `
+    const fa        = safeJson(o.form_answers);
+    const items     = fa.narocilo || '—';
+    const address   = fa.naslov   || '—';
+    const total     = fa.skupaj   || '—';
+    const custName  = fa.ime || '';
+    const ref6      = (o.id||'').slice(-6).toUpperCase();
+    const time      = formatTime(o.created_at || o.booking_date);
+    const isPending = o.status === 'pending';
+    const fifoNum   = isPending ? `<span style="background:#fde68a;color:#92400e;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;margin-right:2px;">${++pendingIdx}.</span>` : '';
+    const novoBadge = isPending ? `<span style="background:#f59e0b;color:#fff;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:800;letter-spacing:.04em;">NOVO</span>` : `<span class="order-status ${statusCls[o.status]||''}">${statusLabel[o.status]||o.status}</span>`;
+    const actions   = isPending ? `
       <div class="order-actions">
         <button class="btn-accept" onclick="openModal('${o.id}')">✅ Sprejmi naročilo</button>
         <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Zavrni</button>
       </div>` : '';
     return `<div class="order-card ${o.status||''}">
       <div class="order-head">
-        <span class="order-ref">#${ref6}</span>
-        <span class="order-status ${statusCls[o.status]||''}">${statusLabel[o.status]||o.status}</span>
+        ${fifoNum}<span class="order-ref">#${ref6}</span> ${novoBadge}
         <span class="order-time">${time}</span>
       </div>
       <div class="order-body">
-        <div class="order-items">${items}</div>
+        <div class="order-items" style="${isPending?'font-weight:700;font-size:15px;color:#111;':''}">${items}</div>
         <div class="order-address">📍 ${address}</div>
-        <div class="order-total">Skupaj: ${total}</div>
+        <div class="order-total" style="${isPending?'font-size:17px;':''}">${total}</div>
+        ${custName ? `<div class="order-items" style="font-size:13px;color:var(--muted);font-weight:600;">👤 ${custName}</div>` : ''}
         <div class="order-phone">📞 +${o.customer_phone||'—'}</div>
         ${actions}
       </div>
