@@ -238,8 +238,8 @@ async function getBookingsByDate(salonId, date) {
 }
 
 async function getBookingsForRange(salonId, from, to) {
-  let url = `${BASE}/sb_bookings?booking_date=gte.${from}&booking_date=lte.${to}&order=booking_date,booking_time`;
-  if (salonId) url = `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=gte.${from}&booking_date=lte.${to}&order=booking_date,booking_time`;
+  let url = `${BASE}/sb_bookings?booking_date=gte.${from}&booking_date=lte.${to}&status=neq.cancelled&order=booking_date,booking_time`;
+  if (salonId) url = `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=gte.${from}&booking_date=lte.${to}&status=neq.cancelled&order=booking_date,booking_time`;
   const r = await axios.get(url, { headers: HEADERS });
   return r.data;
 }

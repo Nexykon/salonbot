@@ -534,6 +534,7 @@ async function handleMessage(msgObj, salon) {
     const svc = services.find(sv => sv.id === s.serviceId);
     const fa = s.formAnswers && Object.keys(s.formAnswers).length ? s.formAnswers : {};
     const faJson = Object.keys(fa).length ? JSON.stringify(fa) : null;
+    const autoConfirm = salon.auto_confirm === true;
 
     const bookingData = {
       customer_phone: from,
@@ -542,7 +543,7 @@ async function handleMessage(msgObj, salon) {
       service_id: s.serviceId,
       booking_date: s.selectedDate,
       booking_time: s.selectedTime + ':00',
-      status: 'pending',
+      status: autoConfirm ? 'confirmed' : 'pending',
       notes: '',
       form_answers: faJson
     };
@@ -554,9 +555,11 @@ async function handleMessage(msgObj, salon) {
     const fTime = (s.selectedTime || '').substring(0, 5);
     session.clear(from);
 
-    // Potrditev stranki
-    const custMsg = salon.booking_confirmation_message ||
-      `Rezervacija potrjena! ✅\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}\n\nRef: *${ref6}*\n\nDo takrat! 🌸`;
+    // Sporocilo stranki glede na auto_confirm
+    const custMsg = autoConfirm
+      ? (salon.booking_confirmation_message ||
+          `Rezervacija potrjena! ✅\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}\n\nRef: *${ref6}*\n\nDo takrat! 🌸`)
+      : `Rezervacija oddana! ⏳\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}\n\nRef: *${ref6}*\n\nCakamo na potrditev. Ko bo potrjena, vas obvestimo. 🙏`;
     await wa.send(phoneId, token, wa.textMsg(from, custMsg));
 
     // Obvesti admina glede na nastavitve notify_whatsapp / notify_email
@@ -564,22 +567,45 @@ async function handleMessage(msgObj, salon) {
     const doEmail = salon.notify_email    !== false && salon.owner_email;
 
     if (doWA) {
-      const aSum = Object.entries(fa).map(([k, v]) => `${k}: ${v}`).join('\n');
-      const adminMsg =
-        `🆕 *Nova rezervacija*\n\n` +
-        `👤 ${s.customerName}\n` +
-        `📞 +${from}\n` +
-        `💼 ${svc ? svc.name : '-'}\n` +
-        `📅 ${fDate} ob ${fTime}\n` +
-        `🔑 Ref: *${ref6}*` +
-        (aSum ? `\n\n📋 *Odgovori na vprašanja:*\n${aSum}` : '');
-      wa.send(phoneId, token, wa.textMsg(salonAdminPhone, adminMsg))
-        .catch(e => console.error('[booking] Admin WA err:', e.message));
+      if (autoConfirm) {
+        // Auto-potrjeno: samo info sporocilo
+        const aSum = Object.entries(fa).map(([k, v]) => `${k}: ${v}`).join('\n');
+        const adminMsg =
+          `🆕 *Nova rezervacija*\n\n` +
+          `👤 ${s.customerName}\n` +
+          `📞 +${from}\n` +
+          `💼 ${svc ? svc.name : '-'}\n` +
+          `📅 ${fDate} ob ${fTime}\n` +
+          `🔑 Ref: *${ref6}*` +
+          (aSum ? `\n\n📋 *Odgovori na vprašanja:*\n${aSum}` : '');
+        wa.send(phoneId, token, wa.textMsg(salonAdminPhone, adminMsg))
+          .catch(e => console.error('[booking] Admin WA err:', e.message));
+      } else {
+        // Pending: posljemo gumbe za potrditev/zavrnitev
+        try {
+          await wa.send(phoneId, token, wa.adminBookingNotif(salonAdminPhone, s.customerName, from, fDate, fTime, ref6));
+        } catch (e) {
+          try {
+            await wa.send(phoneId, token, wa.adminBookingNotifSession(salonAdminPhone, s.customerName, from, s.selectedDate, fTime, ref6));
+          } catch (e2) {
+            wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
+              `Nova rezervacija\n\nIme: ${s.customerName}\nTel: +${from}\nDatum: ${fDate} ob ${fTime}\nRef: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*`
+            )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
+          }
+        }
+      }
+    }
+
     }
 
     if (doEmail) {
-      mail.sendBookingNotification(salon, s.customerName, from, s.selectedDate, fTime, ref6, 'WhatsApp rezervacija', fa)
-        .catch(e => console.error('[booking] Admin email err:', e.message));
+      if (autoConfirm) {
+        mail.sendBookingNotification(salon, s.customerName, from, s.selectedDate, fTime, ref6, 'WhatsApp rezervacija', fa)
+          .catch(e => console.error('[booking] Admin email err:', e.message));
+      } else {
+        mail.sendAdminBookingConfirmEmail(salon, s.customerName, from, fDate, fTime, ref6, booking.id)
+          .catch(e => console.error('[booking] Admin confirm email err:', e.message));
+      }
     }
 
     if (!doWA && !doEmail) {
