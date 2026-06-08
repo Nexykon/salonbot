@@ -186,6 +186,57 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
+
+    // ── Delivery: accept button → ask delivery time ──
+    if (iId.startsWith('delivery_accept_')) {
+      const ref = iId.replace('delivery_accept_', '');
+      const booking = await db.getBookingForSalon(salon.id, ref);
+      if (booking) {
+        session.set(from, { awaitingDeliveryTime: ref, deliveryCustomerPhone: booking.customer_phone });
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo *#${ref}* sprejeto! ✅\n\nKoliko minut do dostave? (samo število, npr. *30*)`));
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
+      }
+      return;
+    }
+
+    // ── Delivery: reject button ──
+    if (iId.startsWith('delivery_reject_')) {
+      const ref = iId.replace('delivery_reject_', '');
+      const booking = await db.getBookingForSalon(salon.id, ref);
+      if (booking) {
+        await db.updateBookingStatus(booking.id, 'cancelled');
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo *#${ref}* zavrnjeno.`));
+        if (booking.customer_phone) {
+          wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+            `Žal vaše naročilo ni bilo sprejeto. Pokličite nas za več informacij. 😔`
+          )).catch(() => {});
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
+      }
+      return;
+    }
+
+    // ── Delivery: admin typed minutes after accepting ──
+    const adminSess = session.get(from);
+    if (adminSess.awaitingDeliveryTime && msgText) {
+      const minutes = parseInt(msgText.trim());
+      const ref = adminSess.awaitingDeliveryTime;
+      const custPhone = adminSess.deliveryCustomerPhone;
+      session.clear(from);
+      if (!isNaN(minutes) && minutes > 0 && custPhone) {
+        await db.getBookingForSalon(salon.id, ref).then(b => b && db.updateBookingStatus(b.id, 'confirmed')).catch(() => {});
+        await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: dostava v ${minutes} min. ✅`));
+        wa.send(phoneId, token, wa.textMsg(custPhone,
+          `🍕 Naročilo potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala! 😊`
+        )).catch(e => wa.send(phoneId, token, wa.textMsg(from, `Stranke ni uspelo obvestiti: ${e.message}`)));
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Napaka: vnesite samo število minut (npr. 30).'));
+      }
+      return;
+    }
+
     const lowerText = msgText.toLowerCase();
     if (lowerText.startsWith('#potrdi ') || lowerText.startsWith('#zavrni ')) {
       const parts = msgText.trim().split(/\s+/);
@@ -219,6 +270,37 @@ async function handleMessage(msgObj, salon) {
     }
 
     const lowerMsg = msgText.toLowerCase();
+    // #cas REF MIN — legacy text command for delivery time
+    if (lowerMsg.startsWith('#cas ')) {
+      const parts = msgText.trim().split(/\s+/);
+      // Format: #cas REF6 MINUTES  or  #cas MINUTES (uses awaitingDeliveryTime)
+      let ref, minutes;
+      if (parts.length >= 3) {
+        ref = parts[1]; minutes = parseInt(parts[2]);
+      } else if (parts.length === 2) {
+        minutes = parseInt(parts[1]);
+        ref = session.get(from).awaitingDeliveryTime;
+      }
+      if (ref && !isNaN(minutes) && minutes > 0) {
+        const booking = await db.getBookingForSalon(salon.id, ref);
+        if (booking) {
+          await db.updateBookingStatus(booking.id, 'confirmed');
+          session.clear(from);
+          await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: dostava v ${minutes} min. ✅`));
+          if (booking.customer_phone) {
+            wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+              `🍕 Naročilo potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala! 😊`
+            )).catch(() => {});
+          }
+        } else {
+          await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Uporaba: *#cas REF6 30* ali *#cas 30* (po sprejemu naročila)'));
+      }
+      return;
+    }
+
     if (lowerMsg.startsWith('#nauci ')) {
       const content = msgText.slice(7).trim();
       if (content) { await db.addKnowledge(salon.id, content); }
@@ -356,6 +438,125 @@ async function handleMessage(msgObj, salon) {
     await wa.send(phoneId, token, wa.textMsg(from,
       `👋 Pozdravljeni! Sem *FlowTiq* — WhatsApp rezervacijski bot za salone.\n\nVaše stranke rezervirajo termine 24/7 brez klicev in SMS-ov. Vi pa vse upravljate prek preprostega admin panela.\n\n🚀 Začnemo z nastavitvijo? Kako se imenuje vaš salon?`
     ));
+    return;
+  }
+  // ══════════════════════════════════════════════════════
+
+  // ══════════════════════════════════════════════════════
+  // DELIVERY BOT FLOW (booking_mode = 'delivery')
+  // ══════════════════════════════════════════════════════
+  if (salon.booking_mode === 'delivery') {
+    const services = await db.getServices(salon.id);
+    const sess = session.get(from);
+
+    // Helper: format cart
+    function fmtCart(cart) {
+      return cart.map(item => `• ${item.name} — ${item.price} €`).join('\n');
+    }
+    function cartTotal(cart) {
+      return cart.reduce((sum, item) => sum + parseFloat(item.price || 0), 0).toFixed(2);
+    }
+
+    // Menu item selected
+    if (iId.startsWith('menu_')) {
+      const svcId = iId.replace('menu_', '');
+      const svc = services.find(s => s.id === svcId);
+      if (!svc) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Artikel ni najden. Izberite iz menija:'));
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon));
+        return;
+      }
+      const cart = sess.cart || [];
+      cart.push({ id: svc.id, name: svc.name, price: svc.price || 0 });
+      session.set(from, { ...sess, step: 301, cart });
+      await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(cart), cartTotal(cart)));
+      return;
+    }
+
+    // Add more → show menu again
+    if (iId === 'delivery_add_more') {
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon));
+      return;
+    }
+
+    // Checkout → ask address
+    if (iId === 'delivery_checkout') {
+      if (!sess.cart || !sess.cart.length) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel:'));
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon));
+        return;
+      }
+      session.set(from, { ...sess, step: 302 });
+      await wa.send(phoneId, token, wa.textMsg(from, '📍 Na kateri naslov dostavimo? (ulica, hišna številka, kraj)'));
+      return;
+    }
+
+    // Step 302: got address → show confirm
+    if (sess.step === 302 && msgText) {
+      const address = msgText.trim();
+      const cart = sess.cart || [];
+      session.set(from, { ...sess, step: 303, deliveryAddress: address });
+      await wa.send(phoneId, token, wa.deliveryConfirmButtons(from, fmtCart(cart), address, cartTotal(cart)));
+      return;
+    }
+
+    // Confirm order
+    if (iId === 'delivery_confirm') {
+      const s = session.get(from);
+      const cart = s.cart || [];
+      if (!cart.length || !s.deliveryAddress) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Začnite znova.'));
+        session.clear(from);
+        return;
+      }
+      const total = cartTotal(cart);
+      const today = new Date().toISOString().slice(0, 10);
+      const bookingData = {
+        customer_phone: from,
+        customer_name: from,
+        salon_id: salon.id,
+        booking_date: today,
+        booking_time: new Date().toTimeString().slice(0, 8),
+        status: 'pending',
+        notes: `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${total} €`,
+        form_answers: JSON.stringify({ naslov: s.deliveryAddress, narocilo: fmtCart(cart), skupaj: total + ' €' })
+      };
+      const booking = await db.createBooking(bookingData);
+      const ref6 = (booking.id || '').slice(-6);
+      session.clear(from);
+
+      await wa.send(phoneId, token, wa.textMsg(from,
+        `✅ Naročilo oddano! Čakamo na potrditev picerije.\n\n🔑 Ref: *#${ref6}*\n\nKo bomo potrdili, vam sporočimo čas dostave. 🍕`
+      ));
+
+      // Notify admin
+      if (salonAdminPhone) {
+        try {
+          await wa.send(phoneId, token, wa.deliveryAdminNotif(salonAdminPhone, from, fmtCart(cart), s.deliveryAddress, total, ref6));
+        } catch (e) {
+          wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
+            `🍕 NOVO NAROČILO #${ref6}\n\n${fmtCart(cart)}\n\nNaslov: ${s.deliveryAddress}\nSkupaj: ${total} €\nStranka: +${from}\n\nSprejmi: *#cas ${ref6} 30*`
+          )).catch(() => {});
+        }
+      } else {
+        console.warn('[delivery] No admin phone set for salon', salon.id);
+      }
+      return;
+    }
+
+    // Cancel order
+    if (iId === 'delivery_cancel') {
+      session.clear(from);
+      await wa.send(phoneId, token, wa.textMsg(from, 'Naročilo preklicano. Dobrodošli nazaj! 🍕'));
+      return;
+    }
+
+    // Default: welcome + show menu
+    session.set(from, { step: 300, cart: [] });
+    await wa.send(phoneId, token, wa.textMsg(from,
+      salon.greeting_message || `👋 Dobrodošli! Izberite iz menija in naročite dostavo. 🍕`
+    ));
+    await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon));
     return;
   }
   // ══════════════════════════════════════════════════════

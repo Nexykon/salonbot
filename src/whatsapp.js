@@ -255,4 +255,75 @@ function salesConfirmButtons(to, salonName, salonType, email) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons };
+
+// ══════════════════════════════════════════════════════
+// DELIVERY BOT FUNCTIONS (booking_mode = 'delivery')
+// ══════════════════════════════════════════════════════
+
+function deliveryMenuList(to, services, salon) {
+  const rows = services.map(s => ({
+    id: 'menu_' + s.id,
+    title: s.name.substring(0, 24),
+    description: (s.price ? s.price + ' €' : '').substring(0, 72)
+  })).slice(0, 10);
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'list',
+      body: { text: salon.greeting_message || '🍕 Dobrodošli! Izberite iz menija:' },
+      action: { button: 'Odpri meni', sections: [{ title: 'Meni', rows }] }
+    }
+  };
+}
+
+function deliveryCartButtons(to, cartText, total) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: '🛒 *Vaše naročilo:*\n\n' + cartText + '\n\n💰 Skupaj: ' + total + ' €\n\nDodajte še kaj ali zaključite?' },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'delivery_add_more', title: '➕ Dodaj še' } },
+          { type: 'reply', reply: { id: 'delivery_checkout', title: '✅ Zaključi' } }
+        ]
+      }
+    }
+  };
+}
+
+function deliveryConfirmButtons(to, cartText, address, total) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: '📋 *Pregled naročila:*\n\n' + cartText + '\n\n📍 Naslov: ' + address + '\n💰 Skupaj: ' + total + ' €\n\nPotrjujete naročilo?' },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'delivery_confirm', title: '✅ Potrdi' } },
+          { type: 'reply', reply: { id: 'delivery_cancel', title: '❌ Prekliči' } }
+        ]
+      }
+    }
+  };
+}
+
+function deliveryAdminNotif(to, customerPhone, cartText, address, total, ref6) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: '🍕 *NOVO NAROČILO #' + ref6 + '*\n\n' + cartText + '\n\n📍 Naslov: ' + address + '\n💰 Skupaj: ' + total + ' €\n📞 Stranka: +' + customerPhone + '\n\nSprejemite in vnesite čas dostave.'
+      },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'delivery_accept_' + ref6, title: '✅ Sprejmi' } },
+          { type: 'reply', reply: { id: 'delivery_reject_' + ref6, title: '❌ Zavrni' } }
+        ]
+      }
+    }
+  };
+}
+
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif };
