@@ -556,10 +556,13 @@ async function handleMessage(msgObj, salon) {
     session.clear(from);
 
     // Sporocilo stranki glede na auto_confirm
+    const faLines = Object.entries(fa).map(([k, v]) => `• ${k}: ${v}`).join('\n');
+    const faBlock = faLines ? `\n\n📋 Vaši odgovori:\n${faLines}` : '';
     const custMsg = autoConfirm
-      ? (salon.booking_confirmation_message ||
-          `Rezervacija potrjena! ✅\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}\n\nRef: *${ref6}*\n\nDo takrat! 🌸`)
-      : `Rezervacija oddana! ⏳\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}\n\nRef: *${ref6}*\n\nCakamo na potrditev. Ko bo potrjena, vas obvestimo. 🙏`;
+      ? (salon.booking_confirmation_message
+          ? salon.booking_confirmation_message + faBlock
+          : `Rezervacija potrjena! ✅\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}${faBlock}\n\nRef: *${ref6}*\n\nDo takrat! 🌸`)
+      : `Rezervacija oddana! ⏳\n\n📅 ${fDate} ob ${fTime}\n👤 ${s.customerName}\n💼 ${svc ? svc.name : 'Storitev'}${faBlock}\n\nRef: *${ref6}*\n\nCakamo na potrditev. Ko bo potrjena, vas obvestimo. 🙏`;
     await wa.send(phoneId, token, wa.textMsg(from, custMsg));
 
     // Obvesti admina glede na nastavitve notify_whatsapp / notify_email

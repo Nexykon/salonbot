@@ -656,6 +656,13 @@
         <input type="text" id="inquiry-confirmation-message" placeholder="Hvala! Kontaktirali vas bomo čim prej." class="dur-input" style="width:100%">
       </div>
 
+      <!-- Booking confirmation message -->
+      <div class="form-group" style="margin-top:18px">
+        <label>✅ Sporočilo stranki po potrditvi rezervacije</label>
+        <textarea id="booking-confirmation-message" class="dur-input" rows="4" placeholder="Pustite prazno za privzeto sporočilo." style="width:100%;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+        <div class="form-hint">Prikažejo se tudi vsi odgovori na vprašanja. Spremenljivke: ni podprtih — napišite statično besedilo.</div>
+      </div>
+
       <div class="form-group" style="margin-top:18px">
         <label>⭐ Link do Google recenzij</label>
         <input type="url" id="review-link" placeholder="https://g.page/r/VAŠ_SALON/review" class="dur-input" style="width:100%">
@@ -1370,6 +1377,8 @@ function ffLoadFromData(data) {
     const el = document.getElementById('inquiry-confirmation-message');
     if (el) el.value = data.inquiry_confirmation_message;
   }
+  const bcmEl = document.getElementById('booking-confirmation-message');
+  if (bcmEl) bcmEl.value = data.booking_confirmation_message || '';
   const rl = document.getElementById('review-link');
   if (rl) rl.value = data.review_link || '';
   renderFlowBuilder();
@@ -1388,6 +1397,8 @@ async function saveFormFields() {
   };
   const inqMsg = document.getElementById('inquiry-confirmation-message');
   if (inqMsg && inqMsg.value.trim()) body.inquiry_confirmation_message = inqMsg.value.trim();
+  const bcmMsg = document.getElementById('booking-confirmation-message');
+  body.booking_confirmation_message = bcmMsg ? bcmMsg.value.trim() : '';
   const reviewLinkEl = document.getElementById('review-link');
   if (reviewLinkEl) body.review_link = reviewLinkEl.value.trim();
   try {

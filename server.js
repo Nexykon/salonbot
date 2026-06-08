@@ -124,7 +124,8 @@ function publicSalon(salon) {
     notify_email: salon.notify_email !== false,
     review_link: salon.review_link || '',
     form_fields: safeFormFields(salon.form_fields, salon),
-    inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.'
+    inquiry_confirmation_message: salon.inquiry_confirmation_message || 'Hvala! Vaše povpraševanje je poslano. Kontaktirali vas bomo za potrditev.',
+    booking_confirmation_message: salon.booking_confirmation_message || ''
   };
 }
 
@@ -617,7 +618,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'review_link',
     'reactivation_message',
     'notify_whatsapp', 'auto_confirm',
-    'notify_email'
+    'notify_email', 'booking_confirmation_message'
   ];
   const updates = {};
   for (const key of allowed) {
@@ -797,7 +798,7 @@ app.patch('/api/settings', async (req, res) => {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
       'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
-      'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message'];
+      'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
