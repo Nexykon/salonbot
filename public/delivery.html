@@ -314,7 +314,7 @@ body {
     <div class="modal-sub">Izpolnite podatke o novem artiklu v meniju</div>
     <div style="margin-bottom:12px">
       <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">Kategorija</label>
-      <select id="new-item-cat" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none">
+      <select id="new-item-cat" onchange="toggleCustomCat(this)" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:6px">
         <option>Pice</option>
         <option>Mesne jedi</option>
         <option>Vegetarijanske jedi</option>
@@ -323,7 +323,9 @@ body {
         <option>Sladice</option>
         <option>Pijača</option>
         <option>Ostalo</option>
+        <option value="__custom__">✏️ Vpiši svojo...</option>
       </select>
+      <input id="new-item-cat-custom" type="text" placeholder="Ime kategorije (npr. Juhe, Burgerji...)" style="display:none;width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none">
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">Ime artikla</label>
@@ -555,6 +557,18 @@ function addMenuItem() {
   document.getElementById('new-item-price').value='';
   document.getElementById('new-item-desc').value='';
   document.getElementById('new-item-cat').value='Pice';
+  document.getElementById('new-item-cat-custom').style.display='none';
+  document.getElementById('new-item-cat-custom').value='';
+}
+function toggleCustomCat(sel) {
+  const customInput = document.getElementById('new-item-cat-custom');
+  if (sel.value === '__custom__') {
+    customInput.style.display = 'block';
+    customInput.focus();
+  } else {
+    customInput.style.display = 'none';
+    customInput.value = '';
+  }
 }
 function closeAddModal() {
   document.getElementById('add-item-modal').classList.remove('open');
@@ -563,7 +577,10 @@ async function saveNewItem() {
   const name  = document.getElementById('new-item-name').value.trim();
   const price = document.getElementById('new-item-price').value;
   const desc  = document.getElementById('new-item-desc').value.trim();
-  const cat   = document.getElementById('new-item-cat').value;
+  const catSel = document.getElementById('new-item-cat').value;
+  const cat   = catSel === '__custom__'
+    ? (document.getElementById('new-item-cat-custom').value.trim() || 'Ostalo')
+    : catSel;
   if(!name||!price){showToast('Vnesite ime in ceno','error');return;}
   const r = await fetch('/api/settings/services',{method:'POST',
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},

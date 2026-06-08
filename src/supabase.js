@@ -54,9 +54,10 @@ async function createService(salonId, service) {
   const r = await axios.post(`${BASE}/sb_services`, {
     salon_id: salonId,
     name: service.name,
-    price: Math.round(Number(service.price || 0)),
-    duration_minutes: Math.round(Number(service.duration_minutes || 60)),
+    price: Number(service.price || 0),
+    duration_minutes: Math.round(Number(service.duration_minutes || 0)),
     description: service.description || '',
+    category: service.category || 'Ostalo',
     sort_order: service.sort_order || 0,
     is_active: service.is_active !== false
   }, { headers: HEADERS });
