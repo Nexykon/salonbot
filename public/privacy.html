@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Politika zasebnosti — FlowTiq</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5faf4;color:#0c1f17;line-height:1.7;font-size:16px}
+.nav{background:#fff;border-bottom:1px solid rgba(12,31,23,0.09);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.nav-logo{font-weight:800;font-size:20px;text-decoration:none;color:#0c1f17;display:flex;align-items:center;gap:8px}
+.nav-logo-mark{width:30px;height:30px;background:#06c167;border-radius:8px;display:grid;place-items:center;font-size:14px}
+.nav-back{font-size:14px;color:#51635b;text-decoration:none;font-weight:600}
+.nav-back:hover{color:#06c167}
+.wrap{max-width:780px;margin:0 auto;padding:60px 28px 100px}
+h1{font-size:clamp(28px,4vw,42px);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:10px}
+.meta{color:#51635b;font-size:14px;margin-bottom:48px}
+h2{font-size:20px;font-weight:700;margin:40px 0 12px;color:#0c1f17}
+h3{font-size:16px;font-weight:700;margin:28px 0 8px;color:#0c1f17}
+p{margin-bottom:14px;color:#1a2e22}
+ul,ol{margin:0 0 14px 22px;color:#1a2e22}
+li{margin-bottom:6px}
+a{color:#06c167;text-decoration:underline}
+.card{background:#fff;border-radius:16px;padding:28px;margin:28px 0;border:1px solid rgba(12,31,23,0.08)}
+.badge{display:inline-block;background:rgba(6,193,103,0.12);color:#047840;font-size:13px;font-weight:700;padding:4px 12px;border-radius:100px;margin-bottom:24px}
+.footer-links{display:flex;gap:24px;flex-wrap:wrap;margin-top:60px;padding-top:28px;border-top:1px solid rgba(12,31,23,0.09);font-size:14px}
+.footer-links a{color:#51635b;text-decoration:none}
+.footer-links a:hover{color:#06c167}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a class="nav-logo" href="/"><span class="nav-logo-mark">⚡</span> FlowTiq</a>
+  <a class="nav-back" href="/">← Nazaj na domačo stran</a>
+</nav>
+<div class="wrap">
+  <span class="badge">GDPR skladnost</span>
+  <h1>Politika zasebnosti</h1>
+  <p class="meta">Zadnja posodobitev: junij 2026 &nbsp;·&nbsp; Velja za: flowtiq.si in WhatsApp bot</p>
+
+  <div class="card">
+    <strong>Povzetek:</strong> Zbiramo samo podatke, ki so nujni za delovanje storitve. Vaših podatkov ne prodajamo. Shranjujemo jih v EU. Imate pravico do vpogleda, popravka in izbrisa.
+  </div>
+
+  <h2>1. Upravljavec podatkov</h2>
+  <p><strong>[IME PODJETJA]</strong>, [NASLOV]<br>
+  E-pošta: <a href="mailto:[EMAIL]">[EMAIL]</a></p>
+
+  <h2>2. Katere podatke zbiramo</h2>
+
+  <h3>A) Podatki poslovnih strank (administratorji)</h3>
+  <ul>
+    <li>Ime in priimek, e-poštni naslov, telefonska številka</li>
+    <li>Podatki o podjetju (ime, vrsta dejavnosti)</li>
+    <li>Nastavitve storitve (delovni čas, storitve, sporočila)</li>
+    <li>Podatki o plačilih (prek Stripe — mi ne shranjujemo podatkov kartice)</li>
+  </ul>
+
+  <h3>B) Podatki končnih strank (naročnikov prek WhatsApp)</h3>
+  <ul>
+    <li>Telefonska številka WhatsApp</li>
+    <li>Ime in priimek (kot ga vpišejo)</li>
+    <li>Datum in ura rezervacije</li>
+    <li>Odgovori na vprašalnik (po nastavitvi posameznega salona)</li>
+  </ul>
+
+  <h3>C) Tehnični podatki</h3>
+  <ul>
+    <li>Dnevniki napak in aktivnosti (brez osebnih podatkov)</li>
+    <li>Piškotki (glejte <a href="/cookies.html">Politiko piškotkov</a>)</li>
+  </ul>
+
+  <h2>3. Namen in pravna podlaga</h2>
+  <ul>
+    <li><strong>Izvajanje pogodbe</strong> — zagotavljanje delovanja rezervacijskega bota</li>
+    <li><strong>Zakonita obveznost</strong> — računovodstvo in davčna evidenca</li>
+    <li><strong>Zakoniti interes</strong> — varnost, odpravljanje napak, izboljšava storitve</li>
+    <li><strong>Privolitev</strong> — tržna sporočila (samo z izrecnim soglasjem)</li>
+  </ul>
+
+  <h2>4. Tretje osebe (obdelovalci)</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Meta / WhatsApp Business API</strong> — pošiljanje in prejemanje sporočil (USA, standardne pogodbene klavzule)</li>
+      <li><strong>Supabase</strong> — baza podatkov (EU – Frankfurt)</li>
+      <li><strong>Railway</strong> — gostovanje aplikacije (EU)</li>
+      <li><strong>OpenAI</strong> — procesiranje AI pogovorov (USA, standardne pogodbene klavzule)</li>
+      <li><strong>Stripe</strong> — obdelava plačil (EU)</li>
+      <li><strong>Resend / SMTP</strong> — pošiljanje e-pošte</li>
+    </ul>
+  </div>
+
+  <h2>5. Hramba podatkov</h2>
+  <ul>
+    <li>Podatki o rezervacijah: 2 leti od rezervacije</li>
+    <li>Podatki poslovnih strank: do preklica naročnine + 1 leto (davčna obveznost)</li>
+    <li>Dnevniki: 90 dni</li>
+  </ul>
+
+  <h2>6. Vaše pravice (GDPR)</h2>
+  <p>Imate pravico do:</p>
+  <ul>
+    <li><strong>Vpogleda</strong> — katere podatke hranimo o vas</li>
+    <li><strong>Popravka</strong> — popravek netočnih podatkov</li>
+    <li><strong>Izbrisa</strong> ("pravica do pozabe")</li>
+    <li><strong>Prenosljivosti</strong> — prejmete podatke v strojno berljivi obliki</li>
+    <li><strong>Ugovora</strong> — ugovor zoper obdelavo na podlagi zakonitega interesa</li>
+    <li><strong>Omejitve</strong> — omejitev obdelave v spornih primerih</li>
+  </ul>
+  <p>Zahtevo pošljite na <a href="mailto:[EMAIL]">[EMAIL]</a>. Odgovorimo v 30 dneh.</p>
+
+  <h2>7. Pritožba</h2>
+  <p>Pritožbo lahko vložite pri Informacijskem pooblaščencu RS: <a href="https://www.ip-rs.si" target="_blank">www.ip-rs.si</a>.</p>
+
+  <h2>8. Varnost</h2>
+  <p>Podatki so šifrirani med prenosom (TLS) in pri mirovanju. Dostop je omejen na pooblaščene osebe z gesli in dvostopenjsko avtentikacijo.</p>
+
+  <h2>9. Spremembe</h2>
+  <p>Politiko zasebnosti lahko posodobimo. O bistvenih spremembah vas bomo obvestili po e-pošti.</p>
+
+  <div class="footer-links">
+  <a href="/terms.html">Pogoji uporabe</a>
+  <a href="/privacy.html">Zasebnost</a>
+  <a href="/cookies.html">Piškotki</a>
+  <a href="mailto:[EMAIL]">Kontakt</a>
+</div>
+</div>
+</body>
+</html>

@@ -204,5 +204,65 @@ document.addEventListener('DOMContentLoaded', async function() {
   setTimeout(() => { injectLogin(); obs.disconnect(); }, 4000);
 })();
 </script>
+<style>
+#ft-cookie-banner{position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#0c1f17;color:#e8f5ee;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;transform:translateY(100%);transition:transform .4s ease;box-shadow:0 -4px 20px rgba(0,0,0,0.25)}
+#ft-cookie-banner.show{transform:translateY(0)}
+#ft-cookie-banner a{color:#06c167;text-decoration:underline}
+.ft-cb-btns{display:flex;gap:10px;flex-shrink:0}
+.ft-cb-btn{padding:9px 20px;border-radius:100px;border:none;cursor:pointer;font-size:14px;font-weight:700;transition:opacity .15s}
+.ft-cb-accept{background:#06c167;color:#fff}
+.ft-cb-decline{background:rgba(255,255,255,0.12);color:#fff}
+.ft-cb-btn:hover{opacity:.85}
+</style>
+
+<div id="ft-cookie-banner" role="dialog" aria-label="Privolitev v piškotke">
+  <span>Uporabljamo nujne piškotke za delovanje storitve. Oglaševalskih ne. <a href="/cookies.html">Več o piškotkih →</a></span>
+  <div class="ft-cb-btns">
+    <button class="ft-cb-btn ft-cb-decline" onclick="ftCookieSet(false)">Samo nujni</button>
+    <button class="ft-cb-btn ft-cb-accept" onclick="ftCookieSet(true)">Sprejmi</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  var KEY = 'ft_cookie_ok';
+  function ftCookieSet(v) {
+    document.cookie = KEY + '=' + (v?'1':'0') + ';max-age=31536000;path=/';
+    document.getElementById('ft-cookie-banner').style.transform = 'translateY(100%)';
+  }
+  window.ftCookieSet = ftCookieSet;
+  function getCookie(n) {
+    var m = document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));
+    return m ? m[1] : null;
+  }
+  if (!getCookie(KEY)) {
+    setTimeout(function() {
+      var b = document.getElementById('ft-cookie-banner');
+      if (b) b.classList.add('show');
+    }, 1200);
+  }
+
+  // Inject footer links into React landing page
+  function injectFooterLinks() {
+    // Find .footer-links or .legal-links elements in footer
+    var footer = document.querySelector('footer') || document.querySelector('[class*="footer"]');
+    if (!footer || document.getElementById('ft-legal-links')) return false;
+    var links = footer.querySelectorAll('a');
+    // Look for any existing link wrapper or bottom of footer
+    var wrap = document.createElement('div');
+    wrap.id = 'ft-legal-links';
+    wrap.style.cssText = 'text-align:center;padding:12px 0 4px;font-size:13px;opacity:.7;display:flex;justify-content:center;gap:20px;flex-wrap:wrap';
+    wrap.innerHTML = '<a href="/terms.html" style="color:inherit;text-decoration:none">Pogoji uporabe</a>' +
+      '<a href="/privacy.html" style="color:inherit;text-decoration:none">Zasebnost</a>' +
+      '<a href="/cookies.html" style="color:inherit;text-decoration:none">Piškotki</a>';
+    footer.appendChild(wrap);
+    return true;
+  }
+  var obs2 = new MutationObserver(function() { if (injectFooterLinks()) obs2.disconnect(); });
+  obs2.observe(document.documentElement, { childList: true, subtree: true });
+  setTimeout(function() { injectFooterLinks(); obs2.disconnect(); }, 4500);
+})();
+</script>
+
 </body>
 </html>
