@@ -460,7 +460,7 @@ async function handleMessage(msgObj, salon) {
       return `${cart.length} artikel | ${cartTotal(cart)} €`;
     }
 
-    // Artikel izbran → dodaj v kosarico, pokazi meni spet (multi-select)
+    // ── Artikel izbran → dodaj v košarico + cart gumbi (Dodaj še / Zaključi)
     if (iId.startsWith('menu_')) {
       const svcId = iId.replace('menu_', '');
       const svc = services.find(s => s.id === svcId);
@@ -472,12 +472,21 @@ async function handleMessage(msgObj, salon) {
       const cart = (sess && sess.cart) || [];
       cart.push({ id: svc.id, name: svc.name, price: svc.price || 0 });
       session.set(from, { ...sess, step: 301, cart });
-      await wa.send(phoneId, token, wa.textMsg(from, `✅ Dodano: *${svc.name}* (${svc.price} €)`));
-      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(cart)));
+      await wa.send(phoneId, token, wa.deliveryCartButtons(
+        from,
+        fmtCart(cart),
+        cartTotal(cart)
+      ));
       return;
     }
 
-    // Checkout → vprasaj ime in priimek
+    // ── Dodaj še → pokaži meni spet
+    if (iId === 'delivery_add_more') {
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart)));
+      return;
+    }
+
+    // ── Zaključi → vpraša za opombo
     if (iId === 'delivery_checkout') {
       if (!sess || !sess.cart || !sess.cart.length) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel:'));
@@ -486,35 +495,47 @@ async function handleMessage(msgObj, salon) {
       }
       session.set(from, { ...sess, step: 302 });
       await wa.send(phoneId, token, wa.textMsg(from,
-        `🛒 *Vaše naročilo:*\n${fmtCart(sess.cart)}\n\n💰 Skupaj: ${cartTotal(sess.cart)} €\n\nProsim vnesite vaše *ime in priimek*:`
+        `🛒 *Vaše naročilo:*\n${fmtCart(sess.cart)}\n\n💰 Skupaj: ${cartTotal(sess.cart)} €\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
       ));
       return;
     }
 
-    // Add more (legacy)
-    if (iId === 'delivery_add_more') {
-      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart)));
-      return;
-    }
-
-    // Step 302: ime → vprasaj naslov
+    // ── Step 302: opomba → vpraša ime
     if (sess && sess.step === 302 && msgText) {
-      const customerName = msgText.trim();
-      session.set(from, { ...sess, step: 303, customerName });
-      await wa.send(phoneId, token, wa.textMsg(from, '📍 Na kateri naslov dostavimo?\n(ulica, hišna številka, kraj)'));
+      const opomba = msgText.trim().toUpperCase() === 'NE' ? '' : msgText.trim();
+      session.set(from, { ...sess, step: 303, opomba });
+      await wa.send(phoneId, token, wa.textMsg(from,
+        '👤 Prosim vnesite vaše *ime in priimek*:'
+      ));
       return;
     }
 
-    // Step 303: naslov → pokazi potrditev
+    // ── Step 303: ime → vpraša naslov
     if (sess && sess.step === 303 && msgText) {
+      const customerName = msgText.trim();
+      session.set(from, { ...sess, step: 304, customerName });
+      await wa.send(phoneId, token, wa.textMsg(from,
+        '📍 Na kateri naslov dostavimo?\n_(ulica, hišna številka, kraj)_'
+      ));
+      return;
+    }
+
+    // ── Step 304: naslov → pokaži potrditev
+    if (sess && sess.step === 304 && msgText) {
       const address = msgText.trim();
       const cart = sess.cart || [];
-      session.set(from, { ...sess, step: 304, deliveryAddress: address });
-      await wa.send(phoneId, token, wa.deliveryConfirmButtons(from, fmtCart(cart), address, cartTotal(cart)));
+      const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
+      session.set(from, { ...sess, step: 305, deliveryAddress: address });
+      await wa.send(phoneId, token, wa.deliveryConfirmButtons(
+        from,
+        fmtCart(cart) + opombaTxt,
+        address,
+        cartTotal(cart)
+      ));
       return;
     }
 
-    // Confirm order
+    // ── Potrdi naročilo
     if (iId === 'delivery_confirm') {
       const s = session.get(from);
       const cart = s.cart || [];
@@ -526,15 +547,22 @@ async function handleMessage(msgObj, salon) {
       const total = cartTotal(cart);
       const today = new Date().toISOString().slice(0, 10);
       const custName = s.customerName || from;
+      const opomba  = s.opomba || '';
       const bookingData = {
         customer_phone: from,
-        customer_name: custName,
-        salon_id: salon.id,
-        booking_date: today,
-        booking_time: new Date().toTimeString().slice(0, 8),
-        status: 'pending',
-        notes: `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${total} €`,
-        form_answers: JSON.stringify({ ime: custName, naslov: s.deliveryAddress, narocilo: fmtCart(cart), skupaj: total + ' €' })
+        customer_name:  custName,
+        salon_id:       salon.id,
+        booking_date:   today,
+        booking_time:   new Date().toTimeString().slice(0, 8),
+        status:         'pending',
+        notes:          `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
+        form_answers:   JSON.stringify({
+          ime:     custName,
+          naslov:  s.deliveryAddress,
+          narocilo: fmtCart(cart),
+          opomba:  opomba,
+          skupaj:  total + ' €'
+        })
       };
       const booking = await db.createBooking(bookingData);
       const ref6 = (booking.id || '').slice(-6);
@@ -545,14 +573,14 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // Cancel order
+    // ── Prekliči
     if (iId === 'delivery_cancel') {
       session.clear(from);
       await wa.send(phoneId, token, wa.textMsg(from, 'Naročilo preklicano. Dobrodošli nazaj! 🍕'));
       return;
     }
 
-    // Default: welcome + meni (greeting samo enkrat)
+    // ── Default: pozdrav + meni
     session.set(from, { step: 300, cart: [] });
     await wa.send(phoneId, token, wa.textMsg(from,
       salon.greeting_message || '👋 Dobrodošli! Izberite iz menija in naročite dostavo. 🍕'
@@ -560,6 +588,7 @@ async function handleMessage(msgObj, salon) {
     await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
     return;
   }
+
 
 
   const sess = session.get(from);

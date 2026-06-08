@@ -282,14 +282,9 @@ function deliveryMenuList(to, services, salon, cartSummary) {
       description: ((s.description ? s.description + ' · ' : '') + (s.price ? s.price + ' €' : '')).substring(0, 72)
     }))
   }));
-  // Checkout sekcija na dnu
-  const checkoutSection = {
-    title: '─────────────',
-    rows: [{ id: 'delivery_checkout', title: '✅ Zaključi naročilo', description: cartSummary ? 'Košarica: ' + cartSummary : 'Nadaljuj na vnos podatkov' }]
-  };
-  const sections = [...itemSections, checkoutSection];
+  const sections = itemSections;
   const bodyText = cartSummary
-    ? '🛒 *V košarici:* ' + cartSummary + '\n\nDodajte še artikel ali zaključite naročilo:'
+    ? '🛒 *V košarici:* ' + cartSummary + '\n\nIzberite še artikel:'
     : '👇 Izberite artikel iz menija:';
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',

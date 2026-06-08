@@ -445,6 +445,7 @@ function renderOrders(orders) {
     const address   = fa.naslov   || '—';
     const total     = fa.skupaj   || '—';
     const custName  = fa.ime || '';
+    const opomba    = fa.opomba || '';
     const ref6      = (o.id||'').slice(-6).toUpperCase();
     const time      = formatTime(o.created_at || o.booking_date);
     const isPending = o.status === 'pending';
@@ -464,7 +465,8 @@ function renderOrders(orders) {
         <div class="order-items" style="${isPending?'font-weight:700;font-size:15px;color:#111;':''}">${items}</div>
         <div class="order-address">📍 ${address}</div>
         <div class="order-total" style="${isPending?'font-size:17px;':''}">${total}</div>
-        ${custName ? `<div class="order-items" style="font-size:13px;color:var(--muted);font-weight:600;">👤 ${custName}</div>` : ''}
+        ${custName ? `<div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px;">👤 ${custName}</div>` : ''}
+        ${opomba ? `<div style="font-size:13px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:6px 10px;margin-bottom:8px;color:#92400e;font-weight:600;">📝 ${opomba}</div>` : ''}
         <div class="order-phone">📞 +${o.customer_phone||'—'}</div>
         ${actions}
       </div>
