@@ -290,5 +290,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 })();
 </script>
 
+<script>
+// Zamenjaj nav-logo in footer-brand z logo sliko
+(function() {
+  function injectLogo() {
+    var navLogo = document.querySelector('.nav-logo');
+    if (navLogo && !navLogo.dataset.logoInjected) {
+      navLogo.dataset.logoInjected = '1';
+      navLogo.innerHTML = '<img src="/logo.png" alt="FlowTiq" style="height:42px;object-fit:contain;display:block">';
+    }
+    var footerBrand = document.querySelector('.footer-brand');
+    if (footerBrand && !footerBrand.dataset.logoInjected) {
+      footerBrand.dataset.logoInjected = '1';
+      footerBrand.innerHTML = '<img src="/logo.png" alt="FlowTiq" style="height:36px;object-fit:contain;display:block">';
+    }
+    return !!(navLogo && footerBrand);
+  }
+  var obsLogo = new MutationObserver(function() { injectLogo(); });
+  obsLogo.observe(document.documentElement, { childList: true, subtree: true });
+  setTimeout(function() { injectLogo(); obsLogo.disconnect(); }, 5000);
+})();
+</script>
 </body>
 </html>
