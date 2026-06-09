@@ -713,14 +713,15 @@ async function loadStats() {
 function renderDailyChart(days) {
   const el = document.getElementById('daily-chart');
   if (!days.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px 0">Ni podatkov</div>'; return; }
-  const maxRev = Math.max(...days.map(d=>d.revenue||0), 1);
+  const maxRev = Math.max(...days.map(d=>d.revenue||0), 0.01);
   el.innerHTML = days.map(d => {
-    const h = Math.max(8, Math.round(((d.revenue||0)/maxRev)*110));
+    const h = Math.max(6, Math.round(((d.revenue||0)/maxRev)*100));
     const date = new Date(d.date).toLocaleDateString('sl',{day:'numeric',month:'short'});
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0">
-      <div style="font-size:9px;color:var(--muted);font-weight:700">${(d.revenue||0)>0?(d.revenue).toFixed(0)+'€':''}</div>
-      <div style="width:100%;background:linear-gradient(135deg,#25D366,#06b6d4);border-radius:4px 4px 0 0;height:${h}px;min-height:4px;transition:.3s"></div>
-      <div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;max-width:100%;text-align:center">${date}</div>
+    const rev = d.revenue||0;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:36px;flex-shrink:0">
+      <div style="font-size:9px;color:var(--muted);font-weight:700;height:14px;line-height:14px">${rev>0?rev.toFixed(0)+'€':''}</div>
+      <div style="width:28px;background:linear-gradient(180deg,#25D366,#06b6d4);border-radius:4px 4px 0 0;height:${h}px;transition:.3s"></div>
+      <div style="font-size:9px;color:var(--muted);white-space:nowrap;text-align:center">${date}</div>
     </div>`;
   }).join('');
 }
@@ -833,7 +834,7 @@ function showToast(msg,type='success'){
       <!-- Dnevni grafikon -->
       <div class="settings-card" style="margin-bottom:14px">
         <div class="settings-card-title">Promet po dnevih</div>
-        <div id="daily-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding-top:8px"></div>
+        <div style="overflow-x:auto;padding-bottom:4px"><div id="daily-chart" style="height:120px;display:flex;align-items:flex-end;gap:4px;padding-top:8px;min-width:max-content"></div></div>
       </div>
       <!-- Top artikli -->
       <div class="settings-card" style="margin-bottom:14px">
