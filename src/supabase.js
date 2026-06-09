@@ -572,6 +572,7 @@ module.exports = {
   updateSalonStripe, updateSubscriptionStatus, logInvoice,
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
+  createOrderItems, getOrderItems, getOrderItemsBysalon,
   getBooking, getBookingById, getBookingForSalon, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,

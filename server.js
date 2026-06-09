@@ -1487,6 +1487,69 @@ app.post('/api/orders/:id/accept', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/stats — analitika naročil
+app.get('/api/stats', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const { default: axios } = await import('axios');
+    const headers = { apikey: process.env.SUPABASE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_KEY };
+    const base = process.env.SUPABASE_URL + '/rest/v1';
+    const range = req.query.range || '30'; // dni
+    const since = new Date(Date.now() - parseInt(range) * 86400000).toISOString();
+
+    // Naročila v obdobju
+    const [bookingsR, itemsR] = await Promise.all([
+      axios.get(`${base}/sb_bookings?salon_id=eq.${salon.id}&created_at=gte.${since}&status=neq.cancelled&order=created_at.asc`, { headers }),
+      axios.get(`${base}/sb_order_items?salon_id=eq.${salon.id}&created_at=gte.${since}&order=created_at.asc`, { headers })
+    ]);
+    const bookings = bookingsR.data || [];
+    const items    = itemsR.data || [];
+
+    // Skupni promet iz order_items (točni podatki)
+    const totalRevenue = items.reduce((s, i) => s + (parseFloat(i.price) * (i.quantity || 1)), 0);
+    const totalOrders  = bookings.length;
+    const avgOrder     = totalOrders ? (totalRevenue / totalOrders) : 0;
+
+    // Top artikli
+    const itemCount = {};
+    const itemRevenue = {};
+    items.forEach(i => {
+      itemCount[i.name]   = (itemCount[i.name] || 0) + (i.quantity || 1);
+      itemRevenue[i.name] = (itemRevenue[i.name] || 0) + parseFloat(i.price) * (i.quantity || 1);
+    });
+    const topItems = Object.entries(itemCount)
+      .sort((a,b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([name, qty]) => ({ name, qty, revenue: itemRevenue[name] || 0 }));
+
+    // Promet po dnevih
+    const byDay = {};
+    bookings.forEach(b => {
+      const day = (b.created_at || b.booking_date || '').slice(0, 10);
+      if (!byDay[day]) byDay[day] = { orders: 0, revenue: 0 };
+      byDay[day].orders++;
+    });
+    items.forEach(i => {
+      const day = (i.created_at || '').slice(0, 10);
+      if (byDay[day]) byDay[day].revenue += parseFloat(i.price) * (i.quantity || 1);
+    });
+    const dailyChart = Object.entries(byDay)
+      .sort(([a],[b]) => a.localeCompare(b))
+      .map(([date, d]) => ({ date, ...d }));
+
+    // Promet po kategorijah
+    const byCat = {};
+    items.forEach(i => {
+      const c = i.category || 'Ostalo';
+      byCat[c] = (byCat[c] || 0) + parseFloat(i.price) * (i.quantity || 1);
+    });
+    const catChart = Object.entries(byCat).sort((a,b) => b[1]-a[1]).map(([cat, rev]) => ({ cat, rev }));
+
+    res.json({ totalRevenue, totalOrders, avgOrder, topItems, dailyChart, catChart });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/orders/:id/reject — zavrni naročilo
 app.post('/api/orders/:id/reject', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);

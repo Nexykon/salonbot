@@ -229,6 +229,9 @@ body {
     <div class="tab" onclick="switchTab('settings')">
       <span class="tab-icon">⚙️</span>Nastavitve
     </div>
+    <div class="tab" onclick="switchTab('stats')">
+      <span class="tab-icon">📊</span>Statistika
+    </div>
   </div>
 
   <div class="main">
@@ -259,6 +262,49 @@ body {
       </div>
       <div id="menu-list"></div>
       <button class="btn-add" onclick="addMenuItem()">+ Dodaj artikel</button>
+    </div>
+
+    <!-- STATISTIKA -->
+    <div class="tab-content" id="tab-stats">
+      <div class="section-header">
+        <div class="section-title">Statistika</div>
+        <select id="stats-range" onchange="loadStats()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted);font-family:inherit;outline:none">
+          <option value="7">Zadnjih 7 dni</option>
+          <option value="30" selected>Zadnjih 30 dni</option>
+          <option value="90">Zadnjih 90 dni</option>
+          <option value="365">Zadnje leto</option>
+        </select>
+      </div>
+      <!-- KPI cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div class="settings-card" style="padding:14px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Promet</div>
+          <div id="stat-revenue" style="font-size:22px;font-weight:900;background:linear-gradient(135deg,#25D366,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent">—</div>
+        </div>
+        <div class="settings-card" style="padding:14px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Naročil</div>
+          <div id="stat-orders" style="font-size:22px;font-weight:900;color:var(--text)">—</div>
+        </div>
+        <div class="settings-card" style="padding:14px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Povprečje</div>
+          <div id="stat-avg" style="font-size:22px;font-weight:900;color:var(--text)">—</div>
+        </div>
+      </div>
+      <!-- Dnevni grafikon -->
+      <div class="settings-card" style="margin-bottom:14px">
+        <div class="settings-card-title">Promet po dnevih</div>
+        <div id="daily-chart" style="height:120px;display:flex;align-items:flex-end;gap:3px;padding-top:8px"></div>
+      </div>
+      <!-- Top artikli -->
+      <div class="settings-card" style="margin-bottom:14px">
+        <div class="settings-card-title">Najbolj prodajani artikli</div>
+        <div id="top-items"></div>
+      </div>
+      <!-- Po kategorijah -->
+      <div class="settings-card">
+        <div class="settings-card-title">Promet po kategorijah</div>
+        <div id="cat-chart"></div>
+      </div>
     </div>
 
     <!-- NASTAVITVE -->
@@ -403,9 +449,10 @@ function showApp(name) {
 
 // ── TABS ────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabs = ['orders','menu','settings'];
+  const tabs = ['orders','menu','settings','stats'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
   document.querySelectorAll('.tab-content').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  if (tab === 'stats') loadStats();
 }
 
 // ── ORDERS ──────────────────────────────────────────────
@@ -687,6 +734,70 @@ async function saveSettings() {
     });
     showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');
   } catch(e){showToast('Napaka','error');}
+}
+
+// ── STATS ────────────────────────────────────────────────
+async function loadStats() {
+  const range = document.getElementById('stats-range')?.value || '30';
+  try {
+    const r = await fetch('/api/stats?range=' + range, {headers:{'Authorization':'Bearer '+ownerToken}});
+    const d = await r.json();
+    document.getElementById('stat-revenue').textContent = (d.totalRevenue||0).toFixed(2) + ' €';
+    document.getElementById('stat-orders').textContent  = d.totalOrders || 0;
+    document.getElementById('stat-avg').textContent     = (d.avgOrder||0).toFixed(2) + ' €';
+    renderDailyChart(d.dailyChart || []);
+    renderTopItems(d.topItems || []);
+    renderCatChart(d.catChart || [], d.totalRevenue || 1);
+  } catch(e) { console.error('stats err', e); }
+}
+
+function renderDailyChart(days) {
+  const el = document.getElementById('daily-chart');
+  if (!days.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:20px 0">Ni podatkov</div>'; return; }
+  const maxRev = Math.max(...days.map(d=>d.revenue||0), 1);
+  el.innerHTML = days.map(d => {
+    const h = Math.max(8, Math.round(((d.revenue||0)/maxRev)*110));
+    const date = new Date(d.date).toLocaleDateString('sl',{day:'numeric',month:'short'});
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0">
+      <div style="font-size:9px;color:var(--muted);font-weight:700">${(d.revenue||0)>0?(d.revenue).toFixed(0)+'€':''}</div>
+      <div style="width:100%;background:linear-gradient(135deg,#25D366,#06b6d4);border-radius:4px 4px 0 0;height:${h}px;min-height:4px;transition:.3s"></div>
+      <div style="font-size:9px;color:var(--muted);white-space:nowrap;overflow:hidden;max-width:100%;text-align:center">${date}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTopItems(items) {
+  const el = document.getElementById('top-items');
+  if (!items.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">Ni podatkov</div>'; return; }
+  const maxQty = items[0].qty || 1;
+  el.innerHTML = items.map((item,i) => `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:14px;font-weight:600">${i+1}. ${item.name}</span>
+        <span style="font-size:13px;color:var(--purple);font-weight:700">${item.qty}× · ${item.revenue.toFixed(2)} €</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:4px;height:6px;overflow:hidden">
+        <div style="background:linear-gradient(135deg,#25D366,#06b6d4);height:100%;width:${Math.round(item.qty/maxQty*100)}%;border-radius:4px;transition:.3s"></div>
+      </div>
+    </div>`).join('');
+}
+
+function renderCatChart(cats, total) {
+  const el = document.getElementById('cat-chart');
+  if (!cats.length) { el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">Ni podatkov</div>'; return; }
+  const colors = ['#25D366','#06b6d4','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#f97316'];
+  el.innerHTML = cats.map((c,i) => {
+    const pct = Math.round((c.rev/total)*100);
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:700">${c.cat}</span>
+        <span style="font-size:13px;color:var(--muted);font-weight:600">${c.rev.toFixed(2)} € · ${pct}%</span>
+      </div>
+      <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+        <div style="background:${colors[i%colors.length]};height:100%;width:${pct}%;border-radius:4px;transition:.3s"></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── SMART POLL ──────────────────────────────────────────

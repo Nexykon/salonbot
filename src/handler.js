@@ -566,6 +566,16 @@ async function handleMessage(msgObj, salon) {
       };
       const booking = await db.createBooking(bookingData);
       const ref6 = (booking.id || '').slice(-6);
+      // Shrani posamezne artikle v sb_order_items
+      if (booking.id) {
+        const cartWithCategory = cart.map(item => {
+          const svc = services.find(s => s.id === item.id);
+          return { ...item, category: svc?.category || 'Ostalo' };
+        });
+        db.createOrderItems(booking.id, salon.id, cartWithCategory).catch(e =>
+          console.error('[order_items] save error:', e.message)
+        );
+      }
       session.clear(from);
       await wa.send(phoneId, token, wa.textMsg(from,
         `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nPicerija bo naročilo kmalu potrdila in vas obvestila o času dostave. 🍕`
