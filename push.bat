@@ -1,10 +1,8 @@
 @echo off
-cd /d "C:\Users\nexon\Desktop\Podjetje\salonbot"
-del /f ".git\index.lock" 2>nul
-del /f ".git\HEAD.lock" 2>nul
+cd /d "%~dp0"
 git add .
-git commit -m "feat: delivery bot, delivery dashboard, sales bot, delete salon fix"
+git commit -m "update"
 git push
 echo.
-echo DONE! Railway redeployira v ~1 min.
+echo DONE! Railway redeploya v ~1 min
 pause
