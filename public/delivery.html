@@ -566,9 +566,20 @@ function renderMenu() {
               ${s.description?`<div class="menu-item-desc">${s.description}</div>`:''}
             </div>
             <div class="menu-item-price">${s.price} €</div>
+            <button onclick="deleteItem('${s.id}','${s.name.replace(/'/g,"\'")}")" style="background:none;border:none;color:#dc2626;font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0;opacity:.6;" title="Izbriši">🗑</button>
           </div>`).join('')}
       </div>`;
   }).join('');
+}
+
+async function deleteItem(id, name) {
+  if (!confirm(`Izbrisati "${name}"?`)) return;
+  const r = await fetch('/api/settings/services/' + id, {
+    method: 'DELETE',
+    headers: {'Authorization':'Bearer '+ownerToken}
+  });
+  if (r.ok) { showToast('Izbrisano', 'error'); await loadMenu(); }
+  else showToast('Napaka pri brisanju', 'error');
 }
 
 async function saveOrder() {
