@@ -177,19 +177,8 @@ body {
 
 <!-- HEADER -->
 <div class="header">
-  <svg class="logo" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="hg" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0%" stop-color="#25D366"/>
-        <stop offset="100%" stop-color="#06b6d4"/>
-      </linearGradient>
-    </defs>
-    <rect width="56" height="56" rx="16" fill="url(#hg)"/>
-    <path d="M33 10L19 28h11l-7 18L41 26H30z" fill="white"/>
-  </svg>
-  <div>
-    <div class="brand">FlowTiq <span class="brand-sub" id="salon-name">Dostava</span></div>
-  </div>
+  <img src="/logo.png" alt="FlowTiq" style="height:28px;object-fit:contain">
+  <div id="salon-name" style="font-size:12px;color:var(--muted);font-weight:600"></div>
   <div class="header-right">
     <span class="pending-badge" id="pending-badge">0</span>
     <button class="logout-btn" id="logout-btn" style="display:none" onclick="doLogout()">Odjava</button>

@@ -1,3 +1,14 @@
 node_modules/
 .env
 *.log
+
+.npm-cache/
+package-lock.json
+*.ps1
+setup_git.ps1
+fix_push.bat
+empty_push.ps1
+push_fix.ps1
+FLOWTIQ_TATTOO_ONBOARDING_RUNBOOK.md
+"FlowTiq spletna stran.txt"
+preview.ps1
