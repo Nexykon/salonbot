@@ -566,6 +566,33 @@ async function deleteSalon(salonId) {
   return r.data;
 }
 
+
+async function createOrderItems(bookingId, salonId, cartItems) {
+  if (!cartItems || !cartItems.length) return;
+  const rows = cartItems.map(item => ({
+    booking_id: bookingId,
+    salon_id: salonId,
+    service_id: item.id || null,
+    name: item.name,
+    category: item.category || 'Ostalo',
+    price: Number(item.price || 0),
+    quantity: item.quantity || 1
+  }));
+  await axios.post(`${BASE}/sb_order_items`, rows, { headers: HEADERS });
+}
+
+async function getOrderItems(bookingId) {
+  const r = await axios.get(`${BASE}/sb_order_items?booking_id=eq.${bookingId}`, { headers: HEADERS });
+  return r.data;
+}
+
+async function getOrderItemsBysalon(salonId, since) {
+  let url = `${BASE}/sb_order_items?salon_id=eq.${salonId}&order=created_at.desc`;
+  if (since) url += `&created_at=gte.${since}`;
+  const r = await axios.get(url, { headers: HEADERS });
+  return r.data;
+}
+
 module.exports = {
   getSalon, getSalonById, deleteSalon, getSalonBySlug, resolveSalon, getSalonByPhoneId,
   getAllSalons, createSalon, createService, createServicesFromPreset,
