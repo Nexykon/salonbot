@@ -285,10 +285,51 @@ body {
       </div>
       <button class="btn-save" onclick="saveSettings()">💾 Shrani nastavitve</button>
     </div>
-  </div>
-</div>
 
-<!-- ETA MODAL -->
+        <!-- STATISTIKA -->
+    <div class="tab-content" id="tab-stats">
+      <div class="section-header">
+        <div class="section-title">Statistika</div>
+        <select id="stats-range" onchange="loadStats()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted);font-family:inherit;outline:none">
+          <option value="7">Zadnjih 7 dni</option>
+          <option value="30" selected>Zadnjih 30 dni</option>
+          <option value="90">Zadnjih 90 dni</option>
+          <option value="365">Zadnje leto</option>
+        </select>
+      </div>
+      <!-- KPI cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div class="settings-card" style="padding:14px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Promet</div>
+          <div id="stat-revenue" style="font-size:22px;font-weight:900;background:linear-gradient(135deg,#25D366,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent">—</div>
+        </div>
+        <div class="settings-card" style="padding:14px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Naročil</div>
+          <div id="stat-orders" style="font-size:22px;font-weight:900;color:var(--text)">—</div>
+        </div>
+        <div class="settings-card" style="padding:14px;text-align:center">
+          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Povprečje</div>
+          <div id="stat-avg" style="font-size:22px;font-weight:900;color:var(--text)">—</div>
+        </div>
+      </div>
+      <!-- Dnevni grafikon -->
+      <div class="settings-card" style="margin-bottom:14px">
+        <div class="settings-card-title">Promet po dnevih</div>
+        <div style="overflow-x:auto;padding-bottom:4px"><div id="daily-chart" style="height:120px;display:flex;align-items:flex-end;gap:4px;padding-top:8px;min-width:max-content"></div></div>
+      </div>
+      <!-- Top artikli -->
+      <div class="settings-card" style="margin-bottom:14px">
+        <div class="settings-card-title">Najbolj prodajani artikli</div>
+        <div id="top-items"></div>
+      </div>
+      <!-- Po kategorijah -->
+      <div class="settings-card">
+        <div class="settings-card-title">Promet po kategorijah</div>
+        <div id="cat-chart"></div>
+      </div
+    </div>
+  </div>
+</div><!-- ETA MODAL -->
 <div class="modal-overlay" id="eta-modal">
   <div class="modal-sheet">
     <div class="modal-title">⏱️ Čas dostave</div>
@@ -349,50 +390,7 @@ body {
       <button class="btn-modal-ok" onclick="saveNewItem()">💾 Shrani</button>
     </div>
 
-    <!-- STATISTIKA -->
-    <div class="tab-content" id="tab-stats">
-      <div class="section-header">
-        <div class="section-title">Statistika</div>
-        <select id="stats-range" onchange="loadStats()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--muted);font-family:inherit;outline:none">
-          <option value="7">Zadnjih 7 dni</option>
-          <option value="30" selected>Zadnjih 30 dni</option>
-          <option value="90">Zadnjih 90 dni</option>
-          <option value="365">Zadnje leto</option>
-        </select>
-      </div>
-      <!-- KPI cards -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-        <div class="settings-card" style="padding:14px;text-align:center">
-          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Promet</div>
-          <div id="stat-revenue" style="font-size:22px;font-weight:900;background:linear-gradient(135deg,#25D366,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent">—</div>
-        </div>
-        <div class="settings-card" style="padding:14px;text-align:center">
-          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Naročil</div>
-          <div id="stat-orders" style="font-size:22px;font-weight:900;color:var(--text)">—</div>
-        </div>
-        <div class="settings-card" style="padding:14px;text-align:center">
-          <div style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Povprečje</div>
-          <div id="stat-avg" style="font-size:22px;font-weight:900;color:var(--text)">—</div>
-        </div>
-      </div>
-      <!-- Dnevni grafikon -->
-      <div class="settings-card" style="margin-bottom:14px">
-        <div class="settings-card-title">Promet po dnevih</div>
-        <div style="overflow-x:auto;padding-bottom:4px"><div id="daily-chart" style="height:120px;display:flex;align-items:flex-end;gap:4px;padding-top:8px;min-width:max-content"></div></div>
-      </div>
-      <!-- Top artikli -->
-      <div class="settings-card" style="margin-bottom:14px">
-        <div class="settings-card-title">Najbolj prodajani artikli</div>
-        <div id="top-items"></div>
-      </div>
-      <!-- Po kategorijah -->
-      <div class="settings-card">
-        <div class="settings-card-title">Promet po kategorijah</div>
-        <div id="cat-chart"></div>
-      </div>
-    </div>>
-  </div>
-</div>
+
 
 <script>
 let ownerToken = '';
@@ -847,3 +845,6 @@ function showToast(msg,type='success'){
 </script>
 </body>
 </html
+  </div>
+</div>
+
