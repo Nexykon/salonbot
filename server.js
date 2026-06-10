@@ -1440,10 +1440,11 @@ app.get('/api/orders', async (req, res) => {
   try {
     const status = req.query.status || 'all';
     const today = new Date().toISOString().slice(0, 10);
-    // FIFO: pending naročila — najstarejše najprej; ostalo — najnovejše najprej
     const orderDir = status === 'pending' ? 'asc' : 'desc';
-    const limit = status === 'all' ? 200 : 100;
-    let url = `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?salon_id=eq.${salon.id}&order=created_at.${orderDir}&limit=${limit}`;
+    const pageSize = 50;
+    const page = Math.max(0, parseInt(req.query.page || '0', 10));
+    const offset = page * pageSize;
+    let url = `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?salon_id=eq.${salon.id}&order=created_at.${orderDir}&limit=${pageSize}&offset=${offset}`;
     if (status === 'pending') url += '&status=eq.pending';
     else if (status === 'today') url += `&booking_date=eq.${today}&status=neq.pending`;
     else if (status === 'all') {
@@ -1456,10 +1457,12 @@ app.get('/api/orders', async (req, res) => {
     const r = await axios.get(url, {
       headers: {
         apikey: process.env.SUPABASE_KEY,
-        Authorization: 'Bearer ' + process.env.SUPABASE_KEY
+        Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+        Prefer: 'count=exact'
       }
     });
-    res.json(r.data);
+    const total = parseInt(r.headers['content-range']?.split('/')[1] || '0', 10);
+    res.json({ orders: r.data, total, page, pageSize, pages: Math.ceil(total / pageSize) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

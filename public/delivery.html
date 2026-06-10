@@ -91,6 +91,11 @@ body {
 .date-input:focus { border-color:var(--purple); }
 .date-search-btn { background:var(--purple); color:#fff; border:none; border-radius:10px; padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit; }
 .orders-count { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:10px; padding-left:2px; }
+.pagination { display:flex; align-items:center; justify-content:center; gap:10px; margin-top:16px; padding:8px 0 24px; }
+.page-btn { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 18px; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; font-family:inherit; transition:.15s; }
+.page-btn:hover:not(:disabled) { border-color:var(--purple); color:var(--purple); }
+.page-btn:disabled { opacity:.35; cursor:default; }
+.page-info { font-size:13px; font-weight:700; color:var(--muted); min-width:80px; text-align:center; }
 
 /* ORDER CARDS */
 .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: .2s; }
@@ -256,6 +261,11 @@ body {
       </div>
       <div class="orders-count" id="orders-count" style="display:none"></div>
       <div id="orders-list"></div>
+      <div class="pagination" id="pagination" style="display:none">
+        <button class="page-btn" id="btn-prev" onclick="goPage(currentPage-1)" disabled>← Nazaj</button>
+        <span class="page-info" id="page-info">1 / 1</span>
+        <button class="page-btn" id="btn-next" onclick="goPage(currentPage+1)">Naprej →</button>
+      </div>
     </div>
 
     <!-- MENI -->
@@ -398,6 +408,8 @@ body {
 <script>
 let ownerToken = '';
 let currentFilter = 'today';
+let currentPage = 0;
+let totalPages = 1;
 let pendingAcceptId = null;
 let pollInterval = null;
 let countdownInterval = null;
@@ -461,11 +473,11 @@ function switchTab(tab) {
 // ── ORDERS ──────────────────────────────────────────────
 function setFilter(f, btnId) {
   currentFilter = f;
+  currentPage = 0;
   ['f-today','f-pending','f-all'].forEach(id => document.getElementById(id).classList.toggle('active', id===btnId));
   const dr = document.getElementById('date-range-row');
   if (f === 'all') {
     dr.classList.add('visible');
-    // Default: last 7 days
     if (!document.getElementById('date-from').value) {
       const d = new Date(); d.setDate(d.getDate()-7);
       document.getElementById('date-from').value = d.toISOString().slice(0,10);
@@ -476,14 +488,22 @@ function setFilter(f, btnId) {
   } else {
     dr.classList.remove('visible');
     document.getElementById('orders-count').style.display = 'none';
+    document.getElementById('pagination').style.display = 'none';
   }
   loadOrders();
+}
+
+function goPage(p) {
+  if (p < 0 || p >= totalPages) return;
+  currentPage = p;
+  loadOrders();
+  document.getElementById('orders-list').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 async function loadOrders() {
   document.getElementById('refresh-btn').classList.add('spinning');
   try {
-    let url = '/api/orders?status=' + currentFilter;
+    let url = '/api/orders?status=' + currentFilter + '&page=' + currentPage;
     if (currentFilter === 'all') {
       const from = document.getElementById('date-from')?.value;
       const to = document.getElementById('date-to')?.value;
@@ -491,13 +511,22 @@ async function loadOrders() {
       if (to) url += '&to=' + to;
     }
     const r = await fetch(url, {headers:{'Authorization':'Bearer '+ownerToken}});
-    const orders = await r.json();
-    if (currentFilter === 'all') {
+    const resp = await r.json();
+    // Handle both paginated ({orders, total, pages}) and legacy array responses
+    const orders = Array.isArray(resp) ? resp : (resp.orders || []);
+    if (!Array.isArray(resp) && resp.total !== undefined) {
+      totalPages = resp.pages || 1;
       const cnt = document.getElementById('orders-count');
-      cnt.style.display = ''; cnt.textContent = `${Array.isArray(orders)?orders.length:0} naročil v izbranem obdobju`;
+      cnt.style.display = ''; 
+      cnt.textContent = `${resp.total} naročil skupaj · stran ${resp.page+1} od ${resp.pages}`;
+      const pg = document.getElementById('pagination');
+      pg.style.display = totalPages > 1 ? 'flex' : 'none';
+      document.getElementById('page-info').textContent = `${resp.page+1} / ${resp.pages}`;
+      document.getElementById('btn-prev').disabled = resp.page === 0;
+      document.getElementById('btn-next').disabled = resp.page >= resp.pages - 1;
     }
-    renderOrders(Array.isArray(orders) ? orders : []);
-    const n = (Array.isArray(orders) ? orders : []).filter(o=>o.status==='pending').length;
+    renderOrders(orders);
+    const n = orders.filter(o=>o.status==='pending').length;
     const badge = document.getElementById('pending-badge');
     badge.textContent = n; badge.style.display = n > 0 ? '' : 'none';
     document.title = n > 0 ? `(${n}) Naročila — FlowTiq` : 'Naročila — FlowTiq';
