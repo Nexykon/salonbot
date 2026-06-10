@@ -1445,7 +1445,7 @@ app.get('/api/orders', async (req, res) => {
     let url = `${process.env.SUPABASE_URL}/rest/v1/sb_bookings?salon_id=eq.${salon.id}&order=created_at.${orderDir}&limit=100`;
     if (status === 'pending') url += '&status=eq.pending';
     else if (status === 'today') url += `&booking_date=eq.${today}&status=neq.pending`;
-    else if (status === 'all') url += `&booking_date=gte.${today}`;
+    else if (status === 'all') { /* no extra filter - show all orders */ }
     const { default: axios } = await import('axios');
     const r = await axios.get(url, {
       headers: {

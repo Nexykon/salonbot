@@ -513,7 +513,19 @@ function renderOrders(orders) {
 }
 
 function safeJson(s) { try { return typeof s==='string'?JSON.parse(s):(s||{}); } catch{return{};} }
-function formatTime(s) { if(!s) return ''; try { return new Date(s).toLocaleTimeString('sl',{hour:'2-digit',minute:'2-digit'}); } catch{return s;} }
+function formatTime(s) {
+  if(!s) return '';
+  try {
+    const d = new Date(s);
+    const today = new Date();
+    const isToday = d.toDateString() === today.toDateString();
+    const time = d.toLocaleTimeString('sl',{hour:'2-digit',minute:'2-digit'});
+    if(isToday) return time;
+    const day = d.getDate().toString().padStart(2,'0');
+    const mon = (d.getMonth()+1).toString().padStart(2,'0');
+    return `${day}.${mon}. ${time}`;
+  } catch{return s;}
+}
 
 // ── ETA MODAL ───────────────────────────────────────────
 function openModal(id) {
