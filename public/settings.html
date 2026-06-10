@@ -1067,6 +1067,10 @@ async function verifyOtp() {
     ownerToken = data.token;
     sessionStorage.setItem('ft_owner_token',ownerToken);
     localStorage.setItem('ft_owner_token',ownerToken);
+    if (data.salon && data.salon.booking_mode === 'delivery') {
+      window.location.href = '/delivery.html?token=' + encodeURIComponent(ownerToken);
+      return;
+    }
     loadUI(await loadSettings());
   } catch (e) {
     showToast(e.message, 'error');
@@ -1087,7 +1091,13 @@ async function doLogin(token){
   try{
     const data=await loadSettings();
     if(isMaster)localStorage.setItem('ft_master_token',token);
-    else localStorage.setItem('ft_owner_token',token);
+    else {
+      localStorage.setItem('ft_owner_token',token);
+      if(data.booking_mode==='delivery'){
+        window.location.href='/delivery.html?token='+encodeURIComponent(token);
+        return;
+      }
+    }
     loadUI(data);
   }catch(e){
     sessionStorage.removeItem('ft_owner_token');sessionStorage.removeItem('ft_master_token');
