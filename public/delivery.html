@@ -85,6 +85,12 @@ body {
 .filter-row { display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 2px; }
 .filter-chip { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; white-space: nowrap; flex-shrink: 0; font-family: inherit; transition: .2s; }
 .filter-chip.active { background: rgba(37,211,102,.12); border-color: var(--purple); color: var(--purple); }
+.date-range-row { display:none; align-items:center; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+.date-range-row.visible { display:flex; }
+.date-input { border:1px solid var(--border); border-radius:10px; padding:7px 10px; font-size:13px; font-family:inherit; color:var(--text); background:var(--surface); outline:none; flex:1; min-width:120px; }
+.date-input:focus { border-color:var(--purple); }
+.date-search-btn { background:var(--purple); color:#fff; border:none; border-radius:10px; padding:8px 16px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit; }
+.orders-count { font-size:12px; color:var(--muted); font-weight:600; margin-bottom:10px; padding-left:2px; }
 
 /* ORDER CARDS */
 .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.04); transition: .2s; }
@@ -241,6 +247,14 @@ body {
         <button class="filter-chip" onclick="setFilter('pending','f-pending')" id="f-pending">V čakanju</button>
         <button class="filter-chip" onclick="setFilter('all','f-all')" id="f-all">Vse</button>
       </div>
+      <div class="date-range-row" id="date-range-row">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Od:</span>
+        <input type="date" class="date-input" id="date-from">
+        <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Do:</span>
+        <input type="date" class="date-input" id="date-to">
+        <button class="date-search-btn" onclick="loadOrders()">Prikaži</button>
+      </div>
+      <div class="orders-count" id="orders-count" style="display:none"></div>
       <div id="orders-list"></div>
     </div>
 
@@ -448,14 +462,40 @@ function switchTab(tab) {
 function setFilter(f, btnId) {
   currentFilter = f;
   ['f-today','f-pending','f-all'].forEach(id => document.getElementById(id).classList.toggle('active', id===btnId));
+  const dr = document.getElementById('date-range-row');
+  if (f === 'all') {
+    dr.classList.add('visible');
+    // Default: last 7 days
+    if (!document.getElementById('date-from').value) {
+      const d = new Date(); d.setDate(d.getDate()-7);
+      document.getElementById('date-from').value = d.toISOString().slice(0,10);
+    }
+    if (!document.getElementById('date-to').value) {
+      document.getElementById('date-to').value = new Date().toISOString().slice(0,10);
+    }
+  } else {
+    dr.classList.remove('visible');
+    document.getElementById('orders-count').style.display = 'none';
+  }
   loadOrders();
 }
 
 async function loadOrders() {
   document.getElementById('refresh-btn').classList.add('spinning');
   try {
-    const r = await fetch('/api/orders?status=' + currentFilter, {headers:{'Authorization':'Bearer '+ownerToken}});
+    let url = '/api/orders?status=' + currentFilter;
+    if (currentFilter === 'all') {
+      const from = document.getElementById('date-from')?.value;
+      const to = document.getElementById('date-to')?.value;
+      if (from) url += '&from=' + from;
+      if (to) url += '&to=' + to;
+    }
+    const r = await fetch(url, {headers:{'Authorization':'Bearer '+ownerToken}});
     const orders = await r.json();
+    if (currentFilter === 'all') {
+      const cnt = document.getElementById('orders-count');
+      cnt.style.display = ''; cnt.textContent = `${Array.isArray(orders)?orders.length:0} naročil v izbranem obdobju`;
+    }
     renderOrders(Array.isArray(orders) ? orders : []);
     const n = (Array.isArray(orders) ? orders : []).filter(o=>o.status==='pending').length;
     const badge = document.getElementById('pending-badge');
