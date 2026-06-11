@@ -592,9 +592,6 @@ async function handleMessage(msgObj, salon) {
 
     // ── Default: pozdrav + meni
     session.set(from, { step: 300, cart: [] });
-    await wa.send(phoneId, token, wa.textMsg(from,
-      salon.greeting_message || '👋 Dobrodošli! Izberite iz menija in naročite dostavo. 🍕'
-    ));
     await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
     return;
   }

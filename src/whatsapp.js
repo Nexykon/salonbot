@@ -283,9 +283,10 @@ function deliveryMenuList(to, services, salon, cartSummary) {
     }))
   }));
   const sections = itemSections;
+  const defaultGreeting = (salon && salon.greeting_message) ? salon.greeting_message : '👇 Izberite artikel iz menija:';
   const bodyText = cartSummary
     ? '🛒 *V košarici:* ' + cartSummary + '\n\nIzberite še artikel:'
-    : '👇 Izberite artikel iz menija:';
+    : defaultGreeting;
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
