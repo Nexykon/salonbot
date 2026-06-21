@@ -1,239 +1,536 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlowTiq — Leads kampanja</title>
-  <style>
-    :root {
-      --bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;
-      --border:#2a2a4a;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
-      --green:#10b981;--blue:#3b82f6;--purple:#7c3aed;--red:#ef4444;--yellow:#f59e0b;
-    }
-    *{margin:0;padding:0;box-sizing:border-box;}
-    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
-    #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
-    .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:360px;text-align:center;}
-    .login-box h2{margin-bottom:8px;font-size:22px;}
-    .login-box p{color:var(--text2);font-size:14px;margin-bottom:24px;}
-    .login-box input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;margin-bottom:12px;}
-    .btn{padding:12px 24px;border-radius:10px;border:none;cursor:pointer;font-size:15px;font-weight:600;transition:opacity .15s;width:100%;}
-    .btn:hover{opacity:.85;}
-    .btn-green{background:var(--green);color:#fff;}
-    .btn-purple{background:var(--purple);color:#fff;}
-    .btn-sm{padding:6px 14px;font-size:13px;border-radius:8px;width:auto;}
-    #main-screen{display:none;}
-    header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;}
-    header .logo{height:36px;}
-    header h1{font-size:18px;font-weight:700;}
-    header .header-right{display:flex;align-items:center;gap:12px;}
-    .container{max-width:1200px;margin:0 auto;padding:32px 24px;}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;}
-    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 24px;}
-    .stat-num{font-size:36px;font-weight:800;line-height:1;margin-bottom:4px;}
-    .stat-label{font-size:13px;color:var(--text2);}
-    .stat-green .stat-num{color:var(--green);}
-    .stat-blue .stat-num{color:var(--blue);}
-    .stat-red .stat-num{color:var(--red);}
-    .stat-yellow .stat-num{color:var(--yellow);}
-    .stat-purple .stat-num{color:var(--purple);}
-    .section-title{font-size:16px;font-weight:700;margin-bottom:14px;}
-    .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:32px;}
-    .cat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;}
-    .cat-name{font-size:14px;font-weight:600;margin-bottom:8px;}
-    .cat-bar-wrap{background:var(--bg3);border-radius:6px;height:6px;margin-bottom:6px;overflow:hidden;}
-    .cat-bar{background:var(--green);height:6px;border-radius:6px;transition:width .5s;}
-    .cat-nums{font-size:12px;color:var(--text2);}
-    .cat-nums span{color:var(--green);font-weight:600;}
-    .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px;}
-    .table-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
-    .filter-btns{display:flex;gap:8px;flex-wrap:wrap;}
-    .filter-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
-    .filter-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
-    table{width:100%;border-collapse:collapse;}
-    th{padding:12px 16px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);}
-    td{padding:12px 16px;font-size:14px;border-bottom:1px solid var(--border);}
-    tr:last-child td{border-bottom:none;}
-    tr:hover td{background:var(--bg3);}
-    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
-    .badge-sent{background:rgba(100,116,139,.2);color:var(--text2);}
-    .badge-interested{background:rgba(16,185,129,.15);color:var(--green);}
-    .badge-not{background:rgba(239,68,68,.15);color:var(--red);}
-    .add-form{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:32px;}
-    .add-form h3{font-size:16px;font-weight:700;margin-bottom:16px;}
-    .form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
-    .form-row input,.form-row select{padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;width:100%;}
-    .form-row label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;}
-    .form-col{display:flex;flex-direction:column;}
-    .empty{text-align:center;padding:40px;color:var(--text3);font-size:14px;}
-    .error-msg{color:var(--red);font-size:13px;margin-top:8px;}
-    @media(max-width:700px){.form-row{grid-template-columns:1fr;}table{font-size:12px;}th,td{padding:8px 10px;}}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FlowTiq — Leads</title>
+<style>
+:root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;--border:#2a2a4a;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#10b981;--blue:#3b82f6;--purple:#7c3aed;--red:#ef4444;--yellow:#f59e0b;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:360px;text-align:center;}
+.login-box h2{margin-bottom:8px;font-size:22px;}
+.login-box p{color:var(--text2);font-size:14px;margin-bottom:24px;}
+.login-box input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;margin-bottom:12px;}
+/* GENERAL */
+.btn{padding:10px 20px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:opacity .15s;}
+.btn:hover{opacity:.82;}
+.btn-full{width:100%;padding:12px;}
+.btn-green{background:var(--green);color:#fff;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:8px;}
+.error-msg{color:var(--red);font-size:13px;margin-top:8px;}
+/* MAIN */
+#main-screen{display:none;}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header-left{display:flex;align-items:center;gap:14px;}
+header .logo{height:34px;}
+header h1{font-size:17px;font-weight:700;}
+.header-right{display:flex;align-items:center;gap:10px;}
+/* TABS */
+.tabs{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:4px;}
+.tab{padding:14px 20px;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.tab.active{color:var(--text);border-bottom-color:var(--purple);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.container{max-width:1200px;margin:0 auto;padding:28px 24px;}
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.card-body{padding:20px;}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;}
+.stat-num{font-size:34px;font-weight:800;line-height:1;margin-bottom:4px;}
+.stat-label{font-size:12px;color:var(--text2);}
+.c-green{color:var(--green);}.c-blue{color:var(--blue);}.c-red{color:var(--red);}.c-yellow{color:var(--yellow);}.c-purple{color:var(--purple);}
+/* CAT GRID */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
+.cat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.cat-name{font-size:13px;font-weight:600;margin-bottom:8px;}
+.cat-bar-wrap{background:rgba(255,255,255,.06);border-radius:4px;height:5px;margin-bottom:5px;overflow:hidden;}
+.cat-bar{background:var(--green);height:5px;border-radius:4px;}
+.cat-nums{font-size:11px;color:var(--text2);}
+.cat-nums b{color:var(--green);}
+/* TABLE */
+table{width:100%;border-collapse:collapse;}
+th{padding:10px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.b-pending{background:rgba(100,116,139,.15);color:var(--text3);}
+.b-sent{background:rgba(59,130,246,.15);color:var(--blue);}
+.b-interested{background:rgba(16,185,129,.15);color:var(--green);}
+.b-not{background:rgba(239,68,68,.15);color:var(--red);}
+/* SEARCH PANEL */
+.search-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;}
+.form-group input,.form-group select{padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;}
+/* SEARCH RESULTS */
+.result-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;}
+.result-row:last-child{border-bottom:none;}
+.result-info{flex:1;min-width:0;}
+.result-name{font-size:14px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.result-meta{font-size:12px;color:var(--text2);}
+.has-email{color:var(--green);}
+/* BULK BAR */
+.bulk-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.bulk-info{font-size:14px;}
+.bulk-info b{color:var(--yellow);}
+/* FILTER */
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;}
+.filter-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
+.filter-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+.empty-state{text-align:center;padding:48px;color:var(--text3);}
+.empty-state .icon{font-size:40px;margin-bottom:12px;}
+/* LOADING */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;display:none;z-index:999;max-width:360px;}
+#toast.show{display:block;}
+#toast.success{border-color:var(--green);color:var(--green);}
+#toast.error{border-color:var(--red);color:var(--red);}
+/* INLINE EDIT */
+.edit-input{padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:160px;}
+@media(max-width:700px){.search-row{grid-template-columns:1fr}table{font-size:12px}th,td{padding:8px 10px}}
+</style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <h2>📊 Leads Dashboard</h2>
+    <h2>📊 Leads</h2>
     <p>Prijavi se z master geslom</p>
-    <input type="email" id="login-email" placeholder="Email" autocomplete="username">
-    <input type="password" id="login-pass" placeholder="Geslo" autocomplete="current-password">
-    <button class="btn btn-purple" onclick="doLogin()">Prijava</button>
-    <p class="error-msg" id="login-err" style="display:none"></p>
+    <input type="email" id="l-email" placeholder="Email" autocomplete="username">
+    <input type="password" id="l-pass" placeholder="Geslo" autocomplete="current-password">
+    <button class="btn btn-purple btn-full" onclick="doLogin()">Prijava</button>
+    <p class="error-msg" id="l-err" style="display:none"></p>
   </div>
 </div>
 
+<!-- MAIN -->
 <div id="main-screen">
   <header>
-    <div style="display:flex;align-items:center;gap:16px">
-      <img src="/logo.png" alt="FlowTiq" class="logo">
-      <h1>📊 Email kampanja</h1>
+    <div class="header-left">
+      <img src="/logo.png" class="logo" alt="FlowTiq">
+      <h1>Leads & Kampanja</h1>
     </div>
     <div class="header-right">
-      <button class="btn btn-green btn-sm" onclick="loadData()">🔄 Osveži</button>
-      <button class="btn btn-sm" style="background:var(--bg3);color:var(--text2)" onclick="doLogout()">Odjava</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadAll()">🔄 Osveži</button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Odjava</button>
     </div>
   </header>
 
-  <div class="container">
-    <div class="stats-grid">
-      <div class="stat-card stat-blue"><div class="stat-num" id="s-total">—</div><div class="stat-label">Skupaj emailov</div></div>
-      <div class="stat-card stat-yellow"><div class="stat-num" id="s-sent">—</div><div class="stat-label">Čaka na odziv</div></div>
-      <div class="stat-card stat-green"><div class="stat-num" id="s-interested">—</div><div class="stat-label">Zainteresirani ✅</div></div>
-      <div class="stat-card stat-red"><div class="stat-num" id="s-not">—</div><div class="stat-label">Ni interesa</div></div>
-      <div class="stat-card stat-purple"><div class="stat-num" id="s-rate">—</div><div class="stat-label">Stopnja odziva</div></div>
-    </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('iskanje',this)">🔍 Iskanje</div>
+    <div class="tab" onclick="switchTab('kampanja',this)">📤 Kampanja</div>
+    <div class="tab" onclick="switchTab('statistike',this)">📊 Statistike</div>
+  </div>
 
-    <div class="section-title">Po kategorijah</div>
-    <div class="cat-grid" id="cat-grid"></div>
+  <!-- ── TAB: ISKANJE ── -->
+  <div class="tab-content active" id="tab-iskanje">
+    <div class="container">
 
-    <div class="add-form">
-      <h3>➕ Dodaj lead ročno</h3>
-      <div class="form-row">
-        <div class="form-col"><label>Ime firme</label><input type="text" id="add-name" placeholder="Frizerski salon Vita"></div>
-        <div class="form-col"><label>Email</label><input type="email" id="add-email" placeholder="vita@example.com"></div>
-        <div class="form-col"><label>Kategorija</label>
-          <select id="add-cat">
-            <option>💇 Frizerji</option><option>💅 Nohtarnice</option><option>✨ Kozmetičarke</option>
-            <option>💆 Masaže</option><option>🦶 Pedikure</option><option>🎨 Tattoo studii</option>
-            <option>🐾 Pasji strižci</option><option>🍕 Picerije</option><option>🍽️ Restavracije</option>
-            <option>📸 Fotografski studii</option><option>🏋️ Osebni trenerji</option><option>📋 Ostalo</option>
-          </select>
+      <!-- Search -->
+      <div class="card">
+        <div class="card-header"><b>🔍 Poišči podjetja (bizi.si)</b></div>
+        <div class="card-body">
+          <div class="search-row" style="margin-bottom:16px">
+            <div class="form-group">
+              <label>Branža</label>
+              <select id="s-cat" onchange="updateQuery()">
+                <option value="frizerski salon">💇 Frizerji</option>
+                <option value="nohtarnica">💅 Nohtarnice</option>
+                <option value="kozmetični salon">✨ Kozmetičarke</option>
+                <option value="masaža wellness">💆 Masaže</option>
+                <option value="pedikura">🦶 Pedikure</option>
+                <option value="tattoo studio">🎨 Tattoo</option>
+                <option value="pasji strižec grooming">🐾 Pasji strižci</option>
+                <option value="picerija">🍕 Picerije</option>
+                <option value="restavracija">🍽️ Restavracije</option>
+                <option value="fotografski studio">📸 Fotografski studii</option>
+                <option value="osebni trener fitnes">🏋️ Osebni trenerji</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Mesto / regija</label>
+              <input type="text" id="s-city" placeholder="Ljubljana" value="Ljubljana">
+            </div>
+            <button class="btn btn-blue" onclick="doSearch()" id="s-btn">🔍 Išči</button>
+            <button class="btn btn-ghost" onclick="clearResults()">✕</button>
+          </div>
+          <p style="font-size:12px;color:var(--text3)">Išče po bizi.si — slovenskem poslovnem imeniku. Podjetja brez emaila dodaš, email vnesi ročno.</p>
         </div>
-        <button class="btn btn-green btn-sm" onclick="addLead()" style="white-space:nowrap">Dodaj</button>
       </div>
-      <p class="error-msg" id="add-err" style="display:none"></p>
-    </div>
 
-    <div class="table-wrap">
-      <div class="table-header">
-        <div class="section-title" style="margin:0">Vsi leadi</div>
-        <div class="filter-btns">
+      <!-- Search results -->
+      <div class="card" id="search-results-card" style="display:none">
+        <div class="card-header">
+          <b id="search-results-title">Rezultati</b>
+          <button class="btn btn-green btn-sm" onclick="addAllWithEmail()">✅ Dodaj vse z emailom</button>
+        </div>
+        <div id="search-results-list"></div>
+      </div>
+
+      <!-- Manual add -->
+      <div class="card">
+        <div class="card-header"><b>➕ Dodaj ročno</b></div>
+        <div class="card-body">
+          <div class="search-row">
+            <div class="form-group">
+              <label>Ime firme</label>
+              <input type="text" id="m-name" placeholder="Frizerski salon Vita">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="m-email" placeholder="vita@example.com">
+            </div>
+            <div class="form-group">
+              <label>Kategorija</label>
+              <select id="m-cat">
+                <option value="Frizerji">💇 Frizerji</option>
+                <option value="Nohtarnice">💅 Nohtarnice</option>
+                <option value="Kozmetičarke">✨ Kozmetičarke</option>
+                <option value="Masaže">💆 Masaže</option>
+                <option value="Pedikure">🦶 Pedikure</option>
+                <option value="Tattoo studii">🎨 Tattoo</option>
+                <option value="Pasji strižci">🐾 Pasji strižci</option>
+                <option value="Picerije">🍕 Picerije</option>
+                <option value="Restavracije">🍽️ Restavracije</option>
+                <option value="Fotografski studii">📸 Fotografski studii</option>
+                <option value="Osebni trenerji">🏋️ Osebni trenerji</option>
+                <option value="Ostalo">📋 Ostalo</option>
+              </select>
+            </div>
+            <button class="btn btn-green" onclick="addManual()">Dodaj</button>
+          </div>
+          <p class="error-msg" id="m-err" style="display:none"></p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── TAB: KAMPANJA ── -->
+  <div class="tab-content" id="tab-kampanja">
+    <div class="container">
+
+      <!-- Bulk send bar -->
+      <div class="bulk-bar">
+        <div>
+          <div class="bulk-info">Neposlani emaili: <b id="unsent-count">…</b></div>
+          <div style="font-size:12px;color:var(--text3);margin-top:3px">Samo leadi z emailom in brez poslanega sporočila</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-purple" onclick="bulkSend()" id="bulk-btn">📤 Pošlji vsem</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div class="filter-row" id="filter-row">
           <button class="filter-btn active" onclick="setFilter('all',this)">Vsi</button>
+          <button class="filter-btn" onclick="setFilter('pending',this)">⏳ Neposlano</button>
+          <button class="filter-btn" onclick="setFilter('sent',this)">📤 Poslano</button>
           <button class="filter-btn" onclick="setFilter('interested',this)">✅ Zainteresirani</button>
-          <button class="filter-btn" onclick="setFilter('sent',this)">📤 Čaka</button>
           <button class="filter-btn" onclick="setFilter('not_interested',this)">❌ Ni interesa</button>
         </div>
+        <div style="font-size:12px;color:var(--text3)" id="leads-count-label"></div>
       </div>
-      <table>
-        <thead><tr><th>Firma</th><th>Email</th><th>Kategorija</th><th>Status</th><th>Poslano</th><th>Odziv</th><th>Tracking</th></tr></thead>
-        <tbody id="leads-tbody"></tbody>
-      </table>
-      <div class="empty" id="leads-empty" style="display:none">Ni leadov v tej kategoriji.</div>
+
+      <!-- Leads table -->
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Firma</th>
+              <th>Email</th>
+              <th>Kategorija</th>
+              <th>Status</th>
+              <th>Email poslan</th>
+              <th>Odziv</th>
+              <th>Akcija</th>
+            </tr>
+          </thead>
+          <tbody id="leads-tbody"></tbody>
+        </table>
+        <div class="empty-state" id="leads-empty" style="display:none">
+          <div class="icon">📭</div>
+          <div>Ni leadov v tej kategoriji.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── TAB: STATISTIKE ── -->
+  <div class="tab-content" id="tab-statistike">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num c-blue" id="s-total">—</div><div class="stat-label">Skupaj leadov</div></div>
+        <div class="stat-card"><div class="stat-num c-yellow" id="s-pending">—</div><div class="stat-label">Čaka na email</div></div>
+        <div class="stat-card"><div class="stat-num c-blue" id="s-sent">—</div><div class="stat-label">Email poslan</div></div>
+        <div class="stat-card"><div class="stat-num c-green" id="s-interested">—</div><div class="stat-label">Zainteresirani ✅</div></div>
+        <div class="stat-card"><div class="stat-num c-red" id="s-not">—</div><div class="stat-label">Ni interesa</div></div>
+        <div class="stat-card"><div class="stat-num c-purple" id="s-rate">—</div><div class="stat-label">Stopnja odziva</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><b>Po kategorijah</b></div>
+        <div class="card-body">
+          <div class="cat-grid" id="cat-grid"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<script>
-let masterToken='',allLeads=[],currentFilter='all';
+<div id="toast"></div>
 
+<script>
+let masterToken='', allLeads=[], currentFilter='all';
+
+// ── AUTH ──
 async function doLogin(){
-  const email=document.getElementById('login-email').value.trim();
-  const pass=document.getElementById('login-pass').value;
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
   try{
     const r=await fetch('/api/auth/master-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
     const d=await r.json();
-    if(!d.success) throw new Error(d.error||'Napaka');
+    if(!d.success) throw new Error(d.error||'Napaka pri prijavi');
     masterToken=d.token;
     sessionStorage.setItem('ft_master_token',masterToken);
     showMain();
-  }catch(e){const el=document.getElementById('login-err');el.textContent=e.message;el.style.display='block';}
+  }catch(e){showEl('l-err',e.message);}
+}
+function doLogout(){sessionStorage.removeItem('ft_master_token');masterToken='';document.getElementById('login-screen').style.display='flex';document.getElementById('main-screen').style.display='none';}
+function showMain(){document.getElementById('login-screen').style.display='none';document.getElementById('main-screen').style.display='block';loadAll();}
+
+// ── TABS ──
+function switchTab(name,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
 }
 
-function doLogout(){
-  sessionStorage.removeItem('ft_master_token');masterToken='';
-  document.getElementById('login-screen').style.display='flex';
-  document.getElementById('main-screen').style.display='none';
-}
-
-function showMain(){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('main-screen').style.display='block';
-  loadData();
-}
-
-async function loadData(){
+// ── DATA ──
+async function loadAll(){
   try{
     const r=await fetch('/api/leads',{headers:{Authorization:masterToken}});
     if(r.status===401){doLogout();return;}
     const d=await r.json();
-    document.getElementById('s-total').textContent=d.total;
-    document.getElementById('s-sent').textContent=d.sent;
-    document.getElementById('s-interested').textContent=d.interested;
-    document.getElementById('s-not').textContent=d.not_interested;
-    const resp=d.interested+d.not_interested;
-    document.getElementById('s-rate').textContent=(resp>0?Math.round(d.interested/resp*100):0)+'%';
-    const cg=document.getElementById('cat-grid');cg.innerHTML='';
-    for(const[cat,n] of Object.entries(d.by_category).sort((a,b)=>b[1].total-a[1].total)){
-      const pct=n.total>0?Math.round(n.interested/n.total*100):0;
-      cg.innerHTML+=`<div class="cat-card"><div class="cat-name">${esc(cat)}</div><div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div><div class="cat-nums"><span>${n.interested}</span> / ${n.total} zainteresiranih (${pct}%)</div></div>`;
-    }
-    allLeads=d.leads;renderTable();
+    allLeads=d.leads||[];
+    renderStats(d);
+    renderTable();
+    updateUnsentCount();
   }catch(e){console.error(e);}
 }
 
+function renderStats(d){
+  const responded=d.interested+d.not_interested;
+  setText('s-total',d.total);
+  setText('s-pending',allLeads.filter(l=>!l.email_sent_at).length);
+  setText('s-sent',allLeads.filter(l=>l.email_sent_at).length);
+  setText('s-interested',d.interested);
+  setText('s-not',d.not_interested);
+  setText('s-rate',(responded>0?Math.round(d.interested/responded*100):0)+'%');
+  const cg=document.getElementById('cat-grid');
+  cg.innerHTML='';
+  for(const[cat,n] of Object.entries(d.by_category||{}).sort((a,b)=>b[1].total-a[1].total)){
+    const pct=n.total>0?Math.round(n.interested/n.total*100):0;
+    cg.innerHTML+=`<div class="cat-card"><div class="cat-name">${esc(cat)}</div><div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div><div class="cat-nums"><b>${n.interested}</b> / ${n.total} (${pct}%)</div></div>`;
+  }
+}
+
+function updateUnsentCount(){
+  const c=allLeads.filter(l=>!l.email_sent_at&&l.email).length;
+  setText('unsent-count',c);
+}
+
+// ── TABLE ──
 function setFilter(f,btn){
   currentFilter=f;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');renderTable();
+  btn.classList.add('active');
+  renderTable();
 }
 
 function renderTable(){
-  const filtered=currentFilter==='all'?allLeads:allLeads.filter(l=>l.status===currentFilter);
+  let filtered=allLeads;
+  if(currentFilter==='pending') filtered=allLeads.filter(l=>!l.email_sent_at);
+  else if(currentFilter==='sent') filtered=allLeads.filter(l=>l.email_sent_at&&l.status==='sent');
+  else if(currentFilter==='interested') filtered=allLeads.filter(l=>l.status==='interested');
+  else if(currentFilter==='not_interested') filtered=allLeads.filter(l=>l.status==='not_interested');
+
+  setText('leads-count-label',filtered.length+' leadov');
   const tbody=document.getElementById('leads-tbody');
   const empty=document.getElementById('leads-empty');
-  if(filtered.length===0){tbody.innerHTML='';empty.style.display='block';return;}
+  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
+
   tbody.innerHTML=filtered.map(l=>{
-    const badge=l.status==='interested'?'<span class="badge badge-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge badge-not">❌ Ni interesa</span>':'<span class="badge badge-sent">📤 Čaka</span>';
-    const s=l.sent_at?new Date(l.sent_at).toLocaleDateString('sl',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
-    const resp=l.responded_at?new Date(l.responded_at).toLocaleDateString('sl',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
-    return `<tr><td style="font-weight:600">${esc(l.business_name)}</td><td><a href="mailto:${esc(l.email)}" style="color:var(--blue)">${esc(l.email)}</a></td><td>${esc(l.category)}</td><td>${badge}</td><td style="color:var(--text2)">${s}</td><td style="color:var(--text2)">${resp}</td><td><button class="btn btn-sm" style="background:var(--bg3);color:var(--text2);font-size:11px" onclick="copyTrack('${esc(l.token)}')">📋 Kopiraj</button></td></tr>`;
+    const badge=l.status==='interested'?'<span class="badge b-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge b-not">❌ Ni interesa</span>':l.email_sent_at?'<span class="badge b-sent">📤 Poslano</span>':'<span class="badge b-pending">⏳ Čaka</span>';
+    const sent=l.email_sent_at?fmtDate(l.email_sent_at):'—';
+    const resp=l.responded_at?fmtDate(l.responded_at):'—';
+    const emailCell=l.email
+      ?`<a href="mailto:${esc(l.email)}" style="color:var(--blue);font-size:13px">${esc(l.email)}</a>`
+      :`<input class="edit-input" placeholder="Vnesi email" onblur="saveEmail(${l.id},this.value)" style="width:150px">`;
+    const sendBtn=!l.email_sent_at&&l.email
+      ?`<button class="btn btn-green btn-sm" onclick="sendOne(${l.id},this)">📤 Pošlji</button>`
+      :l.email_sent_at?'<span style="color:var(--text3);font-size:12px">✓ Poslano</span>':'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
+    return `<tr id="row-${l.id}"><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.category)}</td><td>${badge}</td><td style="color:var(--text2);font-size:12px">${sent}</td><td style="color:var(--text2);font-size:12px">${resp}</td><td>${sendBtn}</td></tr>`;
   }).join('');
 }
 
-function copyTrack(token){
-  const url=`${location.origin}/track/${token}/da`;
-  navigator.clipboard.writeText(url).then(()=>alert('Link za "Da" kopiran:\n'+url));
-}
-
-async function addLead(){
-  const name=document.getElementById('add-name').value.trim();
-  const email=document.getElementById('add-email').value.trim();
-  const cat=document.getElementById('add-cat').value;
-  const errEl=document.getElementById('add-err');errEl.style.display='none';
-  if(!name||!email){errEl.textContent='Vnesi ime firme in email.';errEl.style.display='block';return;}
-  const token=[...Array(3)].map(()=>Math.random().toString(36).slice(2)).join('')+Date.now().toString(36);
+// ── SEARCH ──
+function updateQuery(){}
+async function doSearch(){
+  const q=document.getElementById('s-cat').value;
+  const city=document.getElementById('s-city').value.trim();
+  const btn=document.getElementById('s-btn');
+  btn.innerHTML='<span class="spinner"></span>Išče…';btn.disabled=true;
   try{
-    const r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json',Authorization:masterToken},body:JSON.stringify({email,business_name:name,category:cat,token})});
+    const r=await fetch(`/api/leads/find?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}`,{headers:{Authorization:masterToken}});
     const d=await r.json();
     if(d.error) throw new Error(d.error);
-    document.getElementById('add-name').value='';document.getElementById('add-email').value='';
-    loadData();
-  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+    renderSearchResults(d.businesses,q,city);
+  }catch(e){toast('Iskanje ni uspelo: '+e.message,'error');}
+  finally{btn.innerHTML='🔍 Išči';btn.disabled=false;}
 }
 
+function renderSearchResults(businesses,q,city){
+  const card=document.getElementById('search-results-card');
+  const list=document.getElementById('search-results-list');
+  const title=document.getElementById('search-results-title');
+  if(!businesses.length){title.textContent=`Ni rezultatov za "${q}" v ${city||'SLO'}`;list.innerHTML='<div class="empty-state"><div>Preizkusi drugačen iskalni niz ali mesto.</div></div>';card.style.display='block';return;}
+  title.textContent=`${businesses.length} rezultatov — "${q}" ${city?'v '+city:''}`;
+  list.innerHTML=businesses.map((b,i)=>`
+    <div class="result-row" id="sr-${i}">
+      <div class="result-info">
+        <div class="result-name">${esc(b.name)}</div>
+        <div class="result-meta">
+          ${b.email?`<span class="has-email">✉ ${esc(b.email)}</span>`:'<span style="color:var(--text3)">brez emaila</span>'}
+          ${b.phone?` · 📞 ${esc(b.phone)}`:''}
+          ${b.address?` · ${esc(b.address)}`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        ${!b.email?`<input class="edit-input" placeholder="Vnesi email" id="sr-email-${i}" style="width:160px">`:''}
+        <button class="btn btn-green btn-sm" onclick="addSearchResult(${i},${JSON.stringify(b).replace(/"/g,'&quot;')})">+ Dodaj</button>
+      </div>
+    </div>`).join('');
+  card.style.display='block';
+}
+
+function clearResults(){document.getElementById('search-results-card').style.display='none';}
+
+async function addSearchResult(i,b){
+  const emailInput=document.getElementById(`sr-email-${i}`);
+  const email=(emailInput?emailInput.value.trim():'')||b.email||'';
+  const catSelect=document.getElementById('s-cat');
+  const catLabel=catSelect.options[catSelect.selectedIndex].text.replace(/^[^\s]+\s/,'');
+  await addLead(b.name,email,catLabel,b.phone,b.address);
+  const row=document.getElementById(`sr-${i}`);
+  if(row) row.style.opacity='.4';
+}
+
+async function addAllWithEmail(){
+  const items=document.querySelectorAll('.result-row');
+  for(const item of items){
+    const nameEl=item.querySelector('.result-name');
+    if(!nameEl||item.style.opacity==='0.4') continue;
+    const emailEl=item.querySelector('.has-email');
+    if(!emailEl) continue;
+    const email=emailEl.textContent.replace('✉ ','').trim();
+    const name=nameEl.textContent.trim();
+    const catSelect=document.getElementById('s-cat');
+    const catLabel=catSelect.options[catSelect.selectedIndex].text.replace(/^[^\s]+\s/,'');
+    await addLead(name,email,catLabel,'','');
+    item.style.opacity='.4';
+  }
+  toast('Dodano! ✅','success');
+  loadAll();
+}
+
+// ── ADD LEAD ──
+async function addLead(name,email,category,phone,address){
+  const token=[...Array(3)].map(()=>Math.random().toString(36).slice(2)).join('')+Date.now().toString(36);
+  try{
+    const r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json',Authorization:masterToken},body:JSON.stringify({email:email||'',business_name:name,category,token,phone:phone||'',address:address||''})});
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    return true;
+  }catch(e){toast('Napaka: '+e.message,'error');return false;}
+}
+
+async function addManual(){
+  const name=document.getElementById('m-name').value.trim();
+  const email=document.getElementById('m-email').value.trim();
+  const cat=document.getElementById('m-cat').value;
+  const errEl=document.getElementById('m-err');errEl.style.display='none';
+  if(!name){errEl.textContent='Vnesi ime firme.';errEl.style.display='block';return;}
+  const ok=await addLead(name,email,cat,'','');
+  if(ok){document.getElementById('m-name').value='';document.getElementById('m-email').value='';toast('Dodano! ✅','success');loadAll();}
+}
+
+// ── SEND ──
+async function sendOne(id,btn){
+  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
+  try{
+    const r=await fetch(`/api/leads/${id}/send`,{method:'POST',headers:{Authorization:masterToken}});
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    toast('✅ Email poslan: '+d.to,'success');
+    loadAll();
+  }catch(e){toast('Napaka: '+e.message,'error');btn.innerHTML='📤 Pošlji';btn.disabled=false;}
+}
+
+async function bulkSend(){
+  const btn=document.getElementById('bulk-btn');
+  const count=parseInt(document.getElementById('unsent-count').textContent)||0;
+  if(!count){toast('Ni neposlanih emailov.','error');return;}
+  if(!confirm(`Poslati ${count} emailov prek Resend?`)) return;
+  btn.innerHTML='<span class="spinner"></span>Pošiljam…';btn.disabled=true;
+  try{
+    const r=await fetch('/api/leads/bulk-send',{method:'POST',headers:{Authorization:masterToken,'Content-Type':'application/json'}});
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    toast(`✅ Poslano: ${d.sent} emailov${d.errors?.length?' ('+d.errors.length+' napak)':''}`, d.errors?.length?'error':'success');
+    loadAll();
+  }catch(e){toast('Napaka: '+e.message,'error');}
+  finally{btn.innerHTML='📤 Pošlji vsem';btn.disabled=false;}
+}
+
+// ── SAVE EMAIL ──
+async function saveEmail(id,email){
+  if(!email||!email.includes('@')) return;
+  try{
+    await fetch(`/api/leads/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:masterToken},body:JSON.stringify({email})});
+    loadAll();
+  }catch(e){console.error(e);}
+}
+
+// ── UTILS ──
+function fmtDate(s){if(!s)return'—';try{const d=new Date(s);return d.getDate().toString().padStart(2,'0')+'.'+(d.getMonth()+1).toString().padStart(2,'0')+'. '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}catch{return s;}}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function showEl(id,msg){const el=document.getElementById(id);if(el){el.textContent=msg;el.style.display='block';}}
+
+let toastTimer;
+function toast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='show '+type;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.className='',4000);
+}
 
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 (function(){const s=sessionStorage.getItem('ft_master_token')||localStorage.getItem('ft_master_token');if(s){masterToken=s;showMain();}})();

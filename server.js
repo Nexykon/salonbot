@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 const { handleMessage } = require('./src/handler');
 const db = require('./src/supabase');
 const wa = require('./src/whatsapp');
@@ -1650,6 +1651,203 @@ app.post('/api/leads', async (req, res) => {
     if (!email || !business_name || !category || !token) return res.status(400).json({ error: 'Manjkajo polja' });
     const result = await sbLeads('post', '/leads', { email, business_name, category, token });
     res.json(result[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+
+// ─── LEADS — SCRAPER + RESEND ────────────────────────────────────────────────
+
+const TEMPLATE_DIR = path.join(__dirname, 'email-templates');
+
+const CAT_TEMPLATE = {
+  'frizerji': '01_frizerji', 'frizer': '01_frizerji',
+  'nohtarnic': '02_nohtarnice', 'nohti': '02_nohtarnice', 'gel nohti': '02_nohtarnice',
+  'masaž': '03_masaze_wellness', 'wellness': '03_masaze_wellness', 'spa': '03_masaze_wellness',
+  'pasji': '04_pasji_strizci', 'grooming': '04_pasji_strizci',
+  'picerij': '05_picerije', 'pizza': '05_picerije',
+  'restavraci': '06_restavracije',
+  'fotograf': '07_fotografski_studii',
+  'kozmetič': '08_kozmeticarke', 'kozmetika': '08_kozmeticarke',
+  'pedikar': '09_pedikure', 'pedikur': '09_pedikure',
+  'trener': '10_osebni_trenerji', 'fitnes': '10_osebni_trenerji',
+  'tattoo': '11_tattoo', 'tetoviran': '11_tattoo',
+};
+
+const EMAIL_SUBJECTS = {
+  '01_frizerji':          '{} — stranke se same naročajo prek WhatsAppa?',
+  '02_nohtarnice':        '{} — zamujene rezervacije prek WhatsAppa?',
+  '03_masaze_wellness':   '{} — kakšen bi bil polni urnik brez klicev?',
+  '04_pasji_strizci':     '{} — manj klicev, več šišanja 🐾',
+  '05_picerije':          '{} — naročila za dostavo prek WhatsAppa?',
+  '06_restavracije':      '{} — rezervacije miz prek WhatsAppa?',
+  '07_fotografski_studii':'{} — termini za fotografiranje na avtopilotu?',
+  '08_kozmeticarke':      '{} — stranke se naročajo same, vi delate v miru',
+  '09_pedikure':          '{} — polni termini brez telefoniranja?',
+  '10_osebni_trenerji':   '{} — treningi rezervirani, vi trenirate',
+  '11_tattoo':            '{} — manj pisanja, več tattooja',
+  '12_splosno':           '{} — WhatsApp pomočnik za vaše podjetje?',
+};
+
+function resolveTemplate(category) {
+  const c = (category || '').toLowerCase();
+  for (const [key, val] of Object.entries(CAT_TEMPLATE)) {
+    if (c.includes(key)) return val;
+  }
+  return '12_splosno';
+}
+
+function loadEmailTemplate(templateName) {
+  const fp = path.join(TEMPLATE_DIR, templateName + '.html');
+  if (!fs.existsSync(fp)) {
+    const fallback = path.join(TEMPLATE_DIR, '12_splosno.html');
+    return fs.existsSync(fallback) ? fs.readFileSync(fallback, 'utf8') : null;
+  }
+  return fs.readFileSync(fp, 'utf8');
+}
+
+function personalizeEmail(html, businessName, token) {
+  return html.replace(/\{\{IME_FIRME\}\}/g, businessName).replace(/\{\{TOKEN\}\}/g, token);
+}
+
+function parseBiziSi(html) {
+  const results = [];
+  try {
+    // Razdeli na company bloke po h2/h3 naslovih
+    const blocks = html.split(/(?=<(?:h2|h3|div)[^>]+class="[^"]*(?:company|result|card)[^"]*")/i);
+    const seen = new Set();
+    for (const block of blocks) {
+      // Ime podjetja — iščemo v heading tagih
+      const nameM = block.match(/<(?:h[23])[^>]*>\s*(?:<[^>]+>)*([A-ZŠŽČ][^<]{2,80})(?:<\/[^>]+>)*\s*<\/(?:h[23])>/i)
+                 || block.match(/class="[^"]*(?:company-name|naziv|title)[^"]*"[^>]*>\s*(?:<[^>]+>)*([A-ZŠŽČ][^<]{2,80})/i)
+                 || block.match(/<a href="\/[^"]+\/?"[^>]*>([A-ZŠŽČ][^<]{2,60})<\/a>/i);
+      if (!nameM) continue;
+      const name = nameM[1].replace(/<[^>]+>/g, '').trim();
+      if (!name || name.length < 3 || seen.has(name.toLowerCase())) continue;
+      seen.add(name.toLowerCase());
+
+      const emailM = block.match(/href="mailto:([^"\s]+@[^"\s]+\.[^"\s]+)"/i);
+      const phoneM = block.match(/href="tel:([+\d\s()\-]{6,20})"/i)
+                  || block.match(/(?:>|\s)(0\d[\d\s]{6,14})(?:<|\/)/);
+      const addrM  = block.match(/class="[^"]*(?:address|naslov)[^"]*"[^>]*>([^<]{5,100})/i)
+                  || block.match(/(?:ulica|cesta|trg|pot|ave|dr\.|ul\.) [^<]{2,60}/i);
+
+      results.push({
+        name,
+        email: emailM ? emailM[1].toLowerCase() : '',
+        phone: phoneM ? phoneM[1].replace(/\s+/g, ' ').trim() : '',
+        address: addrM ? addrM[0].replace(/<[^>]+>/g, '').trim() : '',
+      });
+      if (results.length >= 30) break;
+    }
+  } catch (e) { /* vrni kar imamo */ }
+  return results;
+}
+
+// GET /api/leads/find — scrape bizi.si
+app.get('/api/leads/find', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const { q, city, page = 1 } = req.query;
+  if (!q) return res.status(400).json({ error: 'Manjka q parameter' });
+  try {
+    const { default: axios } = await import('axios');
+    const searchUrl = `https://www.bizi.si/iskanje/?q=${encodeURIComponent(q)}&location=${encodeURIComponent(city || '')}&page=${page}`;
+    const r = await axios.get(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'sl-SI,sl;q=0.9,en;q=0.8',
+        'Referer': 'https://www.bizi.si/',
+      },
+      timeout: 20000,
+    });
+    const businesses = parseBiziSi(r.data);
+    res.json({ businesses, total: businesses.length, source: 'bizi.si', query: q, city: city || '' });
+  } catch (err) {
+    res.status(502).json({ error: 'Iskanje ni uspelo: ' + (err.response?.status ? `HTTP ${err.response.status}` : err.message) });
+  }
+});
+
+// PATCH /api/leads/:id — posodobi email/telefon/naslov
+app.patch('/api/leads/:id', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const allowed = ['email','phone','address','business_name','category','notes','status'];
+  const updates = {};
+  for (const k of allowed) if (req.body[k] !== undefined) updates[k] = req.body[k];
+  if (!Object.keys(updates).length) return res.status(400).json({ error: 'Nič za posodobiti' });
+  try {
+    const result = await sbLeads('patch', `/leads?id=eq.${req.params.id}`, updates);
+    res.json(result[0] || {});
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/leads/:id/send — pošlji email prek Resend
+app.post('/api/leads/:id/send', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY ni nastavljen' });
+  try {
+    const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
+    const lead = leads[0];
+    if (!lead) return res.status(404).json({ error: 'Lead ne obstaja' });
+    if (!lead.email) return res.status(400).json({ error: 'Email ni vnesen' });
+
+    const templateName = resolveTemplate(lead.category);
+    const templateHtml = loadEmailTemplate(templateName);
+    if (!templateHtml) return res.status(500).json({ error: 'Predloga ne obstaja' });
+
+    const html = personalizeEmail(templateHtml, lead.business_name, lead.token);
+    const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
+    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <hello@flowtiq.si>';
+
+    const { default: axios } = await import('axios');
+    await axios.post('https://api.resend.com/emails', {
+      from: fromEmail,
+      to: lead.email,
+      subject,
+      html,
+    }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
+
+    await sbLeads('patch', `/leads?id=eq.${lead.id}&email_sent_at=is.null`,
+      { email_sent_at: new Date().toISOString(), status: 'sent' });
+
+    res.json({ success: true, to: lead.email, subject });
+  } catch (err) {
+    const msg = err.response?.data?.message || err.message;
+    res.status(500).json({ error: msg });
+  }
+});
+
+// POST /api/leads/bulk-send — pošlji vsem neposlani
+app.post('/api/leads/bulk-send', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY ni nastavljen' });
+  try {
+    const pending = await sbLeads('get', '/leads?email_sent_at=is.null&email=neq.&order=id.asc&limit=100');
+    if (!pending.length) return res.json({ success: true, sent: 0, message: 'Ni leadov za pošiljanje' });
+
+    const { default: axios } = await import('axios');
+    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <hello@flowtiq.si>';
+    let sent = 0, errors = [];
+
+    for (const lead of pending) {
+      try {
+        const templateName = resolveTemplate(lead.category);
+        const html = personalizeEmail(loadEmailTemplate(templateName) || '', lead.business_name, lead.token);
+        const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
+        await axios.post('https://api.resend.com/emails', {
+          from: fromEmail, to: lead.email, subject, html,
+        }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
+        await sbLeads('patch', `/leads?id=eq.${lead.id}`,
+          { email_sent_at: new Date().toISOString(), status: 'sent' });
+        sent++;
+        // Rate limit — Resend free plan 2/sec
+        await new Promise(r => setTimeout(r, 600));
+      } catch (e) {
+        errors.push({ id: lead.id, email: lead.email, error: e.response?.data?.message || e.message });
+      }
+    }
+    res.json({ success: true, sent, errors, total: pending.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
