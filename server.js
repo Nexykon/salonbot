@@ -1643,6 +1643,41 @@ app.get('/api/leads', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+
+// POST /api/leads/import — bulk uvoz iz Google Maps bookmarklet
+app.post('/api/leads/import', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const { businesses, category } = req.body;
+  if (!Array.isArray(businesses) || !businesses.length)
+    return res.status(400).json({ error: 'Manjka seznam podjetij' });
+
+  const crypto2 = require('crypto');
+  let added = 0, skipped = 0;
+
+  for (const b of businesses) {
+    const name = (b.name || '').trim();
+    if (!name || name.length < 2) { skipped++; continue; }
+    const cat = category || b.category || b.type || 'Ostalo';
+    const token = crypto2.randomBytes(16).toString('hex') + Date.now().toString(36);
+    try {
+      await sbLeads('post', '/leads', {
+        email: b.email || '',
+        business_name: name,
+        category: cat,
+        token,
+        phone: b.phone || '',
+        address: b.address || '',
+        website: b.website || '',
+      });
+      added++;
+    } catch (e) {
+      // Preskoči duplicate (unique token constraint)
+      skipped++;
+    }
+  }
+  res.json({ success: true, added, skipped, total: businesses.length });
+});
+
 // POST /api/leads — dodaj nov lead (za generiranje emailov)
 app.post('/api/leads', async (req, res) => {
   if (!adminAuth(req, res)) return;
