@@ -1586,6 +1586,73 @@ app.post('/api/orders/:id/reject', async (req, res) => {
 });
 
 
+
+// ─── LEADS TRACKING ──────────────────────────────────────────────────────────
+
+async function sbLeads(method, path, body = null) {
+  const { default: axios } = await import('axios');
+  const headers = {
+    apikey: process.env.SUPABASE_KEY,
+    Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation'
+  };
+  const url = process.env.SUPABASE_URL + '/rest/v1' + path;
+  const r = await axios({ method, url, headers, data: body });
+  return r.data;
+}
+
+// GET /track/:token/:response — email click tracking
+app.get('/track/:token/:response', async (req, res) => {
+  const { token, response } = req.params;
+  const status = response === 'da' ? 'interested' : response === 'ne' ? 'not_interested' : null;
+  if (!status) return res.redirect('/');
+  try {
+    await sbLeads('patch',
+      `/leads?token=eq.${encodeURIComponent(token)}&status=eq.sent`,
+      { status, responded_at: new Date().toISOString() }
+    );
+  } catch (e) { /* ne blokiraj redirect */ }
+  if (status === 'interested') {
+    res.redirect('https://salonbot-production-785b.up.railway.app/?interesse=1#cena');
+  } else {
+    res.redirect('https://salonbot-production-785b.up.railway.app/?interesse=0');
+  }
+});
+
+// GET /api/leads — statistika za dashboard (master only)
+app.get('/api/leads', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const all = await sbLeads('get', '/leads?order=sent_at.desc&limit=500');
+    const stats = {
+      total: all.length,
+      sent: all.filter(l => l.status === 'sent').length,
+      interested: all.filter(l => l.status === 'interested').length,
+      not_interested: all.filter(l => l.status === 'not_interested').length,
+      by_category: {},
+      leads: all
+    };
+    for (const l of all) {
+      if (!stats.by_category[l.category]) stats.by_category[l.category] = { total: 0, interested: 0 };
+      stats.by_category[l.category].total++;
+      if (l.status === 'interested') stats.by_category[l.category].interested++;
+    }
+    res.json(stats);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/leads — dodaj nov lead (za generiranje emailov)
+app.post('/api/leads', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const { email, business_name, category, token } = req.body;
+    if (!email || !business_name || !category || !token) return res.status(400).json({ error: 'Manjkajo polja' });
+    const result = await sbLeads('post', '/leads', { email, business_name, category, token });
+    res.json(result[0]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.listen(PORT, () => {
   console.log(`FlowTiq server running on port ${PORT}`);
 });

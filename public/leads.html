@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowTiq — Leads kampanja</title>
+  <style>
+    :root {
+      --bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;
+      --border:#2a2a4a;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+      --green:#10b981;--blue:#3b82f6;--purple:#7c3aed;--red:#ef4444;--yellow:#f59e0b;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+    #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
+    .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:360px;text-align:center;}
+    .login-box h2{margin-bottom:8px;font-size:22px;}
+    .login-box p{color:var(--text2);font-size:14px;margin-bottom:24px;}
+    .login-box input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;margin-bottom:12px;}
+    .btn{padding:12px 24px;border-radius:10px;border:none;cursor:pointer;font-size:15px;font-weight:600;transition:opacity .15s;width:100%;}
+    .btn:hover{opacity:.85;}
+    .btn-green{background:var(--green);color:#fff;}
+    .btn-purple{background:var(--purple);color:#fff;}
+    .btn-sm{padding:6px 14px;font-size:13px;border-radius:8px;width:auto;}
+    #main-screen{display:none;}
+    header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;}
+    header .logo{height:36px;}
+    header h1{font-size:18px;font-weight:700;}
+    header .header-right{display:flex;align-items:center;gap:12px;}
+    .container{max-width:1200px;margin:0 auto;padding:32px 24px;}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px;}
+    .stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 24px;}
+    .stat-num{font-size:36px;font-weight:800;line-height:1;margin-bottom:4px;}
+    .stat-label{font-size:13px;color:var(--text2);}
+    .stat-green .stat-num{color:var(--green);}
+    .stat-blue .stat-num{color:var(--blue);}
+    .stat-red .stat-num{color:var(--red);}
+    .stat-yellow .stat-num{color:var(--yellow);}
+    .stat-purple .stat-num{color:var(--purple);}
+    .section-title{font-size:16px;font-weight:700;margin-bottom:14px;}
+    .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:32px;}
+    .cat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;}
+    .cat-name{font-size:14px;font-weight:600;margin-bottom:8px;}
+    .cat-bar-wrap{background:var(--bg3);border-radius:6px;height:6px;margin-bottom:6px;overflow:hidden;}
+    .cat-bar{background:var(--green);height:6px;border-radius:6px;transition:width .5s;}
+    .cat-nums{font-size:12px;color:var(--text2);}
+    .cat-nums span{color:var(--green);font-weight:600;}
+    .table-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:32px;}
+    .table-header{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+    .filter-btns{display:flex;gap:8px;flex-wrap:wrap;}
+    .filter-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
+    .filter-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+    table{width:100%;border-collapse:collapse;}
+    th{padding:12px 16px;text-align:left;font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);}
+    td{padding:12px 16px;font-size:14px;border-bottom:1px solid var(--border);}
+    tr:last-child td{border-bottom:none;}
+    tr:hover td{background:var(--bg3);}
+    .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+    .badge-sent{background:rgba(100,116,139,.2);color:var(--text2);}
+    .badge-interested{background:rgba(16,185,129,.15);color:var(--green);}
+    .badge-not{background:rgba(239,68,68,.15);color:var(--red);}
+    .add-form{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:32px;}
+    .add-form h3{font-size:16px;font-weight:700;margin-bottom:16px;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
+    .form-row input,.form-row select{padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;width:100%;}
+    .form-row label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;}
+    .form-col{display:flex;flex-direction:column;}
+    .empty{text-align:center;padding:40px;color:var(--text3);font-size:14px;}
+    .error-msg{color:var(--red);font-size:13px;margin-top:8px;}
+    @media(max-width:700px){.form-row{grid-template-columns:1fr;}table{font-size:12px;}th,td{padding:8px 10px;}}
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <h2>📊 Leads Dashboard</h2>
+    <p>Prijavi se z master geslom</p>
+    <input type="email" id="login-email" placeholder="Email" autocomplete="username">
+    <input type="password" id="login-pass" placeholder="Geslo" autocomplete="current-password">
+    <button class="btn btn-purple" onclick="doLogin()">Prijava</button>
+    <p class="error-msg" id="login-err" style="display:none"></p>
+  </div>
+</div>
+
+<div id="main-screen">
+  <header>
+    <div style="display:flex;align-items:center;gap:16px">
+      <img src="/logo.png" alt="FlowTiq" class="logo">
+      <h1>📊 Email kampanja</h1>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-green btn-sm" onclick="loadData()">🔄 Osveži</button>
+      <button class="btn btn-sm" style="background:var(--bg3);color:var(--text2)" onclick="doLogout()">Odjava</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-card stat-blue"><div class="stat-num" id="s-total">—</div><div class="stat-label">Skupaj emailov</div></div>
+      <div class="stat-card stat-yellow"><div class="stat-num" id="s-sent">—</div><div class="stat-label">Čaka na odziv</div></div>
+      <div class="stat-card stat-green"><div class="stat-num" id="s-interested">—</div><div class="stat-label">Zainteresirani ✅</div></div>
+      <div class="stat-card stat-red"><div class="stat-num" id="s-not">—</div><div class="stat-label">Ni interesa</div></div>
+      <div class="stat-card stat-purple"><div class="stat-num" id="s-rate">—</div><div class="stat-label">Stopnja odziva</div></div>
+    </div>
+
+    <div class="section-title">Po kategorijah</div>
+    <div class="cat-grid" id="cat-grid"></div>
+
+    <div class="add-form">
+      <h3>➕ Dodaj lead ročno</h3>
+      <div class="form-row">
+        <div class="form-col"><label>Ime firme</label><input type="text" id="add-name" placeholder="Frizerski salon Vita"></div>
+        <div class="form-col"><label>Email</label><input type="email" id="add-email" placeholder="vita@example.com"></div>
+        <div class="form-col"><label>Kategorija</label>
+          <select id="add-cat">
+            <option>💇 Frizerji</option><option>💅 Nohtarnice</option><option>✨ Kozmetičarke</option>
+            <option>💆 Masaže</option><option>🦶 Pedikure</option><option>🎨 Tattoo studii</option>
+            <option>🐾 Pasji strižci</option><option>🍕 Picerije</option><option>🍽️ Restavracije</option>
+            <option>📸 Fotografski studii</option><option>🏋️ Osebni trenerji</option><option>📋 Ostalo</option>
+          </select>
+        </div>
+        <button class="btn btn-green btn-sm" onclick="addLead()" style="white-space:nowrap">Dodaj</button>
+      </div>
+      <p class="error-msg" id="add-err" style="display:none"></p>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <div class="section-title" style="margin:0">Vsi leadi</div>
+        <div class="filter-btns">
+          <button class="filter-btn active" onclick="setFilter('all',this)">Vsi</button>
+          <button class="filter-btn" onclick="setFilter('interested',this)">✅ Zainteresirani</button>
+          <button class="filter-btn" onclick="setFilter('sent',this)">📤 Čaka</button>
+          <button class="filter-btn" onclick="setFilter('not_interested',this)">❌ Ni interesa</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Firma</th><th>Email</th><th>Kategorija</th><th>Status</th><th>Poslano</th><th>Odziv</th><th>Tracking</th></tr></thead>
+        <tbody id="leads-tbody"></tbody>
+      </table>
+      <div class="empty" id="leads-empty" style="display:none">Ni leadov v tej kategoriji.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let masterToken='',allLeads=[],currentFilter='all';
+
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  try{
+    const r=await fetch('/api/auth/master-login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(!d.success) throw new Error(d.error||'Napaka');
+    masterToken=d.token;
+    sessionStorage.setItem('ft_master_token',masterToken);
+    showMain();
+  }catch(e){const el=document.getElementById('login-err');el.textContent=e.message;el.style.display='block';}
+}
+
+function doLogout(){
+  sessionStorage.removeItem('ft_master_token');masterToken='';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('main-screen').style.display='none';
+}
+
+function showMain(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-screen').style.display='block';
+  loadData();
+}
+
+async function loadData(){
+  try{
+    const r=await fetch('/api/leads',{headers:{Authorization:masterToken}});
+    if(r.status===401){doLogout();return;}
+    const d=await r.json();
+    document.getElementById('s-total').textContent=d.total;
+    document.getElementById('s-sent').textContent=d.sent;
+    document.getElementById('s-interested').textContent=d.interested;
+    document.getElementById('s-not').textContent=d.not_interested;
+    const resp=d.interested+d.not_interested;
+    document.getElementById('s-rate').textContent=(resp>0?Math.round(d.interested/resp*100):0)+'%';
+    const cg=document.getElementById('cat-grid');cg.innerHTML='';
+    for(const[cat,n] of Object.entries(d.by_category).sort((a,b)=>b[1].total-a[1].total)){
+      const pct=n.total>0?Math.round(n.interested/n.total*100):0;
+      cg.innerHTML+=`<div class="cat-card"><div class="cat-name">${esc(cat)}</div><div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%"></div></div><div class="cat-nums"><span>${n.interested}</span> / ${n.total} zainteresiranih (${pct}%)</div></div>`;
+    }
+    allLeads=d.leads;renderTable();
+  }catch(e){console.error(e);}
+}
+
+function setFilter(f,btn){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderTable();
+}
+
+function renderTable(){
+  const filtered=currentFilter==='all'?allLeads:allLeads.filter(l=>l.status===currentFilter);
+  const tbody=document.getElementById('leads-tbody');
+  const empty=document.getElementById('leads-empty');
+  if(filtered.length===0){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=filtered.map(l=>{
+    const badge=l.status==='interested'?'<span class="badge badge-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge badge-not">❌ Ni interesa</span>':'<span class="badge badge-sent">📤 Čaka</span>';
+    const s=l.sent_at?new Date(l.sent_at).toLocaleDateString('sl',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    const resp=l.responded_at?new Date(l.responded_at).toLocaleDateString('sl',{day:'2-digit',month:'2-digit',year:'2-digit'}):'—';
+    return `<tr><td style="font-weight:600">${esc(l.business_name)}</td><td><a href="mailto:${esc(l.email)}" style="color:var(--blue)">${esc(l.email)}</a></td><td>${esc(l.category)}</td><td>${badge}</td><td style="color:var(--text2)">${s}</td><td style="color:var(--text2)">${resp}</td><td><button class="btn btn-sm" style="background:var(--bg3);color:var(--text2);font-size:11px" onclick="copyTrack('${esc(l.token)}')">📋 Kopiraj</button></td></tr>`;
+  }).join('');
+}
+
+function copyTrack(token){
+  const url=`${location.origin}/track/${token}/da`;
+  navigator.clipboard.writeText(url).then(()=>alert('Link za "Da" kopiran:\n'+url));
+}
+
+async function addLead(){
+  const name=document.getElementById('add-name').value.trim();
+  const email=document.getElementById('add-email').value.trim();
+  const cat=document.getElementById('add-cat').value;
+  const errEl=document.getElementById('add-err');errEl.style.display='none';
+  if(!name||!email){errEl.textContent='Vnesi ime firme in email.';errEl.style.display='block';return;}
+  const token=[...Array(3)].map(()=>Math.random().toString(36).slice(2)).join('')+Date.now().toString(36);
+  try{
+    const r=await fetch('/api/leads',{method:'POST',headers:{'Content-Type':'application/json',Authorization:masterToken},body:JSON.stringify({email,business_name:name,category:cat,token})});
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    document.getElementById('add-name').value='';document.getElementById('add-email').value='';
+    loadData();
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+(function(){const s=sessionStorage.getItem('ft_master_token')||localStorage.getItem('ft_master_token');if(s){masterToken=s;showMain();}})();
+</script>
+</body>
+</html>
