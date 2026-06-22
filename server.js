@@ -1778,7 +1778,7 @@ function parseBiziSi(html) {
   return results;
 }
 
-// GET /api/leads/search — scraper: DuckDuckGo → spletne strani → emaili
+// GET /api/leads/search — scraper: DuckDuckGo → spletne strani → emaili (brez cheerio)
 app.get('/api/leads/search', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { category, region } = req.query;
@@ -1786,87 +1786,115 @@ app.get('/api/leads/search', async (req, res) => {
 
   try {
     const axios = require('axios');
-    const cheerio = require('cheerio');
 
-    const query = `${category} ${region} kontakt email`;
+    // Helper: izvleče vrednosti atributov iz HTML stringa brez DOM parserja
+    function attr(html, tag, attrName) {
+      const re = new RegExp(`<${tag}[^>]+${attrName}="([^"]+)"`, 'gi');
+      const results = [];
+      let m;
+      while ((m = re.exec(html)) !== null) results.push(m[1]);
+      return results;
+    }
+
+    function textContent(html) {
+      return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    const query = `${category} ${region} kontakt`;
     const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=sl-sl`;
 
-    // 1. Iskanje na DuckDuckGo HTML
+    // 1. Iskanje na DuckDuckGo HTML (plain HTML, brez JS)
     const ddgResp = await axios.get(ddgUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'sl-SI,sl;q=0.9,en;q=0.8',
+        'Cookie': 'kl=sl-sl',
       },
       timeout: 15000,
     });
 
-    const $ = cheerio.load(ddgResp.data);
-    const urls = [];
+    const ddgHtml = ddgResp.data;
+
+    // 2. Izvleči URL-je iz DDG rezultatov
+    // DDG HTML format: <a class="result__a" href="..."> ali uddg= param
     const SKIP = ['facebook.com','instagram.com','twitter.com','linkedin.com','youtube.com',
                   'wikipedia.org','google.com','duckduckgo.com','bizi.si','zlatestrani.si',
-                  'telefonski.com','paginaslive.si','yelp.com','tripadvisor.com'];
+                  'telefonski.com','paginaslive.si','yelp.com','tripadvisor.com','find-open.com'];
 
-    $('a.result__url, .result__a, a[href^="http"]').each((i, el) => {
-      const href = $(el).attr('href') || '';
-      // DDG wraps links: /l/?uddg=https%3A%2F%2F...
-      let url = href;
-      if (href.includes('uddg=')) {
-        try { url = decodeURIComponent(href.split('uddg=')[1].split('&')[0]); } catch(e) {}
-      }
-      if (!url.startsWith('http')) return;
-      if (SKIP.some(s => url.includes(s))) return;
-      // samo .si, .com, .eu, .net domene
+    const urlSet = new Map(); // domain -> url
+    
+    // DDG wraps links — poiščemo uddg= ali direktne href
+    const uddgRe = /uddg=([^&"\s]+)/gi;
+    let um;
+    while ((um = uddgRe.exec(ddgHtml)) !== null) {
       try {
+        const url = decodeURIComponent(um[1]);
+        if (!url.startsWith('http')) continue;
         const host = new URL(url).hostname;
-        if (!host || host.split('.').length < 2) return;
-        // Deduplikacija po domeni
         const domain = host.replace(/^www\./, '');
-        if (!urls.find(u => u.domain === domain)) {
-          urls.push({ url: url.split('?')[0].split('#')[0], domain });
-        }
+        if (SKIP.some(s => domain.includes(s))) continue;
+        if (!urlSet.has(domain)) urlSet.set(domain, url.split('?')[0].split('#')[0]);
       } catch(e) {}
-    });
+    }
 
-    // 2. Za vsako spletno stran poišči email + ime
+    // Fallback: direktni href linki
+    const hrefRe = /<a[^>]+href="(https?:\/\/[^"]+)"/gi;
+    let hm;
+    while ((hm = hrefRe.exec(ddgHtml)) !== null) {
+      try {
+        const url = hm[1];
+        const host = new URL(url).hostname;
+        const domain = host.replace(/^www\./, '');
+        if (SKIP.some(s => domain.includes(s))) continue;
+        if (!urlSet.has(domain)) urlSet.set(domain, url.split('?')[0].split('#')[0]);
+      } catch(e) {}
+    }
+
+    const urlList = [...urlSet.entries()].slice(0, 20);
+
+    // 3. Za vsako spletno stran poišči email + ime
     const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}/g;
     const SKIP_EMAILS = ['example.com','sentry.io','wix.com','wordpress.com','jquery','schema.org',
-                         'googletagmanager','pixelmator','apple.com','w3.org','vimeo.com'];
+                         'googletagmanager','apple.com','w3.org','vimeo.com','amazonaws.com',
+                         'cloudfront.net','fbcdn.net','akamai','cdn.','static.'];
     const businesses = [];
 
-    await Promise.allSettled(urls.slice(0, 20).map(async ({ url, domain }) => {
+    await Promise.allSettled(urlList.map(async ([domain, url]) => {
       try {
         const pageResp = await axios.get(url, {
-          timeout: 8000,
+          timeout: 7000,
           maxRedirects: 3,
-          headers: { 'User-Agent': 'Mozilla/5.0' },
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
           responseType: 'text',
         });
-        const html = pageResp.data;
-        const $p = cheerio.load(html);
+        const html = String(pageResp.data).slice(0, 200000); // max 200KB
 
-        // Poišči vse emaile
+        // Emaili
         const allEmails = [...new Set(html.match(EMAIL_RE) || [])].filter(e =>
-          !SKIP_EMAILS.some(s => e.includes(s)) && !e.startsWith('no-reply') && !e.startsWith('noreply')
+          !SKIP_EMAILS.some(s => e.toLowerCase().includes(s)) &&
+          !e.startsWith('no-reply') && !e.startsWith('noreply') && !e.includes('..') &&
+          e.length < 80
         );
         if (!allEmails.length) return;
 
-        // Ime podjetja iz naslova ali og:title
-        let name = $p('meta[property="og:site_name"]').attr('content')
-                || $p('meta[property="og:title"]').attr('content')
-                || $p('title').text();
-        name = (name || domain).split(/[|\-–]/)[0].trim().slice(0, 60);
-        if (!name || name.length < 2) name = domain;
+        // Ime podjetja
+        let name = '';
+        const ogSite = html.match(/<meta[^>]+property="og:site_name"[^>]+content="([^"]{2,60})"/i);
+        const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]{2,80})"/i);
+        const titleTag = html.match(/<title[^>]*>([^<]{2,100})<\/title>/i);
+        const raw = (ogSite || ogTitle || titleTag || [,''])[1];
+        name = raw.split(/[|\-–]/)[0].trim().slice(0, 60) || domain;
+        if (name.length < 2) name = domain;
 
         // Telefon (slovensko)
-        const phoneM = html.match(/(?:tel:|>|\s)(\+?386[\d\s]{8,15}|0[\d]{8,9})/);
+        const phoneM = html.match(/(?:tel:|>|\s|")(\+?386[\d\s\-]{7,14}|0[\d]{8,9})/);
         const phone = phoneM ? phoneM[1].replace(/\s+/g, ' ').trim() : '';
 
         businesses.push({ name, email: allEmails[0], website: url, phone, domain });
-      } catch (e) { /* preskoči */ }
+      } catch (e) { /* preskoči - timeout ali blok */ }
     }));
 
-    // Sortiraj po domeni (abecedno)
     businesses.sort((a, b) => a.name.localeCompare(b.name, 'sl'));
 
     res.json({ businesses, total: businesses.length, query, region, category });
