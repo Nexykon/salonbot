@@ -1778,28 +1778,110 @@ function parseBiziSi(html) {
   return results;
 }
 
-// GET /api/leads/find — scrape bizi.si
-app.get('/api/leads/find', async (req, res) => {
+// GET /api/leads/search — scraper: DuckDuckGo → spletne strani → emaili
+app.get('/api/leads/search', async (req, res) => {
   if (!adminAuth(req, res)) return;
-  const { q, city, page = 1 } = req.query;
-  if (!q) return res.status(400).json({ error: 'Manjka q parameter' });
+  const { category, region } = req.query;
+  if (!category || !region) return res.status(400).json({ error: 'Manjkata category in region' });
+
   try {
-    const { default: axios } = await import('axios');
-    const searchUrl = `https://www.bizi.si/iskanje/?q=${encodeURIComponent(q)}&location=${encodeURIComponent(city || '')}&page=${page}`;
-    const r = await axios.get(searchUrl, {
+    const axios = require('axios');
+    const cheerio = require('cheerio');
+
+    const query = `${category} ${region} kontakt email`;
+    const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=sl-sl`;
+
+    // 1. Iskanje na DuckDuckGo HTML
+    const ddgResp = await axios.get(ddgUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'sl-SI,sl;q=0.9,en;q=0.8',
-        'Referer': 'https://www.bizi.si/',
       },
-      timeout: 20000,
+      timeout: 15000,
     });
-    const businesses = parseBiziSi(r.data);
-    res.json({ businesses, total: businesses.length, source: 'bizi.si', query: q, city: city || '' });
+
+    const $ = cheerio.load(ddgResp.data);
+    const urls = [];
+    const SKIP = ['facebook.com','instagram.com','twitter.com','linkedin.com','youtube.com',
+                  'wikipedia.org','google.com','duckduckgo.com','bizi.si','zlatestrani.si',
+                  'telefonski.com','paginaslive.si','yelp.com','tripadvisor.com'];
+
+    $('a.result__url, .result__a, a[href^="http"]').each((i, el) => {
+      const href = $(el).attr('href') || '';
+      // DDG wraps links: /l/?uddg=https%3A%2F%2F...
+      let url = href;
+      if (href.includes('uddg=')) {
+        try { url = decodeURIComponent(href.split('uddg=')[1].split('&')[0]); } catch(e) {}
+      }
+      if (!url.startsWith('http')) return;
+      if (SKIP.some(s => url.includes(s))) return;
+      // samo .si, .com, .eu, .net domene
+      try {
+        const host = new URL(url).hostname;
+        if (!host || host.split('.').length < 2) return;
+        // Deduplikacija po domeni
+        const domain = host.replace(/^www\./, '');
+        if (!urls.find(u => u.domain === domain)) {
+          urls.push({ url: url.split('?')[0].split('#')[0], domain });
+        }
+      } catch(e) {}
+    });
+
+    // 2. Za vsako spletno stran poišči email + ime
+    const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}/g;
+    const SKIP_EMAILS = ['example.com','sentry.io','wix.com','wordpress.com','jquery','schema.org',
+                         'googletagmanager','pixelmator','apple.com','w3.org','vimeo.com'];
+    const businesses = [];
+
+    await Promise.allSettled(urls.slice(0, 20).map(async ({ url, domain }) => {
+      try {
+        const pageResp = await axios.get(url, {
+          timeout: 8000,
+          maxRedirects: 3,
+          headers: { 'User-Agent': 'Mozilla/5.0' },
+          responseType: 'text',
+        });
+        const html = pageResp.data;
+        const $p = cheerio.load(html);
+
+        // Poišči vse emaile
+        const allEmails = [...new Set(html.match(EMAIL_RE) || [])].filter(e =>
+          !SKIP_EMAILS.some(s => e.includes(s)) && !e.startsWith('no-reply') && !e.startsWith('noreply')
+        );
+        if (!allEmails.length) return;
+
+        // Ime podjetja iz naslova ali og:title
+        let name = $p('meta[property="og:site_name"]').attr('content')
+                || $p('meta[property="og:title"]').attr('content')
+                || $p('title').text();
+        name = (name || domain).split(/[|\-–]/)[0].trim().slice(0, 60);
+        if (!name || name.length < 2) name = domain;
+
+        // Telefon (slovensko)
+        const phoneM = html.match(/(?:tel:|>|\s)(\+?386[\d\s]{8,15}|0[\d]{8,9})/);
+        const phone = phoneM ? phoneM[1].replace(/\s+/g, ' ').trim() : '';
+
+        businesses.push({ name, email: allEmails[0], website: url, phone, domain });
+      } catch (e) { /* preskoči */ }
+    }));
+
+    // Sortiraj po domeni (abecedno)
+    businesses.sort((a, b) => a.name.localeCompare(b.name, 'sl'));
+
+    res.json({ businesses, total: businesses.length, query, region, category });
   } catch (err) {
-    res.status(502).json({ error: 'Iskanje ni uspelo: ' + (err.response?.status ? `HTTP ${err.response.status}` : err.message) });
+    res.status(502).json({ error: 'Iskanje ni uspelo: ' + err.message });
   }
+});
+
+// GET /api/leads/find — bizi.si (legacy, obdržimo za kompatibilnost)
+app.get('/api/leads/find', async (req, res) => {
+  // Preusmeri na nov endpoint
+  const { q, city } = req.query;
+  req.query.category = q || '';
+  req.query.region = city || '';
+  return res.redirect(307, `/api/leads/search?category=${encodeURIComponent(q||'')}&region=${encodeURIComponent(city||'')}`);
 });
 
 // PATCH /api/leads/:id — posodobi email/telefon/naslov

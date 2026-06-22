@@ -140,60 +140,63 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="tab-content active" id="tab-iskanje">
     <div class="container">
 
-      <!-- Google Maps Bookmarklet -->
+      <!-- Avtomatsko iskanje -->
       <div class="card">
-        <div class="card-header"><b>🗺️ Uvozi iz Google Maps</b><span style="font-size:12px;color:var(--text2);margin-left:10px">Najhitrejši način za dodajanje podjetij</span></div>
+        <div class="card-header"><b>🔍 Poišči podjetja z emaili</b><span style="font-size:12px;color:var(--text2);margin-left:10px">Server poišče spletne strani in izvleče emaile</span></div>
         <div class="card-body">
-
-          <!-- Step 1: Bookmarklet install -->
-          <div style="display:flex;gap:20px;margin-bottom:24px;flex-wrap:wrap">
-            <div style="flex:1;min-width:240px">
-              <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">1. Enkrat: Potegni gumb v bookmarks bar</div>
-              <a href="javascript:%28function%28%29%7B%0A%20%20var%20FLOWTIQ%3D%27https%3A%2F%2Fsalonbot-production-785b.up.railway.app%27%3B%0A%20%20var%20CAT_MAP%3D%7B%27frizer%27%3A%27Frizerji%27%2C%27nohtarnic%27%3A%27Nohtarnice%27%2C%27kozmeti%C4%8D%27%3A%27Kozmeti%C4%8Darke%27%2C%27masa%C5%BE%27%3A%27Masa%C5%BEe%27%2C%27pedikur%27%3A%27Pedikure%27%2C%27tattoo%27%3A%27Tattoo%20studii%27%2C%27pasji%27%3A%27Pasji%20stri%C5%BEci%27%2C%27grooming%27%3A%27Pasji%20stri%C5%BEci%27%2C%27picerij%27%3A%27Picerije%27%2C%27pizza%27%3A%27Picerije%27%2C%27restavraci%27%3A%27Restavracije%27%2C%27fotograf%27%3A%27Fotografski%20studii%27%2C%27trener%27%3A%27Osebni%20trenerji%27%2C%27fitnes%27%3A%27Osebni%20trenerji%27%7D%3B%0A%20%20function%20getCategory%28%29%7B%0A%20%20%20%20var%20q%3D%28location.pathname.match%28%2F%5C%2Fsearch%5C%2F%28%5B%5E%5C%2F%5D%2B%29%2F%29%7C%7C%5B%5D%29%5B1%5D%7C%7C%27%27%3B%0A%20%20%20%20q%3DdecodeURIComponent%28q.replace%28%2F%5C%2B%2Fg%2C%27%20%27%29%29.toLowerCase%28%29%3B%0A%20%20%20%20for%28var%20k%20in%20CAT_MAP%29%7Bif%28q.indexOf%28k%29%3E%3D0%29return%20CAT_MAP%5Bk%5D%3B%7D%0A%20%20%20%20return%20%27Ostalo%27%3B%0A%20%20%7D%0A%20%20var%20items%3D%5B...document.querySelectorAll%28%27.Nv2PK%27%29%5D%3B%0A%20%20var%20businesses%3D%5B%5D%3B%0A%20%20for%28var%20i%3D0%3Bi%3Citems.length%3Bi%2B%2B%29%7B%0A%20%20%20%20var%20el%3Ditems%5Bi%5D%3B%0A%20%20%20%20var%20lines%3Del.innerText.split%28%27%5Cn%27%29.map%28function%28s%29%7Breturn%20s.trim%28%29%3B%7D%29.filter%28Boolean%29%3B%0A%20%20%20%20var%20isSp%3D%28lines%5B0%5D%3D%3D%3D%27Sponzorirano%27%29%3B%0A%20%20%20%20var%20ni%3DisSp%3F2%3A0%3B%0A%20%20%20%20var%20name%3Dlines%5Bni%5D%3B%0A%20%20%20%20if%28%21name%7C%7Cname.length%3C2%29continue%3B%0A%20%20%20%20var%20addrLine%3Dlines%5Bni%2B2%5D%7C%7C%27%27%3B%0A%20%20%20%20var%20parts%3DaddrLine.split%28%27%C2%B7%27%29.map%28function%28s%29%7Breturn%20s.trim%28%29%3B%7D%29%3B%0A%20%20%20%20var%20addr%3Dparts%5Bparts.length-1%5D%7C%7C%27%27%3B%0A%20%20%20%20businesses.push%28%7Bname%3Aname%2Caddress%3Aaddr%7D%29%3B%0A%20%20%7D%0A%20%20if%28%21businesses.length%29%7Balert%28%27Ni%20najdenih%20podjetij.%5CnPrepri%C4%8Daj%20se%2C%20da%20si%20na%20Google%20Maps%20iskanju%20in%20so%20rezultati%20vidni.%27%29%3Breturn%3B%7D%0A%20%20var%20cat%3DgetCategory%28%29%3B%0A%20%20var%20token%3DsessionStorage.getItem%28%27ft_master_token%27%29%7C%7ClocalStorage.getItem%28%27ft_master_token%27%29%3B%0A%20%20if%28%21token%29%7Btoken%3Dprompt%28%27Vnesi%20FlowTiq%20master%20token%3A%27%29%3B%7D%0A%20%20if%28%21token%29return%3B%0A%20%20fetch%28FLOWTIQ%2B%27%2Fapi%2Fleads%2Fimport%27%2C%7Bmethod%3A%27POST%27%2Cheaders%3A%7B%27Content-Type%27%3A%27application%2Fjson%27%2C%27Authorization%27%3Atoken%7D%2Cbody%3AJSON.stringify%28%7Bbusinesses%3Abusinesses%2Ccategory%3Acat%7D%29%7D%29%0A%20%20.then%28function%28r%29%7Breturn%20r.json%28%29%3B%7D%29%0A%20%20.then%28function%28d%29%7Balert%28%27%E2%9C%85%20Dodano%20%27%2Bd.added%2B%27%20podjetij%20v%20FlowTiq%21%5Cn%28%27%2Bd.skipped%2B%27%20presko%C4%8Denih%29%27%29%3B%7D%29%0A%20%20.catch%28function%28e%29%7Balert%28%27Napaka%3A%20%27%2Be.message%29%3B%7D%29%3B%0A%7D%29%28%29%3B"
-                 style="display:inline-block;padding:12px 20px;background:var(--green);color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;cursor:grab"
-                 onclick="return false;">
-                📥 FlowTiq — Dodaj v leads
-              </a>
-              <p style="font-size:12px;color:var(--text3);margin-top:8px">Potegni ta gumb v bookmarks bar (zaznamki). Enkrat za vedno.</p>
+          <div class="search-row" style="align-items:flex-end;gap:12px;flex-wrap:wrap">
+            <div class="form-group" style="min-width:180px;flex:1">
+              <label>Branža</label>
+              <select id="s-category">
+                <option value="frizerski salon">💇 Frizerji</option>
+                <option value="nohtarnica gel nohti">💅 Nohtarnice</option>
+                <option value="kozmetični salon kozmetičarka">✨ Kozmetičarke</option>
+                <option value="masažni salon masaža">💆 Masaže &amp; wellness</option>
+                <option value="pedikura pedikure">🦶 Pedikure</option>
+                <option value="tattoo studio tetoviranje">🎨 Tattoo</option>
+                <option value="pasji strižec grooming">🐾 Pasji strižci</option>
+                <option value="picerija pizza dostava">🍕 Picerije</option>
+                <option value="restavracija">🍽️ Restavracije</option>
+                <option value="fotografski studio fotograf">📸 Fotografski studii</option>
+                <option value="osebni trener fitnes">🏋️ Osebni trenerji</option>
+                <option value="frizerski salon">📋 Po meri...</option>
+              </select>
             </div>
-            <div style="flex:2;min-width:280px">
-              <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em">2. Vsakič ko iščeš stranke</div>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-                  <span style="background:var(--purple);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">1</span>
-                  Odpri <a href="https://maps.google.com" target="_blank" style="color:var(--blue)">Google Maps</a> in poišči npr. <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:12px">picerija Maribor</code>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-                  <span style="background:var(--purple);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">2</span>
-                  Počakaj da se naloži seznam podjetij (lahko scrolla za več)
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-                  <span style="background:var(--purple);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">3</span>
-                  Klikni <strong>📥 FlowTiq — Dodaj v leads</strong> v bookmarks baru
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;font-size:13px">
-                  <span style="background:var(--green);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">✓</span>
-                  Vsa vidna podjetja se dodajo — potem dodaj emaile in pošlji!
-                </div>
+            <div class="form-group" style="min-width:160px;flex:1">
+              <label>Regija / Mesto</label>
+              <select id="s-region">
+                <option value="Ljubljana">Ljubljana</option>
+                <option value="Maribor">Maribor</option>
+                <option value="Celje">Celje</option>
+                <option value="Kranj">Kranj</option>
+                <option value="Koper">Koper</option>
+                <option value="Novo mesto">Novo mesto</option>
+                <option value="Velenje">Velenje</option>
+                <option value="Murska Sobota">Murska Sobota</option>
+                <option value="Nova Gorica">Nova Gorica</option>
+                <option value="Ptuj">Ptuj</option>
+                <option value="Slovenija">Slovenija (vse)</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex-shrink:0">
+              <button class="btn btn-primary" onclick="doSearch()" id="s-btn">🔍 Poišči podjetja</button>
+            </div>
+          </div>
+          <div id="search-progress" style="display:none;margin-top:12px;padding:12px;background:var(--bg3);border-radius:8px;font-size:13px;color:var(--text2)">
+            <span class="spinner"></span> Iščem spletne strani in emaile… (10–30 sekund)
+          </div>
+
+          <!-- Rezultati -->
+          <div id="search-results-card" style="display:none;margin-top:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+              <div style="font-weight:700;font-size:15px" id="search-results-title"></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-green btn-sm" onclick="addAllWithEmail()" id="add-all-btn">✅ Dodaj vse z emailom</button>
+                <button class="btn btn-ghost btn-sm" onclick="clearResults()">✕ Zapri</button>
               </div>
             </div>
+            <div id="search-results-list"></div>
           </div>
-
-          <!-- Quick links -->
-          <div style="border-top:1px solid var(--border);padding-top:16px">
-            <div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">Hitre povezave — klikni, poišči, klikni bookmarklet:</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <a href="https://www.google.com/maps/search/frizerski+salon+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">💇 Frizerji LJ</a>
-              <a href="https://www.google.com/maps/search/nohtarnica+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">💅 Nohtarnice LJ</a>
-              <a href="https://www.google.com/maps/search/masaža+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">💆 Masaže LJ</a>
-              <a href="https://www.google.com/maps/search/picerija+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">🍕 Picerije LJ</a>
-              <a href="https://www.google.com/maps/search/picerija+Maribor" target="_blank" class="btn btn-ghost btn-sm">🍕 Picerije MB</a>
-              <a href="https://www.google.com/maps/search/tattoo+studio+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">🎨 Tattoo LJ</a>
-              <a href="https://www.google.com/maps/search/kozmetični+salon+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">✨ Kozmetika LJ</a>
-              <a href="https://www.google.com/maps/search/pasji+strižec+Ljubljana" target="_blank" class="btn btn-ghost btn-sm">🐾 Pasji strižci LJ</a>
-            </div>
-          </div>
-
         </div>
       </div>
 
@@ -409,27 +412,34 @@ function renderTable(){
 }
 
 // ── SEARCH ──
-function updateQuery(){}
 async function doSearch(){
-  const q=document.getElementById('s-cat').value;
-  const city=document.getElementById('s-city').value.trim();
+  const category=document.getElementById('s-category').value;
+  const region=document.getElementById('s-region').value;
   const btn=document.getElementById('s-btn');
-  btn.innerHTML='<span class="spinner"></span>Išče…';btn.disabled=true;
+  const progress=document.getElementById('search-progress');
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Išče…';
+  progress.style.display='block';
+  document.getElementById('search-results-card').style.display='none';
   try{
-    const r=await fetch(`/api/leads/find?q=${encodeURIComponent(q)}&city=${encodeURIComponent(city)}`,{headers:{Authorization:masterToken}});
+    const r=await fetch(`/api/leads/search?category=${encodeURIComponent(category)}&region=${encodeURIComponent(region)}`,{headers:{Authorization:masterToken}});
     const d=await r.json();
     if(d.error) throw new Error(d.error);
-    renderSearchResults(d.businesses,q,city);
+    renderSearchResults(d.businesses,category,region);
   }catch(e){toast('Iskanje ni uspelo: '+e.message,'error');}
-  finally{btn.innerHTML='🔍 Išči';btn.disabled=false;}
+  finally{btn.innerHTML='🔍 Poišči podjetja';btn.disabled=false;progress.style.display='none';}
 }
 
-function renderSearchResults(businesses,q,city){
+function renderSearchResults(businesses,category,region){
   const card=document.getElementById('search-results-card');
   const list=document.getElementById('search-results-list');
   const title=document.getElementById('search-results-title');
-  if(!businesses.length){title.textContent=`Ni rezultatov za "${q}" v ${city||'SLO'}`;list.innerHTML='<div class="empty-state"><div>Preizkusi drugačen iskalni niz ali mesto.</div></div>';card.style.display='block';return;}
-  title.textContent=`${businesses.length} rezultatov — "${q}" ${city?'v '+city:''}`;
+  if(!businesses.length){
+    title.textContent=`Ni rezultatov — poskusi drug iskalni niz`;
+    list.innerHTML='<div class="empty-state"><div>Ni bilo najdenih podjetij z emaili. Poskusi drugačno branžo ali regijo.</div></div>';
+    card.style.display='block';return;
+  }
+  const withEmail=businesses.filter(b=>b.email).length;
+  title.textContent=`${businesses.length} podjetij najdenih — ${withEmail} z emailom (${region})`;
   list.innerHTML=businesses.map((b,i)=>`
     <div class="result-row" id="sr-${i}">
       <div class="result-info">
@@ -437,11 +447,11 @@ function renderSearchResults(businesses,q,city){
         <div class="result-meta">
           ${b.email?`<span class="has-email">✉ ${esc(b.email)}</span>`:'<span style="color:var(--text3)">brez emaila</span>'}
           ${b.phone?` · 📞 ${esc(b.phone)}`:''}
-          ${b.address?` · ${esc(b.address)}`:''}
+          ${b.website?` · <a href="${esc(b.website)}" target="_blank" style="color:var(--blue);font-size:11px">🌐 spletna stran</a>`:''}
         </div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
-        ${!b.email?`<input class="edit-input" placeholder="Vnesi email" id="sr-email-${i}" style="width:160px">`:''}
+        ${!b.email?`<input class="edit-input" placeholder="Vnesi email" id="sr-email-${i}" style="width:150px">`:''}
         <button class="btn btn-green btn-sm" onclick="addSearchResult(${i},${JSON.stringify(b).replace(/"/g,'&quot;')})">+ Dodaj</button>
       </div>
     </div>`).join('');
@@ -453,28 +463,29 @@ function clearResults(){document.getElementById('search-results-card').style.dis
 async function addSearchResult(i,b){
   const emailInput=document.getElementById(`sr-email-${i}`);
   const email=(emailInput?emailInput.value.trim():'')||b.email||'';
-  const catSelect=document.getElementById('s-cat');
-  const catLabel=catSelect.options[catSelect.selectedIndex].text.replace(/^[^\s]+\s/,'');
-  await addLead(b.name,email,catLabel,b.phone,b.address);
-  const row=document.getElementById(`sr-${i}`);
-  if(row) row.style.opacity='.4';
+  const catSel=document.getElementById('s-category');
+  const catText=catSel.options[catSel.selectedIndex].text.replace(/^[^\s]+\s/,'').trim();
+  const ok=await addLead(b.name,email,catText,b.phone||'',b.website||'');
+  if(ok){const row=document.getElementById(`sr-${i}`);if(row){row.style.opacity='.4';}}
 }
 
 async function addAllWithEmail(){
+  const catSel=document.getElementById('s-category');
+  const catText=catSel?catSel.options[catSel.selectedIndex].text.replace(/^[^\s]+\s/,'').trim():'Ostalo';
   const items=document.querySelectorAll('.result-row');
+  let added=0;
   for(const item of items){
-    const nameEl=item.querySelector('.result-name');
-    if(!nameEl||item.style.opacity==='0.4') continue;
+    if(item.style.opacity==='0.4') continue;
     const emailEl=item.querySelector('.has-email');
     if(!emailEl) continue;
     const email=emailEl.textContent.replace('✉ ','').trim();
-    const name=nameEl.textContent.trim();
-    const catSelect=document.getElementById('s-cat');
-    const catLabel=catSelect.options[catSelect.selectedIndex].text.replace(/^[^\s]+\s/,'');
-    await addLead(name,email,catLabel,'','');
+    const name=(item.querySelector('.result-name')||{}).textContent||'';
+    if(!name||!email) continue;
+    await addLead(name,email,catText,'','');
     item.style.opacity='.4';
+    added++;
   }
-  toast('Dodano! ✅','success');
+  toast(`Dodano ${added} podjetij ✅`,'success');
   loadAll();
 }
 
