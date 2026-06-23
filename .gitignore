@@ -3,7 +3,6 @@ node_modules/
 *.log
 
 .npm-cache/
-package-lock.json
 *.ps1
 setup_git.ps1
 fix_push.bat
