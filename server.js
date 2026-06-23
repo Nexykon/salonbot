@@ -1778,128 +1778,105 @@ function parseBiziSi(html) {
   return results;
 }
 
-// GET /api/leads/search — scraper: DuckDuckGo → spletne strani → emaili (brez cheerio)
+// GET /api/leads/search — Brave Search API → spletne strani → emaili
 app.get('/api/leads/search', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { category, region } = req.query;
   if (!category || !region) return res.status(400).json({ error: 'Manjkata category in region' });
 
+  const BRAVE_KEY = process.env.BRAVE_API_KEY;
+  if (!BRAVE_KEY) {
+    return res.status(503).json({
+      error: 'BRAVE_API_KEY ni nastavljen. Dodaj ga v Railway env vars (zastonj na https://api.search.brave.com/register).'
+    });
+  }
+
   try {
     const axios = require('axios');
+    const query = `${category} ${region}`;
 
-    // Helper: izvleče vrednosti atributov iz HTML stringa brez DOM parserja
-    function attr(html, tag, attrName) {
-      const re = new RegExp(`<${tag}[^>]+${attrName}="([^"]+)"`, 'gi');
-      const results = [];
-      let m;
-      while ((m = re.exec(html)) !== null) results.push(m[1]);
-      return results;
-    }
+    const SKIP = ['facebook.com','instagram.com','twitter.com','linkedin.com','youtube.com',
+                  'wikipedia.org','google.com','duckduckgo.com','bing.com','bizi.si','zlatestrani.si',
+                  'telefonski.com','paginaslive.si','yelp.com','tripadvisor.com','find-open.com',
+                  'foursquare.com','mapquest.com'];
 
-    function textContent(html) {
-      return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-    }
-
-    const query = `${category} ${region} kontakt`;
-    const ddgUrl = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}&kl=sl-sl`;
-
-    // 1. Iskanje na DuckDuckGo HTML (plain HTML, brez JS)
-    const ddgResp = await axios.get(ddgUrl, {
+    // 1. Brave Search API — vrne JSON z URL-ji spletnih strani
+    const braveResp = await axios.get('https://api.search.brave.com/res/v1/web/search', {
+      params: { q: query, count: 20, country: 'si', search_lang: 'sl', freshness: 'py' },
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'sl-SI,sl;q=0.9,en;q=0.8',
-        'Cookie': 'kl=sl-sl',
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip',
+        'X-Subscription-Token': BRAVE_KEY,
       },
-      timeout: 15000,
+      timeout: 12000,
     });
 
-    const ddgHtml = ddgResp.data;
+    const results = braveResp.data?.web?.results || [];
+    const urlMap = new Map(); // domain -> {url, title}
 
-    // 2. Izvleči URL-je iz DDG rezultatov
-    // DDG HTML format: <a class="result__a" href="..."> ali uddg= param
-    const SKIP = ['facebook.com','instagram.com','twitter.com','linkedin.com','youtube.com',
-                  'wikipedia.org','google.com','duckduckgo.com','bizi.si','zlatestrani.si',
-                  'telefonski.com','paginaslive.si','yelp.com','tripadvisor.com','find-open.com'];
-
-    const urlSet = new Map(); // domain -> url
-    
-    // DDG wraps links — poiščemo uddg= ali direktne href
-    const uddgRe = /uddg=([^&"\s]+)/gi;
-    let um;
-    while ((um = uddgRe.exec(ddgHtml)) !== null) {
+    for (const r of results) {
+      if (!r.url) continue;
       try {
-        const url = decodeURIComponent(um[1]);
-        if (!url.startsWith('http')) continue;
-        const host = new URL(url).hostname;
+        const host = new URL(r.url).hostname;
         const domain = host.replace(/^www\./, '');
         if (SKIP.some(s => domain.includes(s))) continue;
-        if (!urlSet.has(domain)) urlSet.set(domain, url.split('?')[0].split('#')[0]);
+        if (!urlMap.has(domain)) {
+          urlMap.set(domain, { url: r.url.split('?')[0].split('#')[0], title: r.title || '' });
+        }
       } catch(e) {}
     }
 
-    // Fallback: direktni href linki
-    const hrefRe = /<a[^>]+href="(https?:\/\/[^"]+)"/gi;
-    let hm;
-    while ((hm = hrefRe.exec(ddgHtml)) !== null) {
-      try {
-        const url = hm[1];
-        const host = new URL(url).hostname;
-        const domain = host.replace(/^www\./, '');
-        if (SKIP.some(s => domain.includes(s))) continue;
-        if (!urlSet.has(domain)) urlSet.set(domain, url.split('?')[0].split('#')[0]);
-      } catch(e) {}
-    }
-
-    const urlList = [...urlSet.entries()].slice(0, 20);
-
-    // 3. Za vsako spletno stran poišči email + ime
+    // 2. Obiščemo vsako stran in poiščemo email z regex
     const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}/g;
-    const SKIP_EMAILS = ['example.com','sentry.io','wix.com','wordpress.com','jquery','schema.org',
-                         'googletagmanager','apple.com','w3.org','vimeo.com','amazonaws.com',
-                         'cloudfront.net','fbcdn.net','akamai','cdn.','static.'];
+    const SKIP_EMAILS = ['example.com','sentry.io','wix.com','wordpress.com','schema.org',
+                         'googletagmanager','apple.com','w3.org','amazonaws.com','cloudfront.net',
+                         'fbcdn.net','cdn.','static.','noreply','no-reply','@2x','@3x'];
     const businesses = [];
 
-    await Promise.allSettled(urlList.map(async ([domain, url]) => {
+    await Promise.allSettled([...urlMap.entries()].map(async ([domain, { url, title }]) => {
       try {
         const pageResp = await axios.get(url, {
           timeout: 7000,
           maxRedirects: 3,
-          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html',
+          },
           responseType: 'text',
         });
-        const html = String(pageResp.data).slice(0, 200000); // max 200KB
+        const html = String(pageResp.data).slice(0, 150000);
 
         // Emaili
         const allEmails = [...new Set(html.match(EMAIL_RE) || [])].filter(e =>
-          !SKIP_EMAILS.some(s => e.toLowerCase().includes(s)) &&
-          !e.startsWith('no-reply') && !e.startsWith('noreply') && !e.includes('..') &&
-          e.length < 80
+          !SKIP_EMAILS.some(s => e.toLowerCase().includes(s)) && e.length < 80 && !e.includes('..')
         );
         if (!allEmails.length) return;
 
-        // Ime podjetja
+        // Ime podjetja iz strani ali iz Brave naslova
         let name = '';
         const ogSite = html.match(/<meta[^>]+property="og:site_name"[^>]+content="([^"]{2,60})"/i);
         const ogTitle = html.match(/<meta[^>]+property="og:title"[^>]+content="([^"]{2,80})"/i);
         const titleTag = html.match(/<title[^>]*>([^<]{2,100})<\/title>/i);
-        const raw = (ogSite || ogTitle || titleTag || [,''])[1];
-        name = raw.split(/[|\-–]/)[0].trim().slice(0, 60) || domain;
-        if (name.length < 2) name = domain;
+        const raw = (ogSite && ogSite[1]) || (ogTitle && ogTitle[1]) || (titleTag && titleTag[1]) || title || domain;
+        name = raw.split(/[|\-–•]/)[0].trim().slice(0, 60);
+        if (!name || name.length < 2) name = domain;
 
         // Telefon (slovensko)
-        const phoneM = html.match(/(?:tel:|>|\s|")(\+?386[\d\s\-]{7,14}|0[\d]{8,9})/);
+        const phoneM = html.match(/(?:tel:|>|\s|")(\+?386[\d\s\-]{7,14}|0[1-9][\d\s]{7,9})/);
         const phone = phoneM ? phoneM[1].replace(/\s+/g, ' ').trim() : '';
 
         businesses.push({ name, email: allEmails[0], website: url, phone, domain });
-      } catch (e) { /* preskoči - timeout ali blok */ }
+      } catch(e) { /* timeout/blok — preskoči */ }
     }));
 
     businesses.sort((a, b) => a.name.localeCompare(b.name, 'sl'));
+    res.json({ businesses, total: businesses.length, withEmail: businesses.length, query, region, category });
 
-    res.json({ businesses, total: businesses.length, query, region, category });
   } catch (err) {
-    res.status(502).json({ error: 'Iskanje ni uspelo: ' + err.message });
+    const msg = err.response?.status === 401 ? 'Neveljaven BRAVE_API_KEY'
+               : err.response?.status === 429 ? 'Brave API limit dosežen (2000/mesec)'
+               : err.message;
+    res.status(502).json({ error: 'Iskanje ni uspelo: ' + msg });
   }
 });
 

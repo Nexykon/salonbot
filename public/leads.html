@@ -423,7 +423,22 @@ async function doSearch(){
   try{
     const r=await fetch(`/api/leads/search?category=${encodeURIComponent(category)}&region=${encodeURIComponent(region)}`,{headers:{Authorization:masterToken}});
     const d=await r.json();
-    if(d.error) throw new Error(d.error);
+    if(d.error){
+      if(d.error.includes('BRAVE_API_KEY')){
+        toast('Nastavi BRAVE_API_KEY v Railway env vars! (zastonj na brave.com)','error');
+        document.getElementById('search-results-card').style.display='block';
+        document.getElementById('search-results-title').innerHTML='⚠️ Manjka API ključ';
+        document.getElementById('search-results-list').innerHTML=`<div style="padding:16px;background:var(--bg3);border-radius:8px;font-size:13px;line-height:1.6">
+          <b>Za delovanje iskalnika dodaj v Railway:</b><br><br>
+          1. Pojdi na <a href="https://api.search.brave.com/register" target="_blank" style="color:var(--blue)">api.search.brave.com/register</a><br>
+          2. Ustvari zastonj račun → API Keys → kopiraj ključ<br>
+          3. V Railway → Variables → dodaj: <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">BRAVE_API_KEY = tvoj_ključ</code><br>
+          4. Railway se samodejno redeploya
+        </div>`;
+        return;
+      }
+      throw new Error(d.error);
+    }
     renderSearchResults(d.businesses,category,region);
   }catch(e){toast('Iskanje ni uspelo: '+e.message,'error');}
   finally{btn.innerHTML='🔍 Poišči podjetja';btn.disabled=false;progress.style.display='none';}
