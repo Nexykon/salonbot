@@ -1764,30 +1764,29 @@ app.post('/api/leads', async (req, res) => {
 const TEMPLATE_DIR = path.join(__dirname, 'email-templates');
 
 const CAT_TEMPLATE = {
-  'frizerji': '01_frizerji', 'frizer': '01_frizerji',
-  'nohtarnic': '02_nohtarnice', 'nohti': '02_nohtarnice', 'gel nohti': '02_nohtarnice',
-  'masaž': '03_masaze_wellness', 'wellness': '03_masaze_wellness', 'spa': '03_masaze_wellness',
-  'pasji': '04_pasji_strizci', 'grooming': '04_pasji_strizci',
+  'frizerji': 'promo_frizerji', 'frizer': 'promo_frizerji',
+  'nohtarnic': 'promo_nohtarnice', 'nohti': 'promo_nohtarnice', 'gel nohti': 'promo_nohtarnice',
+  'masaž': 'promo_masaze', 'wellness': 'promo_masaze', 'spa': 'promo_masaze',
+  'pasji': 'promo_pasji_strizci', 'grooming': 'promo_pasji_strizci',
   'picerij': 'promo_picerije', 'pizza': 'promo_picerije',
   'restavraci': 'promo_picerije',
   'fotograf': '07_fotografski_studii',
-  'kozmetič': '08_kozmeticarke', 'kozmetika': '08_kozmeticarke',
-  'pedikar': '09_pedikure', 'pedikur': '09_pedikure',
+  'kozmetič': 'promo_kozmeticarke', 'kozmetika': 'promo_kozmeticarke',
+  'pedikar': 'promo_kozmeticarke', 'pedikur': 'promo_kozmeticarke',
   'trener': '10_osebni_trenerji', 'fitnes': '10_osebni_trenerji',
-  'tattoo': '11_tattoo', 'tetoviran': '11_tattoo',
+  'tattoo': 'promo_tattoo', 'tetoviran': 'promo_tattoo',
 };
 
 const EMAIL_SUBJECTS = {
-  '01_frizerji':          '{} — stranke se same naročajo prek WhatsAppa?',
-  '02_nohtarnice':        '{} — zamujene rezervacije prek WhatsAppa?',
-  '03_masaze_wellness':   '{} — kakšen bi bil polni urnik brez klicev?',
-  '04_pasji_strizci':     '{} — manj klicev, več šišanja 🐾',
+  'promo_frizerji':       '{} — 1 mesec brezplačno za vaš salon ✂️',
+  'promo_nohtarnice':     '{} — 1 mesec brezplačno za vašo nohtarnico 💅',
+  'promo_masaze':         '{} — 1 mesec brezplačno za vaš masažni salon 💆',
+  'promo_pasji_strizci':  '{} — 1 mesec brezplačno za vaš pasji salon 🐾',
   'promo_picerije':       '{} — 1 mesec brezplačno za vašo restavracijo 🍕',
+  'promo_tattoo':         '{} — 1 mesec brezplačno za vaš tattoo studio 🎨',
+  'promo_kozmeticarke':   '{} — 1 mesec brezplačno za vaš kozmetični salon ✨',
   '07_fotografski_studii':'{} — termini za fotografiranje na avtopilotu?',
-  '08_kozmeticarke':      '{} — stranke se naročajo same, vi delate v miru',
-  '09_pedikure':          '{} — polni termini brez telefoniranja?',
   '10_osebni_trenerji':   '{} — treningi rezervirani, vi trenirate',
-  '11_tattoo':            '{} — manj pisanja, več tattooja',
   '12_splosno':           '{} — WhatsApp pomočnik za vaše podjetje?',
 };
 
