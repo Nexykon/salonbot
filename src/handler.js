@@ -869,7 +869,7 @@ async function handleMessage(msgObj, salon) {
       booking_time: s.selectedTime + ':00',
       status: autoConfirm ? 'confirmed' : 'pending',
       notes: '',
-      form_answers: faJson
+      form_answers: Object.keys(fa).length ? fa : null
     };
     if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
 
@@ -915,9 +915,11 @@ async function handleMessage(msgObj, salon) {
           try {
             await wa.send(phoneId, token, wa.adminBookingNotifSession(salonAdminPhone, s.customerName, from, s.selectedDate, fTime, ref6));
           } catch (e2) {
-            wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
-              `Nova rezervacija\n\nIme: ${s.customerName}\nTel: +${from}\nDatum: ${fDate} ob ${fTime}\nRef: *${ref6}*\n\nPotrdi: *#potrdi ${ref6}*`
-            )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
+            const fbLines = Object.entries(fa).map(([k,v])=>`• ${k}: ${v}`).join('\n');
+          const fbBlock = fbLines ? `\n\n📋 Odgovori stranke:\n${fbLines}` : '';
+          wa.send(phoneId, token, wa.textMsg(salonAdminPhone,
+            `Nova rezervacija\n\nIme: ${s.customerName}\nTel: +${from}\nDatum: ${fDate} ob ${fTime}\nRef: *${ref6}*${fbBlock}\n\nPotrdi: *#potrdi ${ref6}*`
+          )).catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
           }
         }
       }
@@ -928,7 +930,7 @@ async function handleMessage(msgObj, salon) {
         mail.sendBookingNotification(salon, s.customerName, from, s.selectedDate, fTime, ref6, 'WhatsApp rezervacija', fa)
           .catch(e => console.error('[booking] Admin email err:', e.message));
       } else {
-        mail.sendAdminBookingConfirmEmail(salon, s.customerName, from, fDate, fTime, ref6, booking.id)
+        mail.sendAdminBookingConfirmEmail(salon, s.customerName, from, fDate, fTime, ref6, booking.id, fa)
           .catch(e => console.error('[booking] Admin confirm email err:', e.message));
       }
     }

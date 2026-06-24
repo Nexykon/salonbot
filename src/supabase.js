@@ -162,7 +162,9 @@ async function markSlotBooked(slotId) {
 
 async function getBooking(ref) {
   // ref = last 6 chars of booking ID — cast uuid to text for LIKE
-  const r = await axios.get(`${BASE}/sb_bookings?id=like.*${ref}&order=created_at.desc&limit=1`, {
+  const uuidFull = /^[0-9a-f-]{36}$/.test(ref);
+  const filter = uuidFull ? `id=eq.${ref}` : `id=like.*${ref}`;
+  const r = await axios.get(`${BASE}/sb_bookings?${filter}&order=created_at.desc&limit=1`, {
     headers: { ...HEADERS, 'Accept-Profile': 'public' }
   }).catch(async () => {
     // fallback: fetch all and filter in JS
