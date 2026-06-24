@@ -1694,7 +1694,7 @@ app.get('/track/:token/:response', async (req, res) => {
 app.get('/api/leads', async (req, res) => {
   if (!adminAuth(req, res)) return;
   try {
-    const all = await sbLeads('get', '/leads?order=sent_at.desc&limit=500');
+    const all = await sbLeads('get', '/leads?order=id.asc&limit=5000');
     const stats = {
       total: all.length,
       sent: all.filter(l => l.status === 'sent').length,
@@ -1768,8 +1768,8 @@ const CAT_TEMPLATE = {
   'nohtarnic': '02_nohtarnice', 'nohti': '02_nohtarnice', 'gel nohti': '02_nohtarnice',
   'masaž': '03_masaze_wellness', 'wellness': '03_masaze_wellness', 'spa': '03_masaze_wellness',
   'pasji': '04_pasji_strizci', 'grooming': '04_pasji_strizci',
-  'picerij': '05_picerije', 'pizza': '05_picerije',
-  'restavraci': '06_restavracije',
+  'picerij': 'promo_picerije', 'pizza': 'promo_picerije',
+  'restavraci': 'promo_picerije',
   'fotograf': '07_fotografski_studii',
   'kozmetič': '08_kozmeticarke', 'kozmetika': '08_kozmeticarke',
   'pedikar': '09_pedikure', 'pedikur': '09_pedikure',
@@ -1782,8 +1782,7 @@ const EMAIL_SUBJECTS = {
   '02_nohtarnice':        '{} — zamujene rezervacije prek WhatsAppa?',
   '03_masaze_wellness':   '{} — kakšen bi bil polni urnik brez klicev?',
   '04_pasji_strizci':     '{} — manj klicev, več šišanja 🐾',
-  '05_picerije':          '{} — naročila za dostavo prek WhatsAppa?',
-  '06_restavracije':      '{} — rezervacije miz prek WhatsAppa?',
+  'promo_picerije':       '{} — 1 mesec brezplačno za vašo restavracijo 🍕',
   '07_fotografski_studii':'{} — termini za fotografiranje na avtopilotu?',
   '08_kozmeticarke':      '{} — stranke se naročajo same, vi delate v miru',
   '09_pedikure':          '{} — polni termini brez telefoniranja?',
