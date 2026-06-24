@@ -167,7 +167,7 @@ async function sendCustomerBookingConfirmed(customerEmail, customerName, salonNa
 }
 
 // Email adminu: nova rezervacija z gumboma Potrdi/Zavrni
-async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, time, ref6, bookingId) {
+async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, time, ref6, bookingId, formAnswers) {
   const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
   const confirmUrl = `${baseUrl}/api/confirm-booking?id=${bookingId}&action=confirm`;
   const cancelUrl  = `${baseUrl}/api/confirm-booking?id=${bookingId}&action=cancel`;
@@ -191,6 +191,7 @@ async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, ti
             <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">📅 Termin</td><td style="padding:6px 0;color:#1e293b;font-size:14px;font-weight:600;">${date} ob ${time}</td></tr>
             <tr><td style="padding:6px 0;color:#64748b;font-size:14px;">🔑 Ref</td><td style="padding:6px 0;color:#7c3aed;font-size:14px;font-weight:700;">${ref6}</td></tr>
           </table>
+          ${(() => { const fa = typeof formAnswers === 'string' ? (() => { try { return JSON.parse(formAnswers); } catch(e) { return {}; } })() : (formAnswers || {}); const entries = Object.entries(fa); if (!entries.length) return ''; return `<p style="color:#1e293b;font-size:14px;font-weight:700;margin:0 0 10px;">📋 Odgovori stranke</p><table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;padding:16px;border:1px solid #e2e8f0;margin-bottom:28px;">${entries.map(([k,v]) => `<tr><td style="padding:5px 0;color:#64748b;font-size:13px;vertical-align:top;padding-right:16px;">${k}</td><td style="padding:5px 0;color:#1e293b;font-size:13px;font-weight:600;">${String(v)}</td></tr>`).join('')}</table>`; })()}
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td width="48%" style="padding-right:8px;">
