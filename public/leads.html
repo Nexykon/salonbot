@@ -100,6 +100,18 @@ tr:hover td{background:rgba(255,255,255,.02);}
 #toast.error{border-color:var(--red);color:var(--red);}
 /* INLINE EDIT */
 .edit-input{padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:160px;}
+/* CATEGORY TABS */
+.cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.cat-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+.cat-tab.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+/* PAGINATION */
+.pager{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;}
+.pager-info{font-size:12px;color:var(--text3);}
+.pager-btns{display:flex;gap:6px;align-items:center;}
+.pager-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
+.pager-btn:hover:not(:disabled){background:var(--bg2);color:var(--text);}
+.pager-btn:disabled{opacity:.35;cursor:default;}
+.pager-btn.cur{background:var(--purple);border-color:var(--purple);color:#fff;}
 @media(max-width:700px){.search-row{grid-template-columns:1fr}table{font-size:12px}th,td{padding:8px 10px}}
 </style>
 </head>
@@ -255,7 +267,18 @@ tr:hover td{background:rgba(255,255,255,.02);}
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Category filter -->
+      <div class="cat-tabs" id="cat-tabs">
+        <button class="cat-tab active" onclick="setCat('all',this)">🌐 Vse</button>
+        <button class="cat-tab" onclick="setCat('FRIZERJI',this)">💇 Frizerji</button>
+        <button class="cat-tab" onclick="setCat('NOHTARNICE/KOZMETIKA',this)">💅 Nohtarnice</button>
+        <button class="cat-tab" onclick="setCat('MASAŽE/WELLNESS/PEDIKURA',this)">💆 Masaže</button>
+        <button class="cat-tab" onclick="setCat('PICERIJE/RESTAVRACIJE',this)">🍕 Picerije</button>
+        <button class="cat-tab" onclick="setCat('TATTOO/PIERCING',this)">🎨 Tattoo</button>
+        <button class="cat-tab" onclick="setCat('PASJI STRIŽCI',this)">🐾 Pasji strižci</button>
+      </div>
+
+      <!-- Status filter -->
       <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
         <div class="filter-row" id="filter-row">
           <button class="filter-btn active" onclick="setFilter('all',this)">Vsi</button>
@@ -272,12 +295,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <table>
           <thead>
             <tr>
+              <th>#</th>
               <th>Firma</th>
               <th>Email</th>
+              <th>Kraj</th>
               <th>Kategorija</th>
               <th>Status</th>
-              <th>Email poslan</th>
-              <th>Odziv</th>
               <th>Akcija</th>
             </tr>
           </thead>
@@ -286,6 +309,10 @@ tr:hover td{background:rgba(255,255,255,.02);}
         <div class="empty-state" id="leads-empty" style="display:none">
           <div class="icon">📭</div>
           <div>Ni leadov v tej kategoriji.</div>
+        </div>
+        <div class="pager" id="pager" style="display:none">
+          <div class="pager-info" id="pager-info"></div>
+          <div class="pager-btns" id="pager-btns"></div>
         </div>
       </div>
 
@@ -316,7 +343,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div id="toast"></div>
 
 <script>
-let masterToken='', allLeads=[], currentFilter='all';
+let masterToken='', allLeads=[], currentFilter='all', currentCat='all', currentPage=1;
+const PAGE_SIZE=50;
 
 // ── AUTH ──
 async function doLogin(){
@@ -378,38 +406,76 @@ function updateUnsentCount(){
 
 // ── TABLE ──
 function setFilter(f,btn){
-  currentFilter=f;
+  currentFilter=f; currentPage=1;
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function setCat(cat,btn){
+  currentCat=cat; currentPage=1;
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderTable();
 }
 
 function renderTable(){
   let filtered=allLeads;
-  if(currentFilter==='pending') filtered=allLeads.filter(l=>!l.email_sent_at);
-  else if(currentFilter==='sent') filtered=allLeads.filter(l=>l.email_sent_at&&l.status==='sent');
-  else if(currentFilter==='interested') filtered=allLeads.filter(l=>l.status==='interested');
-  else if(currentFilter==='not_interested') filtered=allLeads.filter(l=>l.status==='not_interested');
+  // Status filter
+  if(currentFilter==='pending') filtered=filtered.filter(l=>!l.email_sent_at);
+  else if(currentFilter==='sent') filtered=filtered.filter(l=>l.email_sent_at&&l.status==='sent');
+  else if(currentFilter==='interested') filtered=filtered.filter(l=>l.status==='interested');
+  else if(currentFilter==='not_interested') filtered=filtered.filter(l=>l.status==='not_interested');
+  // Category filter
+  if(currentCat!=='all') filtered=filtered.filter(l=>(l.category||'').toUpperCase()===currentCat.toUpperCase());
 
-  setText('leads-count-label',filtered.length+' leadov');
+  const total=filtered.length;
+  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
+  if(currentPage>totalPages) currentPage=totalPages;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const page=filtered.slice(start,start+PAGE_SIZE);
+
+  setText('leads-count-label',total+' leadov');
   const tbody=document.getElementById('leads-tbody');
   const empty=document.getElementById('leads-empty');
-  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
+  const pager=document.getElementById('pager');
+
+  if(!total){tbody.innerHTML='';empty.style.display='block';pager.style.display='none';return;}
   empty.style.display='none';
 
-  tbody.innerHTML=filtered.map(l=>{
+  tbody.innerHTML=page.map((l,i)=>{
+    const rowNum=start+i+1;
     const badge=l.status==='interested'?'<span class="badge b-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge b-not">❌ Ni interesa</span>':l.email_sent_at?'<span class="badge b-sent">📤 Poslano</span>':'<span class="badge b-pending">⏳ Čaka</span>';
-    const sent=l.email_sent_at?fmtDate(l.email_sent_at):'—';
-    const resp=l.responded_at?fmtDate(l.responded_at):'—';
     const emailCell=l.email
       ?`<a href="mailto:${esc(l.email)}" style="color:var(--blue);font-size:13px">${esc(l.email)}</a>`
       :`<input class="edit-input" placeholder="Vnesi email" onblur="saveEmail(${l.id},this.value)" style="width:150px">`;
     const sendBtn=!l.email_sent_at&&l.email
       ?`<button class="btn btn-green btn-sm" onclick="sendOne(${l.id},this)">📤 Pošlji</button>`
       :l.email_sent_at?'<span style="color:var(--text3);font-size:12px">✓ Poslano</span>':'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
-    return `<tr id="row-${l.id}"><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.category)}</td><td>${badge}</td><td style="color:var(--text2);font-size:12px">${sent}</td><td style="color:var(--text2);font-size:12px">${resp}</td><td>${sendBtn}</td></tr>`;
+    return `<tr id="row-${l.id}"><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td>${sendBtn}</td></tr>`;
   }).join('');
+
+  // Pagination
+  if(totalPages<=1){pager.style.display='none';return;}
+  pager.style.display='flex';
+  document.getElementById('pager-info').textContent=`${start+1}–${Math.min(start+PAGE_SIZE,total)} od ${total}`;
+  const btns=document.getElementById('pager-btns');
+  let html=`<button class="pager-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Nazaj</button>`;
+  // Show smart page numbers
+  const range=[];
+  for(let p=1;p<=totalPages;p++){
+    if(p===1||p===totalPages||Math.abs(p-currentPage)<=2) range.push(p);
+    else if(range[range.length-1]!=='…') range.push('…');
+  }
+  for(const p of range){
+    if(p==='…') html+=`<span style="padding:5px 4px;color:var(--text3)">…</span>`;
+    else html+=`<button class="pager-btn${p===currentPage?' cur':''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  html+=`<button class="pager-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Naprej ›</button>`;
+  btns.innerHTML=html;
 }
+
+function goPage(p){currentPage=p;renderTable();window.scrollTo(0,document.getElementById('tab-kampanja').offsetTop);}
 
 // ── SEARCH ──
 async function doSearch(){
