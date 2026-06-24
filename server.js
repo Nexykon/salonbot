@@ -1586,6 +1586,75 @@ app.post('/api/orders/:id/reject', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ─── Public Contact Form (landing page) ──────────────────────────────────────
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, phone, business_type } = req.body || {};
+    if (!name || !email || !business_type) {
+      return res.status(400).json({ error: 'Manjkajo obvezna polja.' });
+    }
+
+    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'nexon.crypto@gmail.com';
+    const ownerPhone = process.env.FLOWTIQ_OWNER_PHONE || '38640599185';
+    const waToken   = process.env.WA_TOKEN;
+    const waPhoneId = process.env.WA_PHONE_ID;
+
+    // 1. Email notification to Tomaz
+    const ownerSubject = `Nova prijava FlowTiq — ${business_type}`;
+    const ownerHtml = `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e293b">Nova prijava na FlowTiq</h2>
+        <table style="width:100%;border-collapse:collapse;margin-top:16px">
+          <tr><td style="padding:8px 12px;background:#f8fafc;font-weight:600;color:#475569;width:40%">Ime</td><td style="padding:8px 12px;color:#1e293b">${name}</td></tr>
+          <tr><td style="padding:8px 12px;font-weight:600;color:#475569">Email</td><td style="padding:8px 12px;color:#1e293b">${email}</td></tr>
+          <tr><td style="padding:8px 12px;background:#f8fafc;font-weight:600;color:#475569">Telefon</td><td style="padding:8px 12px;color:#1e293b">${phone || '—'}</td></tr>
+          <tr><td style="padding:8px 12px;font-weight:600;color:#475569">Vrsta posla</td><td style="padding:8px 12px;color:#1e293b">${business_type}</td></tr>
+        </table>
+        <p style="margin-top:20px;color:#64748b;font-size:.9rem">Prijava prejeta: ${new Date().toLocaleString('sl-SI')}</p>
+      </div>`;
+    mail.sendEmail(ownerEmail, ownerSubject, ownerHtml).catch(e => console.error('[contact] owner email:', e.message));
+
+    // 2. WhatsApp notification to Tomaz (best-effort — works within 24h session window)
+    if (waToken && waPhoneId) {
+      const waMsg = `Nova prijava FlowTiq!\n\n${name}\nEmail: ${email}\nTel: ${phone || '—'}\nPosao: ${business_type}\n\nOdgovori jim cim prej!`;
+      wa.send(waPhoneId, waToken, wa.textMsg(ownerPhone, waMsg)).catch(() => {});
+    }
+
+    // 3. Confirmation email to prospect
+    const prospectSubject = 'Hvala za prijavo — FlowTiq vas bo kontaktiral';
+    const prospectHtml = `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e293b">Prijava prejeta!</h2>
+        <p style="color:#475569">Pozdravljeni ${name},</p>
+        <p style="color:#475569">Hvala za zanimanje za <strong>FlowTiq</strong>! Prijava je bila uspesno poslana.</p>
+        <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na email <strong>${email}</strong>${phone ? ` ali telefon <strong>${phone}</strong>` : ''}.</p>
+        <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0">
+          <p style="margin:0;color:#166534;font-weight:600">Vasa ugodnost:</p>
+          <p style="margin:6px 0 0;color:#166534">Prvih 50 strank dobi <strong>30 dni brezplacno</strong> + <strong>6 mesecev po promo ceni</strong>!</p>
+        </div>
+        <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTiq</p>
+      </div>`;
+    mail.sendEmail(email, prospectSubject, prospectHtml).catch(e => console.error('[contact] prospect email:', e.message));
+
+    // 4. Save to sb_contacts table (best-effort — table may not exist yet)
+    const sbUrl = process.env.SUPABASE_URL;
+    const sbKey = process.env.SUPABASE_KEY;
+    if (sbUrl && sbKey) {
+      axios.post(`${sbUrl}/rest/v1/sb_contacts`, {
+        name, email, phone: phone || null, business_type,
+        created_at: new Date().toISOString(), source: 'landing_form'
+      }, { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' } })
+      .catch(() => {});
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[contact] error:', err.message);
+    res.status(500).json({ error: 'Napaka pri posiljanju prijave.' });
+  }
+});
+
+
 
 
 // ─── LEADS TRACKING ──────────────────────────────────────────────────────────
