@@ -1694,7 +1694,16 @@ app.get('/track/:token/:response', async (req, res) => {
 app.get('/api/leads', async (req, res) => {
   if (!adminAuth(req, res)) return;
   try {
-    const all = await sbLeads('get', '/leads?order=id.asc&limit=5000');
+    // Paginacija — Supabase vrne max 1000 vrstic naenkrat
+    let all = [];
+    let offset = 0;
+    const pageSize = 1000;
+    while (true) {
+      const page = await sbLeads('get', `/leads?order=id.asc&limit=${pageSize}&offset=${offset}`);
+      all = all.concat(page);
+      if (page.length < pageSize) break;
+      offset += pageSize;
+    }
     const stats = {
       total: all.length,
       sent: all.filter(l => l.status === 'sent').length,
