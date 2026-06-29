@@ -1069,8 +1069,8 @@
       <div class="form-group">
         <label>Paket *</label>
         <select id="f-plan">
-          <option value="starter">Starter — €79/mes</option>
-          <option value="pro" selected>Pro — €160/mes</option>
+          <option value="starter">FlowTiq — €49,99/mes</option>
+          <option value="pro" selected>FlowTiq Pro — €49,99/mes</option>
         </select>
       </div>
     </div>
@@ -1472,7 +1472,7 @@ let apiKey = '';
 let masterToken = '';
 let salonsData = [];
 
-const PLAN_PRICES = { starter: 79, pro: 160 };
+const PLAN_PRICES = { starter: 49.99, pro: 49.99 };
 const resetToken = new URLSearchParams(window.location.search).get('reset') || '';
 
 // ── AUTH ──────────────────────────────────────────────────
@@ -1715,7 +1715,7 @@ function renderStats() {
   const trial = salonsData.filter(s => s.subscription_status === 'trial').length;
   const revenue = salonsData
     .filter(s => s.subscription_status === 'active')
-    .reduce((sum, s) => sum + (PLAN_PRICES[s.subscription_plan] || 79), 0);
+    .reduce((sum, s) => sum + (PLAN_PRICES[s.subscription_plan] || 49.99), 0);
 
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
@@ -1740,7 +1740,7 @@ function renderTable() {
     const statusClass = s.subscription_status === 'active' ? 'active' : s.subscription_status === 'trial' ? 'trial' : 'inactive';
     const statusLabel = s.subscription_status === 'active' ? 'Aktiven' : s.subscription_status === 'trial' ? 'Preizkus' : 'Neaktiven';
     const planClass = s.subscription_plan === 'pro' ? 'pro' : 'starter';
-    const planLabel = s.subscription_plan === 'pro' ? 'Pro €160' : 'Starter €79';
+    const planLabel = s.subscription_plan === 'pro' ? 'Pro €49,99' : 'Starter €49,99';
     const date = s.created_at ? new Date(s.created_at).toLocaleDateString('sl-SI') : '—';
 
     const canActivate = s.subscription_status !== 'active';
@@ -1759,8 +1759,8 @@ function renderTable() {
       </td>
       <td>
         <select class="plan-select ${planClass}" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
-          <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>Starter €79</option>
-          <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>Pro €160</option>
+          <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>€49,99/mes</option>
+          <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>€49,99/mes (Pro)</option>
         </select>
       </td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>

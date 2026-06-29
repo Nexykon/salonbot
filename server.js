@@ -1630,7 +1630,7 @@ app.post('/api/contact', async (req, res) => {
         <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na email <strong>${email}</strong>${phone ? ` ali telefon <strong>${phone}</strong>` : ''}.</p>
         <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0">
           <p style="margin:0;color:#166534;font-weight:600">Vasa ugodnost:</p>
-          <p style="margin:6px 0 0;color:#166534">Prvih 50 strank dobi <strong>30 dni brezplacno</strong> + <strong>6 mesecev po promo ceni</strong>!</p>
+          <p style="margin:6px 0 0;color:#166534">Prvih 50 strank dobi <strong>30 dni brezplacno</strong>, nato samo <strong>49,99 € / mesec</strong>!</p>
         </div>
         <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTiq</p>
       </div>`;
