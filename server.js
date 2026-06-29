@@ -304,7 +304,7 @@ app.post('/stripe/webhook', async (req, res) => {
         // Obvesti FlowTiq ownerja
         try {
           const cancelledSalon = await db.getSalonByStripeSubId(subId);
-          const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'nexon.crypto@gmail.com';
+          const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
           const reason = event.type === 'invoice.payment_failed' ? 'Neuspešno plačilo' : 'Stranka odpovedala';
           const waNumberId = cancelledSalon?.whatsapp_phone_number_id || 'ni nastavljen';
           await mail.sendEmail(ownerEmail,
@@ -1594,7 +1594,7 @@ app.post('/api/contact', async (req, res) => {
       return res.status(400).json({ error: 'Manjkajo obvezna polja.' });
     }
 
-    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'nexon.crypto@gmail.com';
+    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
     const ownerPhone = process.env.FLOWTIQ_OWNER_PHONE || '38640599185';
     const waToken   = process.env.WA_TOKEN;
     const waPhoneId = process.env.WA_PHONE_ID;
@@ -1995,7 +1995,7 @@ app.post('/api/leads/:id/send', async (req, res) => {
 
     const html = personalizeEmail(templateHtml, lead.business_name, lead.token);
     const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
-    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <hello@flowtiq.si>';
+    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <info@flowtiq.si>';
 
     const { default: axios } = await import('axios');
     await axios.post('https://api.resend.com/emails', {
@@ -2003,6 +2003,7 @@ app.post('/api/leads/:id/send', async (req, res) => {
       to: lead.email,
       subject,
       html,
+      reply_to: 'info@flowtiq.si',
     }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
 
     await sbLeads('patch', `/leads?id=eq.${lead.id}&email_sent_at=is.null`,
@@ -2025,7 +2026,7 @@ app.post('/api/leads/bulk-send', async (req, res) => {
     if (!pending.length) return res.json({ success: true, sent: 0, message: 'Ni leadov za pošiljanje' });
 
     const { default: axios } = await import('axios');
-    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <hello@flowtiq.si>';
+    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <info@flowtiq.si>';
     let sent = 0, errors = [];
 
     for (const lead of pending) {
@@ -2034,7 +2035,7 @@ app.post('/api/leads/bulk-send', async (req, res) => {
         const html = personalizeEmail(loadEmailTemplate(templateName) || '', lead.business_name, lead.token);
         const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
         await axios.post('https://api.resend.com/emails', {
-          from: fromEmail, to: lead.email, subject, html,
+          from: fromEmail, to: lead.email, subject, html, reply_to: 'info@flowtiq.si',
         }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
         await sbLeads('patch', `/leads?id=eq.${lead.id}`,
           { email_sent_at: new Date().toISOString(), status: 'sent' });
