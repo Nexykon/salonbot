@@ -643,4 +643,7 @@ function toast(msg,type='success'){
 }
 
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
-(function(){const s=sessionStorage.getItem('ft_master_token')||loca
+(function(){const s=sessionStorage.getItem('ft_master_token')||localStorage.getItem('ft_master_token');if(s){masterToken=s;showMain();}})();
+</script>
+</body>
+</html>
