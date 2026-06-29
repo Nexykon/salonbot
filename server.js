@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
 const { handleMessage } = require('./src/handler');
+const { getAdapter } = require('./src/pos-adapters');
 const db = require('./src/supabase');
 const wa = require('./src/whatsapp');
 const mail = require('./src/email');
@@ -99,7 +100,7 @@ function safeFormFields(value, salon) {
 }
 
 function normalizeBookingMode(mode) {
-  return ['exact_time', 'date_only', 'inquiry', 'month_only', 'sales', 'delivery'].includes(mode) ? mode : 'exact_time';
+  return ['exact_time', 'date_only', 'inquiry', 'month_only', 'sales', 'delivery', 'pos_order'].includes(mode) ? mode : 'exact_time';
 }
 
 function publicSalon(salon) {
@@ -266,6 +267,70 @@ app.post('/webhook', async (req, res) => {
 });
 
 // ─── Stripe Webhook ───────────────────────────────────────────
+
+// ─── POS INTEGRATION ENDPOINTS ────────────────────────────────────────────────
+
+// GET /api/pos/menu/:salonId — fetch menu from connected POS
+app.get('/api/pos/menu/:salonId', adminAuth, async (req, res) => {
+  try {
+    const salon = await db.getSalonById(req.params.salonId);
+    if (!salon) return res.status(404).json({ error: 'Salon ni najden' });
+    if (!salon.pos_type || !salon.pos_token) {
+      return res.status(400).json({ error: 'POS ni konfiguriran za ta salon' });
+    }
+    const adapter = getAdapter(salon.pos_type);
+    const menu = await adapter.getMenu(salon.pos_token, salon.pos_account || '');
+    res.json({ ok: true, pos_type: salon.pos_type, count: menu.length, menu });
+  } catch (e) {
+    console.error('POS menu error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/pos/test-connection/:salonId — test POS credentials
+app.post('/api/pos/test-connection/:salonId', adminAuth, async (req, res) => {
+  try {
+    const salon = await db.getSalonById(req.params.salonId);
+    if (!salon) return res.status(404).json({ error: 'Salon ni najden' });
+    const posType   = req.body.pos_type   || salon.pos_type;
+    const posToken  = req.body.pos_token  || salon.pos_token;
+    const posAccount = req.body.pos_account || salon.pos_account || '';
+    if (!posType || !posToken) {
+      return res.status(400).json({ ok: false, msg: 'Manjka pos_type ali pos_token' });
+    }
+    const adapter = getAdapter(posType);
+    const result = await adapter.testConnection(posToken, posAccount);
+    res.json(result);
+  } catch (e) {
+    res.json({ ok: false, msg: e.message });
+  }
+});
+
+// POST /api/pos/create-order/:salonId — manually create a POS order (for testing)
+app.post('/api/pos/create-order/:salonId', adminAuth, async (req, res) => {
+  try {
+    const salon = await db.getSalonById(req.params.salonId);
+    if (!salon) return res.status(404).json({ error: 'Salon ni najden' });
+    if (!salon.pos_type || !salon.pos_token) {
+      return res.status(400).json({ error: 'POS ni konfiguriran' });
+    }
+    const { cart, options } = req.body;
+    if (!cart || !Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ error: 'Manjka cart' });
+    }
+    const adapter = getAdapter(salon.pos_type);
+    const result = await adapter.createOrder(
+      salon.pos_token,
+      salon.pos_account || '',
+      cart,
+      { spot_id: salon.pos_spot_id || 1, ...options }
+    );
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 app.post('/stripe/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -811,6 +876,7 @@ app.patch('/api/settings', async (req, res) => {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
       'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
+      'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message'];
     const updates = {};
     for (const key of allowed) {

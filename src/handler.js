@@ -1,4 +1,5 @@
 const db = require('./supabase');
+const { getAdapter } = require('./pos-adapters');
 const wa = require('./whatsapp');
 const mail = require('./email');
 const session = require('./session');
@@ -600,6 +601,340 @@ async function handleMessage(msgObj, salon) {
 
   const sess = session.get(from);
   const services = await db.getServices(salon.id);
+
+  // ══════════════════════════════════════════════════════
+  // POS ORDER BOT FLOW (booking_mode = 'pos_order')
+  // Integrates with Poster POS, Square, iiko
+  // Does NOT touch existing booking/delivery flow
+  // ══════════════════════════════════════════════════════
+  if (salon.booking_mode === 'pos_order') {
+    if (!salon.pos_type || !salon.pos_token) {
+      await wa.send(phoneId, token, wa.textMsg(from,
+        'POS sistem ni nastavljen. Prosimo, kontaktirajte skrbnika.'
+      ));
+      return;
+    }
+
+    const adapter = getAdapter(salon.pos_type);
+    const posToken   = salon.pos_token;
+    const posAccount = salon.pos_account || '';
+    const posSpotId  = salon.pos_spot_id || 1;
+
+    const sess = session.get(from) || {};
+
+    // Helper: format cart for display
+    function fmtPosCart(cart) {
+      return cart.map(i => `• ${i.name} x${i.qty} — ${(i.price * i.qty).toFixed(2)} €`).join('\n');
+    }
+    function posCartTotal(cart) {
+      return cart.reduce((s, i) => s + i.price * i.qty, 0).toFixed(2);
+    }
+
+    // ── Step 0: fetch menu + show categories or item list ──
+    // Triggered on: first message OR iId === 'pos_start' OR iId === 'pos_menu'
+    const isStart = !sess.posStep || iId === 'pos_start' || iId === 'pos_menu';
+
+    if (isStart && !iId.startsWith('pos_item_') && !iId.startsWith('pos_qty_')
+        && iId !== 'pos_cart_more' && iId !== 'pos_checkout' && iId !== 'pos_confirm'
+        && iId !== 'pos_cancel' && sess.posStep !== 'comment' && sess.posStep !== 'table') {
+
+      try {
+        const menu = await adapter.getMenu(posToken, posAccount);
+        if (!menu.length) {
+          await wa.send(phoneId, token, wa.textMsg(from, 'Meni je trenutno prazen. Poskusite kasneje.'));
+          return;
+        }
+
+        // Group by category
+        const cats = {};
+        for (const item of menu) {
+          if (!cats[item.category]) cats[item.category] = [];
+          cats[item.category].push(item);
+        }
+        const catNames = Object.keys(cats);
+
+        // Cache menu in session
+        session.set(from, { posStep: 'category', cart: sess.cart || [], posMenu: menu, posCats: cats });
+
+        // Build WhatsApp list sections (max 10 items per section, max 10 sections)
+        const sections = catNames.slice(0, 10).map(cat => ({
+          title: cat,
+          rows: cats[cat].slice(0, 10).map(item => ({
+            id:          `pos_item_${item.id}`,
+            title:       item.name.slice(0, 24),
+            description: `${item.price.toFixed(2)} €${item.description ? ' — ' + item.description.slice(0, 50) : ''}`,
+          }))
+        }));
+
+        const cartSum = sess.cart && sess.cart.length
+          ? `\n🛒 Košarica: ${sess.cart.length} artiklov | ${posCartTotal(sess.cart || [])} €`
+          : '';
+        const greeting = salon.greeting_message
+          ? salon.greeting_message + '\n\n'
+          : `Dobrodošli v *${salon.name}*! 🍽️\n\n`;
+
+        await wa.send(phoneId, token, {
+          messaging_product: 'whatsapp',
+          to: from,
+          type: 'interactive',
+          interactive: {
+            type: 'list',
+            header: { type: 'text', text: `Meni — ${salon.name}` },
+            body:   { text: greeting + 'Izberite artikel iz menija:' + cartSum },
+            footer: { text: 'FlowTiq · POS naročanje' },
+            action: {
+              button: 'Odpri meni',
+              sections,
+            }
+          }
+        });
+      } catch (e) {
+        console.error('[POS] getMenu error:', e.message);
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `Napaka pri nalaganju menija: ${e.message}\n\nPoskusite znova čez trenutek.`
+        ));
+      }
+      return;
+    }
+
+    // ── Item selected from list ──
+    if (iId.startsWith('pos_item_')) {
+      const itemId = iId.replace('pos_item_', '');
+      const menu = sess.posMenu || [];
+      const item = menu.find(m => String(m.id) === String(itemId));
+      if (!item) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Artikel ni najden. Poskusite znova.'));
+        return;
+      }
+
+      // Ask quantity
+      session.set(from, { ...sess, posStep: 'qty', pendingItem: item });
+
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: `*${item.name}*\n💰 ${item.price.toFixed(2)} €\n\nKoliko kosov?` },
+          action: {
+            buttons: [
+              { type: 'reply', reply: { id: `pos_qty_1`, title: '1 kos' } },
+              { type: 'reply', reply: { id: `pos_qty_2`, title: '2 kosa' } },
+              { type: 'reply', reply: { id: `pos_qty_3`, title: '3 kosi' } },
+            ]
+          }
+        }
+      });
+      return;
+    }
+
+    // ── Quantity selected ──
+    if (iId.startsWith('pos_qty_') && sess.pendingItem) {
+      const qty = parseInt(iId.replace('pos_qty_', '')) || 1;
+      const item = sess.pendingItem;
+      const cart = sess.cart || [];
+
+      // Merge or add
+      const existing = cart.find(c => String(c.id) === String(item.id));
+      if (existing) {
+        existing.qty += qty;
+      } else {
+        cart.push({ id: item.id, name: item.name, price: item.price, qty });
+      }
+      session.set(from, { ...sess, posStep: 'cart', cart, pendingItem: null });
+
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: `✅ Dodano: *${item.name}* x${qty}\n\n🛒 *Košarica:*\n${fmtPosCart(cart)}\n\n💰 Skupaj: *${posCartTotal(cart)} €*` },
+          action: {
+            buttons: [
+              { type: 'reply', reply: { id: 'pos_cart_more',  title: 'Dodaj še' } },
+              { type: 'reply', reply: { id: 'pos_checkout',   title: 'Zaključi' } },
+              { type: 'reply', reply: { id: 'pos_cancel',     title: 'Prekliči vse' } },
+            ]
+          }
+        }
+      });
+      return;
+    }
+
+    // ── User types custom quantity in text ──
+    if (sess.posStep === 'qty' && sess.pendingItem && msgText && /^\d+$/.test(msgText.trim())) {
+      const qty = Math.min(parseInt(msgText.trim()), 20) || 1;
+      const item = sess.pendingItem;
+      const cart = sess.cart || [];
+      const existing = cart.find(c => String(c.id) === String(item.id));
+      if (existing) existing.qty += qty; else cart.push({ id: item.id, name: item.name, price: item.price, qty });
+      session.set(from, { ...sess, posStep: 'cart', cart, pendingItem: null });
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: `✅ Dodano: *${item.name}* x${qty}\n\n🛒 *Košarica:*\n${fmtPosCart(cart)}\n\n💰 Skupaj: *${posCartTotal(cart)} €*` },
+          action: { buttons: [
+            { type: 'reply', reply: { id: 'pos_cart_more', title: 'Dodaj še' } },
+            { type: 'reply', reply: { id: 'pos_checkout',  title: 'Zaključi' } },
+            { type: 'reply', reply: { id: 'pos_cancel',    title: 'Prekliči vse' } },
+          ]}
+        }
+      });
+      return;
+    }
+
+    // ── Dodaj še → nazaj na meni ──
+    if (iId === 'pos_cart_more') {
+      // Re-show menu from cached session
+      const menu = sess.posMenu || [];
+      if (!menu.length) {
+        session.set(from, { posStep: null });
+        await wa.send(phoneId, token, wa.textMsg(from, 'Pišite karkoli za prikaz menija.'));
+        return;
+      }
+      const cats = sess.posCats || {};
+      const catNames = Object.keys(cats);
+      const sections = catNames.slice(0, 10).map(cat => ({
+        title: cat,
+        rows: (cats[cat] || []).slice(0, 10).map(item => ({
+          id: `pos_item_${item.id}`,
+          title: item.name.slice(0, 24),
+          description: `${item.price.toFixed(2)} €`,
+        }))
+      }));
+      const cartSum = sess.cart && sess.cart.length
+        ? `\n\n🛒 Trenutna košarica: ${posCartTotal(sess.cart)} €` : '';
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'interactive',
+        interactive: {
+          type: 'list',
+          header: { type: 'text', text: 'Dodaj artikel' },
+          body:   { text: 'Izberite naslednji artikel:' + cartSum },
+          footer: { text: 'FlowTiq · POS naročanje' },
+          action: { button: 'Odpri meni', sections }
+        }
+      });
+      return;
+    }
+
+    // ── Zaključi → vpraša mizo / komentar ──
+    if (iId === 'pos_checkout') {
+      const cart = sess.cart || [];
+      if (!cart.length) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel iz menija.'));
+        session.set(from, { posStep: null });
+        return;
+      }
+      session.set(from, { ...sess, posStep: 'table' });
+      await wa.send(phoneId, token, wa.textMsg(from,
+        `🛒 *Vaše naročilo:*\n${fmtPosCart(cart)}\n\n💰 Skupaj: *${posCartTotal(cart)} €*\n\n📋 Napišite številko mize ali opombo (npr. *Miza 5* ali *Brez česna*).\n\nZa nadaljevanje brez opombe pošljite *NE*.`
+      ));
+      return;
+    }
+
+    // ── Miza / komentar → pokaži finalno potrditev ──
+    if (sess.posStep === 'table' && msgText) {
+      const comment = msgText.trim().toUpperCase() === 'NE' ? '' : msgText.trim();
+      const cart = sess.cart || [];
+      session.set(from, { ...sess, posStep: 'confirm', posComment: comment });
+      const opombaTxt = comment ? `\n📝 Opomba: ${comment}` : '';
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: `✅ *Potrditev naročila*\n\n${fmtPosCart(cart)}${opombaTxt}\n\n💰 *Skupaj: ${posCartTotal(cart)} €*\n\nPotrdite naročilo?` },
+          action: { buttons: [
+            { type: 'reply', reply: { id: 'pos_confirm', title: '✅ Potrdi' } },
+            { type: 'reply', reply: { id: 'pos_cancel',  title: '❌ Prekliči' } },
+          ]}
+        }
+      });
+      return;
+    }
+
+    // ── Potrdi → pošlji v POS ──
+    if (iId === 'pos_confirm') {
+      const cart = sess.cart || [];
+      if (!cart.length) {
+        session.clear(from);
+        await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Pišite karkoli za nov začetek.'));
+        return;
+      }
+      const comment = sess.posComment || '';
+
+      // Also save to our DB (reference order)
+      const today = new Date().toISOString().slice(0, 10);
+      const bookingData = {
+        customer_phone: from,
+        customer_name:  from,
+        salon_id:       salon.id,
+        booking_date:   today,
+        booking_time:   new Date().toTimeString().slice(0, 8),
+        status:         'pending',
+        notes:          `POS NAROČILO | ${salon.pos_type?.toUpperCase()} | Skupaj: ${posCartTotal(cart)} €${comment ? ' | ' + comment : ''}`,
+        form_answers:   JSON.stringify({ narocilo: fmtPosCart(cart), skupaj: posCartTotal(cart) + ' €', opomba: comment })
+      };
+      const booking = await db.createBooking(bookingData).catch(e => {
+        console.error('[POS] db.createBooking error:', e.message);
+        return null;
+      });
+      const ref6 = booking ? (booking.id || '').slice(-6) : '???';
+
+      // Send to POS
+      try {
+        const result = await adapter.createOrder(posToken, posAccount, cart, {
+          spot_id: posSpotId,
+          comment,
+        });
+        session.clear(from);
+        if (result.success) {
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `✅ Naročilo sprejeto!\n\n🔑 Ref: *#${ref6}*\nPOS ID: ${result.orderId}\n\nVaše naročilo je poslano v kuhinjo. 🍽️`
+          ));
+        } else {
+          // POS failed but we saved to DB — inform admin
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `✅ Naročilo je oddano!\n🔑 Ref: *#${ref6}*\n\nHvala za naročilo! 🍽️`
+          ));
+          console.error('[POS] createOrder failed:', result.message);
+          await db.logError(salon.id, 'pos_create_order', result.message, null, from).catch(() => {});
+        }
+      } catch (e) {
+        session.clear(from);
+        console.error('[POS] createOrder exception:', e.message);
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `✅ Naročilo sprejeto! (Ref: *#${ref6}*)\n\nHvala za naročilo! 🍽️`
+        ));
+      }
+      return;
+    }
+
+    // ── Prekliči ──
+    if (iId === 'pos_cancel') {
+      session.clear(from);
+      await wa.send(phoneId, token, wa.textMsg(from, '❌ Naročilo preklicano. Dobrodošli nazaj! Pišite karkoli za nov začetek.'));
+      return;
+    }
+
+    // ── Fallback: show menu ──
+    session.set(from, { posStep: null });
+    const greet = salon.greeting_message
+      ? salon.greeting_message
+      : `Dobrodošli v *${salon.name}*! 🍽️ Pišite *menu* za prikaz menija.`;
+    await wa.send(phoneId, token, wa.textMsg(from, greet));
+    return;
+  }
+  // ══════════════════════════════════════════════════════
+
 
   const VALID_MODES = ['exact_time', 'date_only', 'inquiry', 'month_only'];
   const bookingMode = VALID_MODES.includes(salon.booking_mode) ? salon.booking_mode : 'exact_time';

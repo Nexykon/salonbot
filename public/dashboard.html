@@ -1390,6 +1390,65 @@
           </div>
         </div>
 
+
+        <!-- ══════════════════════════════════════════════════════
+             MASTER ADMIN — POS INTEGRACIJA
+             ══════════════════════════════════════════════════════ -->
+        <div class="studio-section master-section" id="bs-pos-section">
+          <div class="studio-section-head">
+            <div class="studio-section-icon" style="background:rgba(16,185,129,0.2);border-color:rgba(16,185,129,0.4);">🍽️</div>
+            <div class="studio-section-info">
+              <div class="studio-section-title">POS Integracija</div>
+              <div class="studio-section-desc">Poveži WhatsApp bota z Poster POS, Square ali iiko. Stranke bodo naročale direktno iz WhatsApp sporočil v kuhinjo.</div>
+            </div>
+            <span class="master-only-badge">🔒 Master admin</span>
+          </div>
+          <div class="studio-section-body">
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>POS Sistem</label>
+                <select id="bs-pos-type" onchange="togglePosFields()">
+                  <option value="">— Ni POS integracije —</option>
+                  <option value="poster">🇺🇦 Poster POS</option>
+                  <option value="square">🟦 Square</option>
+                  <option value="iiko">🔴 iiko</option>
+                </select>
+                <div class="form-hint">Nastavi booking_mode na <strong>POS naročanje</strong> zgoraj, ko aktiviraš POS.</div>
+              </div>
+              <div class="form-group" id="bs-pos-spot-wrap">
+                <label id="bs-pos-spot-label">Spot / Location ID</label>
+                <input type="text" id="bs-pos-spot-id" placeholder="1">
+                <div class="form-hint" id="bs-pos-spot-hint">Spot ID v Poster POS (default: 1)</div>
+              </div>
+            </div>
+
+            <div class="form-group" id="bs-pos-account-wrap">
+              <label id="bs-pos-account-label">Account / Sub-domain</label>
+              <input type="text" id="bs-pos-account" placeholder="npr. mojasalonrestavracija">
+              <div class="form-hint" id="bs-pos-account-hint">Poster: sub-domain; iiko: Organization ID (UUID); Square: Location ID</div>
+            </div>
+
+            <div class="form-group">
+              <label>API Token <span style="color:var(--text3);font-weight:400">(zaupno — shranjen varno)</span></label>
+              <div style="display:flex;gap:10px;">
+                <input type="password" id="bs-pos-token" placeholder="Prilepite POS API token" style="flex:1">
+                <button class="btn-soft" onclick="togglePosTokenVisibility()" style="flex-shrink:0;white-space:nowrap">👁 Pokaži</button>
+              </div>
+              <div class="form-hint" id="bs-pos-token-hint">
+                <span id="bs-pos-token-help">Poster: najdeš v Poster POS → Nastavitve → API. Square: Developer Dashboard → Access Token. iiko: API Login iz iiko BackOffice.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+              <button class="btn-soft" onclick="testPosConnection()" id="bs-pos-test-btn">🔌 Testiraj povezavo</button>
+              <button class="btn-soft" onclick="previewPosMenu()" id="bs-pos-menu-btn">📋 Predogled menija</button>
+            </div>
+            <div id="bs-pos-status" style="margin-top:10px;font-size:13px;color:var(--text2)"></div>
+
+          </div>
+        </div>
+
         </div><!-- /studio-editor-scroll -->
       </div>
       <div class="studio-footer">
@@ -1921,6 +1980,12 @@ const BOOKING_MODES = [
     icon: '🗓',
     title: 'Samo mesec',
     desc: 'Bot vpraša samo za mesec — brez dneva ali ure. Primerno za dolgoročne projekte ali sezone.'
+  },
+  {
+    value: 'pos_order',
+    icon: '🍽️',
+    title: 'POS naročanje',
+    desc: 'Bot stranko vodi skozi meni in naroči direktno v POS sistem (Poster, Square, iiko). Idealno za restavracije, picerije, bare.'
   }
 ];
 
@@ -2004,6 +2069,13 @@ async function openManageSalon(id) {
     updateClosingPreview();
     renderBotStudioServices();
     renderFormFields();
+    // POS fields
+    document.getElementById('bs-pos-type').value    = settings.pos_type    || '';
+    document.getElementById('bs-pos-token').value   = settings.pos_token   || '';
+    document.getElementById('bs-pos-account').value = settings.pos_account || '';
+    document.getElementById('bs-pos-spot-id').value = settings.pos_spot_id || 1;
+    document.getElementById('bs-pos-status').textContent = '';
+    togglePosFields();
     updateBotStudioPreview();
     document.getElementById('bot-studio-modal').classList.add('open');
   } catch (e) {
@@ -2294,6 +2366,99 @@ function updateBotStudioPreview() {
   }
 }
 
+
+function togglePosFields() {
+  const type = document.getElementById('bs-pos-type').value;
+  const accountWrap = document.getElementById('bs-pos-account-wrap');
+  const spotWrap    = document.getElementById('bs-pos-spot-wrap');
+  const tokenHint   = document.getElementById('bs-pos-token-hint');
+  const accountLbl  = document.getElementById('bs-pos-account-label');
+  const spotLbl     = document.getElementById('bs-pos-spot-label');
+  const spotHint    = document.getElementById('bs-pos-spot-hint');
+  const visible     = !!type;
+  accountWrap.style.display = visible ? '' : 'none';
+  spotWrap.style.display    = visible ? '' : 'none';
+  if (type === 'poster') {
+    accountLbl.textContent = 'Poster Account ID (opcijsko)';
+    spotLbl.textContent    = 'Spot ID';
+    spotHint.textContent   = 'Kateri spot/miza v Poster POS (default: 1)';
+  } else if (type === 'square') {
+    accountLbl.textContent = 'Square Location ID';
+    spotLbl.textContent    = 'Location ID';
+    spotHint.textContent   = 'Najdeš v Square Dashboard → Locations';
+  } else if (type === 'iiko') {
+    accountLbl.textContent = 'iiko Organization ID (UUID)';
+    spotLbl.textContent    = 'Order Type ID (opcijsko)';
+    spotHint.textContent   = 'Pusti prazno za privzeti tip naročila';
+  }
+}
+
+function togglePosTokenVisibility() {
+  const inp = document.getElementById('bs-pos-token');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function testPosConnection() {
+  const btn = document.getElementById('bs-pos-test-btn');
+  const statusEl = document.getElementById('bs-pos-status');
+  const posType    = document.getElementById('bs-pos-type').value;
+  const posToken   = document.getElementById('bs-pos-token').value.trim();
+  const posAccount = document.getElementById('bs-pos-account').value.trim();
+  if (!posType || !posToken) {
+    statusEl.textContent = '⚠️ Izberi POS sistem in vnesi token.';
+    statusEl.style.color = 'var(--warning, #f59e0b)';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '⏳ Testiram...';
+  statusEl.textContent = '';
+  try {
+    const r = await readApiJson(await apiFetch('/api/pos/test-connection/' + botStudio.salonId, {
+      method: 'POST',
+      body: JSON.stringify({ pos_type: posType, pos_token: posToken, pos_account: posAccount })
+    }));
+    if (r.ok) {
+      statusEl.innerHTML = '✅ ' + (r.msg || 'Povezava uspešna!');
+      statusEl.style.color = 'var(--success, #10b981)';
+    } else {
+      statusEl.innerHTML = '❌ ' + (r.msg || 'Napaka pri povezavi');
+      statusEl.style.color = 'var(--error, #ef4444)';
+    }
+  } catch (e) {
+    statusEl.innerHTML = '❌ ' + e.message;
+    statusEl.style.color = 'var(--error, #ef4444)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔌 Testiraj povezavo';
+  }
+}
+
+async function previewPosMenu() {
+  const btn = document.getElementById('bs-pos-menu-btn');
+  const statusEl = document.getElementById('bs-pos-status');
+  if (!botStudio.salonId) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Nalagam meni...';
+  statusEl.textContent = '';
+  try {
+    const r = await readApiJson(await apiFetch('/api/pos/menu/' + botStudio.salonId));
+    if (r.menu && r.menu.length) {
+      const preview = r.menu.slice(0, 5).map(i => `${i.name} — ${i.price.toFixed ? i.price.toFixed(2) : i.price} €`).join(' | ');
+      statusEl.innerHTML = `✅ Meni naložen: <strong>${r.count} artiklov</strong><br><span style="font-size:12px;color:var(--text3)">${preview}${r.count > 5 ? ' ...' : ''}</span>`;
+      statusEl.style.color = 'var(--success, #10b981)';
+    } else {
+      statusEl.textContent = '⚠️ Meni je prazen ali POS ni konfiguriran. Najprej shrani nastavitve.';
+      statusEl.style.color = 'var(--warning, #f59e0b)';
+    }
+  } catch (e) {
+    statusEl.innerHTML = '❌ ' + e.message + '<br><small>Najprej shrani POS nastavitve, potem testiraj meni.</small>';
+    statusEl.style.color = 'var(--error, #ef4444)';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📋 Predogled menija';
+  }
+}
+
 async function saveBotStudio() {
   var btn = document.getElementById('bs-save-btn');
   var services = collectBotStudioServices();
@@ -2325,7 +2490,11 @@ async function saveBotStudio() {
       max_advance_days: parseInt(document.getElementById('bs-max-days').value),
       booking_mode: getSelectedBookingMode(),
       form_fields: formFields,
-      inquiry_confirmation_message: document.getElementById('bs-inquiry-message').value.trim()
+      inquiry_confirmation_message: document.getElementById('bs-inquiry-message').value.trim(),
+      pos_type:    document.getElementById('bs-pos-type').value    || null,
+      pos_token:   document.getElementById('bs-pos-token').value.trim()   || null,
+      pos_account: document.getElementById('bs-pos-account').value.trim() || null,
+      pos_spot_id: parseInt(document.getElementById('bs-pos-spot-id').value) || 1
     };
     if (ownerPassword) settingsPayload.owner_password = ownerPassword;
     await readApiJson(await apiFetch('/api/admin/salons/' + botStudio.salonId + '/settings', {
