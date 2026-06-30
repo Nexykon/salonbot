@@ -117,6 +117,9 @@ body {
   50% { box-shadow: 0 4px 28px rgba(245,158,11,.38); }
 }
 .order-card.confirmed { border-left: 4px solid var(--green); opacity: .75; }
+.price-breakdown { display:flex;flex-direction:column;gap:3px;margin-bottom:8px; }
+.price-row { display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-weight:500; }
+.price-row.price-total { font-size:15px;font-weight:800;color:var(--text);border-top:1px dashed var(--border);margin-top:4px;padding-top:5px; }
 .order-card.cancelled { border-left: 4px solid var(--red); opacity: .5; }
 
 .order-head { padding: 14px 16px 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -554,11 +557,14 @@ function renderOrders(orders) {
   let pendingIdx = 0;
   el.innerHTML = orders.map(o => {
     const fa        = safeJson(o.form_answers);
-    const items     = fa.narocilo || '—';
-    const address   = fa.naslov   || '—';
-    const total     = fa.skupaj   || '—';
-    const custName  = fa.ime || '';
-    const opomba    = fa.opomba || '';
+    const items     = fa.narocilo  || '—';
+    const address   = fa.naslov    || '—';
+    const total     = fa.skupaj    || '—';
+    const artikli   = fa.artikli   || null;
+    const embalaza  = fa.embalaza  || null;
+    const dostava   = fa.dostava   || null;
+    const custName  = fa.ime       || '';
+    const opomba    = fa.opomba    || '';
     const ref6      = (o.id||'').slice(-6).toUpperCase();
     const time      = formatTime(o.created_at || o.booking_date);
     const isPending = o.status === 'pending';
@@ -569,18 +575,32 @@ function renderOrders(orders) {
         <button class="btn-accept" onclick="openModal('${o.id}')">✅ Sprejmi naročilo</button>
         <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Zavrni</button>
       </div>` : '';
+    // Price breakdown
+    const priceRows = artikli
+      ? [
+          artikli   ? `<div class="price-row"><span>🍽️ Artikli</span><span>${artikli}</span></div>` : '',
+          embalaza  ? `<div class="price-row"><span>📦 Embalaža</span><span>${embalaza}</span></div>` : '',
+          dostava   ? `<div class="price-row"><span>🚗 Dostava</span><span>${dostava}</span></div>` : '',
+          `<div class="price-row price-total"><span>💵 SKUPAJ</span><span>${total}</span></div>`,
+        ].filter(Boolean).join('')
+      : `<div class="price-row price-total"><span>💵 SKUPAJ</span><span>${total}</span></div>`;
     return `<div class="order-card ${o.status||''}">
       <div class="order-head">
         ${fifoNum}<span class="order-ref">#${ref6}</span> ${novoBadge}
         <span class="order-time">${time}</span>
       </div>
       <div class="order-body">
+        <!-- 1. NAROČILO -->
         <div class="order-items" style="${isPending?'font-weight:700;font-size:15px;color:#111;':''}">${items.replace(/\n/g,'<br>')}</div>
-        <div class="order-address">📍 ${address}</div>
-        <div class="order-total" style="${isPending?'font-size:17px;':''}">${total}</div>
-        ${custName ? `<div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px;">👤 ${custName}</div>` : ''}
-        ${opomba ? `<div style="font-size:13px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:6px 10px;margin-bottom:8px;color:#92400e;font-weight:600;">📝 ${opomba}</div>` : ''}
+        ${opomba ? `<div style="font-size:13px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:6px 10px;margin:6px 0;color:#92400e;font-weight:600;">📝 ${opomba}</div>` : ''}
+        <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
+        <!-- 2. PODATKI NAROČNIKA -->
+        ${custName ? `<div style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:3px;">👤 ${custName}</div>` : ''}
         <div class="order-phone">📞 +${o.customer_phone||'—'}</div>
+        <div class="order-address">📍 ${address}</div>
+        <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
+        <!-- 3. CENA -->
+        <div class="price-breakdown">${priceRows}</div>
         ${actions}
       </div>
     </div>`;
