@@ -148,9 +148,11 @@ function isMasterRequest(req) {
 function adminAuth(req, res, next) {
   if (!isMasterRequest(req)) {
     res.status(401).json({ error: 'Unauthorized' });
-    return;
+    if (typeof next === 'function') return;
+    return false;
   }
-  next();
+  if (typeof next === 'function') next();
+  return true;
 }
 
 async function salonAuth(req, res) {
