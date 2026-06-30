@@ -219,8 +219,119 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // ── Delivery: admin typed minutes after accepting ──
+    // ── POS: accept → ask minutes ──
+    if (iId.startsWith('pos_accept_')) {
+      const ref = iId.replace('pos_accept_', '');
+      const booking = await db.getBookingForSalon(salon.id, ref);
+      if (booking) {
+        // Store cart from form_answers for later POS send
+        let posCart = null;
+        try {
+          const fa = typeof booking.form_answers === 'string'
+            ? JSON.parse(booking.form_answers) : booking.form_answers;
+          posCart = fa && fa.pos_cart ? JSON.parse(fa.pos_cart) : null;
+        } catch (_) {}
+        session.set(from, {
+          awaitingPosTime: ref,
+          posCustomerPhone: booking.customer_phone,
+          posBookingId: booking.id,
+          posCart,
+          posComment: (() => {
+            try {
+              const fa = typeof booking.form_answers === 'string'
+                ? JSON.parse(booking.form_answers) : booking.form_answers;
+              return fa?.opomba || '';
+            } catch (_) { return ''; }
+          })()
+        });
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `Naročilo *#${ref}* sprejeto! ✅\n\nKoliko minut do priprave/dostave?\n_(samo število, npr. *20*)`
+        ));
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
+      }
+      return;
+    }
+
+    // ── POS: reject ──
+    if (iId.startsWith('pos_reject_')) {
+      const ref = iId.replace('pos_reject_', '');
+      const booking = await db.getBookingForSalon(salon.id, ref);
+      if (booking) {
+        await db.updateBookingStatus(booking.id, 'cancelled');
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo *#${ref}* zavrnjeno.`));
+        if (booking.customer_phone) {
+          wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
+            '😔 Žal vašega naročila nismo mogli sprejeti. Pokličite nas za več informacij.'
+          )).catch(() => {});
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
+      }
+      return;
+    }
+
+    // ── POS: admin typed minutes → send to POS kitchen ──
     const adminSess = session.get(from);
+    if (adminSess && adminSess.awaitingPosTime && msgText) {
+      const minutes = parseInt(msgText.trim());
+      const ref = adminSess.awaitingPosTime;
+      const custPhone = adminSess.posCustomerPhone;
+      const posCart   = adminSess.posCart;
+      const posComment = adminSess.posComment || '';
+      session.clear(from);
+
+      if (isNaN(minutes) || minutes <= 0) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Napaka: vnesite samo število minut (npr. 20).'));
+        return;
+      }
+
+      // Update booking status
+      await db.getBookingForSalon(salon.id, ref)
+        .then(b => b && db.updateBookingStatus(b.id, 'confirmed'))
+        .catch(() => {});
+
+      // Send to POS if configured
+      if (salon.pos_type && salon.pos_token && posCart && posCart.length) {
+        try {
+          const adapter = getAdapter(salon.pos_type);
+          const result = await adapter.createOrder(
+            salon.pos_token,
+            salon.pos_account || '',
+            posCart,
+            { spot_id: salon.pos_spot_id || 1, comment: posComment }
+          );
+          if (result.success) {
+            await wa.send(phoneId, token, wa.textMsg(from,
+              `✅ Naročilo *#${ref}* potrjeno in poslano v kuhinjo!\nPOS ID: ${result.orderId}\n⏱️ Čas: ${minutes} min`
+            ));
+          } else {
+            await wa.send(phoneId, token, wa.textMsg(from,
+              `⚠️ Naročilo *#${ref}* potrjeno, A POS napaka: ${result.message}\nRočno vnesite v sistem.`
+            ));
+          }
+        } catch (e) {
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `⚠️ Naročilo potrjeno, POS napaka: ${e.message}`
+          ));
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `✅ Naročilo *#${ref}* potrjeno. ⏱️ ${minutes} min`
+        ));
+      }
+
+      // Notify customer
+      if (custPhone) {
+        wa.send(phoneId, token, wa.textMsg(custPhone,
+          `🍽️ Naročilo potrjeno!\n\n⏱️ Pripravljeno v pribl. *${minutes} minutah*\n\nHvala za naročilo! 😊`
+        )).catch(e => console.error('[POS] notify customer err:', e.message));
+      }
+      return;
+    }
+
+    // ── Delivery: admin typed minutes after accepting ──
+
     if (adminSess.awaitingDeliveryTime && msgText) {
       const minutes = parseInt(msgText.trim());
       const ref = adminSess.awaitingDeliveryTime;
@@ -494,9 +605,20 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
       }
-      session.set(from, { ...sess, step: 302 });
+      const packFee = parseFloat(salon.packaging_price || 0);
+      const delFee  = parseFloat(salon.delivery_fee    || 0);
+      const itemsTotal = parseFloat(cartTotal(sess.cart));
+      const grandTotal = (itemsTotal + packFee + delFee).toFixed(2);
+      const priceBreakdown = [
+        `💰 Artikli: ${itemsTotal.toFixed(2)} €`,
+        ...(packFee > 0 ? [`📦 Embalaža: ${packFee.toFixed(2)} €`] : []),
+        ...(delFee  > 0 ? [`🚗 Dostava:  ${delFee.toFixed(2)} €`]  : []),
+        `──────────────`,
+        `💵 *SKUPAJ: ${grandTotal} €*`,
+      ].join('\n');
+      session.set(from, { ...sess, step: 302, grandTotal, packFee, delFee });
       await wa.send(phoneId, token, wa.textMsg(from,
-        `🛒 *Vaše naročilo:*\n${fmtCart(sess.cart)}\n\n💰 Skupaj: ${cartTotal(sess.cart)} €\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
+        `🛒 *Vaše naročilo:*\n${fmtCart(sess.cart)}\n\n${priceBreakdown}\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
       ));
       return;
     }
@@ -526,12 +648,24 @@ async function handleMessage(msgObj, salon) {
       const address = msgText.trim();
       const cart = sess.cart || [];
       const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
-      session.set(from, { ...sess, step: 305, deliveryAddress: address });
+      const sessF = session.get(from);
+      const pFee = parseFloat(sessF.packFee || salon.packaging_price || 0);
+      const dFee = parseFloat(sessF.delFee  || salon.delivery_fee    || 0);
+      const iTotal = parseFloat(cartTotal(cart));
+      const gTotal = (iTotal + pFee + dFee).toFixed(2);
+      const breakdownTxt = [
+        fmtCart(cart) + opombaTxt,
+        '',
+        `💰 Artikli: ${iTotal.toFixed(2)} €`,
+        ...(pFee > 0 ? [`📦 Embalaža: ${pFee.toFixed(2)} €`] : []),
+        ...(dFee > 0 ? [`🚗 Dostava:  ${dFee.toFixed(2)} €`]  : []),
+      ].join('\n');
+      session.set(from, { ...sessF, step: 305, deliveryAddress: address, grandTotal: gTotal, packFee: pFee, delFee: dFee });
       await wa.send(phoneId, token, wa.deliveryConfirmButtons(
         from,
-        fmtCart(cart) + opombaTxt,
+        breakdownTxt,
         address,
-        cartTotal(cart)
+        gTotal
       ));
       return;
     }
@@ -545,7 +679,7 @@ async function handleMessage(msgObj, salon) {
         session.clear(from);
         return;
       }
-      const total = cartTotal(cart);
+      const total = s.grandTotal || cartTotal(cart);
       const today = new Date().toISOString().slice(0, 10);
       const custName = s.customerName || from;
       const opomba  = s.opomba || '';
@@ -556,13 +690,16 @@ async function handleMessage(msgObj, salon) {
         booking_date:   today,
         booking_time:   new Date().toTimeString().slice(0, 8),
         status:         'pending',
-        notes:          `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
+        notes:          `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
         form_answers:   JSON.stringify({
-          ime:     custName,
-          naslov:  s.deliveryAddress,
-          narocilo: fmtCart(cart),
-          opomba:  opomba,
-          skupaj:  total + ' €'
+          ime:       custName,
+          naslov:    s.deliveryAddress,
+          narocilo:  fmtCart(cart),
+          opomba:    opomba,
+          artikli:   total + ' €',
+          embalaza:  s.packFee > 0 ? s.packFee.toFixed(2) + ' €' : null,
+          dostava:   s.delFee  > 0 ? s.delFee.toFixed(2)  + ' €' : null,
+          skupaj:    (s.grandTotal || total) + ' €'
         })
       };
       const booking = await db.createBooking(bookingData);
@@ -889,30 +1026,29 @@ async function handleMessage(msgObj, salon) {
       });
       const ref6 = booking ? (booking.id || '').slice(-6) : '???';
 
-      // Send to POS
+      // Send directly to POS kitchen — no admin confirmation needed
       try {
-        const result = await adapter.createOrder(posToken, posAccount, cart, {
+        const posResult = await adapter.createOrder(posToken, posAccount, cart, {
           spot_id: posSpotId,
           comment,
         });
         session.clear(from);
-        if (result.success) {
+        if (posResult.success) {
           await wa.send(phoneId, token, wa.textMsg(from,
-            `✅ Naročilo sprejeto!\n\n🔑 Ref: *#${ref6}*\nPOS ID: ${result.orderId}\n\nVaše naročilo je poslano v kuhinjo. 🍽️`
+            `✅ Naročilo sprejeto!\n\n🔑 Ref: *#${ref6}*\n\nVaše naročilo je poslano v kuhinjo. 🍽️`
           ));
         } else {
-          // POS failed but we saved to DB — inform admin
           await wa.send(phoneId, token, wa.textMsg(from,
-            `✅ Naročilo je oddano!\n🔑 Ref: *#${ref6}*\n\nHvala za naročilo! 🍽️`
+            `✅ Naročilo oddano! (Ref: *#${ref6}*)\n\nHvala za naročilo! 🍽️`
           ));
-          console.error('[POS] createOrder failed:', result.message);
-          await db.logError(salon.id, 'pos_create_order', result.message, null, from).catch(() => {});
+          console.error('[POS] createOrder failed:', posResult.message);
+          db.logError(salon.id, 'pos_create_order', posResult.message, null, from).catch(() => {});
         }
       } catch (e) {
         session.clear(from);
-        console.error('[POS] createOrder exception:', e.message);
+        console.error('[POS] confirm exception:', e.message);
         await wa.send(phoneId, token, wa.textMsg(from,
-          `✅ Naročilo sprejeto! (Ref: *#${ref6}*)\n\nHvala za naročilo! 🍽️`
+          `✅ Naročilo sprejeto! (Ref: *#${ref6}*)\n\nHvala! 🍽️`
         ));
       }
       return;

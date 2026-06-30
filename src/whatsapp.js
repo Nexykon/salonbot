@@ -347,4 +347,28 @@ function deliveryAdminNotif(to, customerPhone, cartText, address, total, ref6) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif };
+
+function posAdminNotif(to, customerPhone, cartText, comment, total, ref6) {
+  const commentLine = comment ? '\n📝 ' + comment : '';
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: {
+        text: '🍽️ *NOVO POS NAROČILO #' + ref6 + '*\n\n' +
+              cartText + commentLine +
+              '\n\n💰 Skupaj: ' + total + ' €' +
+              '\n📞 Stranka: +' + customerPhone +
+              '\n\nSprejmite in vnesite čas (v minutah).'
+      },
+      action: {
+        buttons: [
+          { type: 'reply', reply: { id: 'pos_accept_' + ref6, title: '✅ Sprejmi' } },
+          { type: 'reply', reply: { id: 'pos_reject_' + ref6, title: '❌ Zavrni' } }
+        ]
+      }
+    }
+  };
+}
+
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };

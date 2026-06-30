@@ -145,12 +145,12 @@ function isMasterRequest(req) {
   return session?.role === 'master' || (!!configuredApiKey && req.headers['x-api-key'] === configuredApiKey);
 }
 
-function adminAuth(req, res) {
+function adminAuth(req, res, next) {
   if (!isMasterRequest(req)) {
     res.status(401).json({ error: 'Unauthorized' });
-    return false;
+    return;
   }
-  return true;
+  next();
 }
 
 async function salonAuth(req, res) {
@@ -328,6 +328,82 @@ app.post('/api/pos/create-order/:salonId', adminAuth, async (req, res) => {
     res.json(result);
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
+  }
+});
+
+
+// POST /api/pos/confirm-order/:salonId/:bookingId
+// Dashboard: točajka potrdi naročilo → pošlje v POS + obvesti stranko
+app.post('/api/pos/confirm-order/:salonId/:bookingId', adminAuth, async (req, res) => {
+  try {
+    const { salonId, bookingId } = req.params;
+    const { minutes } = req.body;
+
+    const salon = await db.getSalonById(salonId);
+    if (!salon) return res.status(404).json({ error: 'Salon ni najden' });
+
+    const booking = await db.getSalonById(bookingId).catch(() => null);
+    // Fetch booking directly
+    const BASE_SB = process.env.SUPABASE_URL + '/rest/v1';
+    const SB_HDR  = {
+      apikey: process.env.SUPABASE_KEY,
+      Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+      'Content-Type': 'application/json'
+    };
+    const bRes = await axios.get(`${BASE_SB}/sb_bookings?id=eq.${bookingId}&salon_id=eq.${salonId}&limit=1`, { headers: SB_HDR });
+    const b = bRes.data[0];
+    if (!b) return res.status(404).json({ error: 'Naročilo ni najdeno' });
+
+    // Parse cart from form_answers
+    let posCart = null;
+    let posComment = '';
+    try {
+      const fa = typeof b.form_answers === 'string' ? JSON.parse(b.form_answers) : b.form_answers;
+      posCart    = fa?.pos_cart ? JSON.parse(fa.pos_cart) : null;
+      posComment = fa?.opomba || '';
+    } catch (_) {}
+
+    let posResult = null;
+    // Send to POS if configured and cart available
+    if (salon.pos_type && salon.pos_token && posCart && posCart.length) {
+      const adapter = getAdapter(salon.pos_type);
+      posResult = await adapter.createOrder(
+        salon.pos_token,
+        salon.pos_account || '',
+        posCart,
+        { spot_id: salon.pos_spot_id || 1, comment: posComment }
+      );
+    }
+
+    // Update booking status
+    await axios.patch(`${BASE_SB}/sb_bookings?id=eq.${bookingId}`,
+      { status: 'confirmed' }, { headers: SB_HDR }
+    );
+
+    // Notify customer via WhatsApp if phone available
+    const custPhone = b.customer_phone;
+    const mins = parseInt(minutes) || 0;
+    if (custPhone && custPhone !== 'manual' && mins > 0) {
+      const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+      const waToken = process.env.WA_TOKEN;
+      if (phoneId && waToken) {
+        const { send, textMsg } = require('./src/whatsapp');
+        send(phoneId, waToken, textMsg(custPhone,
+          `🍽️ Naročilo potrjeno!\n\n⏱️ Pripravljeno v pribl. *${mins} minutah*\n\nHvala za naročilo! 😊`
+        )).catch(e => console.error('[confirm-order] WA notify err:', e.message));
+      }
+    }
+
+    res.json({
+      success: true,
+      pos: posResult,
+      message: posResult?.success
+        ? `Naročilo v kuhinji! POS ID: ${posResult.orderId}`
+        : (posResult ? `POS napaka: ${posResult.message}` : 'Potrjeno (brez POS)')
+    });
+  } catch (e) {
+    console.error('[confirm-order] error:', e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
@@ -877,6 +953,7 @@ app.patch('/api/settings', async (req, res) => {
       'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
+      'packaging_price', 'delivery_fee',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message'];
     const updates = {};
     for (const key of allowed) {

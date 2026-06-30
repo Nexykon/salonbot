@@ -1369,9 +1369,30 @@
               </div>
             </div>
 
-            <!-- STEP 3: CLOSING MESSAGE -->
-            <div class="config-step">
+            <!-- STEP 3: DOSTAVA & EMBALAŽA (vidno samo za delivery/pos_order mode) -->
+            <div class="config-step" id="bs-fees-step">
               <div class="config-step-num">3</div>
+              <div class="config-step-body">
+                <div class="config-step-title">Dostava in embalaža</div>
+                <div class="config-step-desc">Nastavi cene ki se prištejejo k naročilu. Stranka vidi razčlenitev cen pred potrditvijo.</div>
+                <div class="form-row" style="margin-bottom:0">
+                  <div class="form-group">
+                    <label>Embalaža (€ / naročilo)</label>
+                    <input type="number" id="bs-packaging-price" min="0" step="0.10" placeholder="0.00">
+                    <div class="form-hint">Npr. 0.50 € za vrečko / škatle</div>
+                  </div>
+                  <div class="form-group">
+                    <label>Dostava (€ / naročilo)</label>
+                    <input type="number" id="bs-delivery-fee" min="0" step="0.50" placeholder="0.00">
+                    <div class="form-hint">Npr. 2.00 € fiksna cena prevoza</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 4: CLOSING MESSAGE -->
+            <div class="config-step">
+              <div class="config-step-num">4</div>
               <div class="config-step-body">
                 <div class="config-step-title">Zaključno sporočilo</div>
                 <div class="config-step-desc">Sporočilo, ki ga stranka prejme takoj po oddaji rezervacije. Napiši zahvalo, naslednje korake ali kdaj jo boste kontaktirali.</div>
@@ -2070,6 +2091,8 @@ async function openManageSalon(id) {
     renderBotStudioServices();
     renderFormFields();
     // POS fields
+    document.getElementById('bs-packaging-price').value = settings.packaging_price || 0;
+    document.getElementById('bs-delivery-fee').value    = settings.delivery_fee    || 0;
     document.getElementById('bs-pos-type').value    = settings.pos_type    || '';
     document.getElementById('bs-pos-token').value   = settings.pos_token   || '';
     document.getElementById('bs-pos-account').value = settings.pos_account || '';
@@ -2491,6 +2514,8 @@ async function saveBotStudio() {
       booking_mode: getSelectedBookingMode(),
       form_fields: formFields,
       inquiry_confirmation_message: document.getElementById('bs-inquiry-message').value.trim(),
+      packaging_price: parseFloat(document.getElementById('bs-packaging-price').value) || 0,
+      delivery_fee:    parseFloat(document.getElementById('bs-delivery-fee').value)    || 0,
       pos_type:    document.getElementById('bs-pos-type').value    || null,
       pos_token:   document.getElementById('bs-pos-token').value.trim()   || null,
       pos_account: document.getElementById('bs-pos-account').value.trim() || null,
