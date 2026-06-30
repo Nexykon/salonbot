@@ -1936,7 +1936,7 @@ const EMAIL_SUBJECTS = {
   'promo_nohtarnice':     '{} — 1 mesec brezplačno za vašo nohtarnico 💅',
   'promo_masaze':         '{} — 1 mesec brezplačno za vaš masažni salon 💆',
   'promo_pasji_strizci':  '{} — 1 mesec brezplačno za vaš pasji salon 🐾',
-  'promo_picerije':       '{} — 1 mesec brezplačno za vašo restavracijo 🍕',
+  'promo_picerije':       '{} — 1 mesec brezplačno za vašo restavracijo',
   'promo_tattoo':         '{} — 1 mesec brezplačno za vaš tattoo studio 🎨',
   'promo_kozmeticarke':   '{} — 1 mesec brezplačno za vaš kozmetični salon ✨',
   '07_fotografski_studii':'{} — termini za fotografiranje na avtopilotu?',
@@ -2169,7 +2169,7 @@ app.post('/api/leads/:id/reset', async (req, res) => {
     const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
     if (!leads[0]) return res.status(404).json({ error: 'Lead ne obstaja' });
     await sbLeads('patch', `/leads?id=eq.${req.params.id}`,
-      { email_sent_at: null, status: 'new' });
+      { email_sent_at: null, responded_at: null, status: 'new' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -2217,7 +2217,7 @@ app.post('/api/leads/:id/reset', async (req, res) => {
     const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
     if (!leads[0]) return res.status(404).json({ error: 'Lead ne obstaja' });
     await sbLeads('patch', `/leads?id=eq.${req.params.id}`,
-      { email_sent_at: null, status: 'new' });
+      { email_sent_at: null, responded_at: null, status: 'new' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
