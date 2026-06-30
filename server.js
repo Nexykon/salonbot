@@ -2161,6 +2161,21 @@ app.post('/api/leads/:id/send', async (req, res) => {
   }
 });
 
+
+// POST /api/leads/:id/reset — ponastavi email_sent_at (za ponovno pošiljanje)
+app.post('/api/leads/:id/reset', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
+    if (!leads[0]) return res.status(404).json({ error: 'Lead ne obstaja' });
+    await sbLeads('patch', `/leads?id=eq.${req.params.id}`,
+      { email_sent_at: null, status: 'new' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/leads/bulk-send — pošlji vsem neposlani
 app.post('/api/leads/bulk-send', async (req, res) => {
   if (!adminAuth(req, res)) return;
@@ -2193,8 +2208,3 @@ app.post('/api/leads/bulk-send', async (req, res) => {
     }
     res.json({ success: true, sent, errors, total: pending.length });
   } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.listen(PORT, () => {
-  console.log(`FlowTiq server running on port ${PORT}`);
-});
