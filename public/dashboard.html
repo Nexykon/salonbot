@@ -1059,7 +1059,7 @@
     </div>
 
     <!-- KORAK 1: PODJETJE -->
-    <div class="studio-section-head" style="padding:16px 0 8px"><div class="studio-section-icon">🏢</div><div class="studio-section-info"><div class="studio-section-title">Podatki o podjetju</div></div></div>
+    <div class="studio-section-head" style="padding:16px 0 8px"><div class="studio-section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></div><div class="studio-section-info"><div class="studio-section-title">Podatki o podjetju</div></div></div>
 
     <div class="form-row">
       <div class="form-group">
@@ -1069,8 +1069,8 @@
       <div class="form-group">
         <label>Paket *</label>
         <select id="f-plan">
-          <option value="starter">FlowTiq — €49,99/mes</option>
-          <option value="pro" selected>FlowTiq Pro — €49,99/mes</option>
+          <option value="starter">FlowTiq Osnovno — €49,99/mes</option>
+          <option value="pro" selected>FlowTiq POS — €79,99/mes</option>
         </select>
       </div>
     </div>
@@ -1079,19 +1079,19 @@
       <div class="form-group">
         <label>Panoga *</label>
         <select id="f-business-type">
-          <option value="hair">Frizerstvo ✂️</option>
-          <option value="beauty">Nohti / Beauty 💅</option>
-          <option value="cosmetics">Kozmetični studio 💆</option>
-          <option value="massage">Masaže 🧘</option>
-          <option value="tattoo">Tattoo / Piercing 🎨</option>
-          <option value="fitness">Fitness & trenerji 💪</option>
-          <option value="wellness">Wellness center 🌿</option>
-          <option value="dentist">Zobozdravstvo 🦷</option>
-          <option value="veterinary">Veterinar 🐾</option>
-          <option value="physiotherapy">Fizioterapija 🏥</option>
-          <option value="optical">Optika 👓</option>
-          <option value="photography">Fotografija 📷</option>
-          <option value="restaurant">Restavracija / Picerija 🍕</option>
+          <option value="hair">Frizerstvo</option>
+          <option value="beauty">Nohti / Beauty</option>
+          <option value="cosmetics">Kozmetični studio</option>
+          <option value="massage">Masaže</option>
+          <option value="tattoo">Tattoo / Piercing</option>
+          <option value="fitness">Fitness in trenerji</option>
+          <option value="wellness">Wellness center</option>
+          <option value="dentist">Zobozdravstvo</option>
+          <option value="veterinary">Veterinar</option>
+          <option value="physiotherapy">Fizioterapija</option>
+          <option value="optical">Optika</option>
+          <option value="photography">Fotografija</option>
+          <option value="restaurant">Restavracija / Picerija</option>
           <option value="custom">Drugo / Custom</option>
         </select>
         <div class="form-hint">Panoga nastavi začetne storitve in besedila bota.</div>
@@ -1099,12 +1099,12 @@
       <div class="form-group">
         <label>Način delovanja bota *</label>
         <select id="f-booking-mode">
-          <option value="exact_time">📅 Rezervacija — točen termin</option>
-          <option value="date_only">📆 Rezervacija — samo datum</option>
-          <option value="inquiry">💬 Povpraševanje (brez termina)</option>
-          <option value="month_only">🗓️ Rezervacija — samo mesec</option>
-          <option value="sales">💰 Prodaja / Naročilo storitve</option>
-          <option value="delivery">🍕 Razvoz / Dostava</option>
+          <option value="exact_time">Rezervacija — točen termin</option>
+          <option value="date_only">Rezervacija — samo datum</option>
+          <option value="inquiry">Povpraševanje (brez termina)</option>
+          <option value="month_only">Rezervacija — samo mesec</option>
+          <option value="sales">Prodaja / Naročilo storitve</option>
+          <option value="delivery">Razvoz / Dostava</option>
         </select>
         <div class="form-hint">Rezervacija = termini, Razvoz = meni + naslov, Prodaja = leads/naročila.</div>
       </div>
@@ -1183,7 +1183,7 @@
         <!-- ── SECTION 1: PODJETJE ── -->
         <div class="studio-section">
           <div class="studio-section-head">
-            <div class="studio-section-icon">🏢</div>
+            <div class="studio-section-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg></div>
             <div class="studio-section-info">
               <div class="studio-section-title">Podjetje in panoga</div>
               <div class="studio-section-desc">Osnovni podatki, ki se prikažejo stranki in v botu</div>
@@ -1299,7 +1299,7 @@
         <!-- ── SECTION 4: STORITVE ── -->
         <div class="studio-section">
           <div class="studio-section-head">
-            <div class="studio-section-icon">✂️</div>
+            <div class="studio-section-icon" style="font-size:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5H6l4 5-4 5h1.5a2.5 2.5 0 010 5H6m6-14h8m-8 5h8m-8 5h8m-8 5h8"/></svg></div>
             <div class="studio-section-info">
               <div class="studio-section-title">Storitve</div>
               <div class="studio-section-desc">Kaj bot ponudi stranki — naziv, cena in trajanje</div>
@@ -1417,7 +1417,7 @@
              ══════════════════════════════════════════════════════ -->
         <div class="studio-section master-section" id="bs-pos-section">
           <div class="studio-section-head">
-            <div class="studio-section-icon" style="background:rgba(16,185,129,0.2);border-color:rgba(16,185,129,0.4);">🍽️</div>
+            <div class="studio-section-icon" style="background:rgba(16,185,129,0.2);border-color:rgba(16,185,129,0.4);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg></div>
             <div class="studio-section-info">
               <div class="studio-section-title">POS Integracija</div>
               <div class="studio-section-desc">Poveži WhatsApp bota z Poster POS, Square ali iiko. Stranke bodo naročale direktno iz WhatsApp sporočil v kuhinjo.</div>
@@ -1552,7 +1552,7 @@ let apiKey = '';
 let masterToken = '';
 let salonsData = [];
 
-const PLAN_PRICES = { starter: 49.99, pro: 49.99 };
+const PLAN_PRICES = { starter: 49.99, pro: 79.99 };
 const resetToken = new URLSearchParams(window.location.search).get('reset') || '';
 
 // ── AUTH ──────────────────────────────────────────────────
@@ -1820,7 +1820,7 @@ function renderTable() {
     const statusClass = s.subscription_status === 'active' ? 'active' : s.subscription_status === 'trial' ? 'trial' : 'inactive';
     const statusLabel = s.subscription_status === 'active' ? 'Aktiven' : s.subscription_status === 'trial' ? 'Preizkus' : 'Neaktiven';
     const planClass = s.subscription_plan === 'pro' ? 'pro' : 'starter';
-    const planLabel = s.subscription_plan === 'pro' ? 'Pro €49,99' : 'Starter €49,99';
+    const planLabel = s.subscription_plan === 'pro' ? 'POS €79,99' : 'Osnovno €49,99';
     const date = s.created_at ? new Date(s.created_at).toLocaleDateString('sl-SI') : '—';
 
     const canActivate = s.subscription_status !== 'active';
@@ -1839,8 +1839,8 @@ function renderTable() {
       </td>
       <td>
         <select class="plan-select ${planClass}" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
-          <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>€49,99/mes</option>
-          <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>€49,99/mes (Pro)</option>
+          <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>Osnovno €49,99/mes</option>
+          <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>POS €79,99/mes</option>
         </select>
       </td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
