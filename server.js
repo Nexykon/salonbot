@@ -2182,7 +2182,11 @@ app.post('/api/leads/bulk-send', async (req, res) => {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY ni nastavljen' });
   try {
-    const pending = await sbLeads('get', '/leads?email_sent_at=is.null&email=neq.&order=id.asc&limit=100');
+    const { category, limit: limitParam } = req.body || {};
+    const limitVal = Math.min(parseInt(limitParam) || 30, 100);
+    let leadsUrl = '/leads?email_sent_at=is.null&email=neq.&order=id.asc&limit=' + limitVal;
+    if (category) leadsUrl += '&category=eq.' + encodeURIComponent(category);
+    const pending = await sbLeads('get', leadsUrl);
     if (!pending.length) return res.json({ success: true, sent: 0, message: 'Ni leadov za pošiljanje' });
 
     const { default: axios } = await import('axios');
