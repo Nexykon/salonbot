@@ -305,6 +305,24 @@ body {
           <input type="text" id="s-botnum" placeholder="+386 XX XXX XXX">
         </div>
       </div>
+      <div class="settings-card">
+        <div class="settings-card-title">Dodatni stroški naročila</div>
+        <div class="s-row">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="s-pack-on" onchange="toggleFee('s-packaging', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
+            📦 Zaračunaj embalažo
+          </label>
+          <input type="number" id="s-packaging" min="0" step="0.10" inputmode="decimal" placeholder="npr. 0.50 €" disabled>
+        </div>
+        <div class="s-row">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="s-del-on" onchange="toggleFee('s-delivery', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
+            🚗 Zaračunaj dostavo
+          </label>
+          <input type="number" id="s-delivery" min="0" step="0.10" inputmode="decimal" placeholder="npr. 2.00 €" disabled>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Označena zneska (v €) bot samodejno prišteje k vsakemu naročilu in ju stranki prikaže ločeno.</div>
+      </div>
       <button class="btn-save" onclick="saveSettings()">💾 Shrani nastavitve</button>
     </div>
 
@@ -821,12 +839,35 @@ async function loadSettingsData() {
     document.getElementById('s-name').value = d.name||'';
     document.getElementById('s-greeting').value = d.greeting_message||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
+    const pack = parseFloat(d.packaging_price||0), del = parseFloat(d.delivery_fee||0);
+    document.getElementById('s-pack-on').checked = pack > 0;
+    document.getElementById('s-packaging').value = pack > 0 ? pack : '';
+    document.getElementById('s-packaging').disabled = !(pack > 0);
+    document.getElementById('s-del-on').checked = del > 0;
+    document.getElementById('s-delivery').value = del > 0 ? del : '';
+    document.getElementById('s-delivery').disabled = !(del > 0);
   } catch(e) {}
+}
+function toggleFee(inputId, on) {
+  const el = document.getElementById(inputId);
+  el.disabled = !on;
+  if (on) el.focus(); else el.value = '';
+}
+function feeValue(checkId, inputId) {
+  if (!document.getElementById(checkId).checked) return 0;
+  const v = parseFloat(String(document.getElementById(inputId).value).replace(',', '.'));
+  return isNaN(v) || v < 0 ? 0 : v;
 }
 async function saveSettings() {
   try {
     const r = await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
-      body:JSON.stringify({name:document.getElementById('s-name').value,greeting_message:document.getElementById('s-greeting').value,bot_phone_display:document.getElementById('s-botnum').value})
+      body:JSON.stringify({
+        name:document.getElementById('s-name').value,
+        greeting_message:document.getElementById('s-greeting').value,
+        bot_phone_display:document.getElementById('s-botnum').value,
+        packaging_price:feeValue('s-pack-on','s-packaging'),
+        delivery_fee:feeValue('s-del-on','s-delivery')
+      })
     });
     showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');
   } catch(e){showToast('Napaka','error');}

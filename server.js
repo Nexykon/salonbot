@@ -961,6 +961,8 @@ app.get('/api/settings', async (req, res) => {
       notify_whatsapp: salon.notify_whatsapp !== false,
     auto_confirm: salon.auto_confirm === true,
       notify_email: salon.notify_email !== false,
+      packaging_price: parseFloat(salon.packaging_price || 0),
+      delivery_fee: parseFloat(salon.delivery_fee || 0),
       review_link: salon.review_link || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -984,6 +986,8 @@ app.patch('/api/settings', async (req, res) => {
     if (updates.booking_mode) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
     if (updates.datetime_position) updates.datetime_position = updates.datetime_position === 'last' ? 'last' : 'first';
     if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
+    if (updates.packaging_price !== undefined) updates.packaging_price = Math.max(0, parseFloat(String(updates.packaging_price).replace(',', '.')) || 0);
+    if (updates.delivery_fee !== undefined) updates.delivery_fee = Math.max(0, parseFloat(String(updates.delivery_fee).replace(',', '.')) || 0);
     await db.updateSalonSettings(salon.id, updates);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
