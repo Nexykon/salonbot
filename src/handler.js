@@ -5,6 +5,7 @@ const mail = require('./email');
 const session = require('./session');
 const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
+const t = require('./time');
 
 function fmtDate(dateStr) {
   if (!dateStr) return '?';
@@ -47,7 +48,7 @@ async function resolveCustomTime(salon, date, requestedTime, serviceDuration = n
 }
 
 function parseCustomerDateTime(text) {
-  const now = new Date();
+  const todayYmd = t.todayStr();
   const lower = text.toLowerCase();
   let time = null;
   const tm =
@@ -63,10 +64,9 @@ function parseCustomerDateTime(text) {
   }
   let date = null;
   if (lower.includes('danes')) {
-    date = now.toISOString().split('T')[0];
+    date = todayYmd;
   } else if (lower.includes('jutri')) {
-    const d = new Date(now); d.setDate(d.getDate() + 1);
-    date = d.toISOString().split('T')[0];
+    date = t.dateOffsetStr(todayYmd, 1);
   } else {
     const dayMap = [
       ['ponedeljek', 1], ['torek', 2], ['cetrtek', 4],
@@ -75,11 +75,9 @@ function parseCustomerDateTime(text) {
     ];
     for (const [key, dayNum] of dayMap) {
       if (lower.includes(key)) {
-        const d = new Date(now);
-        let ahead = dayNum - d.getDay();
+        let ahead = dayNum - t.todayDow();
         if (ahead <= 0) ahead += 7;
-        d.setDate(d.getDate() + ahead);
-        date = d.toISOString().split('T')[0];
+        date = t.dateOffsetStr(todayYmd, ahead);
         break;
       }
     }
@@ -87,8 +85,8 @@ function parseCustomerDateTime(text) {
       const dm = text.match(/\b(\d{1,2})\.(\d{1,2})\b/);
       if (dm) {
         const day = parseInt(dm[1]), month = parseInt(dm[2]);
-        const d = new Date(now.getFullYear(), month - 1, day);
-        if (d >= now) date = d.toISOString().split('T')[0];
+        const ymd = todayYmd.slice(0, 4) + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        if (ymd >= todayYmd) date = ymd;
       }
     }
   }
@@ -97,9 +95,10 @@ function parseCustomerDateTime(text) {
 
 async function handleMessage(msgObj, salon) {
   const from = msgObj.from;
+  const skey = `${salon.id}:${from}`; // seja ključana po salonu + telefonu
   const msgType = msgObj.type;
   const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-  const token = process.env.WA_TOKEN;
+  const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
 
   if (msgType === 'audio') {
     try {
@@ -193,7 +192,7 @@ async function handleMessage(msgObj, salon) {
       const ref = iId.replace('delivery_accept_', '');
       const booking = await db.getBookingForSalon(salon.id, ref);
       if (booking) {
-        session.set(from, { awaitingDeliveryTime: ref, deliveryCustomerPhone: booking.customer_phone });
+        session.set(skey, { awaitingDeliveryTime: ref, deliveryCustomerPhone: booking.customer_phone });
         await wa.send(phoneId, token, wa.textMsg(from, `Naročilo *#${ref}* sprejeto! ✅\n\nKoliko minut do dostave? (samo število, npr. *30*)`));
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
@@ -231,7 +230,7 @@ async function handleMessage(msgObj, salon) {
             ? JSON.parse(booking.form_answers) : booking.form_answers;
           posCart = fa && fa.pos_cart ? JSON.parse(fa.pos_cart) : null;
         } catch (_) {}
-        session.set(from, {
+        session.set(skey, {
           awaitingPosTime: ref,
           posCustomerPhone: booking.customer_phone,
           posBookingId: booking.id,
@@ -272,14 +271,14 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── POS: admin typed minutes → send to POS kitchen ──
-    const adminSess = session.get(from);
+    const adminSess = session.get(skey);
     if (adminSess && adminSess.awaitingPosTime && msgText) {
       const minutes = parseInt(msgText.trim());
       const ref = adminSess.awaitingPosTime;
       const custPhone = adminSess.posCustomerPhone;
       const posCart   = adminSess.posCart;
       const posComment = adminSess.posComment || '';
-      session.clear(from);
+      session.clear(skey);
 
       if (isNaN(minutes) || minutes <= 0) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Napaka: vnesite samo število minut (npr. 20).'));
@@ -336,7 +335,7 @@ async function handleMessage(msgObj, salon) {
       const minutes = parseInt(msgText.trim());
       const ref = adminSess.awaitingDeliveryTime;
       const custPhone = adminSess.deliveryCustomerPhone;
-      session.clear(from);
+      session.clear(skey);
       if (!isNaN(minutes) && minutes > 0 && custPhone) {
         await db.getBookingForSalon(salon.id, ref).then(b => b && db.updateBookingStatus(b.id, 'confirmed')).catch(() => {});
         await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: dostava v ${minutes} min. ✅`));
@@ -391,13 +390,13 @@ async function handleMessage(msgObj, salon) {
         ref = parts[1]; minutes = parseInt(parts[2]);
       } else if (parts.length === 2) {
         minutes = parseInt(parts[1]);
-        ref = session.get(from).awaitingDeliveryTime;
+        ref = session.get(skey).awaitingDeliveryTime;
       }
       if (ref && !isNaN(minutes) && minutes > 0) {
         const booking = await db.getBookingForSalon(salon.id, ref);
         if (booking) {
           await db.updateBookingStatus(booking.id, 'confirmed');
-          session.clear(from);
+          session.clear(skey);
           await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: dostava v ${minutes} min. ✅`));
           if (booking.customer_phone) {
             wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
@@ -437,7 +436,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     if (msgText) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = t.todayStr();
       if (/po[cc]isti|odstrani\s+star|zavrni\s+star/i.test(msgText)) {
         const pending = await db.getPendingBookings(salon.id);
         const past = pending.filter(b => (b.booking_date || '').substring(0, 10) < today);
@@ -473,11 +472,11 @@ async function handleMessage(msgObj, salon) {
   // SALES BOT FLOW (booking_mode = 'sales')
   // ══════════════════════════════════════════════════════
   if (salon.booking_mode === 'sales') {
-    const sess = session.get(from);
+    const sess = session.get(skey);
 
     // Step 201: got salon name → ask business type
     if (sess.step === 201 && msgText) {
-      session.set(from, { ...sess, step: 202, salonName: msgText.trim() });
+      session.set(skey, { ...sess, step: 202, salonName: msgText.trim() });
       await wa.send(phoneId, token, wa.salesTypeList(from));
       return;
     }
@@ -490,7 +489,7 @@ async function handleMessage(msgObj, salon) {
         stype_masaze: 'Masaže 🧘', stype_drugo: 'Drugo'
       };
       const sType = typeMap[iId] || msgText.trim() || 'Ni navedeno';
-      session.set(from, { ...sess, step: 203, salonType: sType });
+      session.set(skey, { ...sess, step: 203, salonType: sType });
       await wa.send(phoneId, token, wa.textMsg(from, '📧 Na kateri email vam pošljemo dostop in račun?'));
       return;
     }
@@ -498,15 +497,15 @@ async function handleMessage(msgObj, salon) {
     // Step 203: got email → show pricing + confirm
     if (sess.step === 203 && msgText) {
       const email = msgText.trim();
-      session.set(from, { ...sess, step: 204, email });
+      session.set(skey, { ...sess, step: 204, email });
       await wa.send(phoneId, token, wa.salesConfirmButtons(from, sess.salonName, sess.salonType, email));
       return;
     }
 
     // Step 204: confirmed → save lead, notify admin
     if (iId === 'sales_confirm') {
-      const s = session.get(from);
-      const today = new Date().toISOString().slice(0, 10);
+      const s = session.get(skey);
+      const today = t.todayStr();
       const leadData = {
         customer_phone: from,
         customer_name: s.salonName || 'Neznano',
@@ -518,7 +517,7 @@ async function handleMessage(msgObj, salon) {
         form_answers: JSON.stringify({ 'Salon': s.salonName, 'Vrsta': s.salonType, 'Email': s.email })
       };
       await db.createBooking(leadData).catch(e => console.error('[sales] save lead failed:', e.message));
-      session.clear(from);
+      session.clear(skey);
 
       // Notify admin via WA
       if (salonAdminPhone) {
@@ -540,13 +539,13 @@ async function handleMessage(msgObj, salon) {
 
     // Step 204: cancelled
     if (iId === 'sales_cancel') {
-      session.clear(from);
+      session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from, 'Ni problema! Če se premislite, smo tukaj. 😊'));
       return;
     }
 
     // Default / new session: welcome + ask salon name
-    session.set(from, { step: 201 });
+    session.set(skey, { step: 201 });
     await wa.send(phoneId, token, wa.textMsg(from,
       `👋 Pozdravljeni! Sem *FlowTiq* — WhatsApp rezervacijski bot za salone.\n\nVaše stranke rezervirajo termine 24/7 brez klicev in SMS-ov. Vi pa vse upravljate prek preprostega admin panela.\n\n🚀 Začnemo z nastavitvijo? Kako se imenuje vaš salon?`
     ));
@@ -559,7 +558,7 @@ async function handleMessage(msgObj, salon) {
   // ══════════════════════════════════════════════════════
   if (salon.booking_mode === 'delivery') {
     const services = await db.getServices(salon.id);
-    const sess = session.get(from);
+    const sess = session.get(skey);
 
     function fmtCart(cart) {
       return cart.map(item => `• ${item.name} — ${item.price} €`).join('\n');
@@ -583,7 +582,7 @@ async function handleMessage(msgObj, salon) {
       }
       const cart = (sess && sess.cart) || [];
       cart.push({ id: svc.id, name: svc.name, price: svc.price || 0 });
-      session.set(from, { ...sess, step: 301, cart });
+      session.set(skey, { ...sess, step: 301, cart });
       await wa.send(phoneId, token, wa.deliveryCartButtons(
         from,
         fmtCart(cart),
@@ -616,7 +615,7 @@ async function handleMessage(msgObj, salon) {
         `──────────────`,
         `💵 *SKUPAJ: ${grandTotal} €*`,
       ].join('\n');
-      session.set(from, { ...sess, step: 302, grandTotal, packFee, delFee });
+      session.set(skey, { ...sess, step: 302, grandTotal, packFee, delFee });
       await wa.send(phoneId, token, wa.textMsg(from,
         `🛒 *Vaše naročilo:*\n${fmtCart(sess.cart)}\n\n${priceBreakdown}\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
       ));
@@ -626,7 +625,7 @@ async function handleMessage(msgObj, salon) {
     // ── Step 302: opomba → vpraša ime
     if (sess && sess.step === 302 && msgText) {
       const opomba = msgText.trim().toUpperCase() === 'NE' ? '' : msgText.trim();
-      session.set(from, { ...sess, step: 303, opomba });
+      session.set(skey, { ...sess, step: 303, opomba });
       await wa.send(phoneId, token, wa.textMsg(from,
         '👤 Prosim vnesite vaše *ime in priimek*:'
       ));
@@ -636,7 +635,7 @@ async function handleMessage(msgObj, salon) {
     // ── Step 303: ime → vpraša naslov
     if (sess && sess.step === 303 && msgText) {
       const customerName = msgText.trim();
-      session.set(from, { ...sess, step: 304, customerName });
+      session.set(skey, { ...sess, step: 304, customerName });
       await wa.send(phoneId, token, wa.textMsg(from,
         '📍 Na kateri naslov dostavimo?\n_(ulica, hišna številka, kraj)_'
       ));
@@ -648,7 +647,7 @@ async function handleMessage(msgObj, salon) {
       const address = msgText.trim();
       const cart = sess.cart || [];
       const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
-      const sessF = session.get(from);
+      const sessF = session.get(skey);
       const pFee = parseFloat(sessF.packFee || salon.packaging_price || 0);
       const dFee = parseFloat(sessF.delFee  || salon.delivery_fee    || 0);
       const iTotal = parseFloat(cartTotal(cart));
@@ -660,7 +659,7 @@ async function handleMessage(msgObj, salon) {
         ...(pFee > 0 ? [`📦 Embalaža: ${pFee.toFixed(2)} €`] : []),
         ...(dFee > 0 ? [`🚗 Dostava:  ${dFee.toFixed(2)} €`]  : []),
       ].join('\n');
-      session.set(from, { ...sessF, step: 305, deliveryAddress: address, grandTotal: gTotal, packFee: pFee, delFee: dFee });
+      session.set(skey, { ...sessF, step: 305, deliveryAddress: address, grandTotal: gTotal, packFee: pFee, delFee: dFee });
       await wa.send(phoneId, token, wa.deliveryConfirmButtons(
         from,
         breakdownTxt,
@@ -672,15 +671,15 @@ async function handleMessage(msgObj, salon) {
 
     // ── Potrdi naročilo
     if (iId === 'delivery_confirm') {
-      const s = session.get(from);
+      const s = session.get(skey);
       const cart = s.cart || [];
       if (!cart.length || !s.deliveryAddress) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Začnite znova.'));
-        session.clear(from);
+        session.clear(skey);
         return;
       }
       const total = s.grandTotal || cartTotal(cart);
-      const today = new Date().toISOString().slice(0, 10);
+      const today = t.todayStr();
       const custName = s.customerName || from;
       const opomba  = s.opomba || '';
       const bookingData = {
@@ -688,7 +687,7 @@ async function handleMessage(msgObj, salon) {
         customer_name:  custName,
         salon_id:       salon.id,
         booking_date:   today,
-        booking_time:   new Date().toTimeString().slice(0, 8),
+        booking_time:   t.nowTimeHMS(),
         status:         'pending',
         notes:          `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
         form_answers:   JSON.stringify({
@@ -714,7 +713,7 @@ async function handleMessage(msgObj, salon) {
           console.error('[order_items] save error:', e.message)
         );
       }
-      session.clear(from);
+      session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from,
         `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nPicerija bo naročilo kmalu potrdila in vas obvestila o času dostave. 🍕`
       ));
@@ -723,20 +722,20 @@ async function handleMessage(msgObj, salon) {
 
     // ── Prekliči
     if (iId === 'delivery_cancel') {
-      session.clear(from);
+      session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from, 'Naročilo preklicano. Dobrodošli nazaj! 🍕'));
       return;
     }
 
     // ── Default: pozdrav + meni
-    session.set(from, { step: 300, cart: [] });
+    session.set(skey, { step: 300, cart: [] });
     await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
     return;
   }
 
 
 
-  const sess = session.get(from);
+  const sess = session.get(skey);
   const services = await db.getServices(salon.id);
 
   // ══════════════════════════════════════════════════════
@@ -757,7 +756,7 @@ async function handleMessage(msgObj, salon) {
     const posAccount = salon.pos_account || '';
     const posSpotId  = salon.pos_spot_id || 1;
 
-    const sess = session.get(from) || {};
+    const sess = session.get(skey) || {};
 
     // Helper: format cart for display
     function fmtPosCart(cart) {
@@ -791,7 +790,7 @@ async function handleMessage(msgObj, salon) {
         const catNames = Object.keys(cats);
 
         // Cache menu in session
-        session.set(from, { posStep: 'category', cart: sess.cart || [], posMenu: menu, posCats: cats });
+        session.set(skey, { posStep: 'category', cart: sess.cart || [], posMenu: menu, posCats: cats });
 
         // Build WhatsApp list sections (max 10 items per section, max 10 sections)
         const sections = catNames.slice(0, 10).map(cat => ({
@@ -845,7 +844,7 @@ async function handleMessage(msgObj, salon) {
       }
 
       // Ask quantity
-      session.set(from, { ...sess, posStep: 'qty', pendingItem: item });
+      session.set(skey, { ...sess, posStep: 'qty', pendingItem: item });
 
       await wa.send(phoneId, token, {
         messaging_product: 'whatsapp',
@@ -879,7 +878,7 @@ async function handleMessage(msgObj, salon) {
       } else {
         cart.push({ id: item.id, name: item.name, price: item.price, qty });
       }
-      session.set(from, { ...sess, posStep: 'cart', cart, pendingItem: null });
+      session.set(skey, { ...sess, posStep: 'cart', cart, pendingItem: null });
 
       await wa.send(phoneId, token, {
         messaging_product: 'whatsapp',
@@ -907,7 +906,7 @@ async function handleMessage(msgObj, salon) {
       const cart = sess.cart || [];
       const existing = cart.find(c => String(c.id) === String(item.id));
       if (existing) existing.qty += qty; else cart.push({ id: item.id, name: item.name, price: item.price, qty });
-      session.set(from, { ...sess, posStep: 'cart', cart, pendingItem: null });
+      session.set(skey, { ...sess, posStep: 'cart', cart, pendingItem: null });
       await wa.send(phoneId, token, {
         messaging_product: 'whatsapp',
         to: from,
@@ -930,7 +929,7 @@ async function handleMessage(msgObj, salon) {
       // Re-show menu from cached session
       const menu = sess.posMenu || [];
       if (!menu.length) {
-        session.set(from, { posStep: null });
+        session.set(skey, { posStep: null });
         await wa.send(phoneId, token, wa.textMsg(from, 'Pišite karkoli za prikaz menija.'));
         return;
       }
@@ -966,10 +965,10 @@ async function handleMessage(msgObj, salon) {
       const cart = sess.cart || [];
       if (!cart.length) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel iz menija.'));
-        session.set(from, { posStep: null });
+        session.set(skey, { posStep: null });
         return;
       }
-      session.set(from, { ...sess, posStep: 'table' });
+      session.set(skey, { ...sess, posStep: 'table' });
       await wa.send(phoneId, token, wa.textMsg(from,
         `🛒 *Vaše naročilo:*\n${fmtPosCart(cart)}\n\n💰 Skupaj: *${posCartTotal(cart)} €*\n\n📋 Napišite številko mize ali opombo (npr. *Miza 5* ali *Brez česna*).\n\nZa nadaljevanje brez opombe pošljite *NE*.`
       ));
@@ -980,7 +979,7 @@ async function handleMessage(msgObj, salon) {
     if (sess.posStep === 'table' && msgText) {
       const comment = msgText.trim().toUpperCase() === 'NE' ? '' : msgText.trim();
       const cart = sess.cart || [];
-      session.set(from, { ...sess, posStep: 'confirm', posComment: comment });
+      session.set(skey, { ...sess, posStep: 'confirm', posComment: comment });
       const opombaTxt = comment ? `\n📝 Opomba: ${comment}` : '';
       await wa.send(phoneId, token, {
         messaging_product: 'whatsapp',
@@ -1002,20 +1001,20 @@ async function handleMessage(msgObj, salon) {
     if (iId === 'pos_confirm') {
       const cart = sess.cart || [];
       if (!cart.length) {
-        session.clear(from);
+        session.clear(skey);
         await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Pišite karkoli za nov začetek.'));
         return;
       }
       const comment = sess.posComment || '';
 
       // Also save to our DB (reference order)
-      const today = new Date().toISOString().slice(0, 10);
+      const today = t.todayStr();
       const bookingData = {
         customer_phone: from,
         customer_name:  from,
         salon_id:       salon.id,
         booking_date:   today,
-        booking_time:   new Date().toTimeString().slice(0, 8),
+        booking_time:   t.nowTimeHMS(),
         status:         'pending',
         notes:          `POS NAROČILO | ${salon.pos_type?.toUpperCase()} | Skupaj: ${posCartTotal(cart)} €${comment ? ' | ' + comment : ''}`,
         form_answers:   JSON.stringify({ narocilo: fmtPosCart(cart), skupaj: posCartTotal(cart) + ' €', opomba: comment })
@@ -1032,7 +1031,7 @@ async function handleMessage(msgObj, salon) {
           spot_id: posSpotId,
           comment,
         });
-        session.clear(from);
+        session.clear(skey);
         if (posResult.success) {
           await wa.send(phoneId, token, wa.textMsg(from,
             `✅ Naročilo sprejeto!\n\n🔑 Ref: *#${ref6}*\n\nVaše naročilo je poslano v kuhinjo. 🍽️`
@@ -1045,7 +1044,7 @@ async function handleMessage(msgObj, salon) {
           db.logError(salon.id, 'pos_create_order', posResult.message, null, from).catch(() => {});
         }
       } catch (e) {
-        session.clear(from);
+        session.clear(skey);
         console.error('[POS] confirm exception:', e.message);
         await wa.send(phoneId, token, wa.textMsg(from,
           `✅ Naročilo sprejeto! (Ref: *#${ref6}*)\n\nHvala! 🍽️`
@@ -1056,13 +1055,13 @@ async function handleMessage(msgObj, salon) {
 
     // ── Prekliči ──
     if (iId === 'pos_cancel') {
-      session.clear(from);
+      session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from, '❌ Naročilo preklicano. Dobrodošli nazaj! Pišite karkoli za nov začetek.'));
       return;
     }
 
     // ── Fallback: show menu ──
-    session.set(from, { posStep: null });
+    session.set(skey, { posStep: null });
     const greet = salon.greeting_message
       ? salon.greeting_message
       : `Dobrodošli v *${salon.name}*! 🍽️ Pišite *menu* za prikaz menija.`;
@@ -1086,11 +1085,11 @@ async function handleMessage(msgObj, salon) {
   const goAfterTime = async (date, time, sessData) => {
     if (formFields.length > 0) {
       const first = formFields[0];
-      session.set(from, { ...sessData, step: 10, selectedDate: date, selectedTime: time, fieldIndex: 0, formAnswers: {} });
+      session.set(skey, { ...sessData, step: 10, selectedDate: date, selectedTime: time, fieldIndex: 0, formAnswers: {} });
       const opt = first.required ? '' : ' (opcijsko - 0 za preskok)';
       await wa.send(phoneId, token, wa.textMsg(from, `${first.label}:${opt}`));
     } else {
-      session.set(from, { ...sessData, step: 4, selectedDate: date, selectedTime: time });
+      session.set(skey, { ...sessData, step: 4, selectedDate: date, selectedTime: time });
       await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
     }
   };
@@ -1098,7 +1097,7 @@ async function handleMessage(msgObj, salon) {
   // Helper: start form fields first (datetime_position = 'last')
   const goFormFirst = async (sessData) => {
     const first = formFields[0];
-    session.set(from, { ...sessData, step: 30, fieldIndex: 0, formAnswers: {} });
+    session.set(skey, { ...sessData, step: 30, fieldIndex: 0, formAnswers: {} });
     const opt = first.required ? '' : ' (opcijsko - 0 za preskok)';
     await wa.send(phoneId, token, wa.textMsg(from, `${first.label}:${opt}`));
   };
@@ -1106,14 +1105,14 @@ async function handleMessage(msgObj, salon) {
   // Helper: after form fields collected in 'last' mode → ask for date
   const goDateAfterForm = async (sessData) => {
     const freeDates = await getFreeDates(salon, 30, sessData.serviceDuration);
-    session.set(from, { ...sessData, step: 31 });
+    session.set(skey, { ...sessData, step: 31 });
     await wa.send(phoneId, token, wa.dateList(from, freeDates));
   };
 
   // Helper: submit inquiry (step 10 or step 20)
   const submitInquiry = async (customerName, formAnswers, serviceId, preferredDate, preferredTime) => {
     const svc = services.find(sv => sv.id === serviceId);
-    const today = new Date().toISOString().split('T')[0];
+    const today = t.todayStr();
     const bDate = preferredDate || today;
     const rawTime = preferredTime || '00:00:00';
     const bTime = /^\d{1,2}:\d{2}$/.test(rawTime) ? rawTime + ':00' : rawTime;
@@ -1131,7 +1130,7 @@ async function handleMessage(msgObj, salon) {
     };
     const bk = await db.createBooking(bData);
     const r6 = (bk.id || '').slice(-6);
-    session.clear(from);
+    session.clear(skey);
     const cMsg = salon.inquiry_confirmation_message || 'Hvala za povprasevanje! Kontaktirali vas bomo cim prej.';
     await wa.send(phoneId, token, wa.textMsg(from, `${cMsg}\n\nRef: *${r6}*`));
     const aSum = Object.entries(formAnswers || {}).map(([k, v]) => `${k}: ${v}`).join('\n');
@@ -1148,22 +1147,22 @@ async function handleMessage(msgObj, salon) {
 
   // ── Step 6: preferred date for inquiry ──
   if (sess.step === 6 && msgText) {
-    session.set(from, { ...sess, step: 7, preferredDate: msgText.trim() });
+    session.set(skey, { ...sess, step: 7, preferredDate: msgText.trim() });
     await wa.send(phoneId, token, wa.textMsg(from, 'Ob kateri uri? (npr. 10:00, popoldne...)'));
     return;
   }
 
   // ── Step 7: preferred time for inquiry ──
   if (sess.step === 7 && msgText) {
-    const s = session.get(from);
+    const s = session.get(skey);
     const updated = { ...s, preferredTime: msgText.trim() };
     if (formFields.length > 0) {
       const first = formFields[0];
-      session.set(from, { ...updated, step: 10, fieldIndex: 0, formAnswers: {} });
+      session.set(skey, { ...updated, step: 10, fieldIndex: 0, formAnswers: {} });
       const opt = first.required ? '' : ' (opcijsko - 0 za preskok)';
       await wa.send(phoneId, token, wa.textMsg(from, `${first.label}:${opt}`));
     } else {
-      session.set(from, { ...updated, step: 20, formAnswers: {} });
+      session.set(skey, { ...updated, step: 20, formAnswers: {} });
       await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
     }
     return;
@@ -1171,7 +1170,7 @@ async function handleMessage(msgObj, salon) {
 
   // ── Step 10: collecting form fields ──
   if (sess.step === 10 && msgText) {
-    const s = session.get(from);
+    const s = session.get(skey);
     const fi = s.fieldIndex || 0;
     const field = formFields[fi];
     const skipped = msgText.trim() === '0' && field && !field.required;
@@ -1179,7 +1178,7 @@ async function handleMessage(msgObj, salon) {
     const nextFi = fi + 1;
     if (nextFi < formFields.length) {
       const nextField = formFields[nextFi];
-      session.set(from, { ...s, step: 10, fieldIndex: nextFi, formAnswers: answers });
+      session.set(skey, { ...s, step: 10, fieldIndex: nextFi, formAnswers: answers });
       const opt = nextField.required ? '' : ' (opcijsko - 0 za preskok)';
       await wa.send(phoneId, token, wa.textMsg(from, `${nextField.label}:${opt}`));
     } else {
@@ -1194,16 +1193,16 @@ async function handleMessage(msgObj, salon) {
         if (autoName) {
           await submitInquiry(autoName, answers, s.serviceId, s.preferredDate, s.preferredTime);
         } else {
-          session.set(from, { ...s, step: 20, formAnswers: answers });
+          session.set(skey, { ...s, step: 20, formAnswers: answers });
           await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
         }
       } else {
         if (autoName) {
           const svc = services.find(sv => sv.id === s.serviceId);
-          session.set(from, { ...s, step: 5, customerName: autoName, formAnswers: answers });
+          session.set(skey, { ...s, step: 5, customerName: autoName, formAnswers: answers });
           await wa.send(phoneId, token, wa.finalConfirmButtons(from, s.selectedDate, s.selectedTime, autoName, svc ? svc.name : 'Storitev'));
         } else {
-          session.set(from, { ...s, step: 4, formAnswers: answers });
+          session.set(skey, { ...s, step: 4, formAnswers: answers });
           await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
         }
       }
@@ -1213,14 +1212,14 @@ async function handleMessage(msgObj, salon) {
 
   // ── Step 20: name for inquiry (no name in form fields) ──
   if (sess.step === 20 && msgText) {
-    const s = session.get(from);
+    const s = session.get(skey);
     await submitInquiry(msgText.trim(), s.formAnswers, s.serviceId, s.preferredDate, s.preferredTime);
     return;
   }
 
   // ── Step 30: collecting form fields BEFORE date (datetime_position = 'last') ──
   if (sess.step === 30 && msgText) {
-    const s = session.get(from);
+    const s = session.get(skey);
     const fi = s.fieldIndex || 0;
     const field = formFields[fi];
     const skipped = msgText.trim() === '0' && field && !field.required;
@@ -1228,7 +1227,7 @@ async function handleMessage(msgObj, salon) {
     const nextFi = fi + 1;
     if (nextFi < formFields.length) {
       const nextField = formFields[nextFi];
-      session.set(from, { ...s, step: 30, fieldIndex: nextFi, formAnswers: answers });
+      session.set(skey, { ...s, step: 30, fieldIndex: nextFi, formAnswers: answers });
       const opt = nextField.required ? '' : ' (opcijsko - 0 za preskok)';
       await wa.send(phoneId, token, wa.textMsg(from, `${nextField.label}:${opt}`));
     } else {
@@ -1263,7 +1262,7 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
         return;
       }
-      session.set(from, { ...sess, step: 32, selectedDate: date });
+      session.set(skey, { ...sess, step: 32, selectedDate: date });
       await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, date, sess.serviceDuration), date));
     } else {
       await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
@@ -1275,12 +1274,12 @@ async function handleMessage(msgObj, salon) {
   if (sess.step === 32 && msgText) {
     const { date: parsedDate, time: parsedTime } = parseCustomerDateTime(msgText);
     const useDate = parsedDate || sess.selectedDate;
-    if (!useDate) { session.clear(from); await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon))); return; }
+    if (!useDate) { session.clear(skey); await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon))); return; }
     if (parsedTime) {
       const bestTime = await resolveCustomTime(salon, useDate, parsedTime, sess.serviceDuration);
       if (bestTime) {
         // Skip formFields (already collected in step 30), go straight to name/confirm
-        const s = session.get(from);
+        const s = session.get(skey);
         const nameField = formFields.find(f =>
           f.id === 'full_name' || f.id === 'name' || f.id === 'ime' ||
           /ime.*priimek|full.?name/i.test(f.label || '')
@@ -1288,10 +1287,10 @@ async function handleMessage(msgObj, salon) {
         const autoName = nameField ? ((s.formAnswers || {})[nameField.label] || null) : null;
         if (autoName) {
           const svc = services.find(sv => sv.id === s.serviceId);
-          session.set(from, { ...s, step: 5, customerName: autoName, selectedDate: useDate, selectedTime: bestTime });
+          session.set(skey, { ...s, step: 5, customerName: autoName, selectedDate: useDate, selectedTime: bestTime });
           await wa.send(phoneId, token, wa.finalConfirmButtons(from, useDate, bestTime, autoName, svc ? svc.name : 'Storitev'));
         } else {
-          session.set(from, { ...s, step: 4, selectedDate: useDate, selectedTime: bestTime });
+          session.set(skey, { ...s, step: 4, selectedDate: useDate, selectedTime: bestTime });
           await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
         }
       } else {
@@ -1306,24 +1305,24 @@ async function handleMessage(msgObj, salon) {
 
   // ── Step 4: name for exact_time ──
   if (sess.step === 4 && msgText) {
-    const s = session.get(from);
+    const s = session.get(skey);
     if (!s.selectedDate || !s.selectedTime || !s.serviceId) {
       await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Zacnite znova.'));
-      session.clear(from);
+      session.clear(skey);
       return;
     }
     const svc = services.find(sv => sv.id === s.serviceId);
-    session.set(from, { ...s, step: 5, customerName: msgText.trim() });
+    session.set(skey, { ...s, step: 5, customerName: msgText.trim() });
     await wa.send(phoneId, token, wa.finalConfirmButtons(from, s.selectedDate, s.selectedTime, msgText.trim(), svc ? svc.name : 'Storitev'));
     return;
   }
 
   // ── Step 5 / final_confirm — ustvari rezervacijo ──
   if ((iId === 'final_confirm') || (sess.step === 5 && iId === 'final_confirm')) {
-    const s = session.get(from);
+    const s = session.get(skey);
     if (!s.selectedDate || !s.selectedTime || !s.serviceId || !s.customerName) {
       await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Zacnite znova.'));
-      session.clear(from);
+      session.clear(skey);
       return;
     }
     const svc = services.find(sv => sv.id === s.serviceId);
@@ -1344,11 +1343,22 @@ async function handleMessage(msgObj, salon) {
     };
     if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
 
-    const booking = await db.createBookingIfFree(bookingData);
+    let booking;
+    try {
+      booking = await db.createBookingIfFree(bookingData);
+    } catch (e) {
+      if (e.code === 'SLOT_TAKEN') {
+        session.set(skey, { ...s, step: 2 });
+        await wa.send(phoneId, token, wa.textMsg(from, 'Ta termin je bil žal pravkar zaseden. 😕 Izberite drugo uro:'));
+        await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, s.selectedDate, s.serviceDuration), s.selectedDate));
+        return;
+      }
+      throw e;
+    }
     const ref6 = (booking.id || '').slice(-6);
     const fDate = fmtDate(s.selectedDate);
     const fTime = (s.selectedTime || '').substring(0, 5);
-    session.clear(from);
+    session.clear(skey);
 
     // Sporocilo stranki glede na auto_confirm
     const faLines = Object.entries(fa).map(([k, v]) => `• ${k}: ${v}`).join('\n');
@@ -1416,7 +1426,7 @@ async function handleMessage(msgObj, salon) {
 
   // ── final_cancel — prekliči ──
   if (iId === 'final_cancel') {
-    session.clear(from);
+    session.clear(skey);
     await wa.send(phoneId, token, wa.textMsg(from, 'Rezervacija preklicana. Ce zelite rezervirati znova, nam pisˇite.'));
     return;
   }
@@ -1428,7 +1438,7 @@ async function handleMessage(msgObj, salon) {
     const serviceDuration = svc ? svc.duration_minutes : null;
 
     if (bookingMode === 'inquiry') {
-      session.set(from, { step: 6, serviceId: svcId });
+      session.set(skey, { step: 6, serviceId: svcId });
       await wa.send(phoneId, token, wa.textMsg(from, 'Kdaj bi zeleli priti? (npr. v petek, 28.5., naslednji teden...)'));
       return;
     }
@@ -1439,7 +1449,7 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    session.set(from, { step: 1, serviceId: svcId, serviceDuration });
+    session.set(skey, { step: 1, serviceId: svcId, serviceDuration });
     const freeDates = await getFreeDates(salon, 30, serviceDuration);
     await wa.send(phoneId, token, wa.dateList(from, freeDates));
     return;
@@ -1470,7 +1480,7 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
         return;
       }
-      session.set(from, { ...sess, step: 2, selectedDate: date });
+      session.set(skey, { ...sess, step: 2, selectedDate: date });
       await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, date, sess.serviceDuration), date));
     } else {
       await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
@@ -1483,7 +1493,7 @@ async function handleMessage(msgObj, salon) {
     const { date: parsedDate, time: parsedTime } = parseCustomerDateTime(msgText);
     const useDate = parsedDate || sess.selectedDate;
     if (!useDate) {
-      session.clear(from);
+      session.clear(skey);
       await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon)));
       return;
     }
@@ -1505,7 +1515,7 @@ async function handleMessage(msgObj, salon) {
   if (iId.startsWith('date_')) {
     const date = iId.replace('date_', '');
     const nextStep = (sess.step === 31) ? 32 : 2;
-    session.set(from, { ...sess, step: nextStep, selectedDate: date });
+    session.set(skey, { ...sess, step: nextStep, selectedDate: date });
     await wa.send(phoneId, token, wa.timeList(from, await getFreeTimesForDate(salon, date, sess.serviceDuration), date));
     return;
   }
@@ -1517,7 +1527,7 @@ async function handleMessage(msgObj, salon) {
     const time = withoutPrefix.substring(11).replace('h', ':');
     if (sess.step === 31 || sess.step === 32) {
       // datetime_position = 'last': form already collected, go straight to name/confirm
-      const s = session.get(from);
+      const s = session.get(skey);
       const nameField = formFields.find(f =>
         f.id === 'full_name' || f.id === 'name' || f.id === 'ime' ||
         /ime.*priimek|full.?name/i.test(f.label || '')
@@ -1525,10 +1535,10 @@ async function handleMessage(msgObj, salon) {
       const autoName = nameField ? ((s.formAnswers || {})[nameField.label] || null) : null;
       if (autoName) {
         const svc = services.find(sv => sv.id === s.serviceId);
-        session.set(from, { ...s, step: 5, customerName: autoName, selectedDate: date, selectedTime: time });
+        session.set(skey, { ...s, step: 5, customerName: autoName, selectedDate: date, selectedTime: time });
         await wa.send(phoneId, token, wa.finalConfirmButtons(from, date, time, autoName, svc ? svc.name : 'Storitev'));
       } else {
-        session.set(from, { ...s, step: 4, selectedDate: date, selectedTime: time });
+        session.set(skey, { ...s, step: 4, selectedDate: date, selectedTime: time });
         await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
       }
     } else {
@@ -1537,71 +1547,9 @@ async function handleMessage(msgObj, salon) {
     return;
   }
 
-  // ── Final confirm → create booking ──
-  if (iId === 'final_confirm') {
-    const s = session.get(from);
-    if (!s.selectedDate || !s.selectedTime || !s.serviceId || !s.customerName) {
-      await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Zacnite znova.'));
-      session.clear(from);
-      return;
-    }
-    const customerName = s.customerName;
-    const faObj = (s.formAnswers && Object.keys(s.formAnswers).length) ? s.formAnswers : null;
-    const fa = faObj ? JSON.stringify(faObj) : null;
-    const bookingData = {
-      customer_phone: from,
-      customer_name: customerName,
-      salon_id: salon.id,
-      service_id: s.serviceId,
-      booking_date: s.selectedDate,
-      booking_time: s.selectedTime + ':00',
-      status: 'pending',
-      notes: '',
-      form_answers: faObj
-    };
-    if (s.serviceDuration) bookingData.duration_minutes = s.serviceDuration;
-    const booking = await db.createBookingIfFree(bookingData);
-    const ref6 = (booking.id || '').slice(-6);
-    const fDate = fmtDate(s.selectedDate);
-    session.clear(from);
-
-    await wa.send(phoneId, token, wa.textMsg(from,
-      `Rezervacija oddana!\n\nIme: ${customerName}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*\n\nCakamo na potrditev. Ko bo potrjena, vas obvestimo. Hvala!`
-    ));
-
-    if (salonAdminPhone) {
-      const faLines = faObj ? Object.entries(faObj).map(([k,v]) => `• ${k}: ${v}`).join('\n') : '';
-      const faBlock = faLines ? `\n\n📋 Odgovori stranke:\n${faLines}` : '';
-      const adminMsg = `📩 Nova rezervacija\n\nIme: ${customerName}\nTel: +${from}\nDatum: ${fDate} ob ${s.selectedTime}\nRef: *${ref6}*${faBlock}\n\nPotrdi: *#potrdi ${ref6}*`;
-      try {
-        await wa.send(phoneId, token, wa.adminBookingNotif(salonAdminPhone, customerName, from, fDate, s.selectedTime, ref6));
-        if (faLines) await wa.send(phoneId, token, wa.textMsg(salonAdminPhone, `📋 Odgovori stranke za *${ref6}*:\n${faLines}`));
-      } catch (e) {
-        try {
-          await wa.send(phoneId, token, wa.adminBookingNotifSession(salonAdminPhone, customerName, from, s.selectedDate, s.selectedTime, ref6));
-          if (faLines) await wa.send(phoneId, token, wa.textMsg(salonAdminPhone, `📋 Odgovori stranke za *${ref6}*:\n${faLines}`));
-        } catch (e2) {
-          wa.send(phoneId, token, wa.textMsg(salonAdminPhone, adminMsg))
-            .catch(e3 => db.logError(salon.id, 'admin_notify', e3.message, 'Admin WA ni uspelo', from));
-        }
-      }
-    } else {
-      console.log(`[email] Sending admin confirm email to ${salon.owner_email} for booking ${booking.id}`);
-      mail.sendAdminBookingConfirmEmail(salon, customerName, from, fDate, s.selectedTime, ref6, booking.id, faObj)
-        .catch(e => console.error('[email] admin confirm email failed:', e.message));
-    }
-    return;
-  }
-
-  // ── Final cancel ──
-  if (iId === 'final_cancel') {
-    session.clear(from);
-    await wa.send(phoneId, token, wa.textMsg(from, 'Rezervacija preklicana. Pisite nam kadarkoli.'));
-    return;
-  }
 
   // ── Default: show service list ──
-  session.clear(from);
+  session.clear(skey);
   await wa.send(phoneId, token, wa.serviceList(from, services, salon));
 }
 

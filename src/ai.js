@@ -1,6 +1,7 @@
 const axios = require('axios');
 const FormData = require('form-data');
 const db = require('./supabase');
+const t = require('./time');
 
 // ─── OpenAI API via axios (brez SDK) ─────────────────────────
 async function openaiChat(messages, tools) {
@@ -324,9 +325,8 @@ Odgovarjaj kratko in prijazno v slovenščini.
 
 // ─── Main AI handler ─────────────────────────────────────────
 async function askAdminAI(message, salonId) {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  const dayName = now.toLocaleDateString('sl-SI', { weekday: 'long' });
+  const today = t.todayStr();
+  const dayName = new Date().toLocaleDateString('sl-SI', { weekday: 'long', timeZone: t.TZ });
 
   const systemPrompt = `Si inteligentni WhatsApp asistent FlowTiq za upravljanje naročil.
 Danes je ${dayName}, ${today}.

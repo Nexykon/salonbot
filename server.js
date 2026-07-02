@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const axios = require('axios');
 const fs = require('fs');
 const { handleMessage } = require('./src/handler');
 const { getAdapter } = require('./src/pos-adapters');
@@ -11,6 +12,7 @@ const mail = require('./src/email');
 const { startScheduler } = require('./src/scheduler');
 const ownerAuth = require('./src/auth');
 const { getPreset, listBusinessTypes, normalizeBusinessType, slugify } = require('./src/presets');
+const t = require('./src/time');
 
 const app = express();
 
@@ -37,6 +39,25 @@ function masterAdminPhones() {
 
 function isMasterAdminPhone(phone) {
   return masterAdminPhones().has(cleanPhone(phone));
+}
+
+// ─── Preprost rate limiter za javne endpointe (per IP) ────────
+const rateBuckets = new Map();
+function rateLimit(maxReq, windowMs) {
+  return (req, res, next) => {
+    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown';
+    const key = req.path + '|' + ip;
+    const now = Date.now();
+    let bucket = rateBuckets.get(key);
+    if (!bucket || now - bucket.start > windowMs) {
+      bucket = { start: now, count: 0 };
+      rateBuckets.set(key, bucket);
+    }
+    bucket.count++;
+    if (rateBuckets.size > 10000) rateBuckets.clear(); // varovalka proti puščanju pomnilnika
+    if (bucket.count > maxReq) return res.status(429).json({ error: 'Preveč zahtev. Poskusite čez nekaj minut.' });
+    next();
+  };
 }
 
 function defaultFormFields(salon) {
@@ -197,10 +218,10 @@ async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, 
   }
   const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
   const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
+  const answersText = Object.keys(formAnswers || {}).length
+    ? `\n\n📋 Odgovori strank:\n${Object.entries(formAnswers).map(([k,v]) => `• ${k}: ${v}`).join('\n')}`
+    : '';
   try {
-    const answersText = Object.keys(formAnswers || {}).length
-      ? `\n\n📋 Odgovori strank:\n${Object.entries(formAnswers).map(([k,v]) => `• ${k}: ${v}`).join('\n')}`
-      : '';
     await wa.send(phoneId, token, wa.adminBookingNotif(to, customerName, phone, date, time, ref6));
     // Send form answers as separate text message if any
     if (answersText) {
@@ -344,7 +365,6 @@ app.post('/api/pos/confirm-order/:salonId/:bookingId', adminAuth, async (req, re
     const salon = await db.getSalonById(salonId);
     if (!salon) return res.status(404).json({ error: 'Salon ni najden' });
 
-    const booking = await db.getSalonById(bookingId).catch(() => null);
     // Fetch booking directly
     const BASE_SB = process.env.SUPABASE_URL + '/rest/v1';
     const SB_HDR  = {
@@ -387,7 +407,7 @@ app.post('/api/pos/confirm-order/:salonId/:bookingId', adminAuth, async (req, re
     const mins = parseInt(minutes) || 0;
     if (custPhone && custPhone !== 'manual' && mins > 0) {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-      const waToken = process.env.WA_TOKEN;
+      const waToken = salon.whatsapp_access_token || process.env.WA_TOKEN;
       if (phoneId && waToken) {
         const { send, textMsg } = require('./src/whatsapp');
         send(phoneId, waToken, textMsg(custPhone,
@@ -432,7 +452,7 @@ app.post('/stripe/webhook', async (req, res) => {
       case 'invoice.paid': {
         const invoice = event.data.object;
         const subId = invoice.subscription;
-        await db.updateSubscriptionStatus(subId, 'active');
+        if (subId) await db.updateSubscriptionStatus(subId, 'active');
         await db.logInvoice(null, invoice.id, invoice.amount_paid / 100, 'paid');
         console.log('Subscription activated:', subId);
         break;
@@ -441,7 +461,7 @@ app.post('/stripe/webhook', async (req, res) => {
       case 'invoice.payment_failed': {
         const sub = event.data.object;
         const subId = sub.subscription || sub.id;
-        await db.updateSubscriptionStatus(subId, 'inactive');
+        if (subId) await db.updateSubscriptionStatus(subId, 'inactive');
         console.log('Subscription deactivated:', subId);
 
         // Obvesti FlowTiq ownerja
@@ -1280,7 +1300,7 @@ app.get('/api/book/times', async (req, res) => {
 });
 
 // Create booking (public)
-app.post('/api/book', async (req, res) => {
+app.post('/api/book', rateLimit(20, 10 * 60 * 1000), async (req, res) => {
   const { serviceId, date, time, customerName, customerPhone } = req.body;
   const formAnswers = req.body.formAnswers && typeof req.body.formAnswers === 'object' ? req.body.formAnswers : {};
   if (!date || !customerName || !customerPhone) {
@@ -1395,7 +1415,7 @@ app.get('/api/confirm-booking', async (req, res) => {
 
     const salon = await db.getSalonById(booking.salon_id);
     const phoneId = (salon && salon.whatsapp_phone_number_id) || process.env.WA_PHONE_ID;
-    const token = process.env.WA_TOKEN;
+    const token = (salon && salon.whatsapp_access_token) || process.env.WA_TOKEN;
     const fmtD = d => { const dt = new Date(d.substring(0,10)+'T12:00:00'); return String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0')+'.'+dt.getFullYear(); };
     const custDate = fmtD(booking.booking_date || '2000-01-01');
     const custTime = (booking.booking_time || '').substring(0, 5);
@@ -1476,7 +1496,7 @@ app.patch('/api/admin/bookings/:ref/confirm', async (req, res) => {
     // Pošlji obvestilo stranki (async, ne blokiraj odgovora)
     if (salon) {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
       const custDate = booking.booking_date ? (() => {
         const d = new Date(booking.booking_date.substring(0,10) + 'T12:00:00');
         return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
@@ -1525,7 +1545,7 @@ app.patch('/api/admin/bookings/:ref/cancel', async (req, res) => {
     // Obvesti stranko o zavrnitvi (async)
     if (salon) {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
       const custDate = booking.booking_date ? (() => {
         const d = new Date(booking.booking_date.substring(0,10) + 'T12:00:00');
         return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
@@ -1585,7 +1605,7 @@ app.get('/api/orders', async (req, res) => {
   if (!salon) return;
   try {
     const status = req.query.status || 'all';
-    const today = new Date().toISOString().slice(0, 10);
+    const today = t.todayStr();
     const orderDir = status === 'pending' ? 'asc' : 'desc';
     const pageSize = 50;
     const page = Math.max(0, parseInt(req.query.page || '0', 10));
@@ -1633,7 +1653,7 @@ app.post('/api/orders/:id/accept', async (req, res) => {
     // Notify customer via WA
     if (bookingFull.customer_phone) {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
       wa.send(phoneId, token, wa.textMsg(bookingFull.customer_phone,
         `🍕 Vaše naročilo je potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala za naročilo! 😊`
       )).catch(e => console.error('[delivery accept] WA err:', e.message));
@@ -1722,7 +1742,7 @@ app.post('/api/orders/:id/reject', async (req, res) => {
     await db.updateBookingStatus(booking.id, 'cancelled');
     if (booking.customer_phone) {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
       wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
         `Žal vaše naročilo ni bilo sprejeto. Za več informacij nas pokličite. 😔`
       )).catch(() => {});
@@ -1732,7 +1752,7 @@ app.post('/api/orders/:id/reject', async (req, res) => {
 });
 
 // ─── Public Contact Form (landing page) ──────────────────────────────────────
-app.post('/api/contact', async (req, res) => {
+app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
   try {
     const { name, email, phone, business_type } = req.body || {};
     if (!name || !email || !business_type) {
@@ -1828,10 +1848,11 @@ app.get('/track/:token/:response', async (req, res) => {
       { status, responded_at: new Date().toISOString() }
     );
   } catch (e) { /* ne blokiraj redirect */ }
+  const trackBase = process.env.BASE_URL || 'https://salonbot-production-785b.up.railway.app';
   if (status === 'interested') {
-    res.redirect('https://salonbot-production-785b.up.railway.app/?interesse=1#cena');
+    res.redirect(trackBase + '/?interesse=1#cena');
   } else {
-    res.redirect('https://salonbot-production-785b.up.railway.app/?interesse=0');
+    res.redirect(trackBase + '/?interesse=0');
   }
 });
 
@@ -2214,19 +2235,7 @@ app.post('/api/leads/bulk-send', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/leads/:id/reset — ponastavi email_sent_at (za ponovno pošiljanje)
-app.post('/api/leads/:id/reset', async (req, res) => {
-  if (!adminAuth(req, res)) return;
-  try {
-    const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
-    if (!leads[0]) return res.status(404).json({ error: 'Lead ne obstaja' });
-    await sbLeads('patch', `/leads?id=eq.${req.params.id}`,
-      { email_sent_at: null, responded_at: null, status: 'new' });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
 
 app.listen(PORT, () => {
   console.log(`FlowTiq server running on port ${PORT}`);

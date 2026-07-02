@@ -58,7 +58,7 @@ async function sendWelcomeEmail(salon, setupUrl) {
             </td></tr>
           </table>
           <p style="color:#64748b;font-size:13px;line-height:1.6;margin:0 0 8px;">
-            Link je aktiven <strong style="color:#94a3b8;">72 ur</strong>. Če ga niste zahtevali, sporočilo ignorirajte.
+            Link je oseben — ne delite ga z drugimi. Če ga niste zahtevali, sporočilo ignorirajte.
           </p>
           <p style="color:#475569;font-size:12px;margin:0;">
             Direktni link: <a href="${setupUrl}" style="color:#7c3aed;">${setupUrl}</a>

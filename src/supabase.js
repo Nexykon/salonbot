@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { slugify } = require('./presets');
+const t = require('./time');
 
 const BASE = process.env.SUPABASE_URL + '/rest/v1';
 const HEADERS = {
@@ -116,7 +117,7 @@ async function getServiceById(salonId, serviceId) {
 }
 
 async function getAvailableSlots(salonId) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = t.todayStr();
   const r = await axios.get(
     `${BASE}/sb_available_slots?salon_id=eq.${salonId}&is_booked=eq.false&slot_date=gte.${today}&order=slot_date,slot_time`,
     { headers: HEADERS }
@@ -222,7 +223,7 @@ async function getCustomerEmailByPhone(salonId, phone) {
 }
 
 async function getTodayBookings(salonId) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = t.todayStr();
   const r = await axios.get(
     `${BASE}/sb_bookings?salon_id=eq.${salonId}&created_at=gte.${today}T00:00:00&order=created_at`,
     { headers: HEADERS }
@@ -248,10 +249,9 @@ async function getBookingsForRange(salonId, from, to) {
 }
 
 async function getBookingsByPhone(salonId, phone, today) {
-  const r = await axios.get(
-    `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&booking_date=gte.${today}&order=booking_date,booking_time`,
-    { headers: HEADERS }
-  );
+  let url = `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&order=booking_date,booking_time`;
+  if (today) url += `&booking_date=gte.${today}`;
+  const r = await axios.get(url, { headers: HEADERS });
   return r.data;
 }
 
@@ -334,7 +334,7 @@ async function updateService(salonId, serviceName, price, durationMinutes) {
   if (!r.data.length) return null;
   const service = r.data[0];
   const updates = {};
-  if (price !== undefined) updates.price = Math.round(price);
+  if (price !== undefined) updates.price = Number(price);
   if (durationMinutes !== undefined) updates.duration_minutes = Math.round(durationMinutes);
   await axios.patch(
     `${BASE}/sb_services?id=eq.${service.id}`,
@@ -564,6 +564,8 @@ async function deleteSalon(salonId) {
   await axios.delete(`${BASE}/sb_services?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
   await axios.delete(`${BASE}/sb_knowledge?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
   await axios.delete(`${BASE}/sb_errors?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
+  await axios.delete(`${BASE}/sb_order_items?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
+  await axios.delete(`${BASE}/sb_invoices?salon_id=eq.${salonId}`, { headers: HEADERS }).catch(() => {});
   const r = await axios.delete(`${BASE}/sb_salons?id=eq.${salonId}`, { headers: HEADERS });
   return r.data;
 }

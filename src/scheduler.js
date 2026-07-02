@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const db = require('./supabase');
 const wa = require('./whatsapp');
+const t = require('./time');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
@@ -17,7 +18,7 @@ function dateOffset(base, days) {
 }
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return t.todayStr();
 }
 
 // ─── 1. OPOMNIK (dan pred terminom, samo če rezervirano >7 dni vnaprej) ──────
@@ -29,7 +30,7 @@ async function sendReminders() {
     for (const salon of salons) {
       if (!salon.whatsapp_phone_number_id) continue;
       const phoneId = salon.whatsapp_phone_number_id;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
       const tomorrow = dateOffset(todayStr(), 1);
 
       const bookings = await db.getBookingsForReminder(salon.id, tomorrow);
@@ -62,13 +63,12 @@ async function sendReminders() {
 async function sendReviewRequests() {
   try {
     const salons = await db.getAllSalons();
-    const now = new Date();
     const today = todayStr();
 
     for (const salon of salons) {
       if (!salon.whatsapp_phone_number_id) continue;
       const phoneId = salon.whatsapp_phone_number_id;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
 
       const reviewLink = salon.review_link || '';
       const reviewMsg = salon.review_message ||
@@ -80,8 +80,8 @@ async function sendReviewRequests() {
       for (const b of bookings) {
         try {
           const [h, m] = (b.booking_time || '00:00').split(':').map(Number);
-          const bookingDateTime = new Date(today + 'T' + String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':00');
-          const diffHours = (now - bookingDateTime) / (1000 * 60 * 60);
+          const [nh, nm] = t.nowTimeStr().split(':').map(Number);
+          const diffHours = ((nh * 60 + nm) - (h * 60 + m)) / 60;
 
           // Pošlji samo če je minilo 2–4 ure od termina
           if (diffHours >= 2 && diffHours < 4) {
@@ -112,7 +112,7 @@ async function sendReactivations() {
     for (const salon of salons) {
       if (!salon.whatsapp_phone_number_id) continue;
       const phoneId = salon.whatsapp_phone_number_id;
-      const token = process.env.WA_TOKEN;
+      const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
 
       const reactivMsg = salon.reactivation_message ||
         `Pozdravljen/a! 💇\n\n` +
@@ -155,7 +155,7 @@ async function sendDailySummary() {
     if (!salon || !ADMIN_PHONE) return;
 
     const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-    const token = process.env.WA_TOKEN;
+    const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
     const today = todayStr();
     const stats = await db.getDailyStats(salon.id, today);
 

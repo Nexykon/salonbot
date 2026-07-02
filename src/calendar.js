@@ -1,4 +1,5 @@
 const db = require('./supabase');
+const t = require('./time');
 
 function generateWorkingTimes(startTime, endTime, intervalMin = 30) {
   const [sh, sm] = startTime.split(':').map(Number);
@@ -41,9 +42,8 @@ async function getFreeDates(salon, maxDays = 30, serviceDuration = null) {
   const duration = serviceDuration || interval;
   const allTimes = generateWorkingTimes(startTime, endTime, interval);
 
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const todayStr = t.todayStr();
+  const currentTime = t.nowTimeStr();
 
   const freeDates = [];
   const cur = new Date(todayStr + 'T12:00:00');
@@ -74,9 +74,8 @@ async function getFreeTimesForDate(salon, date, serviceDuration = null) {
   const duration = serviceDuration || interval;
   const allTimes = generateWorkingTimes(startTime, endTime, interval);
 
-  const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
-  const currentTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const todayStr = t.todayStr();
+  const currentTime = t.nowTimeStr();
 
   const bookedSlots = await db.getBookedTimesForDate(salon.id, date);
   return allTimes.filter(t => {

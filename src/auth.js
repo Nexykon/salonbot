@@ -86,7 +86,9 @@ function getSession(token) {
     const payloadB64 = cleanToken.slice(0, dotIdx);
     const sig = cleanToken.slice(dotIdx + 1);
     const expectedSig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
-    if (sig === expectedSig) {
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
       try {
         const session = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
         if (session.expiresAt < Date.now()) return null;
