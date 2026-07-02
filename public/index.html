@@ -494,6 +494,22 @@ input[type=range]::-webkit-slider-thumb {
 /* ── No-risk ── */
 .norisk { background: var(--ink); color: #fff; }
 .norisk .section-label { color: var(--green); }
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 340px)); gap: 22px; justify-content: center; margin-bottom: 56px; }
+.price-card { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 20px; padding: 34px 30px; text-align: left; position: relative; }
+.price-card.featured { border-color: var(--green); background: rgba(6,193,103,.09); }
+.price-card .plan-badge { position: absolute; top: -13px; right: 22px; background: var(--green); color: #06281a; font-size: 12px; font-weight: 800; padding: 5px 14px; border-radius: 100px; letter-spacing: .03em; }
+.price-card h3 { color: #fff; font-size: 21px; font-weight: 800; margin-bottom: 6px; }
+.price-card .plan-for { color: rgba(255,255,255,.65); font-size: 13.5px; margin-bottom: 18px; min-height: 20px; }
+.price-card .plan-price { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: -0.02em; }
+.price-card .plan-price span { font-size: 15px; font-weight: 600; color: rgba(255,255,255,.6); }
+.price-card .plan-trial { color: var(--green); font-size: 13px; font-weight: 700; margin: 4px 0 20px; }
+.price-card ul { list-style: none; margin: 0 0 26px; padding: 0; }
+.price-card li { color: rgba(255,255,255,.85); font-size: 14.5px; padding: 7px 0 7px 26px; position: relative; }
+.price-card li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 800; }
+.price-card li.li-off { color: rgba(255,255,255,.38); }
+.price-card li.li-off::before { content: '—'; color: rgba(255,255,255,.3); }
+.price-card .btn-primary { width: 100%; text-align: center; }
+@media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
 .norisk .section-title { color: #fff; }
 .norisk .section-sub { color: rgba(255,255,255,.7); }
 .norisk-grid {
@@ -901,7 +917,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
       <div class="feature-card">
         <div class="feature-icon purple">🛵</div>
         <h3>WhatsApp meni za dostavo</h3>
-        <p>Picerije in restavracije dobijo digitalni meni na WhatsAppu. Stranka naroči v 5 klikih — brez klicanja, brez čakanja. Vi prejmete naročilo v sekundi.</p>
+        <p>Picerije in restavracije dobijo digitalni meni na WhatsAppu. Stranka izbere artikle in količine, dostavo ali osebni prevzem — brez klicanja. Naročilo lahko gre celo neposredno v vašo POS blagajno (paket Pro).</p>
       </div>
     </div>
   </div>
@@ -966,7 +982,41 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
   <div class="container" style="text-align:center">
     <div class="section-label">Brez velikega začetnega stroška</div>
     <h2 class="section-title">Začnete brez tveganja.<br>Preizkusite, nato se odločite.</h2>
-    <p class="section-sub" style="margin:0 auto 56px;color:rgba(255,255,255,.7)">30 dni brezplačno · Odpoved kadarkoli</p>
+    <p class="section-sub" style="margin:0 auto 56px;color:rgba(255,255,255,.7)">30 dni brezplačno · Brez vezave · Odpoved kadarkoli</p>
+
+    <div class="pricing-grid">
+      <div class="price-card">
+        <h3>Osnovni</h3>
+        <div class="plan-for">Za salone, frizerje, studie in lokale, ki želijo rezervacije in naročila na avtopilotu.</div>
+        <div class="plan-price">49,99 € <span>/ mesec</span></div>
+        <div class="plan-trial">Prvi mesec brezplačno</div>
+        <ul>
+          <li>WhatsApp bot za rezervacije ali naročila 24/7</li>
+          <li>Dostava in osebni prevzem</li>
+          <li>Nadzorna plošča z naročili in statistiko</li>
+          <li>Samodejna obvestila in potrditve strankam</li>
+          <li>Neomejeno število rezervacij in naročil</li>
+          <li>Postavitev in podpora vključeni</li>
+          <li class="li-off">POS integracija (Poster, Square, iiko)</li>
+        </ul>
+        <button onclick="openModal()" class="btn-primary">Začni brezplačno →</button>
+      </div>
+      <div class="price-card featured">
+        <span class="plan-badge">ZA RESTAVRACIJE</span>
+        <h3>Pro</h3>
+        <div class="plan-for">Vse iz Osnovnega + naročila gredo neposredno v vašo blagajno in kuhinjo.</div>
+        <div class="plan-price">79,99 € <span>/ mesec</span></div>
+        <div class="plan-trial">Prvi mesec brezplačno</div>
+        <ul>
+          <li>Vse iz paketa Osnovni</li>
+          <li>POS integracija (Poster, Square, iiko)</li>
+          <li>Naročila samodejno v kuhinjo — brez pretipkavanja</li>
+          <li>Prednostna podpora</li>
+        </ul>
+        <button onclick="openModal()" class="btn-primary">Začni brezplačno →</button>
+      </div>
+    </div>
+
     <div class="norisk-grid">
       <div class="norisk-card">
         <div class="icon">🎁</div>
@@ -1039,7 +1089,14 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
           Koliko to stane po brezplačnem mesecu?
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a">Po brezplačnem mesecu je cena <strong>49,99 € / mesec</strong> (Osnovno) ali <strong>79,99 € / mesec</strong> (Osnovno + POS integracija). Brez vezave, odpoved kadarkoli.</div>
+        <div class="faq-a">Po brezplačnem mesecu je cena <strong>49,99 € / mesec</strong> (Osnovni) ali <strong>79,99 € / mesec</strong> (Pro s POS integracijo). Brez vezave, odpoved kadarkoli.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Kaj je POS integracija?
+          <span class="faq-icon">+</span>
+        </button>
+        <div class="faq-a">V paketu Pro se naročila iz WhatsAppa samodejno pošljejo v vašo blagajno oz. kuhinjski sistem (Poster POS, Square ali iiko). Nič več pretipkavanja naročil — potrjeno naročilo se samo pojavi v kuhinji.</div>
       </div>
     </div>
   </div>
