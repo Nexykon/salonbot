@@ -159,6 +159,7 @@ body {
 .settings-card-title { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 16px; }
 .s-row { margin-bottom: 14px; }
 .s-row label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+.s-row select { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
 .s-row input, .s-row textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 13px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; resize: vertical; transition: .2s; }
 .s-row input:focus, .s-row textarea:focus { border-color: var(--purple); }
 .btn-save { width: 100%; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: #fff; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; box-shadow: 0 4px 20px rgba(37,211,102,.25); }
@@ -238,6 +239,9 @@ body {
     <div class="tab" onclick="switchTab('settings')">
       <span class="tab-icon">⚙️</span>Nastavitve
     </div>
+    <div class="tab" onclick="switchTab('pos')">
+      <span class="tab-icon">🖥️</span>POS terminal
+    </div>
     <div class="tab" onclick="switchTab('stats')">
       <span class="tab-icon">📊</span>Statistika
     </div>
@@ -310,20 +314,62 @@ body {
         <div class="s-row">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
             <input type="checkbox" id="s-pack-on" onchange="toggleFee('s-packaging', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
-            📦 Zaračunaj embalažo
+            📦 Zaračunaj embalažo (€ na kos)
           </label>
           <input type="number" id="s-packaging" min="0" step="0.10" inputmode="decimal" placeholder="npr. 0.50 €" disabled>
         </div>
         <div class="s-row">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
             <input type="checkbox" id="s-del-on" onchange="toggleFee('s-delivery', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
-            🚗 Zaračunaj dostavo
+            🚗 Zaračunaj dostavo (€ na naročilo)
           </label>
           <input type="number" id="s-delivery" min="0" step="0.10" inputmode="decimal" placeholder="npr. 2.00 €" disabled>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Označena zneska (v €) bot samodejno prišteje k vsakemu naročilu in ju stranki prikaže ločeno.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Embalaža se zaračuna za vsak kos (3 pice = 3× embalaža), dostava enkrat na naročilo. Bot zneska prikaže stranki ločeno.</div>
       </div>
       <button class="btn-save" onclick="saveSettings()">💾 Shrani nastavitve</button>
+    </div>
+
+    <!-- POS TERMINAL -->
+    <div class="tab-content" id="tab-pos">
+      <div id="pos-locked" style="display:none">
+        <div class="settings-card" style="text-align:center;padding:44px 24px">
+          <div style="font-size:42px;margin-bottom:12px">🔒</div>
+          <div style="font-weight:800;font-size:16px;margin-bottom:8px">POS integracija je na voljo v Pro paketu</div>
+          <div style="color:var(--muted);font-size:13px;line-height:1.7">Povežite <b>Poster POS</b>, <b>Square</b> ali <b>iiko</b> — potrjena naročila iz WhatsApp bota gredo neposredno v vašo blagajno in kuhinjo, brez ročnega pretipkavanja.<br><br>Za nadgradnjo na Pro paket nam pišite na <b>info@flowtiq.si</b>.</div>
+        </div>
+      </div>
+      <div id="pos-form" style="display:none">
+        <div class="settings-card">
+          <div class="settings-card-title">Povezava s POS terminalom</div>
+          <div class="s-row">
+            <label>POS sistem</label>
+            <select id="pos-type">
+              <option value="">— Izberite —</option>
+              <option value="poster">Poster POS</option>
+              <option value="square">Square</option>
+              <option value="iiko">iiko</option>
+            </select>
+          </div>
+          <div class="s-row">
+            <label>API token</label>
+            <input type="password" id="pos-token" placeholder="API token" autocomplete="new-password">
+          </div>
+          <div class="s-row">
+            <label>Račun — Poster: subdomena · Square: Location ID · iiko: Organization ID</label>
+            <input type="text" id="pos-account" placeholder="npr. mojarestavracija">
+          </div>
+          <div class="s-row">
+            <label>Spot ID (samo Poster, privzeto 1)</label>
+            <input type="number" id="pos-spot" min="1" placeholder="1">
+          </div>
+          <div id="pos-test-result" style="font-size:13px;margin:6px 0 12px;min-height:18px"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn-save" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="posTest()">🔌 Preveri povezavo</button>
+            <button class="btn-save" style="flex:1" onclick="posSave()">💾 Shrani POS nastavitve</button>
+          </div>
+        </div>
+      </div>
     </div>
 
         <!-- STATISTIKA -->
@@ -491,7 +537,7 @@ function showApp(name) {
 
 // ── TABS ────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabs = ['orders','menu','settings','stats'];
+  const tabs = ['orders','menu','settings','pos','stats'];
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
   document.querySelectorAll('.tab-content').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
   if (tab === 'stats') loadStats();
@@ -839,6 +885,8 @@ async function loadSettingsData() {
     document.getElementById('s-name').value = d.name||'';
     document.getElementById('s-greeting').value = d.greeting_message||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
+    currentPlan = d.subscription_plan || 'starter';
+    renderPosTab(d);
     const pack = parseFloat(d.packaging_price||0), del = parseFloat(d.delivery_fee||0);
     document.getElementById('s-pack-on').checked = pack > 0;
     document.getElementById('s-packaging').value = pack > 0 ? pack : '';
@@ -857,6 +905,58 @@ function feeValue(checkId, inputId) {
   if (!document.getElementById(checkId).checked) return 0;
   const v = parseFloat(String(document.getElementById(inputId).value).replace(',', '.'));
   return isNaN(v) || v < 0 ? 0 : v;
+}
+
+// ── POS terminal (samo Pro paket) ──────────────────────
+let currentPlan = 'starter';
+function renderPosTab(d) {
+  const pro = currentPlan === 'pro';
+  document.getElementById('pos-locked').style.display = pro ? 'none' : 'block';
+  document.getElementById('pos-form').style.display = pro ? 'block' : 'none';
+  if (!pro) return;
+  document.getElementById('pos-type').value = d.pos_type || '';
+  document.getElementById('pos-account').value = d.pos_account || '';
+  document.getElementById('pos-spot').value = d.pos_spot_id || '';
+  document.getElementById('pos-token').value = '';
+  document.getElementById('pos-token').placeholder = d.pos_token_set ? '•••••••• (token je shranjen)' : 'API token';
+}
+function posBody() {
+  const b = {
+    pos_type: document.getElementById('pos-type').value,
+    pos_account: document.getElementById('pos-account').value.trim(),
+    pos_spot_id: parseInt(document.getElementById('pos-spot').value) || 1
+  };
+  const tok = document.getElementById('pos-token').value.trim();
+  if (tok) b.pos_token = tok; // prazno = obdrži shranjenega
+  return b;
+}
+async function posTest() {
+  const el = document.getElementById('pos-test-result');
+  el.textContent = '⏳ Preverjam povezavo ...'; el.style.color = 'var(--muted)';
+  try {
+    const r = await fetch('/api/settings/pos-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify(posBody())
+    });
+    const d = await r.json();
+    el.textContent = d.ok ? '✅ Povezava deluje! ' + (d.msg || '') : '❌ ' + (d.msg || d.error || 'Povezava ni uspela');
+    el.style.color = d.ok ? '#16a34a' : '#ef4444';
+  } catch (e) { el.textContent = '❌ Napaka: ' + e.message; el.style.color = '#ef4444'; }
+}
+async function posSave() {
+  const b = posBody();
+  if (!b.pos_type) { showToast('Izberite POS sistem', 'error'); return; }
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify(b)
+    });
+    const d = await r.json().catch(() => ({}));
+    showToast(r.ok ? '✅ POS nastavitve shranjene!' : '❌ ' + (d.error || 'Napaka pri shranjevanju'), r.ok ? 'success' : 'error');
+    if (r.ok) loadSettingsData();
+  } catch (e) { showToast('Napaka', 'error'); }
 }
 async function saveSettings() {
   try {

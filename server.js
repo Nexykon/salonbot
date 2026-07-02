@@ -963,6 +963,11 @@ app.get('/api/settings', async (req, res) => {
       notify_email: salon.notify_email !== false,
       packaging_price: parseFloat(salon.packaging_price || 0),
       delivery_fee: parseFloat(salon.delivery_fee || 0),
+      subscription_plan: salon.subscription_plan || 'starter',
+      pos_type: salon.pos_type || '',
+      pos_account: salon.pos_account || '',
+      pos_spot_id: salon.pos_spot_id || '',
+      pos_token_set: !!salon.pos_token,
       review_link: salon.review_link || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -988,9 +993,34 @@ app.patch('/api/settings', async (req, res) => {
     if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
     if (updates.packaging_price !== undefined) updates.packaging_price = Math.max(0, parseFloat(String(updates.packaging_price).replace(',', '.')) || 0);
     if (updates.delivery_fee !== undefined) updates.delivery_fee = Math.max(0, parseFloat(String(updates.delivery_fee).replace(',', '.')) || 0);
+    const POS_KEYS = ['pos_type', 'pos_token', 'pos_account', 'pos_spot_id'];
+    if (POS_KEYS.some(k => updates[k] !== undefined) && (salon.subscription_plan || 'starter') !== 'pro') {
+      return res.status(403).json({ error: 'POS integracija je na voljo v Pro paketu.' });
+    }
+    if (updates.pos_spot_id !== undefined) updates.pos_spot_id = parseInt(updates.pos_spot_id) || 1;
     await db.updateSalonSettings(salon.id, updates);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/settings/pos-test — preveri POS povezavo (lastnik, samo Pro)
+app.post('/api/settings/pos-test', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  if ((salon.subscription_plan || 'starter') !== 'pro') {
+    return res.status(403).json({ ok: false, msg: 'POS integracija je na voljo v Pro paketu.' });
+  }
+  try {
+    const posType    = req.body.pos_type || salon.pos_type;
+    const posToken   = req.body.pos_token || salon.pos_token;
+    const posAccount = req.body.pos_account !== undefined ? req.body.pos_account : (salon.pos_account || '');
+    if (!posType || !posToken) return res.status(400).json({ ok: false, msg: 'Vnesite POS sistem in API token.' });
+    const adapter = getAdapter(posType);
+    const result = await adapter.testConnection(posToken, posAccount);
+    res.json(result);
+  } catch (e) {
+    res.json({ ok: false, msg: e.message });
+  }
 });
 
 // PATCH /api/settings/password — zamenjava gesla lastnika

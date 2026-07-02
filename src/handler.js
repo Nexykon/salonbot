@@ -643,13 +643,15 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
       }
-      const packFee = parseFloat(salon.packaging_price || 0);
+      const packUnit = parseFloat(salon.packaging_price || 0);
       const delFee  = parseFloat(salon.delivery_fee    || 0);
+      const kosov = sess.cart.reduce((s, i) => s + (i.qty || 1), 0);
+      const packFee = +(packUnit * kosov).toFixed(2); // embalaža na vsak kos
       const itemsTotal = parseFloat(cartTotal(sess.cart));
       const grandTotal = (itemsTotal + packFee + delFee).toFixed(2);
       const priceBreakdown = [
         `💰 Artikli: ${itemsTotal.toFixed(2)} €`,
-        ...(packFee > 0 ? [`📦 Embalaža: ${packFee.toFixed(2)} €`] : []),
+        ...(packFee > 0 ? [`📦 Embalaža: ${kosov} × ${packUnit.toFixed(2)} € = ${packFee.toFixed(2)} €`] : []),
         ...(delFee  > 0 ? [`🚗 Dostava:  ${delFee.toFixed(2)} €`]  : []),
         `──────────────`,
         `💵 *SKUPAJ: ${grandTotal} €*`,
@@ -687,15 +689,17 @@ async function handleMessage(msgObj, salon) {
       const cart = sess.cart || [];
       const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
       const sessF = session.get(skey);
-      const pFee = parseFloat(sessF.packFee || salon.packaging_price || 0);
-      const dFee = parseFloat(sessF.delFee  || salon.delivery_fee    || 0);
+      const pUnit = parseFloat(salon.packaging_price || 0);
+      const kosovS = cart.reduce((sm, i) => sm + (i.qty || 1), 0);
+      const pFee = sessF.packFee !== undefined ? parseFloat(sessF.packFee) : +(pUnit * kosovS).toFixed(2);
+      const dFee = sessF.delFee  !== undefined ? parseFloat(sessF.delFee)  : parseFloat(salon.delivery_fee || 0);
       const iTotal = parseFloat(cartTotal(cart));
       const gTotal = (iTotal + pFee + dFee).toFixed(2);
       const breakdownTxt = [
         fmtCart(cart) + opombaTxt,
         '',
         `💰 Artikli: ${iTotal.toFixed(2)} €`,
-        ...(pFee > 0 ? [`📦 Embalaža: ${pFee.toFixed(2)} €`] : []),
+        ...(pFee > 0 ? [`📦 Embalaža: ${kosovS} × ${pUnit.toFixed(2)} € = ${pFee.toFixed(2)} €`] : []),
         ...(dFee > 0 ? [`🚗 Dostava:  ${dFee.toFixed(2)} €`]  : []),
       ].join('\n');
       session.set(skey, { ...sessF, step: 305, deliveryAddress: address, grandTotal: gTotal, packFee: pFee, delFee: dFee });
