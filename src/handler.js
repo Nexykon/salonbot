@@ -561,14 +561,19 @@ async function handleMessage(msgObj, salon) {
     const sess = session.get(skey);
 
     function fmtCart(cart) {
-      return cart.map(item => `• ${item.name} — ${item.price} €`).join('\n');
+      return cart.map(item => {
+        const q = item.qty || 1;
+        const lineTotal = (parseFloat(item.price || 0) * q).toFixed(2);
+        return q > 1 ? `• ${item.name} x${q} — ${lineTotal} €` : `• ${item.name} — ${lineTotal} €`;
+      }).join('\n');
     }
     function cartTotal(cart) {
-      return cart.reduce((sum, item) => sum + parseFloat(item.price || 0), 0).toFixed(2);
+      return cart.reduce((sum, item) => sum + parseFloat(item.price || 0) * (item.qty || 1), 0).toFixed(2);
     }
     function cartSummaryShort(cart) {
       if (!cart || !cart.length) return null;
-      return `${cart.length} artikel | ${cartTotal(cart)} €`;
+      const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
+      return `${kosov} kosov | ${cartTotal(cart)} €`;
     }
 
     // ── Artikel izbran → dodaj v košarico + cart gumbi (Dodaj še / Zaključi)
@@ -580,14 +585,48 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
       }
-      const cart = (sess && sess.cart) || [];
-      cart.push({ id: svc.id, name: svc.name, price: svc.price || 0 });
-      session.set(skey, { ...sess, step: 301, cart });
-      await wa.send(phoneId, token, wa.deliveryCartButtons(
-        from,
-        fmtCart(cart),
-        cartTotal(cart)
-      ));
+      session.set(skey, { ...sess, step: 306, pendingItem: { id: svc.id, name: svc.name, price: svc.price || 0 } });
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp',
+        to: from,
+        type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: `*${svc.name}*\n💰 ${svc.price || 0} €\n\nKoliko kosov?\n_(ali vpišite številko, npr. 5)_` },
+          action: {
+            buttons: [
+              { type: 'reply', reply: { id: 'dqty_1', title: '1 kos' } },
+              { type: 'reply', reply: { id: 'dqty_2', title: '2 kosa' } },
+              { type: 'reply', reply: { id: 'dqty_3', title: '3 kosi' } }
+            ]
+          }
+        }
+      });
+      return;
+    }
+
+    // ── Količina (gumb ali vpisana številka) → dodaj v košarico
+    const addQtyToCart = async (qty) => {
+      const item = sess.pendingItem;
+      const cart = sess.cart || [];
+      const existing = cart.find(c => String(c.id) === String(item.id));
+      if (existing) existing.qty = (existing.qty || 1) + qty;
+      else cart.push({ ...item, qty });
+      session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
+      await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(cart), cartTotal(cart)));
+    };
+
+    if (iId.startsWith('dqty_') && sess.pendingItem) {
+      await addQtyToCart(parseInt(iId.replace('dqty_', '')) || 1);
+      return;
+    }
+
+    if (sess.step === 306 && sess.pendingItem && msgText) {
+      if (/^\d+$/.test(msgText.trim())) {
+        await addQtyToCart(Math.min(Math.max(parseInt(msgText.trim()), 1), 50));
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Vnesite samo število kosov (npr. 2) ali izberite gumb.'));
+      }
       return;
     }
 
@@ -707,7 +746,7 @@ async function handleMessage(msgObj, salon) {
       if (booking.id) {
         const cartWithCategory = cart.map(item => {
           const svc = services.find(s => s.id === item.id);
-          return { ...item, category: svc?.category || 'Ostalo' };
+          return { ...item, quantity: item.qty || 1, category: svc?.category || 'Ostalo' };
         });
         db.createOrderItems(booking.id, salon.id, cartWithCategory).catch(e =>
           console.error('[order_items] save error:', e.message)
@@ -717,6 +756,8 @@ async function handleMessage(msgObj, salon) {
       await wa.send(phoneId, token, wa.textMsg(from,
         `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nPicerija bo naročilo kmalu potrdila in vas obvestila o času dostave. 🍕`
       ));
+      // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
+      // (pri več sto naročilih na dan bi bil WhatsApp/email spam).
       return;
     }
 
