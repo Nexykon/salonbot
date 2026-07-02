@@ -121,6 +121,9 @@ body {
 .price-row { display:flex;justify-content:space-between;font-size:13px;color:var(--muted);font-weight:500; }
 .price-row.price-total { font-size:15px;font-weight:800;color:var(--text);border-top:1px dashed var(--border);margin-top:4px;padding-top:5px; }
 .order-card.cancelled { border-left: 4px solid var(--red); opacity: .5; }
+.orders-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.orders-col-head { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; text-align: center; position: sticky; top: 0; z-index: 5; }
+@media (max-width: 800px) { .orders-columns { grid-template-columns: 1fr; } }
 
 .order-head { padding: 14px 16px 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .order-ref { background: var(--surface2); border-radius: 6px; padding: 3px 8px; font-size: 11px; font-weight: 800; color: var(--muted); font-family: monospace; }
@@ -273,7 +276,16 @@ body {
         <button class="date-search-btn" onclick="loadOrders()">Prikaži</button>
       </div>
       <div class="orders-count" id="orders-count" style="display:none"></div>
-      <div id="orders-list"></div>
+      <div class="orders-columns" id="orders-columns">
+        <div class="orders-col">
+          <div class="orders-col-head">🚗 Dostava <span id="col-del-count"></span></div>
+          <div id="orders-list-delivery"></div>
+        </div>
+        <div class="orders-col">
+          <div class="orders-col-head">🏃 Osebni prevzem <span id="col-pick-count"></span></div>
+          <div id="orders-list-pickup"></div>
+        </div>
+      </div>
       <div class="pagination" id="pagination" style="display:none">
         <button class="page-btn" id="btn-prev" onclick="goPage(currentPage-1)" disabled>← Nazaj</button>
         <span class="page-info" id="page-info">1 / 1</span>
@@ -308,6 +320,32 @@ body {
           <label>Bot telefonska številka (za prikaz)</label>
           <input type="text" id="s-botnum" placeholder="+386 XX XXX XXX">
         </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-title">Način naročanja</div>
+        <div class="s-row">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="s-allow-del" style="accent-color:#7c3aed;width:17px;height:17px">
+            🚗 Omogoči dostavo
+          </label>
+        </div>
+        <div class="s-row">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="s-allow-pick" style="accent-color:#7c3aed;width:17px;height:17px">
+            🏃 Omogoči osebni prevzem
+          </label>
+        </div>
+        <div class="s-row">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="s-pick-pack" style="accent-color:#7c3aed;width:17px;height:17px">
+            📦 Zaračunaj embalažo tudi pri prevzemu
+          </label>
+        </div>
+        <div class="s-row">
+          <label>Naslov lokala (stranka ga dobi ob prevzemu)</label>
+          <input type="text" id="s-pickup-addr" placeholder="npr. Glavni trg 5, Ljubljana">
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Če sta omogočena oba načina, bot stranko vpraša "Dostava ali osebni prevzem?". Pri prevzemu se dostava ne zaračuna.</div>
       </div>
       <div class="settings-card">
         <div class="settings-card-title">Dodatni stroški naročila</div>
@@ -570,7 +608,7 @@ function goPage(p) {
   if (p < 0 || p >= totalPages) return;
   currentPage = p;
   loadOrders();
-  document.getElementById('orders-list').scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('orders-columns').scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 async function loadOrders() {
@@ -609,17 +647,25 @@ async function loadOrders() {
   document.getElementById('refresh-btn').classList.remove('spinning');
 }
 
+function isPickupOrder(o) {
+  if ((o.notes || '').startsWith('PREVZEM')) return true;
+  return String(safeJson(o.form_answers).nacin || '').toLowerCase().includes('prevzem');
+}
 function renderOrders(orders) {
-  const el = document.getElementById('orders-list');
-  if (!orders.length) {
-    el.innerHTML = '<div class="empty-state"><span class="emoji">📭</span><p>Ni naročil za prikaz</p></div>';
-    return;
-  }
+  const delOrders  = orders.filter(o => !isPickupOrder(o));
+  const pickOrders = orders.filter(o => isPickupOrder(o));
+  document.getElementById('col-del-count').textContent  = delOrders.length  ? '(' + delOrders.length + ')'  : '';
+  document.getElementById('col-pick-count').textContent = pickOrders.length ? '(' + pickOrders.length + ')' : '';
+  const emptyCol = (msg) => '<div class="empty-state" style="padding:20px 8px"><span class="emoji">📭</span><p>' + msg + '</p></div>';
+  document.getElementById('orders-list-delivery').innerHTML = delOrders.length  ? renderCards(delOrders)  : emptyCol('Ni naročil za dostavo');
+  document.getElementById('orders-list-pickup').innerHTML   = pickOrders.length ? renderCards(pickOrders) : emptyCol('Ni naročil za prevzem');
+}
+function renderCards(orders) {
   const statusLabel = {pending:'V čakanju', confirmed:'Potrjeno', cancelled:'Zavrnjeno'};
   const statusCls   = {pending:'status-pending', confirmed:'status-confirmed', cancelled:'status-cancelled'};
   // FIFO: pending naročila so že sortirana asc (najstarejše najprej) s strani strežnika
   let pendingIdx = 0;
-  el.innerHTML = orders.map(o => {
+  return orders.map(o => {
     const fa        = safeJson(o.form_answers);
     const items     = fa.narocilo  || '—';
     const address   = fa.naslov    || '—';
@@ -661,7 +707,7 @@ function renderOrders(orders) {
         <!-- 2. PODATKI NAROČNIKA -->
         ${custName ? `<div style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:3px;">👤 ${custName}</div>` : ''}
         <div class="order-phone">📞 +${o.customer_phone||'—'}</div>
-        <div class="order-address">📍 ${address}</div>
+        <div class="order-address">${isPickupOrder(o) ? '🏃 <b>Osebni prevzem</b>' : '📍 ' + address}</div>
         <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
         <!-- 3. CENA -->
         <div class="price-breakdown">${priceRows}</div>
@@ -894,6 +940,10 @@ async function loadSettingsData() {
     document.getElementById('s-del-on').checked = del > 0;
     document.getElementById('s-delivery').value = del > 0 ? del : '';
     document.getElementById('s-delivery').disabled = !(del > 0);
+    document.getElementById('s-allow-del').checked  = d.allow_delivery !== false;
+    document.getElementById('s-allow-pick').checked = d.allow_pickup !== false;
+    document.getElementById('s-pick-pack').checked  = d.pickup_packaging !== false;
+    document.getElementById('s-pickup-addr').value  = d.pickup_address || '';
   } catch(e) {}
 }
 function toggleFee(inputId, on) {
@@ -959,6 +1009,10 @@ async function posSave() {
   } catch (e) { showToast('Napaka', 'error'); }
 }
 async function saveSettings() {
+  if (!document.getElementById('s-allow-del').checked && !document.getElementById('s-allow-pick').checked) {
+    showToast('Omogočite vsaj dostavo ali osebni prevzem', 'error');
+    return;
+  }
   try {
     const r = await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
       body:JSON.stringify({
@@ -966,7 +1020,11 @@ async function saveSettings() {
         greeting_message:document.getElementById('s-greeting').value,
         bot_phone_display:document.getElementById('s-botnum').value,
         packaging_price:feeValue('s-pack-on','s-packaging'),
-        delivery_fee:feeValue('s-del-on','s-delivery')
+        delivery_fee:feeValue('s-del-on','s-delivery'),
+        allow_delivery:document.getElementById('s-allow-del').checked,
+        allow_pickup:document.getElementById('s-allow-pick').checked,
+        pickup_packaging:document.getElementById('s-pick-pack').checked,
+        pickup_address:document.getElementById('s-pickup-addr').value.trim()
       })
     });
     showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');

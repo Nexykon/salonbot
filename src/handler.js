@@ -16,6 +16,12 @@ function fmtDate(dateStr) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
+function confirmEtaMsg(isPickup, minutes, pickupAddress) {
+  return isPickup
+    ? `🏃 Naročilo potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *${minutes} minutah*${pickupAddress ? `\n📍 Prevzem: ${pickupAddress}` : ''}\n\nHvala! 😊`
+    : `🍕 Naročilo potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala! 😊`;
+}
+
 function roundTo5Min(timeStr) {
   const [h, m] = timeStr.split(':').map(Number);
   const rounded = Math.round(m / 5) * 5;
@@ -192,7 +198,7 @@ async function handleMessage(msgObj, salon) {
       const ref = iId.replace('delivery_accept_', '');
       const booking = await db.getBookingForSalon(salon.id, ref);
       if (booking) {
-        session.set(skey, { awaitingDeliveryTime: ref, deliveryCustomerPhone: booking.customer_phone });
+        session.set(skey, { awaitingDeliveryTime: ref, deliveryCustomerPhone: booking.customer_phone, deliveryIsPickup: (booking.notes || '').startsWith('PREVZEM') });
         await wa.send(phoneId, token, wa.textMsg(from, `Naročilo *#${ref}* sprejeto! ✅\n\nKoliko minut do dostave? (samo število, npr. *30*)`));
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
@@ -337,10 +343,11 @@ async function handleMessage(msgObj, salon) {
       const custPhone = adminSess.deliveryCustomerPhone;
       session.clear(skey);
       if (!isNaN(minutes) && minutes > 0 && custPhone) {
+        const wasPickup = adminSess.deliveryIsPickup === true;
         await db.getBookingForSalon(salon.id, ref).then(b => b && db.updateBookingStatus(b.id, 'confirmed')).catch(() => {});
-        await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: dostava v ${minutes} min. ✅`));
+        await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: ${wasPickup ? 'prevzem' : 'dostava'} v ${minutes} min. ✅`));
         wa.send(phoneId, token, wa.textMsg(custPhone,
-          `🍕 Naročilo potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala! 😊`
+          confirmEtaMsg(wasPickup, minutes, salon.pickup_address)
         )).catch(e => wa.send(phoneId, token, wa.textMsg(from, `Stranke ni uspelo obvestiti: ${e.message}`)));
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, 'Napaka: vnesite samo število minut (npr. 30).'));
@@ -395,12 +402,13 @@ async function handleMessage(msgObj, salon) {
       if (ref && !isNaN(minutes) && minutes > 0) {
         const booking = await db.getBookingForSalon(salon.id, ref);
         if (booking) {
+          const casPickup = (booking.notes || '').startsWith('PREVZEM');
           await db.updateBookingStatus(booking.id, 'confirmed');
           session.clear(skey);
-          await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: dostava v ${minutes} min. ✅`));
+          await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: ${casPickup ? 'prevzem' : 'dostava'} v ${minutes} min. ✅`));
           if (booking.customer_phone) {
             wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
-              `🍕 Naročilo potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala! 😊`
+              confirmEtaMsg(casPickup, minutes, salon.pickup_address)
             )).catch(() => {});
           }
         } else {
@@ -636,18 +644,15 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // ── Zaključi → vpraša za opombo
-    if (iId === 'delivery_checkout') {
-      if (!sess || !sess.cart || !sess.cart.length) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel:'));
-        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
-        return;
-      }
+    // ── Povzetek + vprašanje za opombo, glede na način (dostava/prevzem)
+    const askNoteForMode = async (mode) => {
+      const cart = sess.cart || [];
       const packUnit = parseFloat(salon.packaging_price || 0);
-      const delFee  = parseFloat(salon.delivery_fee    || 0);
-      const kosov = sess.cart.reduce((s, i) => s + (i.qty || 1), 0);
-      const packFee = +(packUnit * kosov).toFixed(2); // embalaža na vsak kos
-      const itemsTotal = parseFloat(cartTotal(sess.cart));
+      const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
+      const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
+      const packFee = chargePack ? +(packUnit * kosov).toFixed(2) : 0;
+      const delFee = mode === 'dostava' ? parseFloat(salon.delivery_fee || 0) : 0;
+      const itemsTotal = parseFloat(cartTotal(cart));
       const grandTotal = (itemsTotal + packFee + delFee).toFixed(2);
       const priceBreakdown = [
         `💰 Artikli: ${itemsTotal.toFixed(2)} €`,
@@ -656,10 +661,51 @@ async function handleMessage(msgObj, salon) {
         `──────────────`,
         `💵 *SKUPAJ: ${grandTotal} €*`,
       ].join('\n');
-      session.set(skey, { ...sess, step: 302, grandTotal, packFee, delFee });
+      const modeLabel = mode === 'prevzem' ? '🏃 Osebni prevzem' : '🚗 Dostava';
+      session.set(skey, { ...sess, step: 302, orderMode: mode, grandTotal, packFee, delFee });
       await wa.send(phoneId, token, wa.textMsg(from,
-        `🛒 *Vaše naročilo:*\n${fmtCart(sess.cart)}\n\n${priceBreakdown}\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
+        `🛒 *Vaše naročilo* (${modeLabel}):\n${fmtCart(cart)}\n\n${priceBreakdown}\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
       ));
+    };
+
+    // ── Zaključi → izbira načina (ali direktno naprej, če je omogočen samo en)
+    if (iId === 'delivery_checkout') {
+      if (!sess || !sess.cart || !sess.cart.length) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel:'));
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
+        return;
+      }
+      const canDel  = salon.allow_delivery !== false;
+      const canPick = salon.allow_pickup !== false;
+      if (canDel && canPick) {
+        session.set(skey, { ...sess, step: 307 });
+        await wa.send(phoneId, token, {
+          messaging_product: 'whatsapp', to: from, type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: { text: '🛒 Skoraj končano!\n\nKako želite prevzeti naročilo?' },
+            action: {
+              buttons: [
+                { type: 'reply', reply: { id: 'dmode_dostava', title: '🚗 Dostava' } },
+                { type: 'reply', reply: { id: 'dmode_prevzem', title: '🏃 Osebni prevzem' } }
+              ]
+            }
+          }
+        });
+      } else {
+        await askNoteForMode(canPick && !canDel ? 'prevzem' : 'dostava');
+      }
+      return;
+    }
+
+    // ── Izbran način prevzema
+    if (iId === 'dmode_dostava' || iId === 'dmode_prevzem') {
+      if (!sess.cart || !sess.cart.length) {
+        session.clear(skey);
+        await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Začnite znova.'));
+        return;
+      }
+      await askNoteForMode(iId === 'dmode_prevzem' ? 'prevzem' : 'dostava');
       return;
     }
 
@@ -676,6 +722,26 @@ async function handleMessage(msgObj, salon) {
     // ── Step 303: ime → vpraša naslov
     if (sess && sess.step === 303 && msgText) {
       const customerName = msgText.trim();
+      if (sess.orderMode === 'prevzem') {
+        // Osebni prevzem: brez naslova, direktno na potrditev
+        const cart = sess.cart || [];
+        const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
+        const pFee = parseFloat(sess.packFee || 0);
+        const iTotal = parseFloat(cartTotal(cart));
+        const gTotal = sess.grandTotal || (iTotal + pFee).toFixed(2);
+        const kosovP = cart.reduce((sm, i) => sm + (i.qty || 1), 0);
+        const pUnit = parseFloat(salon.packaging_price || 0);
+        const breakdownTxt = [
+          fmtCart(cart) + opombaTxt,
+          '',
+          `💰 Artikli: ${iTotal.toFixed(2)} €`,
+          ...(pFee > 0 ? [`📦 Embalaža: ${kosovP} × ${pUnit.toFixed(2)} € = ${pFee.toFixed(2)} €`] : []),
+        ].join('\n');
+        const pickupLabel = '🏃 Osebni prevzem' + (salon.pickup_address ? ` — ${salon.pickup_address}` : '');
+        session.set(skey, { ...sess, step: 305, customerName, deliveryAddress: '', grandTotal: gTotal, packFee: pFee, delFee: 0 });
+        await wa.send(phoneId, token, wa.deliveryConfirmButtons(from, breakdownTxt, pickupLabel, gTotal));
+        return;
+      }
       session.set(skey, { ...sess, step: 304, customerName });
       await wa.send(phoneId, token, wa.textMsg(from,
         '📍 Na kateri naslov dostavimo?\n_(ulica, hišna številka, kraj)_'
@@ -716,11 +782,12 @@ async function handleMessage(msgObj, salon) {
     if (iId === 'delivery_confirm') {
       const s = session.get(skey);
       const cart = s.cart || [];
-      if (!cart.length || !s.deliveryAddress) {
+      if (!cart.length || (!s.deliveryAddress && s.orderMode !== 'prevzem')) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Začnite znova.'));
         session.clear(skey);
         return;
       }
+      const isPickup = s.orderMode === 'prevzem';
       const total = s.grandTotal || cartTotal(cart);
       const today = t.todayStr();
       const custName = s.customerName || from;
@@ -732,13 +799,14 @@ async function handleMessage(msgObj, salon) {
         booking_date:   today,
         booking_time:   t.nowTimeHMS(),
         status:         'pending',
-        notes:          `RAZVOZ | Naslov: ${s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
+        notes:          `${isPickup ? 'PREVZEM | Osebni prevzem' : 'RAZVOZ | Naslov: ' + s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
         form_answers:   JSON.stringify({
+          nacin:     isPickup ? 'Osebni prevzem 🏃' : 'Dostava 🚗',
           ime:       custName,
-          naslov:    s.deliveryAddress,
+          naslov:    isPickup ? 'Osebni prevzem' : s.deliveryAddress,
           narocilo:  fmtCart(cart),
           opomba:    opomba,
-          artikli:   total + ' €',
+          artikli:   cartTotal(cart) + ' €',
           embalaza:  s.packFee > 0 ? s.packFee.toFixed(2) + ' €' : null,
           dostava:   s.delFee  > 0 ? s.delFee.toFixed(2)  + ' €' : null,
           skupaj:    (s.grandTotal || total) + ' €'
@@ -758,7 +826,9 @@ async function handleMessage(msgObj, salon) {
       }
       session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from,
-        `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nPicerija bo naročilo kmalu potrdila in vas obvestila o času dostave. 🍕`
+        isPickup
+          ? `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nRestavracija bo naročilo kmalu potrdila in vas obvestila, kdaj bo pripravljeno za prevzem. 🏃`
+          : `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nPicerija bo naročilo kmalu potrdila in vas obvestila o času dostave. 🍕`
       ));
       // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
       // (pri več sto naročilih na dan bi bil WhatsApp/email spam).
