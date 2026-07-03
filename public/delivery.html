@@ -322,6 +322,23 @@ body {
         </div>
       </div>
       <div class="settings-card">
+        <div class="settings-card-title">Sporočila bota</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+          Prilagodite besedila, ki jih bot pošilja strankam. <b>Prazno polje = privzeto sporočilo</b> (prikazano v sivem).<br>
+          Oznake, ki jih bot samodejno zamenja: <code>{ime}</code> ime stranke · <code>{ref}</code> št. naročila · <code>{minute}</code> minute · <code>{naslov}</code> naslov prevzema.
+        </div>
+        <div class="s-row"><label>Vprašanje: dostava ali prevzem?</label><textarea id="bm-mode_question" rows="2"></textarea></div>
+        <div class="s-row"><label>Vprašanje za opombo</label><textarea id="bm-note_question" rows="3"></textarea></div>
+        <div class="s-row"><label>Vprašanje za ime</label><textarea id="bm-name_question" rows="2"></textarea></div>
+        <div class="s-row"><label>Vprašanje za naslov dostave</label><textarea id="bm-address_question" rows="2"></textarea></div>
+        <div class="s-row"><label>Naročilo oddano — dostava</label><textarea id="bm-submitted_delivery" rows="3"></textarea></div>
+        <div class="s-row"><label>Naročilo oddano — prevzem</label><textarea id="bm-submitted_pickup" rows="3"></textarea></div>
+        <div class="s-row"><label>Naročilo potrjeno — dostava (uporabite {minute})</label><textarea id="bm-accepted_delivery" rows="3"></textarea></div>
+        <div class="s-row"><label>Naročilo potrjeno — prevzem (uporabite {minute} in {naslov})</label><textarea id="bm-accepted_pickup" rows="3"></textarea></div>
+        <div class="s-row"><label>Naročilo zavrnjeno</label><textarea id="bm-rejected" rows="2"></textarea></div>
+        <button class="btn-save" style="width:100%" onclick="saveBotMessages()">💾 Shrani sporočila bota</button>
+      </div>
+      <div class="settings-card">
         <div class="settings-card-title">Naročnina</div>
         <div id="billing-info" style="font-size:14px;margin-bottom:14px;color:var(--muted)">Nalagam ...</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -942,6 +959,7 @@ async function loadSettingsData() {
     document.getElementById('s-greeting').value = d.greeting_message||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
     currentPlan = d.subscription_plan || 'starter';
+    renderBotMessages(d);
     renderBilling(d);
     renderPosTab(d);
     const pack = parseFloat(d.packaging_price||0), del = parseFloat(d.delivery_fee||0);
@@ -966,6 +984,34 @@ function feeValue(checkId, inputId) {
   if (!document.getElementById(checkId).checked) return 0;
   const v = parseFloat(String(document.getElementById(inputId).value).replace(',', '.'));
   return isNaN(v) || v < 0 ? 0 : v;
+}
+
+// ── Sporočila bota ─────────────────────────────────────
+const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected'];
+function renderBotMessages(d) {
+  const bm = d.bot_messages || {};
+  const defs = d.bot_messages_defaults || {};
+  for (const k of BM_KEYS) {
+    const el = document.getElementById('bm-' + k);
+    if (!el) continue;
+    el.value = bm[k] || '';
+    el.placeholder = defs[k] || '';
+  }
+}
+async function saveBotMessages() {
+  const bm = {};
+  for (const k of BM_KEYS) {
+    const el = document.getElementById('bm-' + k);
+    if (el && el.value.trim()) bm[k] = el.value.trim();
+  }
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify({ bot_messages: bm })
+    });
+    showToast(r.ok ? '✅ Sporočila shranjena!' : 'Napaka pri shranjevanju', r.ok ? 'success' : 'error');
+  } catch (e) { showToast('Napaka', 'error'); }
 }
 
 // ── Naročnina (Stripe) ─────────────────────────────────

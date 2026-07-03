@@ -13,6 +13,7 @@ const { startScheduler } = require('./src/scheduler');
 const ownerAuth = require('./src/auth');
 const { getPreset, listBusinessTypes, normalizeBusinessType, slugify } = require('./src/presets');
 const t = require('./src/time');
+const { botMsg, DEFAULTS: BOT_MSG_DEFAULTS, KEYS: BOT_MSG_KEYS } = require('./src/botmsg');
 
 const app = express();
 
@@ -1004,6 +1005,8 @@ app.get('/api/settings', async (req, res) => {
       allow_pickup: salon.allow_pickup !== false,
       pickup_packaging: salon.pickup_packaging !== false,
       pickup_address: salon.pickup_address || '',
+      bot_messages: (salon.bot_messages && typeof salon.bot_messages === 'object') ? salon.bot_messages : {},
+      bot_messages_defaults: BOT_MSG_DEFAULTS,
       review_link: salon.review_link || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1019,7 +1022,7 @@ app.patch('/api/settings', async (req, res) => {
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
       'packaging_price', 'delivery_fee',
-      'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address',
+      'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message'];
     const updates = {};
     for (const key of allowed) {
@@ -1037,6 +1040,16 @@ app.patch('/api/settings', async (req, res) => {
       return res.status(400).json({ error: 'Omogočena mora biti vsaj dostava ali prevzem.' });
     }
     if (updates.pickup_address !== undefined) updates.pickup_address = String(updates.pickup_address).trim().slice(0, 200);
+    if (updates.bot_messages !== undefined) {
+      let inBm = updates.bot_messages;
+      if (typeof inBm === 'string') { try { inBm = JSON.parse(inBm); } catch (_) { inBm = {}; } }
+      const cleanBm = {};
+      for (const k of BOT_MSG_KEYS) {
+        const v = String((inBm || {})[k] || '').trim();
+        if (v) cleanBm[k] = v.slice(0, 600);
+      }
+      updates.bot_messages = cleanBm;
+    }
     const POS_KEYS = ['pos_type', 'pos_token', 'pos_account', 'pos_spot_id'];
     if (POS_KEYS.some(k => updates[k] !== undefined) && (salon.subscription_plan || 'starter') !== 'pro') {
       return res.status(403).json({ error: 'POS integracija je na voljo v Pro paketu.' });
@@ -1797,9 +1810,10 @@ app.post('/api/orders/:id/accept', async (req, res) => {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
       const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
       const isPickup = (bookingFull.notes || '').startsWith('PREVZEM');
-      const acceptMsg = isPickup
-        ? `🏃 Vaše naročilo je potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *${minutes} minutah*${salon.pickup_address ? `\n📍 Prevzem: ${salon.pickup_address}` : ''}\n\nHvala za naročilo! 😊`
-        : `🍕 Vaše naročilo je potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala za naročilo! 😊`;
+      const acceptMsg = botMsg(salon, isPickup ? 'accepted_pickup' : 'accepted_delivery', {
+        minute: String(minutes),
+        naslov: (isPickup && salon.pickup_address) ? `\n📍 Prevzem: ${salon.pickup_address}` : ''
+      });
       wa.send(phoneId, token, wa.textMsg(bookingFull.customer_phone, acceptMsg))
         .catch(e => console.error('[delivery accept] WA err:', e.message));
     }
@@ -1888,9 +1902,7 @@ app.post('/api/orders/:id/reject', async (req, res) => {
     if (booking.customer_phone) {
       const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
       const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
-      wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
-        `Žal vaše naročilo ni bilo sprejeto. Za več informacij nas pokličite. 😔`
-      )).catch(() => {});
+      wa.send(phoneId, token, wa.textMsg(booking.customer_phone, botMsg(salon, 'rejected'))).catch(() => {});
     }
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }

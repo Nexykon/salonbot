@@ -6,6 +6,7 @@ const session = require('./session');
 const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 const t = require('./time');
+const { botMsg } = require('./botmsg');
 
 function fmtDate(dateStr) {
   if (!dateStr) return '?';
@@ -16,10 +17,11 @@ function fmtDate(dateStr) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-function confirmEtaMsg(isPickup, minutes, pickupAddress) {
-  return isPickup
-    ? `🏃 Naročilo potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *${minutes} minutah*${pickupAddress ? `\n📍 Prevzem: ${pickupAddress}` : ''}\n\nHvala! 😊`
-    : `🍕 Naročilo potrjeno!\n\n⏱️ Dostava v pribl. *${minutes} minutah*\n\nHvala! 😊`;
+function confirmEtaMsg(salon, isPickup, minutes) {
+  return botMsg(salon, isPickup ? 'accepted_pickup' : 'accepted_delivery', {
+    minute: String(minutes),
+    naslov: (isPickup && salon.pickup_address) ? `\n📍 Prevzem: ${salon.pickup_address}` : ''
+  });
 }
 
 function roundTo5Min(timeStr) {
@@ -214,9 +216,7 @@ async function handleMessage(msgObj, salon) {
         await db.updateBookingStatus(booking.id, 'cancelled');
         await wa.send(phoneId, token, wa.textMsg(from, `Naročilo *#${ref}* zavrnjeno.`));
         if (booking.customer_phone) {
-          wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
-            `Žal vaše naročilo ni bilo sprejeto. Pokličite nas za več informacij. 😔`
-          )).catch(() => {});
+          wa.send(phoneId, token, wa.textMsg(booking.customer_phone, botMsg(salon, 'rejected'))).catch(() => {});
         }
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Naročilo ${ref} ni najdeno.`));
@@ -347,7 +347,7 @@ async function handleMessage(msgObj, salon) {
         await db.getBookingForSalon(salon.id, ref).then(b => b && db.updateBookingStatus(b.id, 'confirmed')).catch(() => {});
         await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: ${wasPickup ? 'prevzem' : 'dostava'} v ${minutes} min. ✅`));
         wa.send(phoneId, token, wa.textMsg(custPhone,
-          confirmEtaMsg(wasPickup, minutes, salon.pickup_address)
+          confirmEtaMsg(salon, wasPickup, minutes)
         )).catch(e => wa.send(phoneId, token, wa.textMsg(from, `Stranke ni uspelo obvestiti: ${e.message}`)));
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, 'Napaka: vnesite samo število minut (npr. 30).'));
@@ -408,7 +408,7 @@ async function handleMessage(msgObj, salon) {
           await wa.send(phoneId, token, wa.textMsg(from, `Stranka obveščena: ${casPickup ? 'prevzem' : 'dostava'} v ${minutes} min. ✅`));
           if (booking.customer_phone) {
             wa.send(phoneId, token, wa.textMsg(booking.customer_phone,
-              confirmEtaMsg(casPickup, minutes, salon.pickup_address)
+              confirmEtaMsg(salon, casPickup, minutes)
             )).catch(() => {});
           }
         } else {
@@ -664,7 +664,7 @@ async function handleMessage(msgObj, salon) {
       const modeLabel = mode === 'prevzem' ? '🏃 Osebni prevzem' : '🚗 Dostava';
       session.set(skey, { ...sess, step: 302, orderMode: mode, grandTotal, packFee, delFee });
       await wa.send(phoneId, token, wa.textMsg(from,
-        `🛒 *Vaše naročilo* (${modeLabel}):\n${fmtCart(cart)}\n\n${priceBreakdown}\n\n📝 Ali imate kakšno posebno željo?\n_(npr. brez gob, bolj pikantno, alergija na orehe...)_\n\nNapišite opombo ali pošljite *NE* za nadaljevanje brez opombe.`
+        `🛒 *Vaše naročilo* (${modeLabel}):\n${fmtCart(cart)}\n\n${priceBreakdown}\n\n` + botMsg(salon, 'note_question')
       ));
     };
 
@@ -683,7 +683,7 @@ async function handleMessage(msgObj, salon) {
           messaging_product: 'whatsapp', to: from, type: 'interactive',
           interactive: {
             type: 'button',
-            body: { text: '🛒 Skoraj končano!\n\nKako želite prevzeti naročilo?' },
+            body: { text: botMsg(salon, 'mode_question') },
             action: {
               buttons: [
                 { type: 'reply', reply: { id: 'dmode_dostava', title: '🚗 Dostava' } },
@@ -713,9 +713,7 @@ async function handleMessage(msgObj, salon) {
     if (sess && sess.step === 302 && msgText) {
       const opomba = msgText.trim().toUpperCase() === 'NE' ? '' : msgText.trim();
       session.set(skey, { ...sess, step: 303, opomba });
-      await wa.send(phoneId, token, wa.textMsg(from,
-        '👤 Prosim vnesite vaše *ime in priimek*:'
-      ));
+      await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'name_question')));
       return;
     }
 
@@ -743,9 +741,7 @@ async function handleMessage(msgObj, salon) {
         return;
       }
       session.set(skey, { ...sess, step: 304, customerName });
-      await wa.send(phoneId, token, wa.textMsg(from,
-        '📍 Na kateri naslov dostavimo?\n_(ulica, hišna številka, kraj)_'
-      ));
+      await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'address_question')));
       return;
     }
 
@@ -826,9 +822,7 @@ async function handleMessage(msgObj, salon) {
       }
       session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from,
-        isPickup
-          ? `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nRestavracija bo naročilo kmalu potrdila in vas obvestila, kdaj bo pripravljeno za prevzem. 🏃`
-          : `✅ Naročilo oddano, ${custName}!\n\n🔑 Ref: *#${ref6}*\n\nPicerija bo naročilo kmalu potrdila in vas obvestila o času dostave. 🍕`
+        botMsg(salon, isPickup ? 'submitted_pickup' : 'submitted_delivery', { ime: custName, ref: ref6 })
       ));
       // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
       // (pri več sto naročilih na dan bi bil WhatsApp/email spam).
