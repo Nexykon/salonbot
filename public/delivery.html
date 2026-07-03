@@ -322,6 +322,16 @@ body {
         </div>
       </div>
       <div class="settings-card">
+        <div class="settings-card-title">Naročnina</div>
+        <div id="billing-info" style="font-size:14px;margin-bottom:14px;color:var(--muted)">Nalagam ...</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-save" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="billingCheckout('starter')">Osnovni — 49,99 €/mes</button>
+          <button class="btn-save" style="flex:1" onclick="billingCheckout('pro')">Pro (POS) — 79,99 €/mes</button>
+        </div>
+        <button class="btn-save" id="billing-portal-btn" style="margin-top:10px;width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);display:none" onclick="billingPortal()">🧾 Uredi naročnino / računi</button>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Prva aktivacija vključuje 30 dni brezplačno. Plačilo varno prek Stripe.</div>
+      </div>
+      <div class="settings-card">
         <div class="settings-card-title">Način naročanja</div>
         <div class="s-row">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
@@ -932,6 +942,7 @@ async function loadSettingsData() {
     document.getElementById('s-greeting').value = d.greeting_message||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
     currentPlan = d.subscription_plan || 'starter';
+    renderBilling(d);
     renderPosTab(d);
     const pack = parseFloat(d.packaging_price||0), del = parseFloat(d.delivery_fee||0);
     document.getElementById('s-pack-on').checked = pack > 0;
@@ -955,6 +966,39 @@ function feeValue(checkId, inputId) {
   if (!document.getElementById(checkId).checked) return 0;
   const v = parseFloat(String(document.getElementById(inputId).value).replace(',', '.'));
   return isNaN(v) || v < 0 ? 0 : v;
+}
+
+// ── Naročnina (Stripe) ─────────────────────────────────
+function renderBilling(d) {
+  const el = document.getElementById('billing-info');
+  if (!el) return;
+  const planLabel = d.subscription_plan === 'pro' ? 'Pro (79,99 €/mes)' : 'Osnovni (49,99 €/mes)';
+  const stLabel = { active: '✅ Aktivna', trial: '🎁 Preizkusno obdobje', inactive: '⛔ Neaktivna' }[d.subscription_status] || (d.subscription_status || '—');
+  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + stLabel + '</b>';
+  document.getElementById('billing-portal-btn').style.display = d.stripe_active ? 'block' : 'none';
+}
+async function billingCheckout(plan) {
+  try {
+    const r = await fetch('/api/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify({ plan })
+    });
+    const d = await r.json();
+    if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
+    window.location.href = d.url;
+  } catch (e) { showToast('Napaka pri odpiranju plačila', 'error'); }
+}
+async function billingPortal() {
+  try {
+    const r = await fetch('/api/billing/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken }
+    });
+    const d = await r.json();
+    if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
+    window.location.href = d.url;
+  } catch (e) { showToast('Napaka', 'error'); }
 }
 
 // ── POS terminal (samo Pro paket) ──────────────────────

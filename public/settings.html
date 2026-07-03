@@ -579,6 +579,16 @@
     <div class="settings-modal-body">
       <div class="settings-modal-left" id="settings-modal-left">
 <div id="sm-panel-general">
+    <div class="card owner-panel settings-panel" id="billing-card">
+      <div class="card-title">💳 Naročnina</div>
+      <div id="billing-info" style="font-size:14px;color:#64748b;margin-bottom:14px">Nalagam ...</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" onclick="billingCheckout('starter')" style="flex:1;min-width:180px">Osnovni — 49,99 €/mes</button>
+        <button class="btn btn-primary" onclick="billingCheckout('pro')" style="flex:1;min-width:180px">Pro (POS) — 79,99 €/mes</button>
+      </div>
+      <button class="btn" id="billing-portal-btn" onclick="billingPortal()" style="margin-top:10px;width:100%;display:none">🧾 Uredi naročnino / računi</button>
+      <p style="font-size:12px;color:#64748b;margin:8px 0 0">Prva aktivacija vključuje 30 dni brezplačno. Plačilo varno prek Stripe.</p>
+    </div>
     <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
 
@@ -1122,6 +1132,40 @@ function doLogout() {
   document.getElementById('login-wrap').style.display = 'flex';
 }
 
+// ── Naročnina (Stripe) ─────────────────────────────────────
+function renderBilling(d) {
+  const el = document.getElementById('billing-info');
+  if (!el) return;
+  const planLabel = d.subscription_plan === 'pro' ? 'Pro (79,99 €/mes)' : 'Osnovni (49,99 €/mes)';
+  const stLabel = { active: '✅ Aktivna', trial: '🎁 Preizkusno obdobje', inactive: '⛔ Neaktivna' }[d.subscription_status] || (d.subscription_status || '—');
+  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + stLabel + '</b>';
+  const pb = document.getElementById('billing-portal-btn');
+  if (pb) pb.style.display = d.stripe_active ? 'block' : 'none';
+}
+async function billingCheckout(plan) {
+  try {
+    const r = await fetch(scopedPath('/api/billing/checkout'), {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ plan })
+    });
+    const d = await r.json();
+    if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
+    window.location.href = d.url;
+  } catch (e) { showToast('Napaka pri odpiranju plačila', 'error'); }
+}
+async function billingPortal() {
+  try {
+    const r = await fetch(scopedPath('/api/billing/portal'), {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' })
+    });
+    const d = await r.json();
+    if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
+    window.location.href = d.url;
+  } catch (e) { showToast('Napaka', 'error'); }
+}
+
 // ── Load UI with salon data ────────────────────────────────
 function loadUI(data) {
   document.getElementById('login-wrap').style.display = 'none';
@@ -1173,6 +1217,7 @@ function loadUI(data) {
   updatePreview();
   loadServices();
   ffLoadFromData(data);
+  renderBilling(data);
   showOwnerTab('calendar');
 }
 

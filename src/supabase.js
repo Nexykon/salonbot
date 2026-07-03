@@ -87,10 +87,12 @@ async function getSalonByStripeSubId(stripeSubId) {
   return r.data[0] || null;
 }
 
-async function updateSubscriptionStatus(stripeSubId, status) {
+async function updateSubscriptionStatus(stripeSubId, status, plan = null) {
+  const body = { subscription_status: status };
+  if (plan) body.subscription_plan = plan;
   await axios.patch(
     `${BASE}/sb_salons?stripe_subscription_id=eq.${stripeSubId}`,
-    { subscription_status: status },
+    body,
     { headers: { ...HEADERS, Prefer: 'return=minimal' } }
   );
 }

@@ -159,6 +159,24 @@ async function resolveBookSalon(req) {
   return salon;
 }
 
+// ─── Stripe helperja ──────────────────────────────────────
+function stripeClient() {
+  if (!process.env.STRIPE_SECRET_KEY) return null;
+  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+}
+function stripePlanPrices() {
+  return {
+    starter: process.env.STRIPE_PRICE_STARTER || '',
+    pro: process.env.STRIPE_PRICE_PRO || ''
+  };
+}
+function planFromPriceId(priceId) {
+  const prices = stripePlanPrices();
+  if (priceId && priceId === prices.pro) return 'pro';
+  if (priceId && priceId === prices.starter) return 'starter';
+  return null;
+}
+
 function isMasterRequest(req) {
   const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
   const session = ownerAuth.getSession(bearer);
@@ -449,6 +467,16 @@ app.post('/stripe/webhook', async (req, res) => {
 
   try {
     switch (event.type) {
+      case 'checkout.session.completed': {
+        const cs = event.data.object;
+        const salonId = cs.metadata?.salon_id;
+        const csPlan = cs.metadata?.plan === 'pro' ? 'pro' : 'starter';
+        if (salonId && cs.mode === 'subscription' && cs.subscription) {
+          await db.updateSalonStripe(salonId, cs.customer, cs.subscription, 'active', csPlan);
+          console.log('Checkout completed — salon', salonId, 'plan', csPlan);
+        }
+        break;
+      }
       case 'invoice.paid': {
         const invoice = event.data.object;
         const subId = invoice.subscription;
@@ -493,8 +521,10 @@ app.post('/stripe/webhook', async (req, res) => {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object;
-        const status = sub.status === 'active' ? 'active' : 'trial';
-        await db.updateSubscriptionStatus(sub.id, status);
+        const statusMap = { active: 'active', trialing: 'trial', past_due: 'inactive', unpaid: 'inactive', canceled: 'inactive', incomplete_expired: 'inactive' };
+        const status = statusMap[sub.status] || 'trial';
+        const subPlan = planFromPriceId(sub.items?.data?.[0]?.price?.id);
+        await db.updateSubscriptionStatus(sub.id, status, subPlan);
         break;
       }
     }
@@ -964,6 +994,8 @@ app.get('/api/settings', async (req, res) => {
       packaging_price: parseFloat(salon.packaging_price || 0),
       delivery_fee: parseFloat(salon.delivery_fee || 0),
       subscription_plan: salon.subscription_plan || 'starter',
+      subscription_status: salon.subscription_status || 'trial',
+      stripe_active: !!salon.stripe_customer_id,
       pos_type: salon.pos_type || '',
       pos_account: salon.pos_account || '',
       pos_spot_id: salon.pos_spot_id || '',
@@ -1032,6 +1064,62 @@ app.post('/api/settings/pos-test', async (req, res) => {
     res.json(result);
   } catch (e) {
     res.json({ ok: false, msg: e.message });
+  }
+});
+
+// ─── BILLING (Stripe) ─────────────────────────────────────
+// POST /api/billing/checkout { plan: 'starter'|'pro' } — ustvari Stripe Checkout
+app.post('/api/billing/checkout', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  const stripe = stripeClient();
+  if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
+  const plan = req.body.plan === 'pro' ? 'pro' : 'starter';
+  const priceId = stripePlanPrices()[plan];
+  if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" še ni nastavljena (env STRIPE_PRICE_${plan.toUpperCase()}).` });
+  try {
+    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'settings.html';
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{ price: priceId, quantity: 1 }],
+      // Obstoječega Stripe kupca ponovno uporabi, sicer predizpolni email
+      ...(salon.stripe_customer_id ? { customer: salon.stripe_customer_id } : { customer_email: salon.owner_email || undefined }),
+      subscription_data: {
+        // 30 dni brezplačno samo ob prvi naročnini
+        ...(salon.stripe_subscription_id ? {} : { trial_period_days: 30 }),
+        metadata: { salon_id: salon.id, plan }
+      },
+      metadata: { salon_id: salon.id, plan },
+      allow_promotion_codes: true,
+      success_url: `${baseUrl}/${returnPage}?billing=success`,
+      cancel_url: `${baseUrl}/${returnPage}?billing=cancel`
+    });
+    res.json({ url: session.url });
+  } catch (e) {
+    console.error('[billing] checkout error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/billing/portal — Stripe portal za upravljanje naročnine in računov
+app.post('/api/billing/portal', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  const stripe = stripeClient();
+  if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena.' });
+  if (!salon.stripe_customer_id) return res.status(400).json({ error: 'Naročnina prek Stripe še ni aktivirana.' });
+  try {
+    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'settings.html';
+    const portal = await stripe.billingPortal.sessions.create({
+      customer: salon.stripe_customer_id,
+      return_url: `${baseUrl}/${returnPage}`
+    });
+    res.json({ url: portal.url });
+  } catch (e) {
+    console.error('[billing] portal error:', e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
