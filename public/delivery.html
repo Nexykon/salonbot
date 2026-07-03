@@ -221,6 +221,9 @@ body {
 .wa-meta { display: inline-block; float: right; margin: 7px 0 0 8px; font-size: 9px; color: #8696a0; line-height: 1; }
 .bm-pencil { position: absolute; top: -8px; right: -8px; width: 19px; height: 19px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: 0 2px 6px rgba(124,58,237,.45); opacity: 0; transform: scale(.6); transition: .2s; z-index: 2; }
 .wa-bubble-recv.bm-editable:hover .bm-pencil, .wa-bubble-recv.bm-active .bm-pencil { opacity: 1; transform: scale(1); }
+.wa-bubble-recv.bm-editable { cursor: pointer; }
+.wa-bubble-recv.bm-editable:hover { background: #faf6ff; }
+.wa-bubble-recv.bm-editable:hover::after { border-right-color: #faf6ff; }
 .bm-flash { animation: bmFlash .45s ease-out; }
 @keyframes bmFlash { 0% { background: #ddd6fe; transform: scale(1.02); } 100% { background: #f6efff; transform: scale(1); } }
 .bm-fields label .bm-num { display: inline-flex; width: 19px; height: 19px; align-items: center; justify-content: center; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border-radius: 6px; font-size: 10px; margin-right: 7px; font-style: normal; }
@@ -355,10 +358,6 @@ body {
         <div class="s-row">
           <label>Ime podjetja</label>
           <input type="text" id="s-name" placeholder="Pizzeria Roma">
-        </div>
-        <div class="s-row">
-          <label>Pozdravno sporočilo bota</label>
-          <textarea id="s-greeting" rows="3" placeholder="Dobrodošli! Izberite iz menija..."></textarea>
         </div>
         <div class="s-row">
           <label>Bot telefonska številka (za prikaz)</label>
@@ -1035,7 +1034,6 @@ async function loadSettingsData() {
     const r = await fetch('/api/settings',{headers:{'Authorization':'Bearer '+ownerToken}});
     const d = await r.json();
     document.getElementById('s-name').value = d.name||'';
-    document.getElementById('s-greeting').value = d.greeting_message||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
     currentPlan = d.subscription_plan || 'starter';
     renderBotMessages(d);
@@ -1118,7 +1116,7 @@ function bmBubble(side, html, key) {
   if (side === 'sent') {
     return '<div class="wa-bubble-sent">' + html + '<span class="wa-meta">' + BM_TIME + ' <span style="color:#53bdeb">✓✓</span></span></div>';
   }
-  if (key) return '<div class="wa-bubble-recv bm-editable" id="bm-bub-' + key + '">' + bmBubbleHtml(key) + '</div>';
+  if (key) return '<div class="wa-bubble-recv bm-editable" id="bm-bub-' + key + '" onclick="bmJump(\'' + key + '\')" title="Klikni za urejanje tega sporočila">' + bmBubbleHtml(key) + '</div>';
   return '<div class="wa-bubble-recv">' + html + '<span class="wa-meta">' + BM_TIME + '</span></div>';
 }
 function bmLabel(t) { return '<div class="wa-step-label"><span>' + t + '</span></div>'; }
@@ -1164,6 +1162,13 @@ function bmInput(key) {
   bub.classList.add('bm-flash');
   bmFocus(key, false);
 }
+function bmJump(key) {
+  const ta = document.getElementById('bm-' + key);
+  if (!ta) return;
+  ta.focus();
+  ta.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  bmFocus(key, false);
+}
 function bmFocus(key, smooth = true) {
   document.querySelectorAll('.bm-active').forEach(b => b.classList.remove('bm-active'));
   const bub = document.getElementById('bm-bub-' + key);
@@ -1193,8 +1198,6 @@ async function saveBotMessages() {
       body: JSON.stringify({ bot_messages: bm, greeting_message: greet || null })
     });
     if (r.ok) {
-      const sg = document.getElementById('s-greeting');
-      if (sg) sg.value = greet;
       showToast('✅ Sporočila shranjena!', 'success');
       closeBmModal();
     } else {
@@ -1296,7 +1299,6 @@ async function saveSettings() {
     const r = await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
       body:JSON.stringify({
         name:document.getElementById('s-name').value,
-        greeting_message:document.getElementById('s-greeting').value,
         bot_phone_display:document.getElementById('s-botnum').value,
         packaging_price:feeValue('s-pack-on','s-packaging'),
         delivery_fee:feeValue('s-del-on','s-delivery'),
