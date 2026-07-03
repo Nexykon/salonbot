@@ -535,7 +535,8 @@ async function handleMessage(msgObj, salon) {
       // Notify via email
       if (salon.owner_email) {
         mail.sendBookingNotification && mail.sendBookingNotification(
-          salon, s.salonName, from, today, '—', 'FlowTiq naročnina'
+          salon, s.salonName, from, today, '—', '-', 'FlowTiq naročnina',
+          { 'Vrsta': s.salonType || '-', 'Email': s.email || '-' }
         ).catch(e => console.error('[sales] email failed:', e.message));
       }
 

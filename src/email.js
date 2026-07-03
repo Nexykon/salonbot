@@ -6,16 +6,16 @@ function configured() {
   return ok;
 }
 
-async function sendEmail(to, subject, text) {
+async function sendEmail(to, subject, content) {
   const email = String(to || '').trim();
   if (!email || !configured()) return false;
   try {
-    const res = await axios.post('https://api.resend.com/emails', {
-      from: process.env.EMAIL_FROM,
-      to: email,
-      subject,
-      text
-    }, {
+    // Če je vsebina HTML, jo pošlji kot html — sicer kot navadno besedilo.
+    // (Prej se je HTML pošiljal kot text -> prejemnik je videl surovo kodo.)
+    const isHtml = /^\s*</.test(String(content || ''));
+    const payload = { from: process.env.EMAIL_FROM, to: email, subject };
+    if (isHtml) payload.html = content; else payload.text = content;
+    const res = await axios.post('https://api.resend.com/emails', payload, {
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json'
