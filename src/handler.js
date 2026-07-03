@@ -75,9 +75,9 @@ function parseCustomerDateTime(text) {
     date = t.dateOffsetStr(todayYmd, 1);
   } else {
     const dayMap = [
-      ['ponedeljek', 1], ['torek', 2], ['cetrtek', 4],
+      ['ponedeljek', 1], ['torek', 2], ['cetrtek', 4], ['četrtek', 4],
       ['sobota', 6], ['nedelja', 0], ['sreda', 3], ['petek', 5],
-      ['pon', 1], ['tor', 2], ['sre', 3], ['cet', 4], ['pet', 5], ['sob', 6], ['ned', 0]
+      ['pon', 1], ['tor', 2], ['sre', 3], ['cet', 4], ['čet', 4], ['pet', 5], ['sob', 6], ['ned', 0]
     ];
     for (const [key, dayNum] of dayMap) {
       if (lower.includes(key)) {
@@ -1365,7 +1365,21 @@ async function handleMessage(msgObj, salon) {
       }
       const bestTime = await resolveCustomTime(salon, date, time, sess.serviceDuration);
       if (bestTime) {
-        await goAfterTime(date, bestTime, { ...sess, step: 31 });
+        // Vprašalnik je bil izpolnjen že v koraku 30 — ne sprašuj znova
+        const s31 = session.get(skey);
+        const nameField31 = formFields.find(f =>
+          f.id === 'full_name' || f.id === 'name' || f.id === 'ime' ||
+          /ime.*priimek|full.?name/i.test(f.label || '')
+        );
+        const autoName31 = nameField31 ? ((s31.formAnswers || {})[nameField31.label] || null) : null;
+        if (autoName31) {
+          const svc31 = services.find(sv => sv.id === s31.serviceId);
+          session.set(skey, { ...s31, step: 5, customerName: autoName31, selectedDate: date, selectedTime: bestTime });
+          await wa.send(phoneId, token, wa.finalConfirmButtons(from, date, bestTime, autoName31, svc31 ? svc31.name : 'Storitev'));
+        } else {
+          session.set(skey, { ...s31, step: 4, selectedDate: date, selectedTime: bestTime });
+          await wa.send(phoneId, token, wa.textMsg(from, 'Vpisite vase ime in priimek:'));
+        }
       } else {
         await wa.send(phoneId, token, wa.textMsg(from, `Ob ${time} ni prostih terminov. Izberite drug datum:`));
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));

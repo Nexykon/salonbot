@@ -1385,10 +1385,18 @@ app.post('/api/book', rateLimit(20, 10 * 60 * 1000), async (req, res) => {
       form_answers: Object.keys(formAnswers).length ? JSON.stringify(formAnswers) : null
     };
 
-    const booking = await db.createBooking(bookingPayload);
+    let booking;
+    try {
+      booking = needsExactTime ? await db.createBookingIfFree(bookingPayload) : await db.createBooking(bookingPayload);
+    } catch (err) {
+      if (err.code === 'SLOT_TAKEN') {
+        return res.status(409).json({ error: 'Ta termin je žal že zaseden. Izberite drugega.' });
+      }
+      throw err;
+    }
     const ref6 = booking.id ? booking.id.slice(0,6).toUpperCase() : 'BOOK01';
     const fmtDate = date;
-    const fmtTime = needsExactTime ? time : (bookingMode === 'month_only' ? date.slice(0,7) : date);
+    const fmtTime = needsExactTime ? time : (bookingMode === 'month_only' ? date.slice(0,7) : 'po dogovoru');
 
     await notifyBookingAdmin(salon, customerName.trim(), phone, fmtDate, fmtTime, ref6, 'Spletna rezervacija', formAnswers);
 
