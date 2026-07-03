@@ -181,6 +181,50 @@ body {
 .custom-row input:focus { border-color: var(--purple); }
 .custom-row span { color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
 .modal-btns { display: flex; gap: 10px; }
+
+/* ── Bot messages editor (telefon predogled) ── */
+.bm-overlay { align-items: center !important; padding: 16px; }
+.bm-sheet { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 22px; width: min(1060px, 96vw); max-height: 94vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.bm-grid { display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: start; }
+.bm-fields { max-height: 62vh; overflow-y: auto; padding-right: 8px; display: flex; flex-direction: column; gap: 12px; }
+.bm-fields label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+.bm-fields textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; color: var(--text); font-size: 13px; font-family: inherit; resize: vertical; outline: none; }
+.bm-fields textarea:focus { border-color: #7c3aed; }
+@media (max-width: 860px) { .bm-grid { grid-template-columns: 1fr; } .bm-phone-wrap { display: none; } }
+.phone-preview { width: 100%; max-width: 290px; margin: 0 auto; border-radius: 44px; background: linear-gradient(145deg, #d8d8de 0%, #c8c8cf 50%, #bbbbc3 100%); box-shadow: 0 0 0 1px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.6), inset 0 -1px 0 rgba(0,0,0,0.12), 0 24px 56px rgba(124,58,237,0.14), 0 8px 20px rgba(0,0,0,0.12); padding: 10px; position: relative; display: flex; flex-direction: column; height: 580px; overflow: hidden; }
+.phone-inner { background: #fff; border-radius: 32px; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.phone-notch { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); width: 76px; height: 22px; background: #1c1c1f; border-radius: 20px; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+.wa-header { background: #075E54; display: flex; align-items: center; gap: 9px; padding: 30px 12px 10px; }
+.wa-back { color: rgba(255,255,255,0.85); font-size: 18px; line-height: 1; }
+.wa-avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #25d366, #128c7e); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 14px; flex-shrink: 0; border: 1.5px solid rgba(255,255,255,0.25); }
+.wa-info { flex: 1; min-width: 0; }
+.wa-name { font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-status { font-size: 10px; color: rgba(255,255,255,0.72); margin-top: 1px; }
+.wa-chat { background-color: #e5ddd5; padding: 10px 8px 12px; flex: 1; overflow-y: auto; scroll-behavior: smooth; }
+.wa-bubble-sent { background: #dcf8c6; border-radius: 12px 12px 5px 12px; padding: 7px 10px; font-size: 11.5px; line-height: 1.45; color: #111; max-width: 82%; margin: 0 0 6px auto; box-shadow: 0 1px 2px rgba(0,0,0,0.1); white-space: pre-wrap; word-break: break-word; }
+.wa-bubble-recv { background: #fff; border-radius: 12px 12px 12px 5px; padding: 7px 10px; font-size: 11.5px; line-height: 1.45; color: #111; max-width: 86%; margin: 0 auto 6px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); white-space: pre-wrap; word-break: break-word; }
+.wa-bubble-recv.bm-editable { border: 1.5px dashed rgba(124,58,237,0.35); transition: .25s; }
+.wa-bubble-recv.bm-active { border-color: #7c3aed; background: #f6efff; box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+.wa-step-label { text-align: center; margin: 10px 0 6px; }
+.wa-step-label span { background: rgba(255,255,255,0.85); border-radius: 8px; padding: 3px 10px; font-size: 9.5px; font-weight: 700; color: #54656f; box-shadow: 0 1px 1px rgba(0,0,0,0.06); }
+.bm-sheet { animation: bmPop .28s cubic-bezier(.2,.9,.3,1.15); }
+@keyframes bmPop { from { transform: translateY(16px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.bm-fields::-webkit-scrollbar, .wa-chat::-webkit-scrollbar { width: 6px; }
+.bm-fields::-webkit-scrollbar-thumb, .wa-chat::-webkit-scrollbar-thumb { background: rgba(124,58,237,.3); border-radius: 3px; }
+.bm-fields::-webkit-scrollbar-track, .wa-chat::-webkit-scrollbar-track { background: transparent; }
+.wa-bubble-sent { position: relative; }
+.wa-bubble-sent::after { content: ''; position: absolute; bottom: 0; right: -6px; border: 6px solid transparent; border-bottom: 0; border-left: 6px solid #dcf8c6; }
+.wa-bubble-recv { position: relative; }
+.wa-bubble-recv::after { content: ''; position: absolute; bottom: 0; left: -6px; border: 6px solid transparent; border-bottom: 0; border-right: 6px solid #fff; }
+.wa-bubble-recv.bm-active { background: #f6efff; }
+.wa-bubble-recv.bm-active::after { border-right-color: #f6efff; }
+.wa-meta { display: inline-block; float: right; margin: 7px 0 0 8px; font-size: 9px; color: #8696a0; line-height: 1; }
+.bm-pencil { position: absolute; top: -8px; right: -8px; width: 19px; height: 19px; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; box-shadow: 0 2px 6px rgba(124,58,237,.45); opacity: 0; transform: scale(.6); transition: .2s; z-index: 2; }
+.wa-bubble-recv.bm-editable:hover .bm-pencil, .wa-bubble-recv.bm-active .bm-pencil { opacity: 1; transform: scale(1); }
+.bm-flash { animation: bmFlash .45s ease-out; }
+@keyframes bmFlash { 0% { background: #ddd6fe; transform: scale(1.02); } 100% { background: #f6efff; transform: scale(1); } }
+.bm-fields label .bm-num { display: inline-flex; width: 19px; height: 19px; align-items: center; justify-content: center; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: #fff; border-radius: 6px; font-size: 10px; margin-right: 7px; font-style: normal; }
+.wa-chat { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='rgba(0,0,0,0.045)'/%3E%3Ccircle cx='60' cy='20' r='1.5' fill='rgba(0,0,0,0.045)'/%3E%3Ccircle cx='40' cy='40' r='1.5' fill='rgba(0,0,0,0.045)'/%3E%3Ccircle cx='20' cy='60' r='1.5' fill='rgba(0,0,0,0.045)'/%3E%3Ccircle cx='60' cy='60' r='1.5' fill='rgba(0,0,0,0.045)'/%3E%3C/svg%3E"); }
 .btn-modal-ok { flex: 1; background: linear-gradient(135deg, var(--purple), var(--purple-light)); color: #fff; border: none; border-radius: 12px; padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
 .btn-modal-cancel { flex: 0 0 auto; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 12px; padding: 14px 18px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
@@ -323,20 +367,8 @@ body {
       </div>
       <div class="settings-card">
         <div class="settings-card-title">Sporočila bota</div>
-        <div style="font-size:12.5px;color:var(--muted);margin-bottom:14px;line-height:1.5">
-          Prilagodite besedila, ki jih bot pošilja strankam. <b>Prazno polje = privzeto sporočilo</b> (prikazano v sivem).<br>
-          Oznake, ki jih bot samodejno zamenja: <code>{ime}</code> ime stranke · <code>{ref}</code> št. naročila · <code>{minute}</code> minute · <code>{naslov}</code> naslov prevzema.
-        </div>
-        <div class="s-row"><label>Vprašanje: dostava ali prevzem?</label><textarea id="bm-mode_question" rows="2"></textarea></div>
-        <div class="s-row"><label>Vprašanje za opombo</label><textarea id="bm-note_question" rows="3"></textarea></div>
-        <div class="s-row"><label>Vprašanje za ime</label><textarea id="bm-name_question" rows="2"></textarea></div>
-        <div class="s-row"><label>Vprašanje za naslov dostave</label><textarea id="bm-address_question" rows="2"></textarea></div>
-        <div class="s-row"><label>Naročilo oddano — dostava</label><textarea id="bm-submitted_delivery" rows="3"></textarea></div>
-        <div class="s-row"><label>Naročilo oddano — prevzem</label><textarea id="bm-submitted_pickup" rows="3"></textarea></div>
-        <div class="s-row"><label>Naročilo potrjeno — dostava (uporabite {minute})</label><textarea id="bm-accepted_delivery" rows="3"></textarea></div>
-        <div class="s-row"><label>Naročilo potrjeno — prevzem (uporabite {minute} in {naslov})</label><textarea id="bm-accepted_pickup" rows="3"></textarea></div>
-        <div class="s-row"><label>Naročilo zavrnjeno</label><textarea id="bm-rejected" rows="2"></textarea></div>
-        <button class="btn-save" style="width:100%" onclick="saveBotMessages()">💾 Shrani sporočila bota</button>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Prilagodite vsa besedila, ki jih bot pošilja strankam — s predogledom pogovora v živo na telefonu.</div>
+        <button class="btn-save" style="width:100%" onclick="openBmModal()">✏️ Uredi sporočila bota</button>
       </div>
       <div class="settings-card">
         <div class="settings-card-title">Naročnina</div>
@@ -481,6 +513,53 @@ body {
     </div>
   </div>
 </div><!-- ETA MODAL -->
+<!-- BOT MESSAGES EDITOR -->
+<div class="modal-overlay bm-overlay" id="bm-modal">
+  <div class="bm-sheet">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px">
+      <div>
+        <div class="modal-title">✏️ Sporočila bota</div>
+        <div class="modal-sub" style="margin-bottom:0">Prazno polje = privzeto sporočilo (sivo). Oznake <code>{ime}</code> <code>{ref}</code> <code>{minute}</code> <code>{naslov}</code> bot zamenja sam. Vsaka sprememba se takoj pokaže na telefonu desno.</div>
+      </div>
+      <button onclick="closeBmModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1">✕</button>
+    </div>
+    <div class="bm-grid">
+      <div class="bm-fields">
+        <div><label><span class="bm-num">1</span>Pozdrav ob meniju (prvo sporočilo)</label><textarea id="bm-greeting" rows="2" oninput="bmInput('greeting')" onfocus="bmFocus('greeting')"></textarea></div>
+        <div><label><span class="bm-num">2</span>Vprašanje: dostava ali prevzem?</label><textarea id="bm-mode_question" rows="2" oninput="bmInput('mode_question')" onfocus="bmFocus('mode_question')"></textarea></div>
+        <div><label><span class="bm-num">3</span>Vprašanje za opombo</label><textarea id="bm-note_question" rows="3" oninput="bmInput('note_question')" onfocus="bmFocus('note_question')"></textarea></div>
+        <div><label><span class="bm-num">4</span>Vprašanje za ime</label><textarea id="bm-name_question" rows="2" oninput="bmInput('name_question')" onfocus="bmFocus('name_question')"></textarea></div>
+        <div><label><span class="bm-num">5</span>Vprašanje za naslov (samo dostava)</label><textarea id="bm-address_question" rows="2" oninput="bmInput('address_question')" onfocus="bmFocus('address_question')"></textarea></div>
+        <div><label><span class="bm-num">6</span>Naročilo oddano — dostava</label><textarea id="bm-submitted_delivery" rows="3" oninput="bmInput('submitted_delivery')" onfocus="bmFocus('submitted_delivery')"></textarea></div>
+        <div><label><span class="bm-num">7</span>Naročilo potrjeno — dostava</label><textarea id="bm-accepted_delivery" rows="3" oninput="bmInput('accepted_delivery')" onfocus="bmFocus('accepted_delivery')"></textarea></div>
+        <div><label><span class="bm-num">8</span>Naročilo oddano — osebni prevzem</label><textarea id="bm-submitted_pickup" rows="3" oninput="bmInput('submitted_pickup')" onfocus="bmFocus('submitted_pickup')"></textarea></div>
+        <div><label><span class="bm-num">9</span>Naročilo potrjeno — osebni prevzem</label><textarea id="bm-accepted_pickup" rows="3" oninput="bmInput('accepted_pickup')" onfocus="bmFocus('accepted_pickup')"></textarea></div>
+        <div><label><span class="bm-num">10</span>Naročilo zavrnjeno</label><textarea id="bm-rejected" rows="2" oninput="bmInput('rejected')" onfocus="bmFocus('rejected')"></textarea></div>
+      </div>
+      <div class="bm-phone-wrap">
+        <div class="phone-preview">
+          <div class="phone-notch"></div>
+          <div class="phone-inner">
+            <div class="wa-header">
+              <span class="wa-back">‹</span>
+              <div class="wa-avatar" id="bm-avatar">P</div>
+              <div class="wa-info">
+                <div class="wa-name" id="bm-wa-name">Picerija</div>
+                <div class="wa-status">na spletu</div>
+              </div>
+            </div>
+            <div class="wa-chat" id="bm-chat"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn-save" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="closeBmModal()">Prekliči</button>
+      <button class="btn-save" style="flex:2" onclick="saveBotMessages()">💾 Shrani sporočila</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="eta-modal">
   <div class="modal-sheet">
     <div class="modal-title">⏱️ Čas dostave</div>
@@ -986,31 +1065,141 @@ function feeValue(checkId, inputId) {
   return isNaN(v) || v < 0 ? 0 : v;
 }
 
-// ── Sporočila bota ─────────────────────────────────────
+// ── Sporočila bota (urejevalnik s predogledom telefona) ──
 const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected'];
+const BM_GREET_DEFAULT = '👇 Izberite artikel iz menija:';
+const BM_TIME = '11:42';
+let bmDefaults = {};
+
 function renderBotMessages(d) {
+  bmDefaults = d.bot_messages_defaults || {};
   const bm = d.bot_messages || {};
-  const defs = d.bot_messages_defaults || {};
   for (const k of BM_KEYS) {
     const el = document.getElementById('bm-' + k);
     if (!el) continue;
     el.value = bm[k] || '';
-    el.placeholder = defs[k] || '';
+    el.placeholder = bmDefaults[k] || '';
   }
+  const g = document.getElementById('bm-greeting');
+  if (g) { g.value = d.greeting_message || ''; g.placeholder = BM_GREET_DEFAULT; }
+  const nm = document.getElementById('bm-wa-name');
+  if (nm) nm.textContent = d.name || 'Picerija';
+  const av = document.getElementById('bm-avatar');
+  if (av) av.textContent = (d.name || 'P').trim().charAt(0).toUpperCase();
 }
+
+function bmVal(key) {
+  const el = document.getElementById('bm-' + key);
+  if (!el) return '';
+  if (key === 'greeting') return el.value.trim() || BM_GREET_DEFAULT;
+  return el.value.trim() || bmDefaults[key] || '';
+}
+function bmEsc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function bmFormat(s) {
+  return bmEsc(s)
+    .replace(/\*([^*\n]+)\*/g, '<b>$1</b>')
+    .replace(/_([^_\n]+)_/g, '<i>$1</i>');
+}
+function bmRender(key) {
+  const addr = (document.getElementById('s-pickup-addr')?.value || '').trim() || 'Glavni trg 5, Ljubljana';
+  const t = bmVal(key)
+    .replace(/\{ime\}/g, 'Janez Novak')
+    .replace(/\{ref\}/g, 'A1B2C3')
+    .replace(/\{minute\}/g, '30')
+    .replace(/\{naslov\}/g, '\n📍 Prevzem: ' + addr);
+  return bmFormat(t);
+}
+const BM_NOTE_PREFIX = '🛒 *Vaše naročilo* (🚗 Dostava):\n• Pica Margerita x2 — 17.00 €\n\n💵 *SKUPAJ: 17.00 €*\n\n';
+function bmBubbleHtml(key) {
+  const inner = key === 'note_question' ? bmFormat(BM_NOTE_PREFIX) + bmRender(key) : bmRender(key);
+  return '<span class="bm-pencil">✎</span>' + inner + '<span class="wa-meta">' + BM_TIME + '</span>';
+}
+function bmBubble(side, html, key) {
+  if (side === 'sent') {
+    return '<div class="wa-bubble-sent">' + html + '<span class="wa-meta">' + BM_TIME + ' <span style="color:#53bdeb">✓✓</span></span></div>';
+  }
+  if (key) return '<div class="wa-bubble-recv bm-editable" id="bm-bub-' + key + '">' + bmBubbleHtml(key) + '</div>';
+  return '<div class="wa-bubble-recv">' + html + '<span class="wa-meta">' + BM_TIME + '</span></div>';
+}
+function bmLabel(t) { return '<div class="wa-step-label"><span>' + t + '</span></div>'; }
+
+function renderBmChat() {
+  const el = document.getElementById('bm-chat');
+  if (!el) return;
+  el.innerHTML = [
+    bmLabel('Stranka odpre pogovor'),
+    bmBubble('sent', 'Živjo! 👋'),
+    bmBubble('recv', '', 'greeting'),
+    bmBubble('sent', '🍕 Pica Margerita'),
+    bmBubble('recv', bmFormat('*Pica Margerita*\n💰 8.50 €\n\nKoliko kosov?')),
+    bmBubble('sent', '2 kosa'),
+    bmBubble('recv', bmFormat('✅ Dodano: *Pica Margerita* x2\n\n🛒 *Košarica:*\n• Pica Margerita x2 — 17.00 €\n\n💰 Skupaj: *17.00 €*')),
+    bmBubble('sent', '✅ Zaključi'),
+    bmBubble('recv', '', 'mode_question'),
+    bmBubble('sent', '🚗 Dostava'),
+    bmBubble('recv', '', 'note_question'),
+    bmBubble('sent', 'Brez čebule, prosim'),
+    bmBubble('recv', '', 'name_question'),
+    bmBubble('sent', 'Janez Novak'),
+    bmBubble('recv', '', 'address_question'),
+    bmBubble('sent', 'Glavna ulica 5, Ljubljana'),
+    bmBubble('sent', '✅ Potrdi'),
+    bmBubble('recv', '', 'submitted_delivery'),
+    bmLabel('⏱️ Ko naročilo sprejmete'),
+    bmBubble('recv', '', 'accepted_delivery'),
+    bmLabel('🏃 Če stranka izbere osebni prevzem'),
+    bmBubble('recv', '', 'submitted_pickup'),
+    bmBubble('recv', '', 'accepted_pickup'),
+    bmLabel('❌ Če naročilo zavrnete'),
+    bmBubble('recv', '', 'rejected')
+  ].join('');
+}
+
+function bmInput(key) {
+  const bub = document.getElementById('bm-bub-' + key);
+  if (!bub) return;
+  bub.innerHTML = bmBubbleHtml(key);
+  bub.classList.remove('bm-flash');
+  void bub.offsetWidth; // restart animacije
+  bub.classList.add('bm-flash');
+  bmFocus(key, false);
+}
+function bmFocus(key, smooth = true) {
+  document.querySelectorAll('.bm-active').forEach(b => b.classList.remove('bm-active'));
+  const bub = document.getElementById('bm-bub-' + key);
+  const chat = document.getElementById('bm-chat');
+  if (!bub || !chat) return;
+  bub.classList.add('bm-active');
+  const top = bub.offsetTop - chat.offsetTop - chat.clientHeight / 2 + bub.clientHeight / 2;
+  chat.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+}
+function openBmModal() {
+  renderBmChat();
+  document.getElementById('bm-modal').classList.add('open');
+}
+function closeBmModal() { document.getElementById('bm-modal').classList.remove('open'); }
+
 async function saveBotMessages() {
   const bm = {};
   for (const k of BM_KEYS) {
     const el = document.getElementById('bm-' + k);
     if (el && el.value.trim()) bm[k] = el.value.trim();
   }
+  const greet = (document.getElementById('bm-greeting')?.value || '').trim();
   try {
     const r = await fetch('/api/settings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
-      body: JSON.stringify({ bot_messages: bm })
+      body: JSON.stringify({ bot_messages: bm, greeting_message: greet || null })
     });
-    showToast(r.ok ? '✅ Sporočila shranjena!' : 'Napaka pri shranjevanju', r.ok ? 'success' : 'error');
+    if (r.ok) {
+      const sg = document.getElementById('s-greeting');
+      if (sg) sg.value = greet;
+      showToast('✅ Sporočila shranjena!', 'success');
+      closeBmModal();
+    } else {
+      showToast('Napaka pri shranjevanju', 'error');
+    }
   } catch (e) { showToast('Napaka', 'error'); }
 }
 
