@@ -532,6 +532,7 @@
   <div class="container">
     <div class="salon-bar">
       <div class="salon-bar-name" id="salon-display-name">—</div>
+      <select id="loc-switcher" style="display:none;margin-left:12px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;color:#0f172a;cursor:pointer;max-width:220px"></select>
       <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
         <div class="salon-bar-status">✅ Aktivno</div>
         <button onclick="openSettingsModal()" style="display:flex;align-items:center;gap:6px;padding:7px 16px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:0.82rem;font-weight:700;cursor:pointer">⚙️ Nastavitve</button>
@@ -1132,6 +1133,38 @@ function doLogout() {
   document.getElementById('login-wrap').style.display = 'flex';
 }
 
+
+// ── Preklopnik med lokacijami (če ima lastnik več lokalov) ──
+async function initLocationSwitcher(tokenGetter, tokenSetter) {
+  try {
+    const r = await fetch('/api/my-salons', { headers: { 'Authorization': 'Bearer ' + tokenGetter() } });
+    if (!r.ok) return;
+    const d = await r.json();
+    const salons = d.salons || [];
+    if (salons.length < 2) return;
+    const sel = document.getElementById('loc-switcher');
+    if (!sel) return;
+    sel.innerHTML = salons.map(s =>
+      '<option value="' + s.id + '"' + (s.current ? ' selected' : '') + '>🏪 ' + (s.name || 'Lokal') + '</option>'
+    ).join('');
+    sel.style.display = '';
+    sel.onchange = async () => {
+      const salonId = sel.value;
+      try {
+        const rs = await fetch('/api/auth/switch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tokenGetter() },
+          body: JSON.stringify({ salonId })
+        });
+        const ds = await rs.json();
+        if (!rs.ok) { alert(ds.error || 'Preklop ni uspel'); return; }
+        tokenSetter(ds.token);
+        window.location.href = ds.redirect + '?token=' + encodeURIComponent(ds.token);
+      } catch (e) { alert('Preklop ni uspel'); }
+    };
+  } catch (e) { /* preklopnik je opcijski — nikoli ne sme zrušiti strani */ }
+}
+
 // ── Naročnina (Stripe) ─────────────────────────────────────
 function renderBilling(d) {
   const el = document.getElementById('billing-info');
@@ -1218,6 +1251,10 @@ function loadUI(data) {
   loadServices();
   ffLoadFromData(data);
   renderBilling(data);
+  if (ownerToken) initLocationSwitcher(
+    () => ownerToken,
+    (t) => { ownerToken = t; localStorage.setItem('ft_owner_token', t); sessionStorage.setItem('ft_owner_token', t); }
+  );
   showOwnerTab('calendar');
 }
 

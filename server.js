@@ -1261,16 +1261,20 @@ app.post('/api/auth/login', async (req, res) => {
   const password = String(req.body.password || '');
   if (!email || !password) return res.status(400).json({ error: 'Email in geslo sta obvezna' });
   try {
-    const salon = await db.getSalonByOwnerEmail(email);
-    if (!salon || salon.subscription_status === 'inactive' || !salon.owner_password_hash) {
+    // Vsi lokali istega lastnika (email) — večlokacijska podpora
+    const all = (await db.getSalonsByOwnerEmail(email)).filter(s => s.subscription_status !== 'inactive');
+    // Geslo mora ustrezati vsaj enemu lokalu s tem emailom
+    const salon = all.find(s => s.owner_password_hash && ownerAuth.verifyPassword(password, s.owner_password_hash));
+    if (!salon) {
       return res.status(401).json({ error: 'Napacen email ali geslo' });
     }
-    if (!ownerAuth.verifyPassword(password, salon.owner_password_hash)) {
-      return res.status(401).json({ error: 'Napacen email ali geslo' });
-    }
-    const token = ownerAuth.createSession(salon.id, 'owner', { email });
+    const allowedSalons = all.map(s => s.id).slice(0, 20);
+    const token = ownerAuth.createSession(salon.id, 'owner', { email, allowedSalons });
     await db.updateSalonSettings(salon.id, { owner_last_login_at: new Date().toISOString() });
-    res.json({ success: true, token, role: 'owner', salon: publicSalon(salon) });
+    res.json({
+      success: true, token, role: 'owner', salon: publicSalon(salon),
+      salons: all.map(s => ({ id: s.id, name: s.name, booking_mode: s.booking_mode || 'exact_time', business_type: s.business_type || '' }))
+    });
   } catch (err) {
     console.error('Owner login error:', err.message);
     res.status(500).json({ error: 'Prijava trenutno ni uspela' });
@@ -1399,6 +1403,43 @@ app.post('/api/auth/verify', async (req, res) => {
   }
   const salon = await db.getSalonById(session.salonId);
   res.json({ success: true, token, role: 'owner', salon: publicSalon(salon) });
+});
+
+// GET /api/my-salons — lokali, do katerih ima lastnik dostop (za preklopnik)
+app.get('/api/my-salons', async (req, res) => {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  if (!session || session.role !== 'owner') return res.status(401).json({ error: 'Neveljavna prijava' });
+  try {
+    const ids = Array.isArray(session.allowedSalons) && session.allowedSalons.length
+      ? session.allowedSalons
+      : [session.salonId];
+    const salons = [];
+    for (const id of ids) {
+      const s = await db.getSalonById(id);
+      if (s && s.subscription_status !== 'inactive') {
+        salons.push({ id: s.id, name: s.name, booking_mode: s.booking_mode || 'exact_time', business_type: s.business_type || '', current: s.id === session.salonId });
+      }
+    }
+    res.json({ salons });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// POST /api/auth/switch { salonId } — preklop na drug lokal istega lastnika
+app.post('/api/auth/switch', async (req, res) => {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  if (!session || session.role !== 'owner') return res.status(401).json({ error: 'Neveljavna prijava' });
+  const targetId = String(req.body.salonId || '');
+  const allowed = Array.isArray(session.allowedSalons) ? session.allowedSalons : [session.salonId];
+  if (!allowed.includes(targetId)) return res.status(403).json({ error: 'Nimate dostopa do tega lokala' });
+  try {
+    const salon = await db.getSalonById(targetId);
+    if (!salon || salon.subscription_status === 'inactive') return res.status(404).json({ error: 'Lokal ni najden' });
+    const token = ownerAuth.createSession(salon.id, 'owner', { email: session.email, allowedSalons: allowed });
+    const redirect = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? '/delivery.html' : '/settings.html';
+    res.json({ success: true, token, redirect, salon: publicSalon(salon) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/auth/logout', (req, res) => {
