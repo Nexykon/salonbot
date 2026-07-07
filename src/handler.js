@@ -847,7 +847,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── Stranka napiše "prekliči" ──
-    if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]i|storno)\b/i.test(msgText))) {
+    if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]\w*|storno|cancel)\b/i.test(msgText))) {
       // sredi naročanja: prekliči košarico
       if (sess && sess.step >= 301 && sess.step <= 307) {
         session.clear(skey);
