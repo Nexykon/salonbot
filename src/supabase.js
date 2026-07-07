@@ -172,7 +172,7 @@ async function getBooking(ref) {
   }).catch(async () => {
     // fallback: fetch all and filter in JS
     const all = await axios.get(`${BASE}/sb_bookings?order=created_at.desc&limit=200`, { headers: HEADERS });
-    return { data: all.data.filter(b => (b.id || '').endsWith(ref)) };
+    return { data: all.data.filter(b => (b.id || '').toLowerCase().endsWith(String(ref).toLowerCase())) };
   });
   return r.data[0];
 }
@@ -188,7 +188,29 @@ async function getBookingForSalon(salonId, ref) {
     `${BASE}/sb_bookings?salon_id=eq.${salonId}&order=created_at.desc&limit=500`,
     { headers: HEADERS }
   );
-  return r.data.find(b => (b.id || '').endsWith(ref)) || null;
+  return r.data.find(b => (b.id || '').toLowerCase().endsWith(String(ref).toLowerCase())) || null;
+}
+
+// Artikli zadnjega (nepreklicanega) naročila stranke — za "enako kot zadnjič"
+async function getLastOrderItemsByPhone(salonId, phone) {
+  const b = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&status=neq.cancelled&order=created_at.desc&limit=1`,
+    { headers: HEADERS }
+  );
+  const bk = b.data[0];
+  if (!bk) return [];
+  const r = await axios.get(`${BASE}/sb_order_items?booking_id=eq.${bk.id}`, { headers: HEADERS });
+  return r.data || [];
+}
+
+// Zadnje odprto (pending/confirmed) današnje naročilo stranke — za preklic
+async function getActiveBookingByPhone(salonId, phone) {
+  const today = t.todayStr();
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&booking_date=eq.${today}&status=in.(pending,confirmed)&order=created_at.desc&limit=1`,
+    { headers: HEADERS }
+  );
+  return r.data[0] || null;
 }
 
 async function updateBookingStatus(id, status) {
@@ -613,7 +635,7 @@ module.exports = {
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
   createOrderItems, getOrderItems, getOrderItemsBysalon,
-  getBooking, getBookingById, getBookingForSalon, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
+  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,

@@ -7,6 +7,7 @@ const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 const t = require('./time');
 const { botMsg } = require('./botmsg');
+const { askOrderAI } = require('./ai-order');
 
 function fmtDate(dateStr) {
   if (!dateStr) return '?';
@@ -140,6 +141,12 @@ async function handleMessage(msgObj, salon) {
   const salonAdminPhone = String(salon.admin_phone || '').replace(/[^\d]/g, '');
   const isAdmin = salonAdminPhone && from === salonAdminPhone;
   const msgText = msgObj.text?.body?.trim() || '';
+
+  // ── Bot izklopljen: stranke dobijo obvestilo, admin dela naprej ──
+  if (!isAdmin && salon.bot_active === false) {
+    await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'bot_offline')));
+    return;
+  }
 
   // ── ADMIN FLOW ──────────────────────────────────────────────
   if (isAdmin) {
@@ -647,7 +654,8 @@ async function handleMessage(msgObj, salon) {
 
     // ── Povzetek + vprašanje za opombo, glede na način (dostava/prevzem)
     const askNoteForMode = async (mode) => {
-      const cart = sess.cart || [];
+      const sessNow = session.get(skey);
+      const cart = sessNow.cart || sess.cart || [];
       const packUnit = parseFloat(salon.packaging_price || 0);
       const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
       const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
@@ -663,15 +671,16 @@ async function handleMessage(msgObj, salon) {
         `💵 *SKUPAJ: ${grandTotal} €*`,
       ].join('\n');
       const modeLabel = mode === 'prevzem' ? '🏃 Osebni prevzem' : '🚗 Dostava';
-      session.set(skey, { ...sess, step: 302, orderMode: mode, grandTotal, packFee, delFee });
+      session.set(skey, { ...sess, ...sessNow, step: 302, orderMode: mode, grandTotal, packFee, delFee });
       await wa.send(phoneId, token, wa.textMsg(from,
         `🛒 *Vaše naročilo* (${modeLabel}):\n${fmtCart(cart)}\n\n${priceBreakdown}\n\n` + botMsg(salon, 'note_question')
       ));
     };
 
     // ── Zaključi → izbira načina (ali direktno naprej, če je omogočen samo en)
-    if (iId === 'delivery_checkout') {
-      if (!sess || !sess.cart || !sess.cart.length) {
+    const startCheckout = async () => {
+      const cur = session.get(skey);
+      if (!cur.cart || !cur.cart.length) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izberite artikel:'));
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
@@ -679,7 +688,7 @@ async function handleMessage(msgObj, salon) {
       const canDel  = salon.allow_delivery !== false;
       const canPick = salon.allow_pickup !== false;
       if (canDel && canPick) {
-        session.set(skey, { ...sess, step: 307 });
+        session.set(skey, { ...cur, step: 307 });
         await wa.send(phoneId, token, {
           messaging_product: 'whatsapp', to: from, type: 'interactive',
           interactive: {
@@ -696,8 +705,8 @@ async function handleMessage(msgObj, salon) {
       } else {
         await askNoteForMode(canPick && !canDel ? 'prevzem' : 'dostava');
       }
-      return;
-    }
+    };
+    if (iId === 'delivery_checkout') { await startCheckout(); return; }
 
     // ── Izbran način prevzema
     if (iId === 'dmode_dostava' || iId === 'dmode_prevzem') {
@@ -742,7 +751,8 @@ async function handleMessage(msgObj, salon) {
         return;
       }
       session.set(skey, { ...sess, step: 304, customerName });
-      await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'address_question')));
+      const areaNote = salon.delivery_area ? `\n🚗 Dostavljamo: ${salon.delivery_area}` : '';
+      await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'address_question') + areaNote));
       return;
     }
 
@@ -810,7 +820,7 @@ async function handleMessage(msgObj, salon) {
         })
       };
       const booking = await db.createBooking(bookingData);
-      const ref6 = (booking.id || '').slice(-6);
+      const ref6 = (booking.id || '').slice(-6).toUpperCase();
       // Shrani posamezne artikle v sb_order_items
       if (booking.id) {
         const cartWithCategory = cart.map(item => {
@@ -822,11 +832,59 @@ async function handleMessage(msgObj, salon) {
         );
       }
       session.clear(skey);
-      await wa.send(phoneId, token, wa.textMsg(from,
-        botMsg(salon, isPickup ? 'submitted_pickup' : 'submitted_delivery', { ime: custName, ref: ref6 })
-      ));
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp', to: from, type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: botMsg(salon, isPickup ? 'submitted_pickup' : 'submitted_delivery', { ime: custName, ref: ref6 })
+                 + '\n\n_Naročilo lahko kadarkoli prekličete — kliknite spodaj ali napišite *prekliči*._' },
+          action: { buttons: [{ type: 'reply', reply: { id: 'cancel_request', title: '❌ Prekliči naročilo' } }] }
+        }
+      });
       // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
       // (pri več sto naročilih na dan bi bil WhatsApp/email spam).
+      return;
+    }
+
+    // ── Stranka napiše "prekliči" ──
+    if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]i|storno)\b/i.test(msgText))) {
+      // sredi naročanja: prekliči košarico
+      if (sess && sess.step >= 301 && sess.step <= 307) {
+        session.clear(skey);
+        await wa.send(phoneId, token, wa.textMsg(from, 'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕'));
+        return;
+      }
+      // sicer: prekliči zadnje oddano naročilo
+      const active = await db.getActiveBookingByPhone(salon.id, from);
+      if (!active) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Nimate odprtega naročila, ki bi ga lahko preklicali.'));
+        return;
+      }
+      const refC = (active.id || '').slice(-6).toUpperCase();
+      session.set(skey, { ...sess, cancelBookingId: active.id, cancelRef: refC });
+      await wa.send(phoneId, token, {
+        messaging_product: 'whatsapp', to: from, type: 'interactive',
+        interactive: {
+          type: 'button',
+          body: { text: `Ali res želite preklicati naročilo *#${refC}*?` },
+          action: { buttons: [
+            { type: 'reply', reply: { id: 'cancel_yes', title: '✅ Da, prekliči' } },
+            { type: 'reply', reply: { id: 'cancel_no', title: '↩️ Ne, obdrži' } }
+          ]}
+        }
+      });
+      return;
+    }
+    if (iId === 'cancel_yes' && sess.cancelBookingId) {
+      await db.updateBookingStatus(sess.cancelBookingId, 'cancelled');
+      const refC = sess.cancelRef || '';
+      session.clear(skey);
+      await wa.send(phoneId, token, wa.textMsg(from, `✅ Naročilo *#${refC}* je preklicano. Se vidimo naslednjič! 👋`));
+      return;
+    }
+    if (iId === 'cancel_no') {
+      session.set(skey, { ...sess, cancelBookingId: null, cancelRef: null });
+      await wa.send(phoneId, token, wa.textMsg(from, '👍 Naročilo ostaja v veljavi.'));
       return;
     }
 
@@ -835,6 +893,35 @@ async function handleMessage(msgObj, salon) {
       session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from, 'Naročilo preklicano. Dobrodošli nazaj! 🍕'));
       return;
+    }
+
+    // ── AI natakar (paket AI): prosto besedilo razume in upravlja košarico ──
+    if (msgText && !iId && salon.subscription_plan === 'ai' && process.env.OPENAI_API_KEY) {
+      try {
+        const history = sess.aiHistory || [];
+        const result = await askOrderAI({
+          message: msgText, salon, services,
+          cart: sess.cart || [], history, phone: from
+        });
+        const newHistory = [...history,
+          { role: 'user', content: msgText },
+          { role: 'assistant', content: result.reply || '(dejanje)' }
+        ].slice(-8);
+        session.set(skey, { ...sess, step: sess.step || 300, cart: result.cart, aiHistory: newHistory });
+        if (result.reply) await wa.send(phoneId, token, wa.textMsg(from, result.reply));
+        if (result.action === 'show_menu') {
+          await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(result.cart)));
+        } else if (result.action === 'show_cart' && result.cart.length) {
+          await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
+        } else if (result.action === 'checkout') {
+          await startCheckout();
+        }
+        return;
+      } catch (e) {
+        console.error('[AI natakar] error:', e.message);
+        db.logError(salon.id, 'ai_order', e.message, null, from).catch(() => {});
+        // pade nazaj na standardni meni
+      }
     }
 
     // ── Default: pozdrav + meni
@@ -1133,7 +1220,7 @@ async function handleMessage(msgObj, salon) {
         console.error('[POS] db.createBooking error:', e.message);
         return null;
       });
-      const ref6 = booking ? (booking.id || '').slice(-6) : '???';
+      const ref6 = booking ? (booking.id || '').slice(-6).toUpperCase() : '???';
 
       // Send directly to POS kitchen — no admin confirmation needed
       try {
@@ -1239,7 +1326,7 @@ async function handleMessage(msgObj, salon) {
       form_answers: JSON.stringify(formAnswers || {})
     };
     const bk = await db.createBooking(bData);
-    const r6 = (bk.id || '').slice(-6);
+    const r6 = (bk.id || '').slice(-6).toUpperCase();
     session.clear(skey);
     const cMsg = salon.inquiry_confirmation_message || 'Hvala za povprasevanje! Kontaktirali vas bomo cim prej.';
     await wa.send(phoneId, token, wa.textMsg(from, `${cMsg}\n\nRef: *${r6}*`));
@@ -1479,7 +1566,7 @@ async function handleMessage(msgObj, salon) {
       }
       throw e;
     }
-    const ref6 = (booking.id || '').slice(-6);
+    const ref6 = (booking.id || '').slice(-6).toUpperCase();
     const fDate = fmtDate(s.selectedDate);
     const fTime = (s.selectedTime || '').substring(0, 5);
     session.clear(skey);

@@ -251,6 +251,7 @@ body {
   <img src="/logo.png" alt="FlowTiq" style="height:80px;object-fit:contain;display:block">
   <div id="salon-name" style="font-size:12px;color:var(--muted);font-weight:600"></div>
   <select id="loc-switcher" style="display:none;margin-left:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;max-width:220px"></select>
+  <button id="bot-toggle" style="display:none;margin-left:10px;border:none;border-radius:100px;padding:7px 14px;font-size:12.5px;font-weight:800;cursor:pointer;transition:.2s" onclick="toggleBot()"></button>
   <div class="header-right">
     <span class="pending-badge" id="pending-badge">0</span>
     <button class="logout-btn" id="logout-btn" style="display:none" onclick="doLogout()">Odjava</button>
@@ -316,6 +317,7 @@ body {
         <button class="filter-chip" onclick="setFilter('pending','f-pending')" id="f-pending">V čakanju</button>
         <button class="filter-chip" onclick="setFilter('all','f-all')" id="f-all">Vse</button>
       </div>
+      <input id="order-search" oninput="applyOrderSearch()" placeholder="🔍 Išči po ref (#A1B2C3), imenu, telefonu ali naslovu ..." style="width:100%;margin:8px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:13.5px;color:var(--text);outline:none">
       <div class="date-range-row" id="date-range-row">
         <span style="font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap">Od:</span>
         <input type="date" class="date-input" id="date-from">
@@ -376,6 +378,7 @@ body {
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn-save" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="billingCheckout('starter')">Osnovni — 49,99 €/mes</button>
           <button class="btn-save" style="flex:1" onclick="billingCheckout('pro')">Pro (POS) — 79,99 €/mes</button>
+          <button class="btn-save" style="flex:1;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff" onclick="billingCheckout('ai')">🤖 AI — 159,99 €/mes</button>
         </div>
         <button class="btn-save" id="billing-portal-btn" style="margin-top:10px;width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);display:none" onclick="billingPortal()">🧾 Uredi naročnino / računi</button>
         <div style="font-size:12px;color:var(--muted);margin-top:8px">Prva aktivacija vključuje 30 dni brezplačno. Plačilo varno prek Stripe.</div>
@@ -403,6 +406,10 @@ body {
         <div class="s-row">
           <label>Naslov lokala (stranka ga dobi ob prevzemu)</label>
           <input type="text" id="s-pickup-addr" placeholder="npr. Glavni trg 5, Ljubljana">
+        </div>
+        <div class="s-row">
+          <label>Območje dostave (obvestilo stranki ob vnosu naslova)</label>
+          <input type="text" id="s-delivery-area" placeholder='npr. "Kranj z okolico" ali "Kranj, Naklo, Šenčur"'>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Če sta omogočena oba načina, bot stranko vpraša "Dostava ali osebni prevzem?". Pri prevzemu se dostava ne zaračuna.</div>
       </div>
@@ -535,6 +542,7 @@ body {
         <div><label><span class="bm-num">8</span>Naročilo oddano — osebni prevzem</label><textarea id="bm-submitted_pickup" rows="3" oninput="bmInput('submitted_pickup')" onfocus="bmFocus('submitted_pickup')"></textarea></div>
         <div><label><span class="bm-num">9</span>Naročilo potrjeno — osebni prevzem</label><textarea id="bm-accepted_pickup" rows="3" oninput="bmInput('accepted_pickup')" onfocus="bmFocus('accepted_pickup')"></textarea></div>
         <div><label><span class="bm-num">10</span>Naročilo zavrnjeno</label><textarea id="bm-rejected" rows="2" oninput="bmInput('rejected')" onfocus="bmFocus('rejected')"></textarea></div>
+        <div><label><span class="bm-num">11</span>Bot izklopljen (rdeče stikalo)</label><textarea id="bm-bot_offline" rows="3" oninput="bmInput('bot_offline')" onfocus="bmFocus('bot_offline')"></textarea></div>
       </div>
       <div class="bm-phone-wrap">
         <div class="phone-preview">
@@ -742,7 +750,8 @@ async function loadOrders() {
       document.getElementById('btn-prev').disabled = resp.page === 0;
       document.getElementById('btn-next').disabled = resp.page >= resp.pages - 1;
     }
-    renderOrders(orders);
+    lastOrders = orders;
+    renderOrders(filterOrders(orders));
     const n = orders.filter(o=>o.status==='pending').length;
     const badge = document.getElementById('pending-badge');
     badge.textContent = n; badge.style.display = n > 0 ? '' : 'none';
@@ -752,6 +761,21 @@ async function loadOrders() {
   } catch(e) { showToast('Napaka pri nalaganju', 'error'); }
   document.getElementById('refresh-btn').classList.remove('spinning');
 }
+
+let lastOrders = [];
+function filterOrders(orders) {
+  const q = (document.getElementById('order-search')?.value || '').trim().toLowerCase().replace(/^#/, '');
+  if (!q) return orders;
+  const qDigits = q.replace(/\D/g, '');
+  return orders.filter(o => {
+    const fa = safeJson(o.form_answers);
+    return (o.id || '').slice(-6).toLowerCase().includes(q)
+      || String(fa.ime || o.customer_name || '').toLowerCase().includes(q)
+      || (qDigits.length >= 3 && String(o.customer_phone || '').includes(qDigits))
+      || String(fa.naslov || '').toLowerCase().includes(q);
+  });
+}
+function applyOrderSearch() { renderOrders(filterOrders(lastOrders)); }
 
 function isPickupOrder(o) {
   if ((o.notes || '').startsWith('PREVZEM')) return true;
@@ -790,7 +814,10 @@ function renderCards(orders) {
       <div class="order-actions">
         <button class="btn-accept" onclick="openModal('${o.id}')">✅ Sprejmi naročilo</button>
         <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Zavrni</button>
-      </div>` : '';
+      </div>` : (o.status === 'confirmed' ? `
+      <div class="order-actions">
+        <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Prekliči naročilo</button>
+      </div>` : '');
     // Price breakdown
     const priceRows = artikli
       ? [
@@ -1052,6 +1079,9 @@ async function loadSettingsData() {
     document.getElementById('s-allow-pick').checked = d.allow_pickup !== false;
     document.getElementById('s-pick-pack').checked  = d.pickup_packaging !== false;
     document.getElementById('s-pickup-addr').value  = d.pickup_address || '';
+    document.getElementById('s-delivery-area').value = d.delivery_area || '';
+    botActive = d.bot_active !== false;
+    renderBotToggle();
   } catch(e) {}
 }
 function toggleFee(inputId, on) {
@@ -1066,7 +1096,7 @@ function feeValue(checkId, inputId) {
 }
 
 // ── Sporočila bota (urejevalnik s predogledom telefona) ──
-const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected'];
+const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected','bot_offline'];
 const BM_GREET_DEFAULT = '👇 Izberite artikel iz menija:';
 const BM_TIME = '11:42';
 let bmDefaults = {};
@@ -1151,7 +1181,9 @@ function renderBmChat() {
     bmBubble('recv', '', 'submitted_pickup'),
     bmBubble('recv', '', 'accepted_pickup'),
     bmLabel('❌ Če naročilo zavrnete'),
-    bmBubble('recv', '', 'rejected')
+    bmBubble('recv', '', 'rejected'),
+    bmLabel('🔴 Ko je bot izklopljen'),
+    bmBubble('recv', '', 'bot_offline')
   ].join('');
 }
 
@@ -1209,6 +1241,31 @@ async function saveBotMessages() {
 }
 
 
+// ── Stikalo bota (vklop/izklop naročanja) ──────────────
+let botActive = true;
+function renderBotToggle() {
+  const b = document.getElementById('bot-toggle');
+  if (!b) return;
+  b.style.display = '';
+  b.textContent = botActive ? '🟢 Bot aktiven' : '🔴 Bot izklopljen';
+  b.style.background = botActive ? '#dcfce7' : '#fee2e2';
+  b.style.color = botActive ? '#166534' : '#991b1b';
+  b.title = botActive ? 'Klikni za izklop naročanja' : 'Klikni za vklop naročanja';
+}
+async function toggleBot() {
+  const next = !botActive;
+  if (!next && !confirm('Bot bo strankam odgovarjal, da naročanje trenutno ni možno. Res izklopim?')) return;
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify({ bot_active: next })
+    });
+    if (r.ok) { botActive = next; renderBotToggle(); showToast(next ? '🟢 Bot vklopljen — naročila spet tečejo' : '🔴 Bot izklopljen', 'success'); }
+    else showToast('Napaka', 'error');
+  } catch (e) { showToast('Napaka', 'error'); }
+}
+
 // ── Preklopnik med lokacijami (če ima lastnik več lokalov) ──
 async function initLocationSwitcher(tokenGetter, tokenSetter) {
   try {
@@ -1244,7 +1301,7 @@ async function initLocationSwitcher(tokenGetter, tokenSetter) {
 function renderBilling(d) {
   const el = document.getElementById('billing-info');
   if (!el) return;
-  const planLabel = d.subscription_plan === 'pro' ? 'Pro (79,99 €/mes)' : 'Osnovni (49,99 €/mes)';
+  const planLabel = d.subscription_plan === 'ai' ? '🤖 AI (159,99 €/mes)' : (d.subscription_plan === 'pro' ? 'Pro (79,99 €/mes)' : 'Osnovni (49,99 €/mes)');
   const stLabel = { active: '✅ Aktivna', trial: '🎁 Preizkusno obdobje', inactive: '⛔ Neaktivna' }[d.subscription_status] || (d.subscription_status || '—');
   el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + stLabel + '</b>';
   document.getElementById('billing-portal-btn').style.display = d.stripe_active ? 'block' : 'none';
@@ -1276,7 +1333,7 @@ async function billingPortal() {
 // ── POS terminal (samo Pro paket) ──────────────────────
 let currentPlan = 'starter';
 function renderPosTab(d) {
-  const pro = currentPlan === 'pro';
+  const pro = currentPlan === 'pro' || currentPlan === 'ai';
   document.getElementById('pos-locked').style.display = pro ? 'none' : 'block';
   document.getElementById('pos-form').style.display = pro ? 'block' : 'none';
   if (!pro) return;
@@ -1339,7 +1396,8 @@ async function saveSettings() {
         allow_delivery:document.getElementById('s-allow-del').checked,
         allow_pickup:document.getElementById('s-allow-pick').checked,
         pickup_packaging:document.getElementById('s-pick-pack').checked,
-        pickup_address:document.getElementById('s-pickup-addr').value.trim()
+        pickup_address:document.getElementById('s-pickup-addr').value.trim(),
+        delivery_area:document.getElementById('s-delivery-area').value.trim()
       })
     });
     showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');

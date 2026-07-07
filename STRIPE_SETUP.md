@@ -9,6 +9,7 @@ Stripe Dashboard -> **Products** -> Add product:
 |---|---|---|
 | FlowTiq Osnovni | 49,99 EUR | mesečno (recurring) |
 | FlowTiq Pro | 79,99 EUR | mesečno (recurring) |
+| FlowTiq AI | 159,99 EUR | mesečno (recurring) |
 
 Pri vsaki ceni skopiraj **API ID** (začne se s `price_...`).
 
@@ -16,6 +17,7 @@ Pri vsaki ceni skopiraj **API ID** (začne se s `price_...`).
 - `STRIPE_SECRET_KEY` = Developers -> API keys -> Secret key (`sk_live_...`)
 - `STRIPE_PRICE_STARTER` = price ID Osnovnega paketa
 - `STRIPE_PRICE_PRO` = price ID Pro paketa
+- `STRIPE_PRICE_AI` = price ID AI paketa
 
 ## 3. Nastavi webhook
 Developers -> **Webhooks** -> Add endpoint:

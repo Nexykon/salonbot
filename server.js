@@ -168,11 +168,13 @@ function stripeClient() {
 function stripePlanPrices() {
   return {
     starter: process.env.STRIPE_PRICE_STARTER || '',
-    pro: process.env.STRIPE_PRICE_PRO || ''
+    pro: process.env.STRIPE_PRICE_PRO || '',
+    ai: process.env.STRIPE_PRICE_AI || ''
   };
 }
 function planFromPriceId(priceId) {
   const prices = stripePlanPrices();
+  if (priceId && priceId === prices.ai) return 'ai';
   if (priceId && priceId === prices.pro) return 'pro';
   if (priceId && priceId === prices.starter) return 'starter';
   return null;
@@ -471,7 +473,7 @@ app.post('/stripe/webhook', async (req, res) => {
       case 'checkout.session.completed': {
         const cs = event.data.object;
         const salonId = cs.metadata?.salon_id;
-        const csPlan = cs.metadata?.plan === 'pro' ? 'pro' : 'starter';
+        const csPlan = ['pro', 'ai'].includes(cs.metadata?.plan) ? cs.metadata.plan : 'starter';
         if (salonId && cs.mode === 'subscription' && cs.subscription) {
           await db.updateSalonStripe(salonId, cs.customer, cs.subscription, 'active', csPlan);
           console.log('Checkout completed — salon', salonId, 'plan', csPlan);
@@ -767,7 +769,7 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { id } = req.params;
   const { plan } = req.body;
-  if (!['starter', 'pro'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
+  if (!['starter', 'pro', 'ai'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
   try {
     const axios = require('axios');
     const BASE = process.env.SUPABASE_URL + '/rest/v1';
@@ -1005,6 +1007,8 @@ app.get('/api/settings', async (req, res) => {
       allow_pickup: salon.allow_pickup !== false,
       pickup_packaging: salon.pickup_packaging !== false,
       pickup_address: salon.pickup_address || '',
+      bot_active: salon.bot_active !== false,
+      delivery_area: salon.delivery_area || '',
       bot_messages: (salon.bot_messages && typeof salon.bot_messages === 'object') ? salon.bot_messages : {},
       bot_messages_defaults: BOT_MSG_DEFAULTS,
       review_link: salon.review_link || ''
@@ -1022,7 +1026,7 @@ app.patch('/api/settings', async (req, res) => {
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
       'packaging_price', 'delivery_fee',
-      'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages',
+      'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message'];
     const updates = {};
     for (const key of allowed) {
@@ -1033,13 +1037,14 @@ app.patch('/api/settings', async (req, res) => {
     if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
     if (updates.packaging_price !== undefined) updates.packaging_price = Math.max(0, parseFloat(String(updates.packaging_price).replace(',', '.')) || 0);
     if (updates.delivery_fee !== undefined) updates.delivery_fee = Math.max(0, parseFloat(String(updates.delivery_fee).replace(',', '.')) || 0);
-    for (const bkey of ['allow_delivery', 'allow_pickup', 'pickup_packaging']) {
+    for (const bkey of ['allow_delivery', 'allow_pickup', 'pickup_packaging', 'bot_active']) {
       if (updates[bkey] !== undefined) updates[bkey] = updates[bkey] === true || updates[bkey] === 'true';
     }
     if (updates.allow_delivery === false && updates.allow_pickup === false) {
       return res.status(400).json({ error: 'Omogočena mora biti vsaj dostava ali prevzem.' });
     }
     if (updates.pickup_address !== undefined) updates.pickup_address = String(updates.pickup_address).trim().slice(0, 200);
+    if (updates.delivery_area !== undefined) updates.delivery_area = String(updates.delivery_area).trim().slice(0, 200);
     if (updates.bot_messages !== undefined) {
       let inBm = updates.bot_messages;
       if (typeof inBm === 'string') { try { inBm = JSON.parse(inBm); } catch (_) { inBm = {}; } }
@@ -1051,7 +1056,7 @@ app.patch('/api/settings', async (req, res) => {
       updates.bot_messages = cleanBm;
     }
     const POS_KEYS = ['pos_type', 'pos_token', 'pos_account', 'pos_spot_id'];
-    if (POS_KEYS.some(k => updates[k] !== undefined) && (salon.subscription_plan || 'starter') !== 'pro') {
+    if (POS_KEYS.some(k => updates[k] !== undefined) && !['pro', 'ai'].includes(salon.subscription_plan || 'starter')) {
       return res.status(403).json({ error: 'POS integracija je na voljo v Pro paketu.' });
     }
     if (updates.pos_spot_id !== undefined) updates.pos_spot_id = parseInt(updates.pos_spot_id) || 1;
@@ -1064,7 +1069,7 @@ app.patch('/api/settings', async (req, res) => {
 app.post('/api/settings/pos-test', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  if ((salon.subscription_plan || 'starter') !== 'pro') {
+  if (!['pro', 'ai'].includes(salon.subscription_plan || 'starter')) {
     return res.status(403).json({ ok: false, msg: 'POS integracija je na voljo v Pro paketu.' });
   }
   try {
@@ -1087,7 +1092,7 @@ app.post('/api/billing/checkout', async (req, res) => {
   if (!salon) return;
   const stripe = stripeClient();
   if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
-  const plan = req.body.plan === 'pro' ? 'pro' : 'starter';
+  const plan = ['pro', 'ai'].includes(req.body.plan) ? req.body.plan : 'starter';
   const priceId = stripePlanPrices()[plan];
   if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" še ni nastavljena (env STRIPE_PRICE_${plan.toUpperCase()}).` });
   try {
@@ -1536,7 +1541,7 @@ app.post('/api/book', rateLimit(20, 10 * 60 * 1000), async (req, res) => {
       }
       throw err;
     }
-    const ref6 = booking.id ? booking.id.slice(0,6).toUpperCase() : 'BOOK01';
+    const ref6 = booking.id ? booking.id.slice(-6).toUpperCase() : 'BOOK01';
     const fmtDate = date;
     const fmtTime = needsExactTime ? time : (bookingMode === 'month_only' ? date.slice(0,7) : 'po dogovoru');
 
