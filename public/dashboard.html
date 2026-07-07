@@ -1070,6 +1070,7 @@
         <label>Paket *</label>
         <select id="f-plan">
           <option value="starter">FlowTiq Osnovno — €49,99/mes</option>
+          <option value="ai">FlowTiq AI — €159,99/mes</option>
           <option value="pro" selected>FlowTiq POS — €79,99/mes</option>
         </select>
       </div>
@@ -1552,7 +1553,7 @@ let apiKey = '';
 let masterToken = '';
 let salonsData = [];
 
-const PLAN_PRICES = { starter: 49.99, pro: 79.99 };
+const PLAN_PRICES = { starter: 49.99, pro: 79.99, ai: 159.99 };
 const resetToken = new URLSearchParams(window.location.search).get('reset') || '';
 
 // ── AUTH ──────────────────────────────────────────────────
@@ -1819,8 +1820,8 @@ function renderTable() {
   tbody.innerHTML = salonsData.map(s => {
     const statusClass = s.subscription_status === 'active' ? 'active' : s.subscription_status === 'trial' ? 'trial' : 'inactive';
     const statusLabel = s.subscription_status === 'active' ? 'Aktiven' : s.subscription_status === 'trial' ? 'Preizkus' : 'Neaktiven';
-    const planClass = s.subscription_plan === 'pro' ? 'pro' : 'starter';
-    const planLabel = s.subscription_plan === 'pro' ? 'POS €79,99' : 'Osnovno €49,99';
+    const planClass = s.subscription_plan === 'ai' ? 'pro' : (s.subscription_plan === 'pro' ? 'pro' : 'starter');
+    const planLabel = s.subscription_plan === 'ai' ? '🤖 AI €159,99' : (s.subscription_plan === 'pro' ? 'POS €79,99' : 'Osnovno €49,99');
     const date = s.created_at ? new Date(s.created_at).toLocaleDateString('sl-SI') : '—';
 
     const canActivate = s.subscription_status !== 'active';
@@ -1841,6 +1842,7 @@ function renderTable() {
         <select class="plan-select ${planClass}" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
           <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>Osnovno €49,99/mes</option>
           <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>POS €79,99/mes</option>
+          <option value="ai" ${s.subscription_plan === 'ai' ? 'selected' : ''}>🤖 AI €159,99/mes</option>
         </select>
       </td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
