@@ -656,8 +656,10 @@ async function handleMessage(msgObj, salon) {
           if (ex) ex.qty = (ex.qty || 1) + qty306;
           else cart.push({ ...item, qty: qty306 });
           session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
+          const feeNote = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
+            ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `✅ *${item.name}* x${qty306} je v košarici.\n\n🛒 ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — skupaj *${cartTotal(cart)} €*.\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*. 😊`
+            `✅ *${item.name}* x${qty306} je v košarici.\n\n🛒 ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*. 😊`
           ));
         } else {
           await addQtyToCart(qty306);
@@ -696,6 +698,15 @@ async function handleMessage(msgObj, salon) {
         `💵 *SKUPAJ: ${grandTotal} €*`,
       ].join('\n');
       const modeLabel = mode === 'prevzem' ? '🏃 Osebni prevzem' : '🚗 Dostava';
+      if (salon.subscription_plan === 'ai') {
+        // AI paket: opomba je bila zbrana že med pogovorom ("brez gob") — ne sprašuj znova
+        const aiNote = sessNow.opomba ? `\n📝 Opomba: ${sessNow.opomba}` : '';
+        session.set(skey, { ...sess, ...sessNow, step: 303, orderMode: mode, grandTotal, packFee, delFee, opomba: sessNow.opomba || '' });
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `🛒 *Vaše naročilo* (${modeLabel}):\n${fmtCart(cart)}${aiNote}\n\n${priceBreakdown}\n\n` + botMsg(salon, 'name_question')
+        ));
+        return;
+      }
       session.set(skey, { ...sess, ...sessNow, step: 302, orderMode: mode, grandTotal, packFee, delFee });
       await wa.send(phoneId, token, wa.textMsg(from,
         `🛒 *Vaše naročilo* (${modeLabel}):\n${fmtCart(cart)}\n\n${priceBreakdown}\n\n` + botMsg(salon, 'note_question')
@@ -920,6 +931,12 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
+    // ── "zaključi" gre direktno v zaključek (brez AI ovinka) ──
+    if (msgText && !iId && /^\s*zaklju[čc]i?\b/i.test(msgText) && (sess.cart || []).length) {
+      await startCheckout();
+      return;
+    }
+
     // ── AI natakar (paket AI): prosto besedilo razume in upravlja košarico ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && process.env.OPENAI_API_KEY) {
       try {
@@ -933,8 +950,9 @@ async function handleMessage(msgObj, salon) {
           { role: 'user', content: msgText },
           { role: 'assistant', content: result.reply || '(dejanje)' }
         ].slice(-8);
-        session.set(skey, { ...sess, step: result.cart.length ? 301 : (sess.step || 300), cart: result.cart, aiHistory: newHistory, pendingItem: null });
-        if (result.reply) await wa.send(phoneId, token, wa.textMsg(from, result.reply));
+        const mergedNote = result.note ? [sess.opomba, result.note].filter(Boolean).join('; ') : (sess.opomba || '');
+        session.set(skey, { ...sess, step: result.cart.length ? 301 : (sess.step || 300), cart: result.cart, aiHistory: newHistory, pendingItem: null, opomba: mergedNote });
+        if (result.reply && result.action !== 'checkout') await wa.send(phoneId, token, wa.textMsg(from, result.reply));
         if (result.action === 'show_menu') {
           await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(result.cart)));
         } else if (result.action === 'show_cart' && result.cart.length && !result.reply) {

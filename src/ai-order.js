@@ -11,6 +11,7 @@ const TOOLS = [
   { type: 'function', function: { name: 'add_to_cart', description: 'Dodaj artikel v košarico (ime lahko približno)', parameters: { type: 'object', properties: { item: { type: 'string' }, qty: { type: 'number', description: 'Količina, privzeto 1' } }, required: ['item'] } } },
   { type: 'function', function: { name: 'remove_from_cart', description: 'Odstrani artikel iz košarice', parameters: { type: 'object', properties: { item: { type: 'string' } }, required: ['item'] } } },
   { type: 'function', function: { name: 'repeat_last_order', description: 'Dodaj artikle zadnjega naročila stranke ("enako kot zadnjič")', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'add_note', description: 'Zapiši posebno željo ali opombo k naročilu (npr. "brez gob", "bolj pikantno", alergije)', parameters: { type: 'object', properties: { note: { type: 'string' } }, required: ['note'] } } },
   { type: 'function', function: { name: 'checkout', description: 'Stranka želi zaključiti naročilo — začni postopek oddaje', parameters: { type: 'object', properties: {} } } }
 ];
 
@@ -56,6 +57,7 @@ function findService(services, name) {
 
 async function askOrderAI({ message, salon, services, cart, history, phone, pendingItem }) {
   const menuText = services.map(s => `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €`).join('\n');
+  const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area} — to OMENI ŽE V POZDRAVU, da stranka ve, ali sploh dostavljate k njej.` : '';
   const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini, z zmerno emojiji.
 POTEK POGOVORA:
 1) Ob prvem sporočilu stranko prijazno pozdravi v imenu restavracije in jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj.
@@ -63,16 +65,19 @@ POTEK POGOVORA:
 3) Ko stranka pove, kaj želi (tudi približno, npr. "eno capriccioso"), uporabi add_to_cart. Če ni povedala količine, jo vprašaj po količini.
 4) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek, ter vprašaj: "Želite še kaj?"
 5) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
+6) Če stranka izrazi posebno željo za pripravo (npr. "brez gob", "bolj pikantno", alergija), uporabi add_note in ji potrdi, da je zabeleženo — NE prikazuj menija.
+7) Cene embalaže in dostave se dodajo ob zaključku — če stranka vpraša za skupno ceno, povej znesek artiklov in omeni, da se to doda ob zaključku.
 Ko pove, da je to vse oz. želi zaključiti, uporabi checkout.
 Nikoli si ne izmišljuj artiklov ali cen — ponujaš samo z menija. Ne obljubljaj časov dostave in ne izmišljuj akcij.
 MENI:
 ${menuText}
-TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}`
+TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine
     + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašana je bila po količini. Ko odgovori s količino (tudi z besedo, npr. "dve"), TAKOJ uporabi add_to_cart za "${pendingItem.name}" s to količino.` : '');
 
   const messages = [{ role: 'system', content: sys }, ...history.slice(-8), { role: 'user', content: message }];
   let action = null;
   let newCart = cart.map(i => ({ ...i }));
+  const notes = [];
 
   for (let round = 0; round < 3; round++) {
     const r = await axios.post('https://api.openai.com/v1/chat/completions', {
@@ -83,7 +88,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     });
     const choice = r.data.choices[0];
     if (choice.finish_reason !== 'tool_calls' || !choice.message.tool_calls) {
-      return { reply: (choice.message.content || '').trim(), cart: newCart, action };
+      return { reply: (choice.message.content || '').trim(), cart: newCart, action, note: notes.join('; ') || null };
     }
     messages.push(choice.message);
     for (const tc of choice.message.tool_calls) {
@@ -128,6 +133,12 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           result = `Dodano zadnje naročilo: ${items.map(i => `${i.name} x${i.quantity || 1}`).join(', ')}.`;
           break;
         }
+        case 'add_note': {
+          const note = String(input.note || '').trim().slice(0, 200);
+          if (note) { notes.push(note); result = `Opomba zabeležena: "${note}". Potrdi stranki in vprašaj, ali želi še kaj.`; }
+          else result = 'Opomba je prazna.';
+          break;
+        }
         case 'checkout':
           if (!newCart.length) { result = 'Košarica je prazna — stranka naj najprej kaj izbere.'; break; }
           action = 'checkout';
@@ -139,7 +150,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
       messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
     }
   }
-  return { reply: '', cart: newCart, action };
+  return { reply: '', cart: newCart, action, note: notes.join('; ') || null };
 }
 
 module.exports = { askOrderAI, findService };
