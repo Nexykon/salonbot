@@ -54,17 +54,21 @@ function findService(services, name) {
   return bestScore > 0 ? best : null;
 }
 
-async function askOrderAI({ message, salon, services, cart, history, phone }) {
+async function askOrderAI({ message, salon, services, cart, history, phone, pendingItem }) {
   const menuText = services.map(s => `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €`).join('\n');
   const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini, z zmerno emojiji.
-Ob prvem sporočilu stranko pozdravi v imenu restavracije in vprašaj, ali želi kaj naročiti.
-Ko stranka pove, kaj želi (tudi približno, npr. "eno capriccioso"), uporabi add_to_cart.
-Če želi videti ponudbo, uporabi show_menu. Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
+POTEK POGOVORA:
+1) Ob prvem sporočilu stranko prijazno pozdravi v imenu restavracije in jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj.
+2) Ko stranka potrdi, da želi naročiti, ali vpraša po ponudbi, pokliči show_menu.
+3) Ko stranka pove, kaj želi (tudi približno, npr. "eno capriccioso"), uporabi add_to_cart. Če ni povedala količine, jo vprašaj po količini.
+4) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek, ter vprašaj: "Želite še kaj?"
+5) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
 Ko pove, da je to vse oz. želi zaključiti, uporabi checkout.
 Nikoli si ne izmišljuj artiklov ali cen — ponujaš samo z menija. Ne obljubljaj časov dostave in ne izmišljuj akcij.
 MENI:
 ${menuText}
-TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}`;
+TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}`
+    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašana je bila po količini. Ko odgovori s količino (tudi z besedo, npr. "dve"), TAKOJ uporabi add_to_cart za "${pendingItem.name}" s to količino.` : '');
 
   const messages = [{ role: 'system', content: sys }, ...history.slice(-8), { role: 'user', content: message }];
   let action = null;

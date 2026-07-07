@@ -601,6 +601,14 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
       }
+      // AI paket: AI pogovorno vpraša po količini (brez gumbov)
+      if (salon.subscription_plan === 'ai') {
+        session.set(skey, { ...sess, step: 306, pendingItem: { id: svc.id, name: svc.name, price: svc.price || 0 } });
+        await wa.send(phoneId, token, wa.textMsg(from,
+          `Odlična izbira! 😊 Koliko kosov *${svc.name}* želite?`
+        ));
+        return;
+      }
       session.set(skey, { ...sess, step: 306, pendingItem: { id: svc.id, name: svc.name, price: svc.price || 0 } });
       await wa.send(phoneId, token, {
         messaging_product: 'whatsapp',
@@ -638,12 +646,29 @@ async function handleMessage(msgObj, salon) {
     }
 
     if (sess.step === 306 && sess.pendingItem && msgText) {
+      const isAiPlan = salon.subscription_plan === 'ai';
       if (/^\d+$/.test(msgText.trim())) {
-        await addQtyToCart(Math.min(Math.max(parseInt(msgText.trim()), 1), 50));
-      } else {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Vnesite samo število kosov (npr. 2) ali izberite gumb.'));
+        const qty306 = Math.min(Math.max(parseInt(msgText.trim()), 1), 50);
+        if (isAiPlan) {
+          const item = sess.pendingItem;
+          const cart = sess.cart || [];
+          const ex = cart.find(c => String(c.id) === String(item.id));
+          if (ex) ex.qty = (ex.qty || 1) + qty306;
+          else cart.push({ ...item, qty: qty306 });
+          session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `✅ *${item.name}* x${qty306} je v košarici.\n\n🛒 ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — skupaj *${cartTotal(cart)} €*.\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*. 😊`
+          ));
+        } else {
+          await addQtyToCart(qty306);
+        }
+        return;
       }
-      return;
+      if (!isAiPlan) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Vnesite samo število kosov (npr. 2) ali izberite gumb.'));
+        return;
+      }
+      // AI paket: besedni odgovor ("dve", "eno prosim") razume AI s kontekstom izbranega artikla
     }
 
     // ── Dodaj še → pokaži meni spet
@@ -901,25 +926,27 @@ async function handleMessage(msgObj, salon) {
         const history = sess.aiHistory || [];
         const result = await askOrderAI({
           message: msgText, salon, services,
-          cart: sess.cart || [], history, phone: from
+          cart: sess.cart || [], history, phone: from,
+          pendingItem: sess.pendingItem || null
         });
         const newHistory = [...history,
           { role: 'user', content: msgText },
           { role: 'assistant', content: result.reply || '(dejanje)' }
         ].slice(-8);
-        session.set(skey, { ...sess, step: sess.step || 300, cart: result.cart, aiHistory: newHistory });
+        session.set(skey, { ...sess, step: result.cart.length ? 301 : (sess.step || 300), cart: result.cart, aiHistory: newHistory, pendingItem: null });
         if (result.reply) await wa.send(phoneId, token, wa.textMsg(from, result.reply));
         if (result.action === 'show_menu') {
           await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(result.cart)));
-        } else if (result.action === 'show_cart' && result.cart.length) {
+        } else if (result.action === 'show_cart' && result.cart.length && !result.reply) {
           await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
         } else if (result.action === 'checkout') {
           await startCheckout();
         }
         return;
       } catch (e) {
-        console.error('[AI natakar] error:', e.message);
-        db.logError(salon.id, 'ai_order', e.message, null, from).catch(() => {});
+        const aiDetail = e.response?.data?.error?.message || (e.response?.data ? JSON.stringify(e.response.data).slice(0, 300) : null);
+        console.error('[AI natakar] error:', e.message, aiDetail || '');
+        db.logError(salon.id, 'ai_order', e.message, aiDetail, from).catch(() => {});
         // pade nazaj na standardni meni
       }
     }
