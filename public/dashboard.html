@@ -1747,6 +1747,7 @@ async function loadApp() {
     salonsData = await res.json();
     renderAll();
     loadErrors();
+    loadMasterCalendar();
     // Auto-refresh vsako 1h
     setInterval(loadErrors, 3600000);
   } catch (e) {
@@ -1861,6 +1862,118 @@ function renderTable() {
 }
 
 // ── ACTIONS ───────────────────────────────────────────────
+// ── Master koledar rezervacij ─────────────────────────────
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth(); // 0-based
+let calBookings = [];
+const CAL_MONTHS = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
+
+async function loadMasterCalendar() {
+  try {
+    const res = await apiFetch(`/api/calendar?year=${calYear}&month=${calMonth + 1}`);
+    calBookings = res.ok ? await res.json() : [];
+  } catch (e) { calBookings = []; }
+  renderMasterCalendar();
+}
+function calChangeMonth(d) {
+  calMonth += d;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  loadMasterCalendar();
+}
+function renderMasterCalendar() {
+  const wrap = document.querySelector('.cal-wrap');
+  if (!wrap) return;
+  wrap.style.display = '';
+  document.getElementById('cal-title').textContent = CAL_MONTHS[calMonth] + ' ' + calYear;
+  const grid = document.getElementById('cal-grid');
+  let html = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'].map(d => `<div class="cal-header-cell">${d}</div>`).join('');
+  const startDow = (new Date(calYear, calMonth, 1).getDay() + 6) % 7; // pon = 0
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const byDay = {};
+  for (const b of calBookings) {
+    const d = (b.booking_date || '').slice(0, 10);
+    (byDay[d] = byDay[d] || []).push(b);
+  }
+  for (let i = 0; i < startDow; i++) html += '<div class="cal-cell other-month"></div>';
+  for (let day = 1; day <= daysInMonth; day++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const evs = (byDay[ds] || []).sort((a,b) => (a.booking_time||'').localeCompare(b.booking_time||''));
+    const shown = evs.slice(0, 3).map(b =>
+      `<span class="cal-event ${b.status || ''}">${(b.booking_time||'').slice(0,5)} ${esc(b.customer_name || b.customer_phone || '')}</span>`
+    ).join('');
+    const more = evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} več</span>` : '';
+    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}" onclick="showDayDetail('${ds}')"><div class="cal-day-num">${day}</div>${shown}${more}</div>`;
+  }
+  grid.innerHTML = html;
+}
+function showDayDetail(ds) {
+  const evs = calBookings
+    .filter(b => (b.booking_date || '').slice(0, 10) === ds)
+    .sort((a,b) => (a.booking_time||'').localeCompare(b.booking_time||''));
+  const p = document.getElementById('day-detail');
+  document.getElementById('day-detail-title').textContent = ds.split('-').reverse().join('.') + ' — ' + evs.length + ' rezervacij';
+  document.getElementById('day-detail-list').innerHTML = evs.length ? evs.map(b => `
+    <div style="padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center">
+      <span class="cal-event ${b.status || ''}" style="min-width:52px;text-align:center">${(b.booking_time||'').slice(0,5)}</span>
+      <div style="flex:1"><b>${esc(b.customer_name || '—')}</b> · +${esc(b.customer_phone || '—')}</div>
+      <span style="font-size:12px;color:var(--text3)">#${(b.id||'').slice(-6).toUpperCase()}</span>
+    </div>`).join('') : '<div style="padding:20px;color:var(--text3)">Ni rezervacij.</div>';
+  p.style.display = '';
+  p.classList.add('open');
+}
+
+// ── Napake (sb_errors) ────────────────────────────────────
+async function loadErrors() {
+  try {
+    const res = await apiFetch('/api/errors');
+    const errors = res.ok ? await res.json() : [];
+    const badge = document.getElementById('error-count-badge');
+    if (badge) { badge.textContent = errors.length; badge.style.display = errors.length ? '' : 'none'; }
+    const tb = document.getElementById('errors-table');
+    tb.innerHTML = errors.length ? errors.map(e => `
+      <tr>
+        <td style="white-space:nowrap;color:var(--text2);font-size:12px">${new Date(e.created_at).toLocaleString('sl-SI')}</td>
+        <td><span class="badge">${esc(e.type || '—')}</span></td>
+        <td style="font-size:13px">${esc(String(e.message || '').slice(0, 160))}</td>
+        <td style="font-size:12px;color:var(--text2)">${esc(e.customer_phone || '—')}</td>
+      </tr>`).join('') : '<tr class="loading-row"><td colspan="4" style="text-align:center;padding:30px;color:var(--text3)">Ni napak ✅</td></tr>';
+  } catch (e) { /* napake ne smejo podreti dashboarda */ }
+}
+async function clearAllErrors() {
+  if (!confirm('Počistim vse zabeležene napake?')) return;
+  try {
+    const res = await apiFetch('/api/errors', { method: 'DELETE' });
+    if (res.ok) { showToast('✅ Napake počiščene', 'success'); loadErrors(); }
+    else showToast('Napaka pri čiščenju', 'error');
+  } catch (e) { showToast('Napaka', 'error'); }
+}
+
+async function changePlan(id, plan) {
+  const labels = { starter: 'Osnovno €49,99', pro: 'POS €79,99', ai: '🤖 AI €159,99' };
+  try {
+    const res = await apiFetch(`/api/salons/${id}/plan`, {
+      method: 'PATCH',
+      body: JSON.stringify({ plan })
+    });
+    if (res.ok) {
+      const salon = salonsData.find(s => s.id === id);
+      if (salon) salon.subscription_plan = plan;
+      renderAll();
+      showToast(`✅ ${salon?.name || 'Salon'} → paket ${labels[plan] || plan}`, 'success');
+    } else {
+      const d = await res.json().catch(() => ({}));
+      showToast('Napaka pri menjavi paketa: ' + (d.error || res.status), 'error');
+      renderAll(); // povrni prikaz na dejansko stanje
+    }
+  } catch (e) {
+    showToast('Napaka pri menjavi paketa', 'error');
+    renderAll();
+  }
+}
+
 async function activateSalon(id) {
   try {
     const res = await apiFetch(`/api/salons/${id}/status`, {
