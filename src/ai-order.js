@@ -77,17 +77,19 @@ function findService(services, name) {
 
 async function askOrderAI({ message, salon, services, cart, history, phone, pendingItem, order = {}, note = '' }) {
   const menuText = services.map(s => `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €`).join('\n');
-  const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area} — to OMENI ŽE V POZDRAVU, da stranka ve, ali sploh dostavljate k njej.` : '';
-  const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini, z zmerno emojiji.
+  const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area}` : '';
+  const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini. NE uporabljaj emojijev.
 POTEK POGOVORA:
-1) Ob prvem sporočilu stranko prijazno pozdravi v imenu restavracije in jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj.
-2) Ko stranka potrdi, da želi naročiti, ali vpraša po ponudbi, pokliči show_menu.
-3) Ko stranka pove, kaj želi (tudi približno, npr. "eno capriccioso"), uporabi add_to_cart. Če ni povedala količine, jo vprašaj po količini.
-4) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek, ter vprašaj: "Želite še kaj?"
-5) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
-6) Če stranka izrazi posebno željo za pripravo (npr. "brez gob", "bolj pikantno", alergija), uporabi add_note in ji potrdi, da je zabeleženo — NE prikazuj menija.
-7) Cene embalaže in dostave se dodajo ob zaključku — če stranka vpraša za skupno ceno, povej znesek artiklov in omeni, da se to doda ob zaključku.
-8) Ko stranka pove, da je to vse oz. želi zaključiti, uporabi checkout in nato VODI ZAKLJUČEK PO KORAKIH (vprašanja postavljaj ENO NAENKRAT):
+1) Ob prvem sporočilu stranko prijazno pozdravi v imenu restavracije in jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj in območja dostave še NE omenjaj.
+2) Ko stranka potrdi, da želi naročiti: če je navedeno OBMOČJE DOSTAVE, ji najprej povej npr. "Samo da vas obvestimo — dostavljamo po [območje]." in vprašaj: "Vam smem ponuditi meni?" — menija še NE prikazuj.
+3) Ko stranka pritrdi (ali sama vpraša po ponudbi), pokliči show_menu.
+4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Nato uporabi add_to_cart; posebnost zabeleži z add_note v obliki "Ime artikla: posebnost" (npr. "Pica Margerita: brez gob").
+4b) Če dobiš sporočilo oblike [IZBRANO Z MENIJA: X], je stranka pravkar izbrala artikel X z menija — vprašaj jo naravno po količini in posebnostih za X. add_to_cart uporabi ŠELE, ko pove količino.
+5) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek artiklov, ter vprašaj: "Želite še kaj?"
+6) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
+7) Splošno željo za celotno naročilo prav tako zabeleži z add_note — NE prikazuj menija.
+8) Cene embalaže in dostave se dodajo ob zaključku — če stranka vpraša za skupno ceno, povej znesek artiklov in omeni, da se to doda ob zaključku.
+9) Ko stranka pove, da je to vse oz. želi zaključiti, uporabi checkout in nato VODI ZAKLJUČEK PO KORAKIH (vprašanja postavljaj ENO NAENKRAT):
    a. vprašaj "Dostava ali osebni prevzem?" (samo razpoložljive načine) → ko odgovori, uporabi set_mode,
    b. vprašaj za ime in priimek → set_name,
    c. pri dostavi vprašaj za naslov → set_address,
@@ -100,7 +102,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     + `\nNAČINI PREVZEMA: ${[salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean).join(' ali ')}${salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : ''}`
     + `\nOPOMBA STRANKE: ${note || '—'}`
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`
-    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašana je bila po količini. Ko odgovori s količino (tudi z besedo, npr. "dve"), TAKOJ uporabi add_to_cart za "${pendingItem.name}" s to količino.` : '');
+    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), uporabi še add_note v obliki "${pendingItem.name}: posebnost".` : '');
 
   const messages = [{ role: 'system', content: sys }, ...history.slice(-8), { role: 'user', content: message }];
   let action = null;

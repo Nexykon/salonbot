@@ -601,11 +601,32 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
       }
-      // AI paket: AI pogovorno vpraša po količini (brez gumbov)
+      // AI paket: vprašanje o količini in posebnostih postavi AI, naravno za ta artikel
       if (salon.subscription_plan === 'ai') {
-        session.set(skey, { ...sess, step: 306, pendingItem: { id: svc.id, name: svc.name, price: svc.price || 0 } });
+        const pending = { id: svc.id, name: svc.name, price: svc.price || 0 };
+        session.set(skey, { ...sess, step: 306, pendingItem: pending });
+        if (process.env.OPENAI_API_KEY) {
+          try {
+            const history = sess.aiHistory || [];
+            const result = await askOrderAI({
+              message: `[IZBRANO Z MENIJA: ${svc.name}]`, salon, services,
+              cart: sess.cart || [], history, phone: from, pendingItem: pending,
+              order: { mode: sess.orderMode || null, name: sess.customerName || null, address: sess.deliveryAddress || null },
+              note: sess.opomba || ''
+            });
+            if (result.reply) {
+              const newHistory = [...history,
+                { role: 'user', content: `[izbral z menija: ${svc.name}]` },
+                { role: 'assistant', content: result.reply }
+              ].slice(-8);
+              session.set(skey, { ...sess, step: 306, pendingItem: pending, aiHistory: newHistory });
+              await wa.send(phoneId, token, wa.textMsg(from, result.reply));
+              return;
+            }
+          } catch (e) { console.error('[AI natakar] izbira:', e.message); }
+        }
         await wa.send(phoneId, token, wa.textMsg(from,
-          `Odlična izbira! 😊 Koliko kosov *${svc.name}* želite?`
+          `Koliko ${svc.name} želite? Če želite kakšno prilagoditev (npr. brez gob), kar pripišite.`
         ));
         return;
       }
@@ -659,7 +680,7 @@ async function handleMessage(msgObj, salon) {
           const feeNote = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `✅ *${item.name}* x${qty306} je v košarici.\n\n🛒 ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*. 😊`
+            `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*.`
           ));
         } else {
           await addQtyToCart(qty306);
@@ -979,7 +1000,7 @@ async function handleMessage(msgObj, salon) {
         if (result.reply) await wa.send(phoneId, token, wa.textMsg(from, result.reply));
         if (result.action === 'show_menu') {
           // AI je pozdravil sam — telo menija brez pozdravnega sporočila lokala
-          const menuSalon = { ...salon, greeting_message: '👇 Izberite artikel iz menija:' };
+          const menuSalon = { ...salon, greeting_message: 'Izberite artikel iz menija:' };
           await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalon, cartSummaryShort(result.cart)));
         } else if (result.action === 'show_cart' && result.cart.length && !result.reply) {
           await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
