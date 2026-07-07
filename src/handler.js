@@ -7,7 +7,7 @@ const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 const t = require('./time');
 const { botMsg } = require('./botmsg');
-const { askOrderAI } = require('./ai-order');
+const { askOrderAI, computeTotals } = require('./ai-order');
 
 function fmtDate(dateStr) {
   if (!dateStr) return '?';
@@ -821,8 +821,8 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // ── Potrdi naročilo
-    if (iId === 'delivery_confirm') {
+    // ── Potrdi naročilo (skupno za gumb in AI potrditev) ──
+    const finalizeOrder = async () => {
       const s = session.get(skey);
       const cart = s.cart || [];
       if (!cart.length || (!s.deliveryAddress && s.orderMode !== 'prevzem')) {
@@ -879,8 +879,8 @@ async function handleMessage(msgObj, salon) {
       });
       // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
       // (pri več sto naročilih na dan bi bil WhatsApp/email spam).
-      return;
-    }
+    };
+    if (iId === 'delivery_confirm') { await finalizeOrder(); return; }
 
     // ── Stranka napiše "prekliči" ──
     if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]\w*|storno|cancel)\b/i.test(msgText))) {
@@ -932,7 +932,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── "zaključi" gre direktno v zaključek (brez AI ovinka) ──
-    if (msgText && !iId && /^\s*zaklju[čc]i?\b/i.test(msgText) && (sess.cart || []).length) {
+    if (msgText && !iId && salon.subscription_plan !== 'ai' && /^\s*zaklju[čc]i?\b/i.test(msgText) && (sess.cart || []).length) {
       await startCheckout();
       return;
     }
@@ -944,21 +944,45 @@ async function handleMessage(msgObj, salon) {
         const result = await askOrderAI({
           message: msgText, salon, services,
           cart: sess.cart || [], history, phone: from,
-          pendingItem: sess.pendingItem || null
+          pendingItem: sess.pendingItem || null,
+          order: { mode: sess.orderMode || null, name: sess.customerName || null, address: sess.deliveryAddress || null },
+          note: sess.opomba || ''
         });
         const newHistory = [...history,
           { role: 'user', content: msgText },
           { role: 'assistant', content: result.reply || '(dejanje)' }
         ].slice(-8);
         const mergedNote = result.note ? [sess.opomba, result.note].filter(Boolean).join('; ') : (sess.opomba || '');
-        session.set(skey, { ...sess, step: result.cart.length ? 301 : (sess.step || 300), cart: result.cart, aiHistory: newHistory, pendingItem: null, opomba: mergedNote });
-        if (result.reply && result.action !== 'checkout') await wa.send(phoneId, token, wa.textMsg(from, result.reply));
+        const ord = result.order || {};
+        session.set(skey, {
+          ...sess, step: result.cart.length ? 301 : (sess.step || 300),
+          cart: result.cart, aiHistory: newHistory, pendingItem: null, opomba: mergedNote,
+          orderMode: ord.mode || sess.orderMode || null,
+          customerName: ord.name || sess.customerName || null,
+          deliveryAddress: ord.address || sess.deliveryAddress || null
+        });
+        if (result.action === 'confirm') {
+          // AI je zbral vse podatke in stranka je potrdila -> deterministična oddaja
+          const cartC = result.cart;
+          const modeC = ord.mode === 'prevzem' ? 'prevzem' : 'dostava';
+          const totC = computeTotals(salon, cartC, modeC);
+          session.set(skey, {
+            ...session.get(skey), step: 305,
+            orderMode: modeC,
+            customerName: ord.name || from,
+            deliveryAddress: modeC === 'dostava' ? (ord.address || '') : '',
+            grandTotal: totC.grand, packFee: totC.packFee, delFee: totC.delFee
+          });
+          await finalizeOrder();
+          return;
+        }
+        if (result.reply) await wa.send(phoneId, token, wa.textMsg(from, result.reply));
         if (result.action === 'show_menu') {
-          await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(result.cart)));
+          // AI je pozdravil sam — telo menija brez pozdravnega sporočila lokala
+          const menuSalon = { ...salon, greeting_message: '👇 Izberite artikel iz menija:' };
+          await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalon, cartSummaryShort(result.cart)));
         } else if (result.action === 'show_cart' && result.cart.length && !result.reply) {
           await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
-        } else if (result.action === 'checkout') {
-          await startCheckout();
         }
         return;
       } catch (e) {
