@@ -148,6 +148,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), jo dodaj kot note parameter v add_to_cart (npr. add_to_cart({item: "${pendingItem.name}", qty: 1, note: "brez gob"})).` : '');
 
   let action = null;
+  let checkoutStarted = false;
   let newCart = cart.map(i => ({ ...i }));
   const notes = [];
   const newOrder = { mode: order.mode || null, name: order.name || null, address: order.address || null };
@@ -207,6 +208,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
       }
       case 'checkout': {
         if (!newCart.length) { result = 'Košarica je prazna — stranka naj najprej kaj izbere.'; break; }
+        checkoutStarted = true;
         const modes = [salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean);
         result = modes.length > 1
           ? `Začni zaključek: vprašaj stranko, ali želi ${modes.join(' ali ')}.`
@@ -257,7 +259,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     return result;
   };
 
-  const done = (text) => ({ reply: stripEmoji(text || ''), cart: newCart, action, note: notes.join('; ') || null, order: newOrder });
+  const done = (text) => ({ reply: stripEmoji(text || ''), cart: newCart, action, note: notes.join('; ') || null, order: newOrder, checkoutStarted });
 
   // ── Claude (Anthropic Messages API) s prompt cachingom ──
   if (PROVIDER() === 'anthropic') {
