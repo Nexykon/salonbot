@@ -34,6 +34,27 @@ async function notifyFairUse(salon, cnt, limit) {
   ].join('\n'));
 }
 
+// Skupni slovenski razčlenjevalnik količin ("enega", "dva kosa prosim", "3x")
+function parseSloQty(raw) {
+  const t = ' ' + String(raw || '').toLowerCase().trim() + ' ';
+  const dm = t.match(/\d+/);
+  let q = dm ? parseInt(dm[0]) : null;
+  if (q === null) {
+    const words = [['deset', 10], ['devet', 9], ['osem', 8], ['sedem', 7], ['šest', 6], ['sest', 6], ['pet', 5], ['štiri', 4], ['stiri', 4], ['trikrat', 3], ['tri', 3], ['dvakrat', 2], ['dve', 2], ['dva', 2], ['enkrat', 1], ['enega', 1], ['eno', 1], ['ene', 1], ['ena', 1], ['en', 1]];
+    for (const [w, n] of words) {
+      if (new RegExp('[\\s]' + w + '(?=[\\s,.!?])').test(t)) { q = n; break; }
+    }
+  }
+  if (q === null) return null;
+  const leftover = t
+    .replace(/\d+/g, ' ')
+    .replace(/\s(deset|devet|osem|sedem|šest|sest|pet|štiri|stiri|trikrat|tri|dvakrat|dve|dva|enkrat|enega|eno|ene|ena|en)(?=[\s,.!?])/g, ' ')
+    .replace(/\s(kosov|kosa|kose|kosek|kos|x|krat|komad\w*|prosim|samo|pa|in|hvala|lepo|bi|bom|vzel|vzela|dajte|daj|mi|še|se)(?=[\s,.!?])/g, ' ')
+    .replace(/[,.!?]/g, ' ')
+    .trim();
+  return { q: Math.min(Math.max(q, 1), 50), clean: leftover === '' };
+}
+
 function confirmEtaMsg(salon, isPickup, minutes) {
   return botMsg(salon, isPickup ? 'accepted_pickup' : 'accepted_delivery', {
     minute: String(minutes),
@@ -685,27 +706,7 @@ async function handleMessage(msgObj, salon) {
 
     if (sess.step === 306 && sess.pendingItem && msgText) {
       const isAiPlan = salon.subscription_plan === 'ai';
-      // Deterministični razčlenjevalnik količine: števke ALI slovenske besede
-      // ("enega", "dve", "3 kose prosim") — če ostane še kaj drugega (posebnost), gre AI-ju
-      const qtyParsed = (() => {
-        const t = ' ' + msgText.toLowerCase().trim() + ' ';
-        const dm = t.match(/\d+/);
-        let q = dm ? parseInt(dm[0]) : null;
-        if (q === null) {
-          const words = [['deset', 10], ['devet', 9], ['osem', 8], ['sedem', 7], ['šest', 6], ['sest', 6], ['pet', 5], ['štiri', 4], ['stiri', 4], ['trikrat', 3], ['tri', 3], ['dvakrat', 2], ['dve', 2], ['dva', 2], ['enkrat', 1], ['enega', 1], ['eno', 1], ['ena', 1], ['en', 1]];
-          for (const [w, n] of words) {
-            if (new RegExp('[\\s]' + w + '(?=[\\s,.!?])').test(t)) { q = n; break; }
-          }
-        }
-        if (q === null) return null;
-        const leftover = t
-          .replace(/\d+/g, ' ')
-          .replace(/\s(deset|devet|osem|sedem|šest|sest|pet|štiri|stiri|trikrat|tri|dvakrat|dve|dva|enkrat|enega|eno|ena|en)(?=[\s,.!?])/g, ' ')
-          .replace(/\s(kosov|kosa|kose|kosek|kos|x|krat|komad\w*|prosim|samo|pa|in|hvala|lepo|bi|bom|vzel|vzela|dajte|daj|mi|še|se)(?=[\s,.!?])/g, ' ')
-          .replace(/[,.!?]/g, ' ')
-          .trim();
-        return { q: Math.min(Math.max(q, 1), 50), clean: leftover === '' };
-      })();
+      const qtyParsed = parseSloQty(msgText);
       if (qtyParsed && qtyParsed.clean) {
         const qty306 = qtyParsed.q;
         if (isAiPlan) {
@@ -1045,6 +1046,65 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
+    // ── AI paket: odgovor s količino USKLADI zadnje dodani artikel (ne prišteje znova) ──
+    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.pendingItem
+        && sess.lastAdded && sess.lastAdded.length === 1 && (sess.cart || []).length) {
+      const qp = parseSloQty(msgText);
+      if (qp && qp.clean) {
+        const cur = session.get(skey);
+        const la = sess.lastAdded[0];
+        const line = (cur.cart || []).find(c => String(c.id) === String(la.id) && (c.note || null) === (la.note || null));
+        if (line) {
+          line.qty = qp.q; // nastavi TOČNO količino (ne +)
+          session.set(skey, { ...cur, cart: cur.cart, lastAdded: null });
+          const feeN = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
+            ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cur.cart)} €*${feeN}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*.`
+          ));
+          return;
+        }
+      }
+    }
+
+    // ── AI paket: "ne / to je vse" na 'Želite še kaj?' = začni zaključek (deterministično) ──
+    if (msgText && !iId && salon.subscription_plan === 'ai' && (sess.cart || []).length
+        && !sess.checkoutStage && !sess.pendingItem
+        && /^\s*(ne|ne,?\s*hvala|nič več|nic vec|to je vse|to bo vse|dovolj|nič drugega|nic drugega|nak)\s*[.!]?\s*$/i.test(msgText)) {
+      await startAiCheckout();
+      return;
+    }
+
+    // ── AI paket: "en tiramisu" z artiklom v košarici = POPRAVEK količine; "še en" = dodatek ──
+    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.pendingItem) {
+      const qp2 = parseSloQty(msgText);
+      if (qp2 && !qp2.clean) {
+        const leftoverTxt = (' ' + msgText.toLowerCase() + ' ')
+          .replace(/\d+/g, ' ')
+          .replace(/\s(deset|devet|osem|sedem|šest|sest|pet|štiri|stiri|trikrat|tri|dvakrat|dve|dva|enkrat|enega|eno|ene|ena|en)(?=[\s,.!?])/g, ' ')
+          .replace(/\s(kosov|kosa|kose|kosek|kos|x|krat|komad\w*|prosim|samo|pa|in|hvala|lepo|bi|bom|vzel|vzela|dajte|daj|mi|še|se|zraven|plus|dodaj|dodajte|želim|zelim|želel|zelel|naročiti|narociti|naročil|narocil|naročam|narocam|rad|rada)(?=[\s,.!?])/g, ' ')
+          .replace(/[,.!?]/g, ' ')
+          .trim();
+        const svcHit = leftoverTxt ? findService(services, leftoverTxt) : null;
+        if (svcHit) {
+          const wantsMore = /(^|\s)(še|se|dodaj|dodajte|zraven|plus)(?=[\s,.!?]|$)/i.test(msgText.toLowerCase());
+          const cur = session.get(skey);
+          const cart2 = cur.cart || [];
+          const line2 = cart2.find(c => String(c.id) === String(svcHit.id) && !c.note);
+          if (line2 && !wantsMore) line2.qty = qp2.q;            // popravek: "en tiramisu" -> točno 1
+          else if (line2 && wantsMore) line2.qty = (line2.qty || 1) + qp2.q; // "še en" -> +1
+          else cart2.push({ id: svcHit.id, name: svcHit.name, price: svcHit.price || 0, qty: qp2.q });
+          session.set(skey, { ...cur, step: 301, cart: cart2, lastAdded: [{ id: svcHit.id, note: null }] });
+          const feeN2 = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
+            ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart2)} €*${feeN2}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*.`
+          ));
+          return;
+        }
+      }
+    }
+
     // ── AI paket: zahteva za meni = VEDNO interaktivni seznam (deterministično, tudi večkrat) ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && msgText.length < 60
         && /(^|\s)(meni|menij|jedilnik|ponudb\w*|cenik)\b/i.test(msgText)
@@ -1058,7 +1118,8 @@ async function handleMessage(msgObj, salon) {
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && !(sess.cart || []).length && !sess.checkoutStage
         && /^\s*(da|ja|jaa|seveda|lahko|prosim|ok|okej|velja|zelim|želim|hočem|hocem|bi|itak)\b/i.test(msgText.trim())) {
-      const areaMsg = salon.delivery_area ? `Samo da vas obvestimo — dostavljamo po ${salon.delivery_area}.\n\nIzvolite meni:` : 'Izvolite meni:';
+      const cancelHint = '\n_Naročilo lahko kadar koli prekličete tako, da napišete *prekliči*._';
+      const areaMsg = (salon.delivery_area ? `Samo da vas obvestimo — dostavljamo po ${salon.delivery_area}.${cancelHint}\n\nIzvolite meni:` : `Izvolite meni:${cancelHint}`);
       const hist0 = sess.aiHistory || [];
       session.set(skey, { ...sess, step: 300, aiHistory: [...hist0, { role: 'user', content: msgText }, { role: 'assistant', content: areaMsg }].slice(-30) });
       const menuSalon0 = { ...salon, greeting_message: areaMsg };
@@ -1158,6 +1219,20 @@ async function handleMessage(msgObj, salon) {
           customerName: ord.name || sess.customerName || null,
           deliveryAddress: ord.address || sess.deliveryAddress || null
         });
+        // zapomni si dodano v tej rundi (uskladitev količine) + če je vprašal "koliko" brez dodajanja, nastavi čakajoči artikel
+        {
+          const stAdd = session.get(skey);
+          let pendingFromAsk = null;
+          if ((!result.added || !result.added.length) && result.reply && /koliko/i.test(result.reply)) {
+            const askedSvc = findService(services, msgText);
+            if (askedSvc) pendingFromAsk = { id: askedSvc.id, name: askedSvc.name, price: askedSvc.price || 0 };
+          }
+          session.set(skey, {
+            ...stAdd,
+            lastAdded: (result.added && result.added.length) ? result.added : null,
+            ...(pendingFromAsk ? { pendingItem: pendingFromAsk, step: 306 } : {})
+          });
+        }
         // sinhronizacija traku: karkoli je AI zbral, trak nadaljuje pri prvem manjkajočem koraku
         {
           const stSync = session.get(skey);
@@ -1205,9 +1280,12 @@ async function handleMessage(msgObj, salon) {
           await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
           sentSomething = true;
         }
-        // GARANTIRAN ODGOVOR: nikoli mrtve tišine
+        // GARANTIRAN ODGOVOR: nikoli mrtve tišine — in vsak tak primer se zabeleži za pregled
         if (!sentSomething) {
           const curG = session.get(skey);
+          db.logAiMiss(salon.id, from, msgText, curG.checkoutStage || `step:${curG.step || 0}`,
+            `cart:${(curG.cart || []).length} mode:${curG.orderMode || '-'} ime:${curG.customerName ? 'da' : '-'}`
+          ).catch(() => {});
           if ((curG.cart || []).length) {
             await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(curG.cart), cartTotal(curG.cart)));
           } else {

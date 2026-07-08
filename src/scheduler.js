@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const db = require('./supabase');
 const wa = require('./whatsapp');
+const mail = require('./email');
 const t = require('./time');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
@@ -191,23 +192,53 @@ async function sendDailySummary() {
   }
 }
 
+// ─── AI dnevnik: dnevni povzetek nerazumljenih sporočil ─────────────────────
+async function sendAiMissDigest() {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const misses = await db.getAiMissesSince(since);
+    if (!misses.length) return;
+    const salons = await db.getAllSalons();
+    const nameOf = (id) => (salons.find(s => s.id === id) || {}).name || id;
+    const lines = misses.map(m =>
+      `[${(m.created_at || '').slice(11, 16)}] ${nameOf(m.salon_id)} · +${m.phone} · faza: ${m.stage}\n  "${m.message}"  (${m.context})`
+    );
+    const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    await mail.sendEmail(owner, `AI natakar — ${misses.length} nerazumljenih sporočil (24h)`, [
+      `Sporočila, ki jih AI natakar v zadnjih 24h ni razumel (padel na varovalni odgovor):`,
+      ``,
+      ...lines,
+      ``,
+      `Prilepi ta seznam v Cowork in luknje bova zabila.`
+    ].join('\n'));
+    console.log(`[ai-digest] Poslan povzetek ${misses.length} nerazumljenih.`);
+  } catch (e) {
+    console.error('[ai-digest] Error:', e.message);
+  }
+}
+
 // ─── START ────────────────────────────────────────────────────────────────────
 function startScheduler() {
   const tz = 'Europe/Ljubljana';
 
   // Vsak dan ob 08:00 — daily summary + opomnike za jutri + reaktivacije
+  // Saloni: povzetek, opomniki, reaktivacije
   cron.schedule('0 8 * * *', async () => {
     await sendDailySummary();
     await sendReminders();
     await sendReactivations();
   }, { timezone: tz });
 
+  // AI natakar (gostilne): ločen dnevni pregled nerazumljenih sporočil -> email FlowTiq
+  cron.schedule('30 7 * * *', sendAiMissDigest, { timezone: tz });
+
   // Vsako uro — recenzije (2h po terminu)
   cron.schedule('0 * * * *', sendReviewRequests, { timezone: tz });
 
   console.log('Scheduler started:');
-  console.log('  08:00 — daily summary, opomnike, reaktivacije');
+  console.log('  07:30 — AI natakar: dnevni pregled nerazumljenih (email)');
+  console.log('  08:00 — saloni: daily summary, opomniki, reaktivacije');
   console.log('  vsako uro — recenzije (2h po terminu)');
 }
 
-module.exports = { startScheduler, sendDailySummary, sendReminders, sendReviewRequests, sendReactivations };
+module.exports = { startScheduler, sendDailySummary, sendReminders, sendReviewRequests, sendReactivations, sendAiMissDigest };

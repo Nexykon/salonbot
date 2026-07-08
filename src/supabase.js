@@ -639,6 +639,27 @@ async function getOrderItemsBysalon(salonId, since) {
 }
 
 
+async function logAiMiss(salonId, phone, message, stage, context) {
+  try {
+    await axios.post(`${BASE}/ai_misses`, {
+      salon_id: salonId, phone,
+      message: String(message || '').slice(0, 300),
+      stage: String(stage || ''),
+      context: String(context || '').slice(0, 300)
+    }, { headers: { ...HEADERS, Prefer: 'return=minimal' } });
+  } catch (e) { /* dnevnik ne sme motiti pogovora */ }
+}
+
+async function getAiMissesSince(sinceIso) {
+  try {
+    const r = await axios.get(
+      `${BASE}/ai_misses?created_at=gte.${encodeURIComponent(sinceIso)}&select=salon_id,phone,message,stage,context,created_at&order=created_at.asc&limit=200`,
+      { headers: HEADERS }
+    );
+    return r.data || [];
+  } catch (e) { return []; }
+}
+
 async function saveAiSession(salonId, phone, data) {
   try {
     await axios.post(`${BASE}/ai_sessions?on_conflict=salon_id,phone`, { salon_id: salonId, phone, data, updated_at: new Date().toISOString() }, {
@@ -684,5 +705,6 @@ module.exports = {
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonsByOwnerEmail, getSalonByToken,
   updateSalonSettings,
   getMasterAdminByEmail, getMasterAdminByResetTokenHash, updateMasterAdmin,
-  saveAiSession, loadAiSession, clearAiSession
+  saveAiSession, loadAiSession, clearAiSession,
+  logAiMiss, getAiMissesSince
 };
