@@ -4,6 +4,18 @@
 const axios = require('axios');
 const db = require('./supabase');
 
+// Retry wrapper — poizkusi do 2x z 1.5s zamudo
+async function axiosRetry(fn) {
+  for (let i = 0; i < 2; i++) {
+    try { return await fn(); }
+    catch (e) {
+      const isRetryable = !e.response || e.code === 'ECONNABORTED' || e.response?.status >= 500;
+      if (i === 0 && isRetryable) { await new Promise(r => setTimeout(r, 1500)); continue; }
+      throw e;
+    }
+  }
+}
+
 // Ponudnik AI: 'openai' (privzeto), 'anthropic' (Claude) ali 'gemini' — env AI_PROVIDER
 const PROVIDER = () => (process.env.AI_PROVIDER || 'openai').toLowerCase();
 const MODEL = () => process.env.AI_ORDER_MODEL
@@ -245,11 +257,11 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
   // ── Claude (Anthropic Messages API) s prompt cachingom ──
   if (PROVIDER() === 'anthropic') {
     const aMessages = [
-      ...history.slice(-30).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content || '...') })),
+      ...history.slice(-60).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content || '...') })),
       { role: 'user', content: message }
     ];
     for (let round = 0; round < 3; round++) {
-      const r = await axios.post('https://api.anthropic.com/v1/messages', {
+      const r = await axiosRetry(() => axios.post('https://api.anthropic.com/v1/messages', {
         model: MODEL(),
         max_tokens: 300,
         temperature: 0.4,
@@ -263,8 +275,8 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           'anthropic-version': '2023-06-01',
           'Content-Type': 'application/json'
         },
-        timeout: 20000
-      });
+        timeout: 30000
+      }));
       const content = r.data.content || [];
       const toolUses = content.filter(b => b.type === 'tool_use');
       const textOut = content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
@@ -286,14 +298,14 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
     : 'https://api.openai.com/v1/chat/completions';
   const apiKey = isGemini ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY;
-  const messages = [{ role: 'system', content: sys }, ...history.slice(-30), { role: 'user', content: message }];
+  const messages = [{ role: 'system', content: sys }, ...history.slice(-60), { role: 'user', content: message }];
   for (let round = 0; round < 3; round++) {
-    const r = await axios.post(apiUrl, {
+    const r = await axiosRetry(() => axios.post(apiUrl, {
       model: MODEL(), max_tokens: 300, temperature: 0.4, tools: TOOLS, tool_choice: 'auto', messages
     }, {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      timeout: 20000
-    });
+      timeout: 30000
+    }));
     const choice = r.data.choices[0];
     if (choice.finish_reason !== 'tool_calls' || !choice.message.tool_calls) {
       return done(choice.message.content);

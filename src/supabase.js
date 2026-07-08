@@ -638,6 +638,32 @@ async function getOrderItemsBysalon(salonId, since) {
   return r.data;
 }
 
+
+async function saveAiSession(salonId, phone, data) {
+  try {
+    await axios.post(`${BASE}/ai_sessions`, { salon_id: salonId, phone, data, updated_at: new Date().toISOString() }, {
+      headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates' }
+    });
+  } catch (e) { /* tiho — seja je samo optimizacija */ }
+}
+
+async function loadAiSession(salonId, phone) {
+  try {
+    const r = await axios.get(`${BASE}/ai_sessions?salon_id=eq.${encodeURIComponent(salonId)}&phone=eq.${encodeURIComponent(phone)}&select=data,updated_at`, { headers: HEADERS });
+    const row = r.data?.[0];
+    if (!row) return null;
+    // Seja je stara > 24h → ignoriraj
+    if (row.updated_at && Date.now() - new Date(row.updated_at).getTime() > 86400000) return null;
+    return row.data || null;
+  } catch (e) { return null; }
+}
+
+async function clearAiSession(salonId, phone) {
+  try {
+    await axios.delete(`${BASE}/ai_sessions?salon_id=eq.${encodeURIComponent(salonId)}&phone=eq.${encodeURIComponent(phone)}`, { headers: HEADERS });
+  } catch (e) {}
+}
+
 module.exports = {
   getSalon, getSalonById, deleteSalon, getSalonBySlug, resolveSalon, getSalonByPhoneId,
   getAllSalons, createSalon, createService, createServicesFromPreset,

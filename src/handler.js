@@ -590,7 +590,7 @@ async function handleMessage(msgObj, salon) {
   // ══════════════════════════════════════════════════════
   if (salon.booking_mode === 'delivery') {
     const services = await db.getServices(salon.id);
-    const sess = session.get(skey);
+    const sess = await session.getOrRestore(skey);
 
     function fmtCart(cart) {
       return cart.map(item => {
@@ -635,7 +635,7 @@ async function handleMessage(msgObj, salon) {
               const newHistory = [...history,
                 { role: 'user', content: `[izbral z menija: ${svc.name}]` },
                 { role: 'assistant', content: result.reply }
-              ].slice(-8);
+              ].slice(-60);
               session.set(skey, { ...sess, step: 306, pendingItem: pending, aiHistory: newHistory });
               await wa.send(phoneId, token, wa.textMsg(from, result.reply));
               return;
@@ -1010,7 +1010,7 @@ async function handleMessage(msgObj, salon) {
         const newHistory = [...history,
           { role: 'user', content: msgText },
           { role: 'assistant', content: result.reply || '(dejanje)' }
-        ].slice(-8);
+        ].slice(-60);
         const mergedNote = result.note ? [sess.opomba, result.note].filter(Boolean).join('; ') : (sess.opomba || '');
         const ord = result.order || {};
         session.set(skey, {
@@ -1048,14 +1048,17 @@ async function handleMessage(msgObj, salon) {
         const aiDetail = e.response?.data?.error?.message || (e.response?.data ? JSON.stringify(e.response.data).slice(0, 300) : null);
         console.error('[AI natakar] error:', e.message, aiDetail || '');
         db.logError(salon.id, 'ai_order', e.message, aiDetail, from).catch(() => {});
-        // pade nazaj na standardni meni
+        // OHRANI sejo — stranki ne pošiljamo ničesar (retry logika je v ai-order.js)
+        return;
       }
       // če fair-use presežen: pade skozi na klasični gumbni potek (nič se ne pokvari)
     }
 
-    // ── Default: pozdrav + meni
-    session.set(skey, { step: 300, cart: [] });
-    await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
+    // ── Default: pozdrav + meni (samo za nova sporocila brez seje)
+    if (!sess || !sess.step || sess.step === 0) {
+      session.set(skey, { step: 300, cart: [] });
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
+    }
     return;
   }
 
