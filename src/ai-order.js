@@ -8,12 +8,12 @@ const MODEL = () => process.env.AI_ORDER_MODEL || 'gpt-4o-mini';
 
 const TOOLS = [
   { type: 'function', function: { name: 'show_menu', description: 'Pokaži stranki interaktivni meni s kategorijami', parameters: { type: 'object', properties: {} } } },
-  { type: 'function', function: { name: 'add_to_cart', description: 'Dodaj artikel v košarico (ime lahko približno)', parameters: { type: 'object', properties: { item: { type: 'string' }, qty: { type: 'number', description: 'Količina, privzeto 1' } }, required: ['item'] } } },
+  { type: 'function', function: { name: 'add_to_cart', description: 'Dodaj artikel v košarico (ime lahko približno). Če ima artikel posebnost (npr. brez sira), jo dodaj kot note. Če stranka naroči isto jed z RAZLIČNIMI posebnostmi (npr. 2 pici, ena brez sira), kliči add_to_cart LOČENO za vsako — enkrat normalno, enkrat z note.', parameters: { type: 'object', properties: { item: { type: 'string' }, qty: { type: 'number', description: 'Količina, privzeto 1' }, note: { type: 'string', description: 'Posebnost samo za ta artikel (npr. "brez sira", "extra pikantno"). Neobvezno.' } }, required: ['item'] } } },
   { type: 'function', function: { name: 'remove_from_cart', description: 'Odstrani artikel iz košarice', parameters: { type: 'object', properties: { item: { type: 'string' } }, required: ['item'] } } },
   { type: 'function', function: { name: 'repeat_last_order', description: 'Dodaj artikle zadnjega naročila stranke ("enako kot zadnjič")', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'add_note', description: 'Zapiši posebno željo ali opombo k naročilu (npr. "brez gob", "bolj pikantno", alergije)', parameters: { type: 'object', properties: { note: { type: 'string' } }, required: ['note'] } } },
   { type: 'function', function: { name: 'checkout', description: 'Stranka želi zaključiti naročilo — začni zaključek (vprašanje o načinu prevzema)', parameters: { type: 'object', properties: {} } } },
-  { type: 'function', function: { name: 'set_mode', description: 'Zabeleži način prevzema, ko ga stranka pove', parameters: { type: 'object', properties: { mode: { type: 'string', enum: ['dostava', 'prevzem'] } }, required: ['mode'] } } },
+  { type: 'function', function: { name: 'set_mode', description: 'Zabeleži način prevzema, ko ga stranka pove. MAPIRANJE: "osebni", "osebni prevzem", "sam", "pridem", "pridem sam", "pridem po", "pri vas", "v lokalu", "bom prišel", "k vam", "take away", "takeaway", "pickup" → prevzem. "dostava", "dostavite", "na dom", "k meni", "k nam", "prinesite", "pošljite", "na naslov", "delivery" → dostava.', parameters: { type: 'object', properties: { mode: { type: 'string', enum: ['dostava', 'prevzem'] } }, required: ['mode'] } } },
   { type: 'function', function: { name: 'set_name', description: 'Zabeleži ime in priimek stranke', parameters: { type: 'object', properties: { name: { type: 'string' } }, required: ['name'] } } },
   { type: 'function', function: { name: 'set_address', description: 'Zabeleži naslov dostave', parameters: { type: 'object', properties: { address: { type: 'string' } }, required: ['address'] } } },
   { type: 'function', function: { name: 'confirm_order', description: 'ŠELE ko stranka izrecno potrdi celotno naročilo — odda naročilo', parameters: { type: 'object', properties: {} } } }
@@ -83,7 +83,7 @@ POTEK POGOVORA:
 1) Ob prvem sporočilu stranko prijazno pozdravi v imenu restavracije in jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj in območja dostave še NE omenjaj.
 2) Ko stranka potrdi, da želi naročiti: če je navedeno OBMOČJE DOSTAVE, ji najprej povej npr. "Samo da vas obvestimo — dostavljamo po [območje]." in vprašaj: "Vam smem ponuditi meni?" — menija še NE prikazuj.
 3) Ko stranka pritrdi (ali sama vpraša po ponudbi), pokliči show_menu.
-4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Nato uporabi add_to_cart; posebnost zabeleži z add_note v obliki "Ime artikla: posebnost" (npr. "Pica Margerita: brez gob").
+4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Posebnost za artikel dodaj kot note parameter v add_to_cart (ne z add_note). Če stranka naroči isto jed z RAZLIČNIMI posebnostmi (npr. "2 pici, ena brez sira"), kliči add_to_cart DVAKRAT: enkrat qty:1 brez note, enkrat qty:1 z note:"brez sira". add_note uporabljaj SAMO za splošne opombe k celotnemu naročilu.
 4b) Če dobiš sporočilo oblike [IZBRANO Z MENIJA: X], je stranka pravkar izbrala artikel X z menija — vprašaj jo naravno po količini in posebnostih za X. add_to_cart uporabi ŠELE, ko pove količino.
 5) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek artiklov, ter vprašaj: "Želite še kaj?"
 6) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
@@ -102,9 +102,9 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     + `\nNAČINI PREVZEMA: ${[salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean).join(' ali ')}${salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : ''}`
     + `\nOPOMBA STRANKE: ${note || '—'}`
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`
-    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), uporabi še add_note v obliki "${pendingItem.name}: posebnost".` : '');
+    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), jo dodaj kot note parameter v add_to_cart (npr. add_to_cart({item: "${pendingItem.name}", qty: 1, note: "brez gob"})).` : '');
 
-  const messages = [{ role: 'system', content: sys }, ...history.slice(-8), { role: 'user', content: message }];
+  const messages = [{ role: 'system', content: sys }, ...history.slice(-30), { role: 'user', content: message }];
   let action = null;
   let newCart = cart.map(i => ({ ...i }));
   const notes = [];
@@ -135,11 +135,17 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           const svc = findService(services, input.item);
           if (!svc) { result = `Artikla "${input.item}" ni na meniju. Predlagaj podobnega z menija.`; break; }
           const qty = Math.min(Math.max(parseInt(input.qty) || 1, 1), 50);
-          const ex = newCart.find(c => String(c.id) === String(svc.id));
-          if (ex) ex.qty = (ex.qty || 1) + qty;
-          else newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty });
+          const itemNote = String(input.note || '').trim().slice(0, 200);
+          // Če ima artikel opombo, vedno dodaj kot ločen vnos (ne združuj z obstoječim)
+          if (itemNote) {
+            newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty, note: itemNote });
+          } else {
+            const ex = newCart.find(c => String(c.id) === String(svc.id) && !c.note);
+            if (ex) ex.qty = (ex.qty || 1) + qty;
+            else newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty });
+          }
           action = action || 'show_cart';
-          result = `Dodano: ${svc.name} x${qty} (${svc.price} €/kos). Košarica: ${newCart.map(i => `${i.name} x${i.qty}`).join(', ')}.`;
+          result = `Dodano: ${svc.name} x${qty}${itemNote ? ` (${itemNote})` : ''} (${svc.price} €/kos). Košarica: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}.`;
           break;
         }
         case 'remove_from_cart': {
