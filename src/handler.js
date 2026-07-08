@@ -853,6 +853,24 @@ async function handleMessage(msgObj, salon) {
       }
     };
 
+    // Determinističen zaključek: pošlji vprašanje za PRVI manjkajoči korak (nikoli AI).
+    const promptForStage = async (cur) => {
+      if (!(cur.cart || []).length) { await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna.')); return; }
+      if (!cur.orderMode) { await startAiCheckout(); return; }
+      if (!cur.customerName) {
+        session.set(skey, { ...cur, checkoutStage: 'name' });
+        await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, napišite vaše ime in priimek.'));
+        return;
+      }
+      if (cur.orderMode === 'dostava' && !cur.deliveryAddress) {
+        session.set(skey, { ...cur, checkoutStage: 'address' });
+        const areaN = salon.delivery_area ? `\nDostavljamo: ${salon.delivery_area}` : '';
+        await wa.send(phoneId, token, wa.textMsg(from, `Prosim, napišite naslov za dostavo.${areaN}`));
+        return;
+      }
+      await sendCheckoutSummary();
+    };
+
     // ── Izbran način prevzema
     if (iId === 'dmode_dostava' || iId === 'dmode_prevzem') {
       if (!sess.cart || !sess.cart.length) {
@@ -1047,7 +1065,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: odgovor s količino USKLADI zadnje dodani artikel (ne prišteje znova) ──
-    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.pendingItem
+    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.pendingItem && !sess.checkoutStage
         && sess.lastAdded && sess.lastAdded.length === 1 && (sess.cart || []).length) {
       const qp = parseSloQty(msgText);
       if (qp && qp.clean) {
@@ -1076,7 +1094,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: "en tiramisu" z artiklom v košarici = POPRAVEK količine; "še en" = dodatek ──
-    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.pendingItem) {
+    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.pendingItem && !sess.checkoutStage) {
       const qp2 = parseSloQty(msgText);
       if (qp2 && !qp2.clean) {
         const leftoverTxt = (' ' + msgText.toLowerCase() + ' ')
@@ -1086,14 +1104,15 @@ async function handleMessage(msgObj, salon) {
           .replace(/[,.!?]/g, ' ')
           .trim();
         const svcHit = leftoverTxt ? findService(services, leftoverTxt) : null;
-        if (svcHit) {
+        const cur = session.get(skey);
+        const cart2 = cur.cart || [];
+        const line2 = svcHit ? cart2.find(c => String(c.id) === String(svcHit.id) && !c.note) : null;
+        // Popravek količine SAMO za artikel, ki je že v košarici. Nov artikel prepustimo
+        // AI natakarju, da naravno vpraša po količini in posebnostih.
+        if (svcHit && line2) {
           const wantsMore = /(^|\s)(še|se|dodaj|dodajte|zraven|plus)(?=[\s,.!?]|$)/i.test(msgText.toLowerCase());
-          const cur = session.get(skey);
-          const cart2 = cur.cart || [];
-          const line2 = cart2.find(c => String(c.id) === String(svcHit.id) && !c.note);
-          if (line2 && !wantsMore) line2.qty = qp2.q;            // popravek: "en tiramisu" -> točno 1
-          else if (line2 && wantsMore) line2.qty = (line2.qty || 1) + qp2.q; // "še en" -> +1
-          else cart2.push({ id: svcHit.id, name: svcHit.name, price: svcHit.price || 0, qty: qp2.q });
+          if (wantsMore) line2.qty = (line2.qty || 1) + qp2.q; // "še en" -> +1
+          else line2.qty = qp2.q;                              // popravek količine -> točno
           session.set(skey, { ...cur, step: 301, cart: cart2, lastAdded: [{ id: svcHit.id, note: null }] });
           const feeN2 = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
@@ -1106,7 +1125,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: zahteva za meni = VEDNO interaktivni seznam (deterministično, tudi večkrat) ──
-    if (msgText && !iId && salon.subscription_plan === 'ai' && msgText.length < 60
+    if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.checkoutStage && msgText.length < 60
         && /(^|\s)(meni|menij|jedilnik|ponudb\w*|cenik)\b/i.test(msgText)
         && !/(ime|priimek)/i.test(msgText)) {
       const curM = session.get(skey);
@@ -1117,6 +1136,7 @@ async function handleMessage(msgObj, salon) {
 
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && !(sess.cart || []).length && !sess.checkoutStage
+        && msgText.trim().length <= 15 && !findService(services, msgText)
         && /^\s*(da|ja|jaa|seveda|lahko|prosim|ok|okej|velja|zelim|želim|hočem|hocem|bi|itak)\b/i.test(msgText.trim())) {
       const cancelHint = sess.hintShown ? '' : '\n_Naročilo lahko kadar koli prekličete tako, da napišete *prekliči*._';
       const areaPrefix = (salon.delivery_area && !sess.areaShown) ? `Samo da vas obvestimo — dostavljamo po ${salon.delivery_area}.` : '';
@@ -1128,22 +1148,25 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // ── Tekoči trak: vsak odgovor stranke se TAKOJ shrani in pelje na naslednji korak ──
-    if (msgText && !iId && salon.subscription_plan === 'ai' && (sess.cart || []).length) {
+    // ── Zaključek (enolastniški tekoči trak): ko je checkout aktiven, vodi SAMO ta ──
+    //    determinističen trak. AI se med zaključkom NE kliče -> ni dvojnih povzetkov ──
+    //    ne podvojenih vprašanj. Vsak korak vedno odgovori (return). ──
+    if (msgText && !iId && salon.subscription_plan === 'ai' && sess.checkoutStage && (sess.cart || []).length) {
       const stage = sess.checkoutStage;
-      if (stage === 'mode' && !sess.orderMode) {
+      const canDel = salon.allow_delivery !== false;
+      const canPick = salon.allow_pickup !== false;
+      if (stage === 'mode') {
         const mLow = msgText.toLowerCase();
-        const canDel = salon.allow_delivery !== false;
-        const canPick = salon.allow_pickup !== false;
-        if (canDel && /dostav|na dom|prinesite|pošljite|poslite/.test(mLow)) { await aiSetModeDeterministic('dostava'); return; }
-        if (canPick && /prevzem|osebn|pridem|sam bom|sama bom|pickup|take ?away|v lokalu/.test(mLow)) { await aiSetModeDeterministic('prevzem'); return; }
-        // nejasen odgovor -> AI razčisti (pade naprej)
-      } else if (stage === 'name' && !sess.customerName) {
+        if (canDel && /dostav|na dom|prinesite|pošljite|poslite|dostavite/.test(mLow)) { await aiSetModeDeterministic('dostava'); return; }
+        if (canPick && /prevzem|osebn|pridem|sam bom|sama bom|pickup|take ?away|v lokalu|pri vas|k vam/.test(mLow)) { await aiSetModeDeterministic('prevzem'); return; }
+        const modes = [canDel ? 'dostava' : null, canPick ? 'osebni prevzem' : null].filter(Boolean).join(' ali ');
+        await wa.send(phoneId, token, wa.textMsg(from, `Prosim, izberite: ${modes}?`));
+        return;
+      }
+      if (stage === 'name') {
         const nm = msgText.trim();
-        const looksLikeItem = findService(services, nm);
         const nameOk = /^[A-Za-zŠŽČĆĐšžčćđ][A-Za-zŠŽČĆĐšžčćđ .'-]{1,50}$/.test(nm)
           && nm.split(/\s+/).length <= 4
-          && !looksLikeItem
           && !/^(da|ja|ne|ok|okej|meni|hvala|zaključi|zakljuci|prekliči|preklici|dostava|prevzem|še|se|dodaj|eno|ena|en|dve|tri|štiri|stiri|pet|brez)(?=[\s,.!?]|$)/i.test(nm);
         if (nameOk) {
           const cur = session.get(skey);
@@ -1157,19 +1180,34 @@ async function handleMessage(msgObj, salon) {
           }
           return;
         }
-      } else if (stage === 'address' && sess.orderMode === 'dostava' && !sess.deliveryAddress) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, napišite vaše ime in priimek.'));
+        return;
+      }
+      if (stage === 'address') {
         const ad = msgText.trim();
-        if (ad.length >= 5 && (/\d/.test(ad) || ad.split(/\s+/).length >= 2) && !findService(services, ad)) {
+        if (ad.length >= 3 && !/^\s*(da|ja|ne|ok|okej|meni|zaključi|zakljuci|prekli)/i.test(ad)) {
           session.set(skey, { ...session.get(skey), deliveryAddress: ad });
           await sendCheckoutSummary();
           return;
         }
-      } else if (stage === 'confirm') {
-        if (/^\s*ne\b/i.test(msgText)) {
-          await wa.send(phoneId, token, wa.textMsg(from, 'V redu. Povejte, kaj želite spremeniti — artikle, način prevzema, ime ali naslov.'));
+        await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, napišite naslov za dostavo (ulica in hišna številka).'));
+        return;
+      }
+      if (stage === 'confirm') {
+        if (/^\s*(da|ja|jaa|aha|mhm|yes|lahko|potrjujem|potrdim|potrdi|seveda|ok|okej|velja|dajmo|oddaj|oddajte|naroči|naročam|pošlji|drži|tako je)\b/i.test(msgText)) {
+          const totF = computeTotals(salon, sess.cart, sess.orderMode);
+          session.set(skey, { ...session.get(skey), step: 305, grandTotal: totF.grand, packFee: totF.packFee, delFee: totF.delFee });
+          await finalizeOrder();
           return;
         }
-        // pritrdilno ujame deterministična oddaja spodaj
+        if (/^\s*(ne|prekli)/i.test(msgText)) {
+          // umik iz zaključka -> stranka lahko spet spreminja košarico
+          session.set(skey, { ...session.get(skey), checkoutStage: null, step: 301 });
+          await wa.send(phoneId, token, wa.textMsg(from, 'V redu. Povejte, kaj želite spremeniti (artikle, način, ime ali naslov), ali napišite zaključi za ponoven zaključek.'));
+          return;
+        }
+        await wa.send(phoneId, token, wa.textMsg(from, 'Potrjujete naročilo? (da / ne)'));
+        return;
       }
     }
 
@@ -1234,32 +1272,14 @@ async function handleMessage(msgObj, salon) {
             ...(pendingFromAsk ? { pendingItem: pendingFromAsk, step: 306 } : {})
           });
         }
-        // sinhronizacija traku: karkoli je AI zbral, trak nadaljuje pri prvem manjkajočem koraku
+        // Zaključek je izključno determinističen: če je AI zaznal namero zaključka
+        // (orodje checkout), preda krmilo traku (promptForStage). AI med zaključkom ne govori.
         {
-          const stSync = session.get(skey);
-          if (result.checkoutStarted || stSync.orderMode || stSync.checkoutStage) {
-            let stg = null;
-            if (!stSync.orderMode) stg = 'mode';
-            else if (!stSync.customerName) stg = 'name';
-            else if (stSync.orderMode === 'dostava' && !stSync.deliveryAddress) stg = 'address';
-            else stg = 'confirm';
-            if (stg !== stSync.checkoutStage) session.set(skey, { ...stSync, checkoutStage: stg });
+          const stHand = session.get(skey);
+          if (result.checkoutStarted || stHand.checkoutStage) {
+            await promptForStage(stHand);
+            return;
           }
-        }
-        if (result.action === 'confirm') {
-          // AI je zbral vse podatke in stranka je potrdila -> deterministična oddaja
-          const cartC = result.cart;
-          const modeC = ord.mode === 'prevzem' ? 'prevzem' : 'dostava';
-          const totC = computeTotals(salon, cartC, modeC);
-          session.set(skey, {
-            ...session.get(skey), step: 305,
-            orderMode: modeC,
-            customerName: ord.name || from,
-            deliveryAddress: modeC === 'dostava' ? (ord.address || '') : '',
-            grandTotal: totC.grand, packFee: totC.packFee, delFee: totC.delFee
-          });
-          await finalizeOrder();
-          return;
         }
         let sentSomething = false;
         if (result.reply === '(dejanje)' || result.reply === 'V redu.') result.reply = '';
