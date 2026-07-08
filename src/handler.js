@@ -685,8 +685,29 @@ async function handleMessage(msgObj, salon) {
 
     if (sess.step === 306 && sess.pendingItem && msgText) {
       const isAiPlan = salon.subscription_plan === 'ai';
-      if (/^\d+$/.test(msgText.trim())) {
-        const qty306 = Math.min(Math.max(parseInt(msgText.trim()), 1), 50);
+      // Deterministični razčlenjevalnik količine: števke ALI slovenske besede
+      // ("enega", "dve", "3 kose prosim") — če ostane še kaj drugega (posebnost), gre AI-ju
+      const qtyParsed = (() => {
+        const t = ' ' + msgText.toLowerCase().trim() + ' ';
+        const dm = t.match(/\d+/);
+        let q = dm ? parseInt(dm[0]) : null;
+        if (q === null) {
+          const words = [['deset', 10], ['devet', 9], ['osem', 8], ['sedem', 7], ['šest', 6], ['sest', 6], ['pet', 5], ['štiri', 4], ['stiri', 4], ['trikrat', 3], ['tri', 3], ['dvakrat', 2], ['dve', 2], ['dva', 2], ['enkrat', 1], ['enega', 1], ['eno', 1], ['ena', 1], ['en', 1]];
+          for (const [w, n] of words) {
+            if (new RegExp('[\\s]' + w + '(?=[\\s,.!?])').test(t)) { q = n; break; }
+          }
+        }
+        if (q === null) return null;
+        const leftover = t
+          .replace(/\d+/g, ' ')
+          .replace(/\s(deset|devet|osem|sedem|šest|sest|pet|štiri|stiri|trikrat|tri|dvakrat|dve|dva|enkrat|enega|eno|ena|en)(?=[\s,.!?])/g, ' ')
+          .replace(/\s(kosov|kosa|kose|kosek|kos|x|krat|komad\w*|prosim|samo|pa|in|hvala|lepo|bi|bom|vzel|vzela|dajte|daj|mi|še|se)(?=[\s,.!?])/g, ' ')
+          .replace(/[,.!?]/g, ' ')
+          .trim();
+        return { q: Math.min(Math.max(q, 1), 50), clean: leftover === '' };
+      })();
+      if (qtyParsed && qtyParsed.clean) {
+        const qty306 = qtyParsed.q;
         if (isAiPlan) {
           const item = sess.pendingItem;
           const cart = sess.cart || [];
@@ -708,7 +729,7 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.textMsg(from, 'Vnesite samo število kosov (npr. 2) ali izberite gumb.'));
         return;
       }
-      // AI paket: besedni odgovor ("dve", "eno prosim") razume AI s kontekstom izbranega artikla
+      // AI paket: odgovor s posebnostjo ("eno brez jajc") razume AI s kontekstom izbranega artikla
     }
 
     // ── Dodaj še → pokaži meni spet
