@@ -191,6 +191,16 @@ async function getBookingForSalon(salonId, ref) {
   return r.data.find(b => (b.id || '').toLowerCase().endsWith(String(ref).toLowerCase())) || null;
 }
 
+// Število naročil lokala v tekočem mesecu (za fair-use in statistiko)
+async function getMonthlyOrderCount(salonId) {
+  const monthStart = t.todayStr().slice(0, 8) + '01';
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&created_at=gte.${monthStart}T00:00:00&select=id&limit=1`,
+    { headers: { ...HEADERS, Prefer: 'count=exact' } }
+  );
+  return parseInt(String(r.headers['content-range'] || '').split('/')[1]) || 0;
+}
+
 // Artikli zadnjega (nepreklicanega) naročila stranke — za "enako kot zadnjič"
 async function getLastOrderItemsByPhone(salonId, phone) {
   const b = await axios.get(
@@ -635,7 +645,7 @@ module.exports = {
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
   createOrderItems, getOrderItems, getOrderItemsBysalon,
-  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
+  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,

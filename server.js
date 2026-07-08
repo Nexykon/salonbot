@@ -798,7 +798,8 @@ app.get('/api/admin/salons/:id/settings', async (req, res) => {
       ...publicSalon(salon),
       owner_name: salon.owner_name || '',
       owner_email: salon.owner_email || '',
-      owner_password_configured: !!salon.owner_password_hash
+      owner_password_configured: !!salon.owner_password_hash,
+      custom_price_id: salon.custom_price_id || ''
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -827,11 +828,17 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'review_link',
     'reactivation_message',
     'notify_whatsapp', 'auto_confirm',
-    'notify_email', 'booking_confirmation_message'
+    'notify_email', 'booking_confirmation_message',
+    'custom_price_id'
   ];
   const updates = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+  if (updates.custom_price_id !== undefined) {
+    const cp = String(updates.custom_price_id).trim();
+    if (cp && !/^price_[A-Za-z0-9_]+$/.test(cp)) return res.status(400).json({ error: 'Neveljaven Stripe price ID (mora biti price_...)' });
+    updates.custom_price_id = cp;
   }
   if (updates.business_slug) updates.business_slug = slugify(updates.business_slug);
   if (updates.business_type) {
@@ -1093,7 +1100,7 @@ app.post('/api/billing/checkout', async (req, res) => {
   const stripe = stripeClient();
   if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
   const plan = ['pro', 'ai'].includes(req.body.plan) ? req.body.plan : 'starter';
-  const priceId = stripePlanPrices()[plan];
+  const priceId = (plan === 'ai' && salon.custom_price_id) ? salon.custom_price_id : stripePlanPrices()[plan];
   if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" še ni nastavljena (env STRIPE_PRICE_${plan.toUpperCase()}).` });
   try {
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
@@ -1230,6 +1237,19 @@ app.delete('/api/settings/services/:id', async (req, res) => {
 });
 
 // ─── Errors ───────────────────────────────────────────────────
+
+// GET /api/admin/usage — število naročil ta mesec po lokalih (za maržo/fair-use)
+app.get('/api/admin/usage', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salons = await db.getAllSalons();
+    const usage = {};
+    await Promise.all(salons.map(async (s) => {
+      usage[s.id] = await db.getMonthlyOrderCount(s.id).catch(() => 0);
+    }));
+    res.json({ usage, month: t.todayStr().slice(0, 7), limit: parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500 });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 app.get('/api/errors', async (req, res) => {
   if (!adminAuth(req, res)) return;

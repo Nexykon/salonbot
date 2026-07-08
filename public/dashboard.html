@@ -979,6 +979,7 @@
             <th>Salon</th>
             <th>Kontakt</th>
             <th>Paket</th>
+            <th>Naročila/mes</th>
             <th>Status</th>
             <th>Datum</th>
             <th>Akcije</th>
@@ -1246,6 +1247,11 @@
               <div class="form-group">
                 <label>Email za prijavo</label>
                 <input type="email" id="bs-owner-email" placeholder="ana@salon.si">
+              </div>
+              <div class="form-group">
+                <label>Stripe cena po meri <span style="color:var(--text3);font-weight:400">(Enterprise — neobvezno)</span></label>
+                <input type="text" id="bs-custom-price" placeholder="price_... (pusti prazno za standardno ceno)">
+                <div class="form-hint">Če je nastavljeno, AI checkout za ta lokal uporabi to Stripe ceno (npr. Enterprise 299 €). Fair-use meja zanje ne velja.</div>
               </div>
               <div class="form-group">
                 <label>Novo geslo <span style="color:var(--text3);font-weight:400">(neobvezno)</span></label>
@@ -1748,6 +1754,7 @@ async function loadApp() {
     renderAll();
     loadErrors();
     loadMasterCalendar();
+    loadUsage();
     // Auto-refresh vsako 1h
     setInterval(loadErrors, 3600000);
   } catch (e) {
@@ -1846,6 +1853,7 @@ function renderTable() {
           <option value="ai" ${s.subscription_plan === 'ai' ? 'selected' : ''}>🤖 AI €159,99/mes</option>
         </select>
       </td>
+      <td><span class="usage-cell" data-salon="${s.id}" style="font-size:13px;color:var(--text2)">—</span></td>
       <td><span class="badge ${statusClass}">${statusLabel}</span></td>
       <td style="color:var(--text2);font-size:13px">${date}</td>
       <td>
@@ -1949,6 +1957,31 @@ async function clearAllErrors() {
     if (res.ok) { showToast('✅ Napake počiščene', 'success'); loadErrors(); }
     else showToast('Napaka pri čiščenju', 'error');
   } catch (e) { showToast('Napaka', 'error'); }
+}
+
+// ── Mesečna poraba (naročila) po lokalih ──
+let usageData = null;
+async function loadUsage() {
+  try {
+    const res = await apiFetch('/api/admin/usage');
+    if (!res.ok) return;
+    usageData = await res.json();
+    fillUsageCells();
+  } catch (e) { /* neobvezno */ }
+}
+function fillUsageCells() {
+  if (!usageData) return;
+  document.querySelectorAll('.usage-cell').forEach(el => {
+    const cnt = usageData.usage[el.dataset.salon];
+    if (cnt === undefined) return;
+    const salon = salonsData.find(s => s.id === el.dataset.salon);
+    const isAi = salon && salon.subscription_plan === 'ai';
+    const over = isAi && cnt >= usageData.limit;
+    el.textContent = cnt;
+    el.style.fontWeight = '700';
+    el.style.color = over ? 'var(--red)' : (cnt > usageData.limit * 0.8 && isAi ? 'var(--yellow)' : 'var(--text2)');
+    el.title = over ? `Presežena AI fair-use meja (${usageData.limit}) — ponudi Enterprise ceno!` : `Naročila v ${usageData.month}`;
+  });
 }
 
 async function changePlan(id, plan) {
@@ -2194,6 +2227,7 @@ async function openManageSalon(id) {
     document.getElementById('bs-slug').value = settings.business_slug || '';
     document.getElementById('bs-bot-phone').value = settings.bot_phone_display || '';
     document.getElementById('bs-owner-email').value = settings.owner_email || '';
+    document.getElementById('bs-custom-price').value = settings.custom_price_id || '';
     document.getElementById('bs-owner-password').value = '';
     document.getElementById('bs-greeting').value = settings.greeting_message || '';
     document.getElementById('bs-start').value = (settings.working_hours_start || '08:00').substring(0,5);
@@ -2618,6 +2652,7 @@ async function saveBotStudio() {
     var settingsPayload = {
       name: document.getElementById('bs-name').value.trim(),
       owner_email: document.getElementById('bs-owner-email').value.trim(),
+      custom_price_id: document.getElementById('bs-custom-price').value.trim(),
       business_type: document.getElementById('bs-business-type').value,
       business_slug: document.getElementById('bs-slug').value.trim(),
       bot_phone_display: document.getElementById('bs-bot-phone').value.trim(),

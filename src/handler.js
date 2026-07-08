@@ -7,7 +7,7 @@ const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 const t = require('./time');
 const { botMsg } = require('./botmsg');
-const { askOrderAI, computeTotals } = require('./ai-order');
+const { askOrderAI, computeTotals, aiConfigured } = require('./ai-order');
 
 function fmtDate(dateStr) {
   if (!dateStr) return '?';
@@ -16,6 +16,22 @@ function fmtDate(dateStr) {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yyyy = d.getFullYear();
   return `${dd}.${mm}.${yyyy}`;
+}
+
+// Fair-use: obvesti FlowTiq, ko standardni AI lokal preseže mesečno mejo (1x na mesec)
+async function notifyFairUse(salon, cnt, limit) {
+  const month = t.todayStr().slice(0, 7);
+  if (salon.fair_use_notified_month === month) return;
+  await db.updateSalonSettings(salon.id, { fair_use_notified_month: month });
+  const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+  await mail.sendEmail(owner, `AI fair-use presežen — ${salon.name}`, [
+    `Lokal "${salon.name}" je ta mesec presegel fair-use mejo AI paketa.`,
+    ``,
+    `Naročil ta mesec: ${cnt} (meja: ${limit})`,
+    `AI natakar je zanje preklopil na klasične gumbe — naročila tečejo naprej.`,
+    ``,
+    `PRILOŽNOST: ponudi jim Enterprise ceno po meri (master dashboard -> Uredi -> Stripe cena po meri).`
+  ].join('\n'));
 }
 
 function confirmEtaMsg(salon, isPickup, minutes) {
@@ -606,7 +622,7 @@ async function handleMessage(msgObj, salon) {
       if (salon.subscription_plan === 'ai') {
         const pending = { id: svc.id, name: svc.name, price: svc.price || 0 };
         session.set(skey, { ...sess, step: 306, pendingItem: pending });
-        if (process.env.OPENAI_API_KEY) {
+        if (aiConfigured() && sess.aiAllowed !== false) {
           try {
             const history = sess.aiHistory || [];
             const result = await askOrderAI({
@@ -961,7 +977,7 @@ async function handleMessage(msgObj, salon) {
 
     // ── AI paket: pritrdilen odgovor ob popolnih podatkih VEDNO odda naročilo ──
     if (msgText && !iId && salon.subscription_plan === 'ai'
-        && /^\s*(da|ja|jaa|potrjujem|potrdim|potrdi|seveda|ok|okej|velja|dajmo)\b/i.test(msgText)
+        && /^\s*(da|ja|jaa|aha|mhm|yes|lahko|potrjujem|potrdim|potrdi|seveda|ok|okej|velja|dajmo|oddaj|oddajte|naroči|naročam|pošlji)\b/i.test(msgText)
         && (sess.cart || []).length && sess.orderMode && sess.customerName
         && (sess.orderMode !== 'dostava' || sess.deliveryAddress)) {
       const totF = computeTotals(salon, sess.cart, sess.orderMode);
@@ -971,8 +987,19 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI natakar (paket AI): prosto besedilo razume in upravlja košarico ──
-    if (msgText && !iId && salon.subscription_plan === 'ai' && process.env.OPENAI_API_KEY) {
-      try {
+    if (msgText && !iId && salon.subscription_plan === 'ai' && aiConfigured()) {
+      // Fair-use: standardni AI paket do AI_FAIR_USE_LIMIT naročil/mesec; Enterprise (cena po meri) brez omejitve
+      if (sess.aiAllowed === undefined) {
+        if (salon.custom_price_id) sess.aiAllowed = true;
+        else {
+          const fuLimit = parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500;
+          const cnt = await db.getMonthlyOrderCount(salon.id).catch(() => 0);
+          sess.aiAllowed = cnt < fuLimit;
+          if (!sess.aiAllowed) notifyFairUse(salon, cnt, fuLimit).catch(e => console.error('[fair-use]', e.message));
+        }
+        session.set(skey, { ...session.get(skey), aiAllowed: sess.aiAllowed });
+      }
+      if (sess.aiAllowed) try {
         const history = sess.aiHistory || [];
         const result = await askOrderAI({
           message: msgText, salon, services,
@@ -1024,6 +1051,7 @@ async function handleMessage(msgObj, salon) {
         db.logError(salon.id, 'ai_order', e.message, aiDetail, from).catch(() => {});
         // pade nazaj na standardni meni
       }
+      // če fair-use presežen: pade skozi na klasični gumbni potek (nič se ne pokvari)
     }
 
     // ── Default: pozdrav + meni

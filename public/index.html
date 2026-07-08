@@ -49,6 +49,7 @@ body {
 }
 
 /* ── Nav ── */
+html, body { overflow-x: clip; }
 .nav {
   position: sticky; top: 0; z-index: 100;
   background: rgba(255,255,255,0.92);
@@ -609,15 +610,57 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .nav-links { display: none; }
-  .hero { padding: 70px 20px 60px; }
-  .hero-layout { flex-direction: column; text-align: center; }
+  /* Nav: manjši logo in gumba, da se ne prekrivajo */
+  .nav-inner { height: 62px; padding: 0 14px; gap: 8px; }
+  .nav-logo img { height: 46px; }
+  .nav-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .nav-actions .btn-wa { padding: 9px 13px; font-size: 13px; white-space: nowrap; }
+  .nav-actions .btn-login { padding: 9px 12px; font-size: 13px; white-space: nowrap; }
+
+  .hero { padding: 56px 16px 48px; }
+  .hero-layout { flex-direction: column; text-align: center; gap: 40px; }
   .hero-text { text-align: center; }
   .hero-text .hero-badge, .hero-text .hero-cta { justify-content: center; }
-  section { padding: 72px 20px; }
-  .calc-box { padding: 28px 20px; }
-  .calc-result { gap: 12px; }
+  .hero-badge { font-size: 12.5px; padding: 7px 12px; }
+  .hero-sub { font-size: 16px; }
+  .hero-cta { margin-bottom: 40px; }
+  .hero-cta .btn-primary, .hero-cta .btn-secondary { width: 100%; justify-content: center; text-align: center; box-sizing: border-box; }
+  .hero-proof { justify-content: center; }
+
+  /* Telefon v hero: pomanjšan, da ne sili čez rob */
+  .phone-scene, .stat-cards { width: 240px; }
+  .phone-wrap { width: 240px; height: 520px; }
+
+  section { padding: 64px 16px; }
+  .calc-box { padding: 28px 18px; }
+  .calc-result { gap: 12px; flex-direction: column; }
   .calc-arrow { display: none; }
   .footer-inner { flex-direction: column; text-align: center; }
+  footer img.footer-logo { height: 56px; }
+  .footer-links { justify-content: center; }
+
+  /* Cenik in kartice */
+  .pricing-grid { grid-template-columns: 1fr; }
+  .price-card { padding: 28px 22px; }
+  .price-card .plan-price { font-size: 34px; }
+  .norisk-cta .btn-primary { width: 100%; box-sizing: border-box; }
+
+  /* FAQ: daljša vprašanja brez prekrivanja ikone */
+  .faq-q { font-size: 15px; gap: 12px; text-align: left; }
+
+  /* Modal: nikoli čez zaslon */
+  .modal-box { padding: 26px 18px; max-height: 92vh; overflow-y: auto; }
+}
+
+/* Zelo ozki zasloni */
+@media (max-width: 420px) {
+  .nav-logo img { height: 40px; }
+  .nav-actions .btn-wa { padding: 8px 10px; font-size: 12px; }
+  .nav-actions .btn-login { padding: 8px 9px; font-size: 12px; }
+  .phone-scene, .stat-cards { width: 220px; }
+  .phone-wrap { width: 220px; height: 480px; }
+  h1 { font-size: 32px !important; }
+  .stat-cards { grid-template-columns: 1fr 1fr; }
 }
 
 /* ── Brand section ── */
