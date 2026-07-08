@@ -4,7 +4,26 @@
 const axios = require('axios');
 const db = require('./supabase');
 
-const MODEL = () => process.env.AI_ORDER_MODEL || 'gpt-4o-mini';
+// Ponudnik AI: 'openai' (privzeto), 'anthropic' (Claude) ali 'gemini' — env AI_PROVIDER
+const PROVIDER = () => (process.env.AI_PROVIDER || 'openai').toLowerCase();
+const MODEL = () => process.env.AI_ORDER_MODEL
+  || (PROVIDER() === 'anthropic' ? 'claude-haiku-4-5'
+    : PROVIDER() === 'gemini' ? 'gemini-2.5-flash'
+    : 'gpt-4o-mini');
+function aiConfigured() {
+  if (PROVIDER() === 'anthropic') return !!process.env.ANTHROPIC_API_KEY;
+  if (PROVIDER() === 'gemini') return !!process.env.GEMINI_API_KEY;
+  return !!process.env.OPENAI_API_KEY;
+}
+
+// Emojije odstranimo programsko — garancija, tudi če jih model vseeno vrine
+function stripEmoji(s) {
+  return String(s || '')
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{2000}-\u{200D}\u{2764}]/gu, '')
+    .replace(/ {2,}/g, ' ')
+    .replace(/ +([,.!?])/g, '$1')
+    .trim();
+}
 
 const TOOLS = [
   { type: 'function', function: { name: 'show_menu', description: 'Pokaži stranki interaktivni meni s kategorijami', parameters: { type: 'object', properties: {} } } },
@@ -83,7 +102,8 @@ POTEK POGOVORA:
 1) Ob prvem sporočilu stranko prijazno pozdravi in pri tem VEDNO povej ime restavracije "${salon.name}" ter jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj in območja dostave še NE omenjaj.
 2) Ko stranka potrdi, da želi naročiti: če je navedeno OBMOČJE DOSTAVE, ji najprej povej npr. "Samo da vas obvestimo — dostavljamo po [območje]." in vprašaj: "Vam smem ponuditi meni?" — menija še NE prikazuj.
 3) Ko stranka pritrdi (ali sama vpraša po ponudbi), pokliči show_menu.
-4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Posebnost za artikel dodaj kot note parameter v add_to_cart (ne z add_note). Če stranka naroči isto jed z RAZLIČNIMI posebnostmi (npr. "2 pici, ena brez sira"), kliči add_to_cart DVAKRAT: enkrat qty:1 brez note, enkrat qty:1 z note:"brez sira". add_note uporabljaj SAMO za splošne opombe k celotnemu naročilu.
+3b) NIKOLI ne izpisuj menija ali seznama jedi v besedilu — ponudba se stranki prikaže IZKLJUČNO prek show_menu. Če stranka prosi za PRIPOROČILO ("kaj mi priporočaš?"), priporoči 1 do 2 artikla (ime in ceno) in vprašaj, ali ju dodaš v košarico — pri tem NE kliči show_menu in NE izpisuj drugih jedi.
+4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Posebnost za artikel dodaj kot note parameter v add_to_cart (ne z add_note). POZOR pri količinah s posebnostjo: "1 brez gob" ali "eno brez gob" pomeni SAMO EN kos z note:"brez gob" — NE dodajaj še navadnega! Vrstici loči SAMO, kadar je skupna količina VEČJA od količine s posebnostjo: "2, ena brez gob" pomeni add_to_cart(qty:1) + add_to_cart(qty:1, note:"brez gob"); "3, dve brez gob" pomeni add_to_cart(qty:1) + add_to_cart(qty:2, note:"brez gob"). add_note uporabljaj SAMO za splošne opombe k celotnemu naročilu.
 4b) Če dobiš sporočilo oblike [IZBRANO Z MENIJA: X], je stranka pravkar izbrala artikel X z menija — vprašaj jo naravno po količini in posebnostih za X. add_to_cart uporabi ŠELE, ko pove količino.
 5) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek artiklov, ter vprašaj: "Želite še kaj?"
 6) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
@@ -98,7 +118,8 @@ POTEK POGOVORA:
 Nikoli si ne izmišljuj artiklov ali cen — ponujaš samo z menija. Ne obljubljaj časov dostave in ne izmišljuj akcij.
 ZANESLJIVOST (ZELO POMEMBNO):
 - Podatki v STANJE ZAKLJUČKA so ŽE ZBRANI. NIKOLI ne vprašaj znova za podatek, ki tam že obstaja, in se NIKOLI ne opravičuj, da je "prišlo do napake" — nadaljuj pri prvem manjkajočem podatku.
-- Ko stranka po povzetku odgovori pritrdilno ("da", "ja", "potrjujem", "potrdi"), TAKOJ pokliči confirm_order — NE ponavljaj povzetka in NE postavljaj novih vprašanj.
+- Ko stranka po povzetku odgovori pritrdilno ("da", "ja", "potrjujem", "potrdi", "lahko", "oddaj"), TAKOJ pokliči confirm_order — NE ponavljaj povzetka in NE postavljaj novih vprašanj.
+- Povzetek z vprašanjem "Potrjujete naročilo?" pošlji NATANKO ENKRAT. Če si ga v zgodovini že poslal, ga NE ponavljaj: ob pritrdilnem odgovoru pokliči confirm_order, ob nejasnem pa vprašaj samo "Potrjujete naročilo?" — brez povzetka. Nikoli ne pošlji dveh podobnih sporočil zapored.
 - Povzetek pred potrditvijo mora VEDNO vsebovati: vsako postavko (s posebnostjo) v svoji vrstici, vrstice Artikli / Embalaža / Dostava (pri dostavi) / SKUPAJ — točno tako, kot so v rezultatu orodja.
 - Pri osebnem prevzemu v povzetku VEDNO navedi embalažo (če se zaračuna) in SKUPAJ; pri dostavi VEDNO tudi dostavo.
 MENI:
@@ -109,135 +130,183 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`
     + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), jo dodaj kot note parameter v add_to_cart (npr. add_to_cart({item: "${pendingItem.name}", qty: 1, note: "brez gob"})).` : '');
 
-  const messages = [{ role: 'system', content: sys }, ...history.slice(-30), { role: 'user', content: message }];
   let action = null;
   let newCart = cart.map(i => ({ ...i }));
   const notes = [];
   const newOrder = { mode: order.mode || null, name: order.name || null, address: order.address || null };
 
+  // Skupna izvedba orodij za oba ponudnika
+  const execTool = async (name, input) => {
+    let result = '';
+    switch (name) {
+      case 'show_menu':
+        action = action || 'show_menu';
+        result = 'Interaktivni meni bo prikazan stranki.';
+        break;
+      case 'add_to_cart': {
+        const svc = findService(services, input.item);
+        if (!svc) { result = `Artikla "${input.item}" ni na meniju. Predlagaj podobnega z menija.`; break; }
+        const qty = Math.min(Math.max(parseInt(input.qty) || 1, 1), 50);
+        const itemNote = String(input.note || '').trim().slice(0, 200);
+        // Če ima artikel opombo, vedno dodaj kot ločen vnos (ne združuj z obstoječim)
+        if (itemNote) {
+          newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty, note: itemNote });
+        } else {
+          const ex = newCart.find(c => String(c.id) === String(svc.id) && !c.note);
+          if (ex) ex.qty = (ex.qty || 1) + qty;
+          else newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty });
+        }
+        action = action || 'show_cart';
+        result = `Dodano: ${svc.name} x${qty}${itemNote ? ` (${itemNote})` : ''} (${svc.price} €/kos). Košarica: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}.`;
+        break;
+      }
+      case 'remove_from_cart': {
+        const svc = findService(newCart, input.item);
+        if (svc) {
+          newCart = newCart.filter(c => String(c.id) !== String(svc.id));
+          action = action || 'show_cart';
+          result = `Odstranjeno: ${svc.name}. Košarica: ${newCart.length ? newCart.map(i => `${i.name} x${i.qty}`).join(', ') : 'prazna'}.`;
+        } else result = 'Tega artikla ni v košarici.';
+        break;
+      }
+      case 'repeat_last_order': {
+        const items = await db.getLastOrderItemsByPhone(salon.id, phone);
+        if (!items.length) { result = 'Stranka še nima prejšnjega naročila — ponudi meni.'; break; }
+        for (const it of items) {
+          const key = it.service_id || it.name;
+          const ex = newCart.find(c => String(c.id) === String(key));
+          if (ex) ex.qty = (ex.qty || 1) + (it.quantity || 1);
+          else newCart.push({ id: key, name: it.name, price: parseFloat(it.price) || 0, qty: it.quantity || 1 });
+        }
+        action = action || 'show_cart';
+        result = `Dodano zadnje naročilo: ${items.map(i => `${i.name} x${i.quantity || 1}`).join(', ')}.`;
+        break;
+      }
+      case 'add_note': {
+        const note = String(input.note || '').trim().slice(0, 200);
+        if (note) { notes.push(note); result = `Opomba zabeležena: "${note}". Potrdi stranki in vprašaj, ali želi še kaj.`; }
+        else result = 'Opomba je prazna.';
+        break;
+      }
+      case 'checkout': {
+        if (!newCart.length) { result = 'Košarica je prazna — stranka naj najprej kaj izbere.'; break; }
+        const modes = [salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean);
+        result = modes.length > 1
+          ? `Začni zaključek: vprašaj stranko, ali želi ${modes.join(' ali ')}.`
+          : `Na voljo je samo ${modes[0]} — uporabi set_mode('${modes[0] === 'dostava' ? 'dostava' : 'prevzem'}') in nadaljuj z imenom.`;
+        break;
+      }
+      case 'set_mode': {
+        const m = String(input.mode || '').toLowerCase().includes('prev') ? 'prevzem' : 'dostava';
+        if (m === 'dostava' && salon.allow_delivery === false) { result = 'Dostava ni na voljo — ponudi osebni prevzem.'; break; }
+        if (m === 'prevzem' && salon.allow_pickup === false) { result = 'Osebni prevzem ni na voljo — ponudi dostavo.'; break; }
+        newOrder.mode = m;
+        const tt = computeTotals(salon, newCart, m);
+        result = m === 'prevzem'
+          ? `Način zabeležen: osebni prevzem. ${salon.pickup_address ? `POVEJ stranki: "Prevzem bo na naslovu ${salon.pickup_address}." ` : ''}NIKOLI ne sprašuj stranke za naslov prevzema. ${tt.text} Zdaj vprašaj SAMO za ime in priimek.`
+          : `Način zabeležen: dostava. ${tt.text} Zdaj vprašaj SAMO za ime in priimek — brez omembe območja dostave.`;
+        break;
+      }
+      case 'set_name': {
+        const nm = String(input.name || '').trim().slice(0, 80);
+        if (!nm) { result = 'Ime je prazno — vprašaj znova.'; break; }
+        newOrder.name = nm;
+        result = (newOrder.mode === 'dostava' && !newOrder.address)
+          ? `Ime zabeleženo. Zdaj vprašaj SAMO: "Prosim, napišite naslov za dostavo." — brez zahvale, brez ponavljanja imena in brez omembe območja dostave.`
+          : `Ime zabeleženo. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke in TOČNO te zneske ter vprašaj: "Potrjujete naročilo?"`;
+        break;
+      }
+      case 'set_address': {
+        const ad = String(input.address || '').trim().slice(0, 200);
+        if (!ad) { result = 'Naslov je prazen — vprašaj znova.'; break; }
+        newOrder.address = ad;
+        result = `Naslov zabeležen. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke (s posebnostmi), naslov in TOČNO te zneske (Artikli/Embalaža/Dostava/SKUPAJ) ter vprašaj: "Potrjujete naročilo?"`;
+        break;
+      }
+      case 'confirm_order': {
+        const missing = [];
+        if (!newCart.length) missing.push('košarica je prazna');
+        if (!newOrder.mode) missing.push('način prevzema');
+        if (!newOrder.name) missing.push('ime');
+        if (newOrder.mode === 'dostava' && !newOrder.address) missing.push('naslov dostave');
+        if (missing.length) { result = 'Naročila še ni mogoče oddati, manjka: ' + missing.join(', ') + '. Vprašaj stranko po manjkajočem.'; break; }
+        action = 'confirm';
+        result = 'Naročilo se oddaja — sistem pošlje stranki potrditev z referenčno številko.';
+        break;
+      }
+      default:
+        result = 'Neznano orodje.';
+    }
+    return result;
+  };
+
+  const done = (text) => ({ reply: stripEmoji(text || ''), cart: newCart, action, note: notes.join('; ') || null, order: newOrder });
+
+  // ── Claude (Anthropic Messages API) s prompt cachingom ──
+  if (PROVIDER() === 'anthropic') {
+    const aMessages = [
+      ...history.slice(-30).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content || '...') })),
+      { role: 'user', content: message }
+    ];
+    for (let round = 0; round < 3; round++) {
+      const r = await axios.post('https://api.anthropic.com/v1/messages', {
+        model: MODEL(),
+        max_tokens: 300,
+        temperature: 0.4,
+        // cache_control: sistemska navodila + meni + orodja se predpomnijo (90 % ceneje)
+        system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
+        tools: TOOLS.map(t => ({ name: t.function.name, description: t.function.description, input_schema: t.function.parameters })),
+        messages: aMessages
+      }, {
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json'
+        },
+        timeout: 20000
+      });
+      const content = r.data.content || [];
+      const toolUses = content.filter(b => b.type === 'tool_use');
+      const textOut = content.filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+      if (!toolUses.length) return done(textOut);
+      aMessages.push({ role: 'assistant', content });
+      const results = [];
+      for (const tu of toolUses) {
+        results.push({ type: 'tool_result', tool_use_id: tu.id, content: await execTool(tu.name, tu.input || {}) });
+      }
+      aMessages.push({ role: 'user', content: results });
+      if (action === 'confirm') return done();
+    }
+    return done();
+  }
+
+  // ── OpenAI ali Gemini (Google ponuja OpenAI-kompatibilen API) ──
+  const isGemini = PROVIDER() === 'gemini';
+  const apiUrl = isGemini
+    ? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'
+    : 'https://api.openai.com/v1/chat/completions';
+  const apiKey = isGemini ? process.env.GEMINI_API_KEY : process.env.OPENAI_API_KEY;
+  const messages = [{ role: 'system', content: sys }, ...history.slice(-30), { role: 'user', content: message }];
   for (let round = 0; round < 3; round++) {
-    const r = await axios.post('https://api.openai.com/v1/chat/completions', {
+    const r = await axios.post(apiUrl, {
       model: MODEL(), max_tokens: 300, temperature: 0.4, tools: TOOLS, tool_choice: 'auto', messages
     }, {
-      headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       timeout: 20000
     });
     const choice = r.data.choices[0];
     if (choice.finish_reason !== 'tool_calls' || !choice.message.tool_calls) {
-      return { reply: (choice.message.content || '').trim(), cart: newCart, action, note: notes.join('; ') || null, order: newOrder };
+      return done(choice.message.content);
     }
     messages.push(choice.message);
     for (const tc of choice.message.tool_calls) {
       let input = {};
       try { input = JSON.parse(tc.function.arguments || '{}'); } catch (_) {}
-      let result = '';
-      switch (tc.function.name) {
-        case 'show_menu':
-          action = action || 'show_menu';
-          result = 'Interaktivni meni bo prikazan stranki.';
-          break;
-        case 'add_to_cart': {
-          const svc = findService(services, input.item);
-          if (!svc) { result = `Artikla "${input.item}" ni na meniju. Predlagaj podobnega z menija.`; break; }
-          const qty = Math.min(Math.max(parseInt(input.qty) || 1, 1), 50);
-          const itemNote = String(input.note || '').trim().slice(0, 200);
-          // Če ima artikel opombo, vedno dodaj kot ločen vnos (ne združuj z obstoječim)
-          if (itemNote) {
-            newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty, note: itemNote });
-          } else {
-            const ex = newCart.find(c => String(c.id) === String(svc.id) && !c.note);
-            if (ex) ex.qty = (ex.qty || 1) + qty;
-            else newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty });
-          }
-          action = action || 'show_cart';
-          result = `Dodano: ${svc.name} x${qty}${itemNote ? ` (${itemNote})` : ''} (${svc.price} €/kos). Košarica: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}.`;
-          break;
-        }
-        case 'remove_from_cart': {
-          const svc = findService(newCart, input.item);
-          if (svc) {
-            newCart = newCart.filter(c => String(c.id) !== String(svc.id));
-            action = action || 'show_cart';
-            result = `Odstranjeno: ${svc.name}. Košarica: ${newCart.length ? newCart.map(i => `${i.name} x${i.qty}`).join(', ') : 'prazna'}.`;
-          } else result = 'Tega artikla ni v košarici.';
-          break;
-        }
-        case 'repeat_last_order': {
-          const items = await db.getLastOrderItemsByPhone(salon.id, phone);
-          if (!items.length) { result = 'Stranka še nima prejšnjega naročila — ponudi meni.'; break; }
-          for (const it of items) {
-            const key = it.service_id || it.name;
-            const ex = newCart.find(c => String(c.id) === String(key));
-            if (ex) ex.qty = (ex.qty || 1) + (it.quantity || 1);
-            else newCart.push({ id: key, name: it.name, price: parseFloat(it.price) || 0, qty: it.quantity || 1 });
-          }
-          action = action || 'show_cart';
-          result = `Dodano zadnje naročilo: ${items.map(i => `${i.name} x${i.quantity || 1}`).join(', ')}.`;
-          break;
-        }
-        case 'add_note': {
-          const note = String(input.note || '').trim().slice(0, 200);
-          if (note) { notes.push(note); result = `Opomba zabeležena: "${note}". Potrdi stranki in vprašaj, ali želi še kaj.`; }
-          else result = 'Opomba je prazna.';
-          break;
-        }
-        case 'checkout': {
-          if (!newCart.length) { result = 'Košarica je prazna — stranka naj najprej kaj izbere.'; break; }
-          const modes = [salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean);
-          result = modes.length > 1
-            ? `Začni zaključek: vprašaj stranko, ali želi ${modes.join(' ali ')}.`
-            : `Na voljo je samo ${modes[0]} — uporabi set_mode('${modes[0] === 'dostava' ? 'dostava' : 'prevzem'}') in nadaljuj z imenom.`;
-          break;
-        }
-        case 'set_mode': {
-          const m = String(input.mode || '').toLowerCase().includes('prev') ? 'prevzem' : 'dostava';
-          if (m === 'dostava' && salon.allow_delivery === false) { result = 'Dostava ni na voljo — ponudi osebni prevzem.'; break; }
-          if (m === 'prevzem' && salon.allow_pickup === false) { result = 'Osebni prevzem ni na voljo — ponudi dostavo.'; break; }
-          newOrder.mode = m;
-          const tt = computeTotals(salon, newCart, m);
-          result = m === 'prevzem'
-            ? `Način zabeležen: osebni prevzem. ${salon.pickup_address ? `POVEJ stranki: "Prevzem bo na naslovu ${salon.pickup_address}." ` : ''}NIKOLI ne sprašuj stranke za naslov prevzema. ${tt.text} Zdaj vprašaj SAMO za ime in priimek.`
-            : `Način zabeležen: dostava. ${tt.text} Zdaj vprašaj SAMO za ime in priimek — brez omembe območja dostave.`;
-          break;
-        }
-        case 'set_name': {
-          const nm = String(input.name || '').trim().slice(0, 80);
-          if (!nm) { result = 'Ime je prazno — vprašaj znova.'; break; }
-          newOrder.name = nm;
-          result = (newOrder.mode === 'dostava' && !newOrder.address)
-            ? `Ime zabeleženo. Zdaj vprašaj SAMO: "Prosim, napišite naslov za dostavo." — brez zahvale, brez ponavljanja imena in brez omembe območja dostave.`
-            : `Ime zabeleženo. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke in TOČNO te zneske ter vprašaj: "Potrjujete naročilo?"`;
-          break;
-        }
-        case 'set_address': {
-          const ad = String(input.address || '').trim().slice(0, 200);
-          if (!ad) { result = 'Naslov je prazen — vprašaj znova.'; break; }
-          newOrder.address = ad;
-          result = `Naslov zabeležen. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke (s posebnostmi), naslov in TOČNO te zneske (Artikli/Embalaža/Dostava/SKUPAJ) ter vprašaj: "Potrjujete naročilo?"`;
-          break;
-        }
-        case 'confirm_order': {
-          const missing = [];
-          if (!newCart.length) missing.push('košarica je prazna');
-          if (!newOrder.mode) missing.push('način prevzema');
-          if (!newOrder.name) missing.push('ime');
-          if (newOrder.mode === 'dostava' && !newOrder.address) missing.push('naslov dostave');
-          if (missing.length) { result = 'Naročila še ni mogoče oddati, manjka: ' + missing.join(', ') + '. Vprašaj stranko po manjkajočem.'; break; }
-          action = 'confirm';
-          result = 'Naročilo se oddaja — sistem pošlje stranki potrditev z referenčno številko.';
-          break;
-        }
-        default:
-          result = 'Neznano orodje.';
-      }
-      messages.push({ role: 'tool', tool_call_id: tc.id, content: result });
+      messages.push({ role: 'tool', tool_call_id: tc.id, content: await execTool(tc.function.name, input) });
     }
-    // Ob potrditvi naročila ne sprašujemo AI naprej — potrditev pošlje sistem
-    if (action === 'confirm') {
-      return { reply: '', cart: newCart, action, note: notes.join('; ') || null, order: newOrder };
-    }
+    if (action === 'confirm') return done();
   }
-  return { reply: '', cart: newCart, action, note: notes.join('; ') || null, order: newOrder };
+  return done();
 }
 
-module.exports = { askOrderAI, findService, computeTotals };
+module.exports = { askOrderAI, findService, computeTotals, aiConfigured };
