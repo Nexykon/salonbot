@@ -1024,6 +1024,16 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
+    // ── AI paket: zahteva za meni = VEDNO interaktivni seznam (deterministično, tudi večkrat) ──
+    if (msgText && !iId && salon.subscription_plan === 'ai' && msgText.length < 60
+        && /(^|\s)(meni|menij|jedilnik|ponudb\w*|cenik)\b/i.test(msgText)
+        && !/(ime|priimek)/i.test(msgText)) {
+      const curM = session.get(skey);
+      const menuSalonM = { ...salon, greeting_message: 'Izvolite meni:' };
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalonM, cartSummaryShort(curM.cart)));
+      return;
+    }
+
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && !(sess.cart || []).length && !sess.checkoutStage
         && /^\s*(da|ja|jaa|seveda|lahko|prosim|ok|okej|velja|zelim|želim|hočem|hocem|bi|itak)\b/i.test(msgText.trim())) {
@@ -1164,6 +1174,11 @@ async function handleMessage(msgObj, salon) {
           // AI je pozdravil sam — telo menija brez pozdravnega sporočila lokala
           const menuSalon = { ...salon, greeting_message: 'Izberite artikel iz menija:' };
           await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalon, cartSummaryShort(result.cart)));
+          sentSomething = true;
+        } else if (!result.action && result.reply && /(izvoli|tukaj je|pošiljam|posiljam|prilagam|na voljo je|naš men|nas men)/i.test(result.reply) && /meni|jedilnik|ponudb/i.test(result.reply)) {
+          // Varovalka: AI je "obljubil" meni, a ni poklical orodja -> pošljemo ga mi
+          const menuSalonF = { ...salon, greeting_message: 'Izvolite meni:' };
+          await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalonF, cartSummaryShort(result.cart)));
           sentSomething = true;
         } else if (result.action === 'show_cart' && result.cart.length && !result.reply) {
           await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
