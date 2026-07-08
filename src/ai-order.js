@@ -80,7 +80,7 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
   const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area}` : '';
   const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini. NE uporabljaj emojijev.
 POTEK POGOVORA:
-1) Ob prvem sporočilu stranko prijazno pozdravi v imenu restavracije in jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj in območja dostave še NE omenjaj.
+1) Ob prvem sporočilu stranko prijazno pozdravi in pri tem VEDNO povej ime restavracije "${salon.name}" ter jo vprašaj, ali želi kaj naročiti — menija še NE prikazuj in območja dostave še NE omenjaj.
 2) Ko stranka potrdi, da želi naročiti: če je navedeno OBMOČJE DOSTAVE, ji najprej povej npr. "Samo da vas obvestimo — dostavljamo po [območje]." in vprašaj: "Vam smem ponuditi meni?" — menija še NE prikazuj.
 3) Ko stranka pritrdi (ali sama vpraša po ponudbi), pokliči show_menu.
 4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Posebnost za artikel dodaj kot note parameter v add_to_cart (ne z add_note). Če stranka naroči isto jed z RAZLIČNIMI posebnostmi (npr. "2 pici, ena brez sira"), kliči add_to_cart DVAKRAT: enkrat qty:1 brez note, enkrat qty:1 z note:"brez sira". add_note uporabljaj SAMO za splošne opombe k celotnemu naročilu.
@@ -96,6 +96,11 @@ POTEK POGOVORA:
    d. povzemi CELOTNO naročilo (artikli, opomba, način prevzema, pri dostavi tudi naslov stranke, znesek SKUPAJ iz rezultata orodja) in vprašaj "Potrjujete naročilo?",
    e. ŠELE ko stranka izrecno potrdi, uporabi confirm_order. Zneske vedno vzemi iz rezultatov orodij, nikoli jih ne računaj sam.
 Nikoli si ne izmišljuj artiklov ali cen — ponujaš samo z menija. Ne obljubljaj časov dostave in ne izmišljuj akcij.
+ZANESLJIVOST (ZELO POMEMBNO):
+- Podatki v STANJE ZAKLJUČKA so ŽE ZBRANI. NIKOLI ne vprašaj znova za podatek, ki tam že obstaja, in se NIKOLI ne opravičuj, da je "prišlo do napake" — nadaljuj pri prvem manjkajočem podatku.
+- Ko stranka po povzetku odgovori pritrdilno ("da", "ja", "potrjujem", "potrdi"), TAKOJ pokliči confirm_order — NE ponavljaj povzetka in NE postavljaj novih vprašanj.
+- Povzetek pred potrditvijo mora VEDNO vsebovati: vsako postavko (s posebnostjo) v svoji vrstici, vrstice Artikli / Embalaža / Dostava (pri dostavi) / SKUPAJ — točno tako, kot so v rezultatu orodja.
+- Pri osebnem prevzemu v povzetku VEDNO navedi embalažo (če se zaračuna) in SKUPAJ; pri dostavi VEDNO tudi dostavo.
 MENI:
 ${menuText}
 TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine
@@ -190,7 +195,9 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           if (m === 'prevzem' && salon.allow_pickup === false) { result = 'Osebni prevzem ni na voljo — ponudi dostavo.'; break; }
           newOrder.mode = m;
           const tt = computeTotals(salon, newCart, m);
-          result = `Način zabeležen: ${m === 'prevzem' ? 'osebni prevzem' + (salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : '') : 'dostava'}. ${tt.text} Zdaj vprašaj stranko za ime in priimek.`;
+          result = m === 'prevzem'
+            ? `Način zabeležen: osebni prevzem. ${salon.pickup_address ? `POVEJ stranki: "Prevzem bo na naslovu ${salon.pickup_address}." ` : ''}NIKOLI ne sprašuj stranke za naslov prevzema. ${tt.text} Zdaj vprašaj SAMO za ime in priimek.`
+            : `Način zabeležen: dostava. ${tt.text} Zdaj vprašaj SAMO za ime in priimek — brez omembe območja dostave.`;
           break;
         }
         case 'set_name': {
@@ -198,15 +205,15 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           if (!nm) { result = 'Ime je prazno — vprašaj znova.'; break; }
           newOrder.name = nm;
           result = (newOrder.mode === 'dostava' && !newOrder.address)
-            ? `Ime zabeleženo. Zdaj vprašaj za naslov dostave${salon.delivery_area ? ` (dostavljamo: ${salon.delivery_area})` : ''}.`
-            : `Ime zabeleženo. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi naročilo in vprašaj za potrditev.`;
+            ? `Ime zabeleženo. Zdaj vprašaj SAMO: "Prosim, napišite naslov za dostavo." — brez zahvale, brez ponavljanja imena in brez omembe območja dostave.`
+            : `Ime zabeleženo. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke in TOČNO te zneske ter vprašaj: "Potrjujete naročilo?"`;
           break;
         }
         case 'set_address': {
           const ad = String(input.address || '').trim().slice(0, 200);
           if (!ad) { result = 'Naslov je prazen — vprašaj znova.'; break; }
           newOrder.address = ad;
-          result = `Naslov zabeležen. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi celotno naročilo (artikli, opomba, način, naslov, SKUPAJ) in vprašaj stranko: "Potrjujete naročilo?"`;
+          result = `Naslov zabeležen. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke (s posebnostmi), naslov in TOČNO te zneske (Artikli/Embalaža/Dostava/SKUPAJ) ter vprašaj: "Potrjujete naročilo?"`;
           break;
         }
         case 'confirm_order': {

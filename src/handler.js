@@ -580,7 +580,8 @@ async function handleMessage(msgObj, salon) {
       return cart.map(item => {
         const q = item.qty || 1;
         const lineTotal = (parseFloat(item.price || 0) * q).toFixed(2);
-        return q > 1 ? `• ${item.name} x${q} — ${lineTotal} €` : `• ${item.name} — ${lineTotal} €`;
+        const nm = item.note ? `${item.name} (${item.note})` : item.name;
+        return q > 1 ? `• ${nm} x${q} — ${lineTotal} €` : `• ${nm} — ${lineTotal} €`;
       }).join('\n');
     }
     function cartTotal(cart) {
@@ -673,7 +674,7 @@ async function handleMessage(msgObj, salon) {
         if (isAiPlan) {
           const item = sess.pendingItem;
           const cart = sess.cart || [];
-          const ex = cart.find(c => String(c.id) === String(item.id));
+          const ex = cart.find(c => String(c.id) === String(item.id) && !c.note);
           if (ex) ex.qty = (ex.qty || 1) + qty306;
           else cart.push({ ...item, qty: qty306 });
           session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
@@ -955,6 +956,17 @@ async function handleMessage(msgObj, salon) {
     // ── "zaključi" gre direktno v zaključek (brez AI ovinka) ──
     if (msgText && !iId && salon.subscription_plan !== 'ai' && /^\s*zaklju[čc]i?\b/i.test(msgText) && (sess.cart || []).length) {
       await startCheckout();
+      return;
+    }
+
+    // ── AI paket: pritrdilen odgovor ob popolnih podatkih VEDNO odda naročilo ──
+    if (msgText && !iId && salon.subscription_plan === 'ai'
+        && /^\s*(da|ja|jaa|potrjujem|potrdim|potrdi|seveda|ok|okej|velja|dajmo)\b/i.test(msgText)
+        && (sess.cart || []).length && sess.orderMode && sess.customerName
+        && (sess.orderMode !== 'dostava' || sess.deliveryAddress)) {
+      const totF = computeTotals(salon, sess.cart, sess.orderMode);
+      session.set(skey, { ...sess, step: 305, grandTotal: totF.grand, packFee: totF.packFee, delFee: totF.delFee });
+      await finalizeOrder();
       return;
     }
 
