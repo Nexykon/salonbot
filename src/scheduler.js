@@ -154,6 +154,8 @@ async function sendDailySummary() {
   try {
     const salon = await db.getSalon();
     if (!salon || !ADMIN_PHONE) return;
+    // Delivery/gostilne nimajo rezervacij — povzetek ne paše
+    if (salon.booking_mode === 'delivery') return;
 
     const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
     const token = salon.whatsapp_access_token || process.env.WA_TOKEN;

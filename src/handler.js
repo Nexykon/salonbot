@@ -719,7 +719,7 @@ async function handleMessage(msgObj, salon) {
           const feeNote = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*.`
+            `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
           ));
         } else {
           await addQtyToCart(qty306);
@@ -1060,7 +1060,7 @@ async function handleMessage(msgObj, salon) {
           const feeN = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cur.cart)} €*${feeN}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*.`
+            `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cur.cart)} €*${feeN}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
           ));
           return;
         }
@@ -1098,7 +1098,7 @@ async function handleMessage(msgObj, salon) {
           const feeN2 = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart2)} €*${feeN2}\n\nŽelite še kaj? Povejte kar po domače ali napišite *zaključi*.`
+            `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart2)} €*${feeN2}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
           ));
           return;
         }
@@ -1118,10 +1118,11 @@ async function handleMessage(msgObj, salon) {
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && !(sess.cart || []).length && !sess.checkoutStage
         && /^\s*(da|ja|jaa|seveda|lahko|prosim|ok|okej|velja|zelim|želim|hočem|hocem|bi|itak)\b/i.test(msgText.trim())) {
-      const cancelHint = '\n_Naročilo lahko kadar koli prekličete tako, da napišete *prekliči*._';
-      const areaMsg = (salon.delivery_area ? `Samo da vas obvestimo — dostavljamo po ${salon.delivery_area}.${cancelHint}\n\nIzvolite meni:` : `Izvolite meni:${cancelHint}`);
+      const cancelHint = sess.hintShown ? '' : '\n_Naročilo lahko kadar koli prekličete tako, da napišete *prekliči*._';
+      const areaPrefix = (salon.delivery_area && !sess.areaShown) ? `Samo da vas obvestimo — dostavljamo po ${salon.delivery_area}.` : '';
+      const areaMsg = [areaPrefix, cancelHint ? cancelHint.trim() : '', 'Izvolite meni:'].filter(Boolean).join('\n\n').trim() || 'Izvolite meni:';
       const hist0 = sess.aiHistory || [];
-      session.set(skey, { ...sess, step: 300, aiHistory: [...hist0, { role: 'user', content: msgText }, { role: 'assistant', content: areaMsg }].slice(-30) });
+      session.set(skey, { ...sess, step: 300, hintShown: true, areaShown: true, aiHistory: [...hist0, { role: 'user', content: msgText }, { role: 'assistant', content: areaMsg }].slice(-60) });
       const menuSalon0 = { ...salon, greeting_message: areaMsg };
       await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalon0, null));
       return;
