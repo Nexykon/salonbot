@@ -307,6 +307,18 @@ app.post('/webhook', async (req, res) => {
   } catch (err) {
     console.error('Handler error:', err.message);
     try { await db.logError(salon?.id, 'handler', err.message, err.stack); } catch(_) {}
+    // Varnostna mreža: stranka nikoli ne sme dobiti tišine
+    try {
+      const entryErr = req.body?.entry?.[0]?.changes?.[0]?.value;
+      const fromErr = entryErr?.messages?.[0]?.from;
+      if (salon && fromErr) {
+        const phoneIdErr = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
+        const tokenErr = salon.whatsapp_access_token || process.env.WA_TOKEN;
+        await wa.send(phoneIdErr, tokenErr, wa.textMsg(fromErr,
+          'Ojoj, prišlo je do kratke tehnične težave. Prosim, pošljite sporočilo še enkrat.'
+        ));
+      }
+    } catch (_) {}
   }
 });
 

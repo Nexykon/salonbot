@@ -641,15 +641,15 @@ async function getOrderItemsBysalon(salonId, since) {
 
 async function saveAiSession(salonId, phone, data) {
   try {
-    await axios.post(`${BASE}/ai_sessions`, { salon_id: salonId, phone, data, updated_at: new Date().toISOString() }, {
-      headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates' }
+    await axios.post(`${BASE}/ai_sessions?on_conflict=salon_id,phone`, { salon_id: salonId, phone, data, updated_at: new Date().toISOString() }, {
+      headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' }
     });
   } catch (e) { /* tiho — seja je samo optimizacija */ }
 }
 
 async function loadAiSession(salonId, phone) {
   try {
-    const r = await axios.get(`${BASE}/ai_sessions?salon_id=eq.${encodeURIComponent(salonId)}&phone=eq.${encodeURIComponent(phone)}&select=data,updated_at`, { headers: HEADERS });
+    const r = await axios.get(`${BASE}/ai_sessions?salon_id=eq.${encodeURIComponent(salonId)}&phone=eq.${encodeURIComponent(phone)}&select=data,updated_at&order=updated_at.desc&limit=1`, { headers: HEADERS });
     const row = r.data?.[0];
     if (!row) return null;
     // Seja je stara > 24h → ignoriraj
@@ -683,5 +683,6 @@ module.exports = {
   logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonsByOwnerEmail, getSalonByToken,
   updateSalonSettings,
-  getMasterAdminByEmail, getMasterAdminByResetTokenHash, updateMasterAdmin
+  getMasterAdminByEmail, getMasterAdminByResetTokenHash, updateMasterAdmin,
+  saveAiSession, loadAiSession, clearAiSession
 };

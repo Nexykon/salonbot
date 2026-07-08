@@ -989,14 +989,16 @@ async function handleMessage(msgObj, salon) {
     // ── AI natakar (paket AI): prosto besedilo razume in upravlja košarico ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && aiConfigured()) {
       // Fair-use: meja na lokal (ai_monthly_limit, npr. Enterprise 10000) ali privzeta iz env
-      if (sess.aiAllowed === undefined) {
+      const fuMonth = t.todayStr().slice(0, 7);
+      if (sess.aiAllowed === undefined || sess.aiAllowedMonth !== fuMonth) {
         const fuLimit = (parseInt(salon.ai_monthly_limit) > 0)
           ? parseInt(salon.ai_monthly_limit)
           : (parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500);
         const cnt = await db.getMonthlyOrderCount(salon.id).catch(() => 0);
         sess.aiAllowed = cnt < fuLimit;
         if (!sess.aiAllowed) notifyFairUse(salon, cnt, fuLimit).catch(e => console.error('[fair-use]', e.message));
-        session.set(skey, { ...session.get(skey), aiAllowed: sess.aiAllowed });
+        sess.aiAllowedMonth = fuMonth;
+        session.set(skey, { ...session.get(skey), aiAllowed: sess.aiAllowed, aiAllowedMonth: fuMonth });
       }
       if (sess.aiAllowed) try {
         const history = sess.aiHistory || [];
@@ -1035,13 +1037,28 @@ async function handleMessage(msgObj, salon) {
           await finalizeOrder();
           return;
         }
-        if (result.reply) await wa.send(phoneId, token, wa.textMsg(from, result.reply));
+        let sentSomething = false;
+        if (result.reply) {
+          await wa.send(phoneId, token, wa.textMsg(from, result.reply));
+          sentSomething = true;
+        }
         if (result.action === 'show_menu') {
           // AI je pozdravil sam — telo menija brez pozdravnega sporočila lokala
           const menuSalon = { ...salon, greeting_message: 'Izberite artikel iz menija:' };
           await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalon, cartSummaryShort(result.cart)));
+          sentSomething = true;
         } else if (result.action === 'show_cart' && result.cart.length && !result.reply) {
           await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(result.cart), cartTotal(result.cart)));
+          sentSomething = true;
+        }
+        // GARANTIRAN ODGOVOR: nikoli mrtve tišine
+        if (!sentSomething) {
+          const curG = session.get(skey);
+          if ((curG.cart || []).length) {
+            await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(curG.cart), cartTotal(curG.cart)));
+          } else {
+            await wa.send(phoneId, token, wa.textMsg(from, 'Oprostite, tega nisem najbolje razumel. Mi lahko poveste še enkrat? Z veseljem pomagam z naročilom.'));
+          }
         }
         return;
       } catch (e) {
