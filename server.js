@@ -799,7 +799,8 @@ app.get('/api/admin/salons/:id/settings', async (req, res) => {
       owner_name: salon.owner_name || '',
       owner_email: salon.owner_email || '',
       owner_password_configured: !!salon.owner_password_hash,
-      custom_price_id: salon.custom_price_id || ''
+      custom_price_id: salon.custom_price_id || '',
+      ai_monthly_limit: parseInt(salon.ai_monthly_limit) || 0
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -829,11 +830,14 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'reactivation_message',
     'notify_whatsapp', 'auto_confirm',
     'notify_email', 'booking_confirmation_message',
-    'custom_price_id'
+    'custom_price_id', 'ai_monthly_limit'
   ];
   const updates = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) updates[key] = req.body[key];
+  }
+  if (updates.ai_monthly_limit !== undefined) {
+    updates.ai_monthly_limit = Math.max(0, parseInt(updates.ai_monthly_limit) || 0);
   }
   if (updates.custom_price_id !== undefined) {
     const cp = String(updates.custom_price_id).trim();
@@ -1244,10 +1248,13 @@ app.get('/api/admin/usage', async (req, res) => {
   try {
     const salons = await db.getAllSalons();
     const usage = {};
+    const limits = {};
+    const defLimit = parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500;
     await Promise.all(salons.map(async (s) => {
       usage[s.id] = await db.getMonthlyOrderCount(s.id).catch(() => 0);
+      limits[s.id] = (parseInt(s.ai_monthly_limit) > 0) ? parseInt(s.ai_monthly_limit) : defLimit;
     }));
-    res.json({ usage, month: t.todayStr().slice(0, 7), limit: parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500 });
+    res.json({ usage, limits, month: t.todayStr().slice(0, 7), limit: defLimit });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

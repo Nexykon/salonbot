@@ -988,15 +988,14 @@ async function handleMessage(msgObj, salon) {
 
     // ── AI natakar (paket AI): prosto besedilo razume in upravlja košarico ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && aiConfigured()) {
-      // Fair-use: standardni AI paket do AI_FAIR_USE_LIMIT naročil/mesec; Enterprise (cena po meri) brez omejitve
+      // Fair-use: meja na lokal (ai_monthly_limit, npr. Enterprise 10000) ali privzeta iz env
       if (sess.aiAllowed === undefined) {
-        if (salon.custom_price_id) sess.aiAllowed = true;
-        else {
-          const fuLimit = parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500;
-          const cnt = await db.getMonthlyOrderCount(salon.id).catch(() => 0);
-          sess.aiAllowed = cnt < fuLimit;
-          if (!sess.aiAllowed) notifyFairUse(salon, cnt, fuLimit).catch(e => console.error('[fair-use]', e.message));
-        }
+        const fuLimit = (parseInt(salon.ai_monthly_limit) > 0)
+          ? parseInt(salon.ai_monthly_limit)
+          : (parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500);
+        const cnt = await db.getMonthlyOrderCount(salon.id).catch(() => 0);
+        sess.aiAllowed = cnt < fuLimit;
+        if (!sess.aiAllowed) notifyFairUse(salon, cnt, fuLimit).catch(e => console.error('[fair-use]', e.message));
         session.set(skey, { ...session.get(skey), aiAllowed: sess.aiAllowed });
       }
       if (sess.aiAllowed) try {
