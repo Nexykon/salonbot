@@ -1473,7 +1473,7 @@ function renderCatChart(cats, total) {
 function startSmartPoll(hasPending) {
   clearInterval(pollInterval);
   clearInterval(countdownInterval);
-  const interval = hasPending ? 15 : 30;
+  const interval = 10;
   countdownSec = interval;
   const el = document.getElementById('refresh-countdown');
   if (el) el.textContent = countdownSec + 's';
