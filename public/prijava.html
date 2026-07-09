@@ -89,6 +89,10 @@
       <label>Email <span class="req">*</span></label>
       <input type="email" id="owner_email" placeholder="vas@email.si" required>
 
+      <label>Geslo <span class="req">*</span></label>
+      <input type="password" id="password" placeholder="Najmanj 8 znakov" minlength="8" required>
+      <div class="hint">S tem geslom se boste prijavili v nadzorno ploščo.</div>
+
       <label>Telefon</label>
       <input type="tel" id="phone" placeholder="npr. 040 123 456">
 
@@ -107,7 +111,8 @@
     <div class="big">✅</div>
     <h2>Registracija uspešna!</h2>
     <p id="successMsg"></p>
-    <p class="hint">Na email smo poslali povezavo za nastavitev gesla in dostop do nadzorne plošče.</p>
+    <a id="loginBtn" href="/salon.html" style="display:inline-block;margin-top:8px;padding:12px 22px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;font-weight:700">Prijava v nadzorno ploščo →</a>
+    <p class="hint" style="margin-top:12px">Prijavite se z zgornjim emailom in geslom.</p>
   </div>
 
   <p class="foot">Bot se aktivira po priklopu. Podatki so uporabljeni izključno za izvedbo storitve.</p>
@@ -175,12 +180,16 @@
       address: document.getElementById('address').value.trim(),
       contact_person: document.getElementById('contact_person').value.trim(),
       owner_email: document.getElementById('owner_email').value.trim(),
+      password: document.getElementById('password').value,
       phone: document.getElementById('phone').value.trim(),
       business_type: document.getElementById('business_type').value,
       website: document.getElementById('website').value
     };
     if(!payload.company_name || !payload.contact_person || !payload.owner_email){
       msg.className='msg err'; msg.textContent='Prosimo, izpolnite obvezna polja (naziv, kontaktna oseba, email).'; return;
+    }
+    if((payload.password||'').length < 8){
+      msg.className='msg err'; msg.textContent='Geslo mora imeti vsaj 8 znakov.'; return;
     }
     btn.disabled = true; btn.textContent = 'Pošiljam...';
     try{
@@ -192,6 +201,7 @@
       document.getElementById('formCard').style.display='none';
       document.getElementById('successBox').style.display='block';
       document.getElementById('successMsg').textContent = data.message || 'Hvala za registracijo!';
+      if(data.login_url) document.getElementById('loginBtn').href = data.login_url;
       window.scrollTo({top:0,behavior:'smooth'});
     }catch(err){
       msg.className='msg err'; msg.textContent = err.message;

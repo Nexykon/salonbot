@@ -1001,32 +1001,7 @@
       </a>
     </div>
 
-    <div class="cal-wrap" style="display:none">
-      <div class="cal-toolbar">
-        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
-        <div>
-          <span class="cal-month-title" id="cal-title">—</span>
-          <div class="cal-legend" style="margin-top:6px;justify-content:center;">
-            <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--green)"></div>Potrjeno</div>
-            <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--yellow)"></div>V čakanju</div>
-            <div class="cal-leg-item"><div class="cal-leg-dot" style="background:var(--red)"></div>Odpovedano</div>
-          </div>
-        </div>
-        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
-      </div>
-      <div id="cal-grid" class="cal-grid">
-        <!-- rendered by JS -->
-      </div>
-    </div>
-
-    <!-- Day detail panel -->
-    <div class="day-detail" id="day-detail" style="display:none">
-      <div class="day-detail-header">
-        <span class="day-detail-title" id="day-detail-title">—</span>
-        <button class="btn-close-detail" onclick="document.getElementById('day-detail').classList.remove('open')">×</button>
-      </div>
-      <div id="day-detail-list"></div>
-    </div>
+    <!-- koledar odstranjen (odveč v master pogledu) -->
 
     <!-- ERRORS -->
     <div class="section-header" style="margin-top:40px">
@@ -1760,7 +1735,6 @@ async function loadApp() {
     salonsData = await res.json();
     renderAll();
     loadErrors();
-    loadMasterCalendar();
     loadUsage();
     // Auto-refresh vsako 1h
     setInterval(loadErrors, 3600000);

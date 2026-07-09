@@ -664,6 +664,10 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
       return res.status(400).json({ error: 'Neveljaven email naslov.' });
     }
+    const password = String(b.password || '');
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Geslo mora imeti vsaj 8 znakov.' });
+    }
 
     const preset = getPreset(type);
     const slugBase = slugify(b.business_slug || name);
@@ -695,6 +699,8 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
       signup_status: 'pending',
       billing_status: info.ai ? 'awaiting' : 'none',
       billing_period: b.billing_period === 'yearly' ? 'yearly' : 'monthly',
+      owner_password_hash: ownerAuth.hashPassword(password),
+      owner_password_set_at: new Date().toISOString(),
       bot_active: false,          // bot ostane ugasnjen do priklopa
       trial_ends_at: null,        // trial za osnovna paketa začne ob priklopu (+30 dni)
       working_days: '1,2,3,4,5,6',
@@ -741,6 +747,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
       salon_id: salon.id,
       ai: info.ai,
       email_sent: custEmail,
+      login_url: bookingMode === 'delivery' ? '/delivery.html' : '/salon.html',
       message: info.ai
         ? 'Registracija uspešna! Za aktivacijo prejmete predračun — po plačilu vas priklopimo in pošljemo račun.'
         : 'Registracija uspešna! Kontaktirali vas bomo za priklop (aktivacijo). Preverite email za dostop do nadzorne plošče.'
@@ -772,7 +779,14 @@ app.post('/api/admin/activate/:id', async (req, res) => {
     };
     if (req.body?.whatsapp_phone_number_id) updates.whatsapp_phone_number_id = String(req.body.whatsapp_phone_number_id).trim();
     if (req.body?.whatsapp_access_token)   updates.whatsapp_access_token   = String(req.body.whatsapp_access_token).trim();
-    if (!info.ai) updates.trial_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const addPeriod = (from) => { const d = new Date(from); salon.billing_period === 'yearly' ? d.setFullYear(d.getFullYear() + 1) : d.setMonth(d.getMonth() + 1); return d.toISOString(); };
+    if (info.ai) {
+      updates.valid_until = addPeriod(Date.now());              // plačano obdobje
+    } else {
+      const t30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 dni brezplačno od priklopa
+      updates.trial_ends_at = t30;
+      updates.valid_until = t30;
+    }
     const updated = await db.updateSalonSettings(salon.id, updates);
     console.log('Salon activated (priklop):', salon.id, salon.name);
     res.json({ success: true, salon: updated || null });
@@ -785,12 +799,40 @@ app.post('/api/admin/mark-paid/:id', async (req, res) => {
   try {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
-    const updates = { billing_status: 'paid', paid_at: new Date().toISOString(), subscription_status: 'active' };
+    // Podaljšaj veljavnost od maksimuma (obstoječi valid_until ali danes) za obračunsko obdobje
+    const base = (salon.valid_until && new Date(salon.valid_until) > new Date()) ? new Date(salon.valid_until) : new Date();
+    salon.billing_period === 'yearly' ? base.setFullYear(base.getFullYear() + 1) : base.setMonth(base.getMonth() + 1);
+    const updates = { billing_status: 'paid', paid_at: new Date().toISOString(), subscription_status: 'active', valid_until: base.toISOString(), renewal_reminded_at: null };
     if (req.body?.invoice_no) updates.invoice_no = String(req.body.invoice_no).trim();
     const updated = await db.updateSalonSettings(salon.id, updates);
     console.log('Salon marked paid:', salon.id, salon.name);
     res.json({ success: true, salon: updated || null });
   } catch (err) { console.error('Mark-paid error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
+
+// ─── Zahteva lastnika za podaljšanje/nadgradnjo naročnine ──────
+app.post('/api/settings/request-renewal', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const desiredPlan = PLAN_CATALOG[req.body?.plan] ? req.body.plan : salon.subscription_plan;
+    const cur = planInfo(salon.subscription_plan);
+    const want = planInfo(desiredPlan);
+    const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    await mail.sendEmail(owner, `Zahteva za podaljšanje/nadgradnjo — ${salon.name}`, [
+      'Stranka želi podaljšati ali nadgraditi naročnino:', '',
+      `Lokal: ${salon.name}${salon.company_name ? ' (' + salon.company_name + ')' : ''}`,
+      `Kontakt: ${salon.contact_person || salon.owner_name || '-'} · ${salon.owner_email || '-'} · ${salon.admin_phone || '-'}`,
+      `Trenutni paket: ${cur.label}`,
+      `Želeni paket: ${want.label} (${want.price} €)`,
+      `Obračun: ${salon.billing_period === 'yearly' ? 'letno' : 'mesečno'}`,
+      `Velja do: ${salon.valid_until ? new Date(salon.valid_until).toLocaleDateString('sl-SI') : '-'}`,
+      '', `Salon ID: ${salon.id}`,
+      'Izdaj predračun in po plačilu klikni "Označi plačano" (podaljša veljavnost).'
+    ].join('\n'));
+    res.json({ success: true, message: 'Zahteva je poslana. Kmalu vas kontaktiramo s predračunom.' });
+  } catch (err) { console.error('Renewal request error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 
@@ -1191,6 +1233,7 @@ app.get('/api/settings', async (req, res) => {
       signup_status: salon.signup_status || 'active',
       billing_status: salon.billing_status || 'none',
       billing_period: salon.billing_period || 'monthly',
+      valid_until: salon.valid_until || salon.trial_ends_at || null,
       stripe_active: !!salon.stripe_customer_id,
       pos_type: salon.pos_type || '',
       pos_account: salon.pos_account || '',

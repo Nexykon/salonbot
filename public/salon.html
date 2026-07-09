@@ -586,6 +586,9 @@
       <div class="card-title">💳 Naročnina</div>
       <div id="billing-info" style="font-size:14px;color:#64748b;margin-bottom:8px">Nalagam ...</div>
       <div id="billing-note" style="font-size:13px;color:#64748b;margin-top:6px"></div>
+      <div id="billing-expiry" style="font-size:13px;color:#64748b;margin-top:6px"></div>
+      <div id="plan-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:14px"></div>
+      <button class="btn" style="margin-top:12px;width:100%" onclick="requestRenewal()">🔁 Zaprosi za podaljšanje</button>
     </div>
     <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
@@ -1190,6 +1193,52 @@ function renderBilling(d) {
   el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + statusHtml + '</b>';
   const nb = document.getElementById('billing-note');
   if (nb) nb.textContent = note;
+  // Datum poteka + dnevi do poteka
+  const exEl = document.getElementById('billing-expiry');
+  if (exEl) {
+    if (d.valid_until) {
+      const end = new Date(d.valid_until);
+      const days = Math.ceil((end - new Date()) / 86400000);
+      const ds = end.toLocaleDateString('sl-SI');
+      exEl.innerHTML = days >= 0
+        ? 'Velja do: <b>' + ds + '</b> · še ' + days + ' ' + (days === 1 ? 'dan' : 'dni') + (days <= 7 ? ' <span style="color:#dc2626">— kmalu poteče!</span>' : '')
+        : '<span style="color:#dc2626">Poteklo: ' + ds + ' — podaljšajte naročnino.</span>';
+    } else { exEl.textContent = ''; }
+  }
+  renderPlanCards(d.subscription_plan);
+}
+
+const OWNER_PLANS = [
+  { id: 'starter', name: 'Osnovni',    price: '49,99 €' },
+  { id: 'pro',     name: 'Pro (POS)',  price: '79,99 €' },
+  { id: 'ai',      name: 'AI natakar', price: '159,99 €' },
+  { id: 'premium', name: 'Premium',    price: '299 €' }
+];
+function renderPlanCards(currentPlan) {
+  const el = document.getElementById('plan-cards');
+  if (!el) return;
+  el.innerHTML = OWNER_PLANS.map(p => `
+    <div style="border:1.5px solid ${p.id === currentPlan ? '#25D366' : '#e8e7f0'};border-radius:10px;padding:10px;text-align:center;${p.id === currentPlan ? 'background:#f0fdf4;' : ''}">
+      <div style="font-weight:700;font-size:13px">${p.name}</div>
+      <div style="color:#059669;font-weight:700;font-size:13px">${p.price}<span style="color:#94a3b8;font-weight:400">/mes</span></div>
+      ${p.id === currentPlan
+        ? '<div style="font-size:11px;color:#059669;margin-top:6px">Vaš paket</div>'
+        : `<button class="btn" style="margin-top:6px;padding:5px 8px;font-size:12px" onclick="requestRenewal('${p.id}')">Nadgradi</button>`}
+    </div>`).join('');
+}
+async function requestRenewal(plan) {
+  const what = plan ? 'nadgradnjo paketa' : 'podaljšanje naročnine';
+  if (!confirm('Poslati zahtevo za ' + what + '? Kmalu vas kontaktiramo s predračunom.')) return;
+  try {
+    const r = await fetch(scopedPath('/api/settings/request-renewal'), {
+      method: 'POST',
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(plan ? { plan } : {})
+    });
+    const d = await r.json();
+    if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
+    showToast('✅ ' + (d.message || 'Zahteva poslana'), 'success');
+  } catch (e) { showToast('Napaka pri pošiljanju zahteve', 'error'); }
 }
 async function billingCheckout(plan) {
   try {

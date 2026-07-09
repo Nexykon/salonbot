@@ -219,6 +219,33 @@ async function sendAiMissDigest() {
   }
 }
 
+// ─── 5. OPOMNIK ZA PODALJŠANJE NAROČNINE (do 7 dni pred potekom, enkrat) ─────
+async function sendRenewalReminders() {
+  try {
+    const salons = await db.getAllSalons();
+    const today = todayStr();
+    for (const salon of salons) {
+      if (salon.signup_status !== 'active' || !salon.valid_until || !salon.owner_email) continue;
+      if (salon.renewal_reminded_at) continue; // že opomnjeno v tem obdobju (resetira se ob plačilu)
+      const end = new Date(salon.valid_until);
+      const days = Math.ceil((end - new Date()) / 86400000);
+      if (days < 0 || days > 7) continue;
+      try {
+        await mail.sendEmail(salon.owner_email, `FlowTiq — naročnina poteče čez ${days} ${days === 1 ? 'dan' : 'dni'}`, [
+          `Pozdravljeni${salon.contact_person ? ' ' + salon.contact_person : ''},`, '',
+          `vaša FlowTiq naročnina za "${salon.name}" poteče ${end.toLocaleDateString('sl-SI')} — čez ${days} ${days === 1 ? 'dan' : 'dni'}.`,
+          '',
+          'Za nemoteno delovanje jo pravočasno podaljšajte: v nadzorni plošči kliknite "Zaprosi za podaljšanje", mi pa vam pošljemo predračun.',
+          '',
+          'Hvala, ekipa FlowTiq'
+        ].join('\n'));
+        await db.updateSalonSettings(salon.id, { renewal_reminded_at: today });
+        console.log(`[renewal-reminder] Poslan ${salon.owner_email} (${days} dni do poteka)`);
+      } catch (e) { console.error(`[renewal-reminder] Napaka za ${salon.id}:`, e.message); }
+    }
+  } catch (e) { console.error('[renewal-reminders] Error:', e.message); }
+}
+
 // ─── START ────────────────────────────────────────────────────────────────────
 function startScheduler() {
   const tz = 'Europe/Ljubljana';
@@ -234,6 +261,9 @@ function startScheduler() {
   // AI natakar (gostilne): ločen dnevni pregled nerazumljenih sporočil -> email FlowTiq
   cron.schedule('30 7 * * *', sendAiMissDigest, { timezone: tz });
 
+  // Vsak dan ob 08:15 — opomnik lastnikom za podaljšanje naročnine (do 7 dni pred potekom)
+  cron.schedule('15 8 * * *', sendRenewalReminders, { timezone: tz });
+
   // Vsako uro — recenzije (2h po terminu)
   cron.schedule('0 * * * *', sendReviewRequests, { timezone: tz });
 
@@ -241,6 +271,7 @@ function startScheduler() {
   console.log('  07:30 — AI natakar: dnevni pregled nerazumljenih (email)');
   console.log('  08:00 — saloni: daily summary, opomniki, reaktivacije');
   console.log('  vsako uro — recenzije (2h po terminu)');
+  console.log('  08:15 — opomniki za podaljšanje naročnine');
 }
 
-module.exports = { startScheduler, sendDailySummary, sendReminders, sendReviewRequests, sendReactivations, sendAiMissDigest };
+module.exports = { startScheduler, sendDailySummary, sendReminders, sendReviewRequests, sendReactivations, sendAiMissDigest, sendRenewalReminders };
