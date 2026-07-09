@@ -1841,6 +1841,7 @@ function renderTable() {
         ${s.signup_status === 'pending' ? '<div style="margin-top:4px"><span class="badge trial">⏳ čaka na priklop</span></div>' : ''}
         ${s.billing_status === 'awaiting' ? '<div style="margin-top:4px"><span class="badge inactive">💶 predračun neplačan</span></div>' : ''}
         ${s.billing_status === 'paid' ? '<div style="margin-top:4px"><span class="badge active">✅ plačano</span></div>' : ''}
+        ${s.renewal_requested_plan ? `<div style="margin-top:4px"><span class="badge" style="background:#fef3c7;color:#92400e">🔔 Želi: ${PROFORMA_PLANNAME[s.renewal_requested_plan] || s.renewal_requested_plan}</span></div>` : ''}
       </td>
       <td style="color:var(--text2);font-size:13px">${date}</td>
       <td>
@@ -1851,6 +1852,7 @@ function renderTable() {
           ${s.billing_status === 'awaiting' ? `<button class="btn-action" style="color:#059669;border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.08)" onclick="markPaidSalon('${s.id}')">💶 Označi plačano</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
           <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 Predračun</button>
+          <button class="btn-action btn-msg" onclick="sendProformaEmail('${s.id}')">📧 Pošlji predračun</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
           <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.08)" onclick="deleteSalon('${s.id}','${s.name}')">🗑️ Briši</button>
         </div>
@@ -2058,6 +2060,17 @@ const PROFORMA_ISSUER = {
   novat: 'Nisem zavezanec za DDV (1. odst. 94. člena ZDDV-1). DDV ni obračunan.'
 };
 const PROFORMA_PRICE = { starter: 49.99, pro: 79.99, ai: 159.99, premium: 299 };
+async function sendProformaEmail(id) {
+  const s = salonsData.find(x => x.id === id);
+  const plan = (s && (s.renewal_requested_plan || s.subscription_plan)) || 'starter';
+  if (!confirm(`Poslati predračun (${PROFORMA_PLANNAME[plan] || plan}) na email stranke ${(s && s.owner_email) || ''}?`)) return;
+  try {
+    const res = await apiFetch(`/api/admin/send-proforma/${id}`, { method: 'POST', body: JSON.stringify({ plan }) });
+    const d = await res.json();
+    if (res.ok && d.success) { showToast('📧 ' + (d.message || 'Predračun poslan'), 'success'); await refreshSalons(); }
+    else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
 const PROFORMA_PLANNAME = { starter: 'Osnovni', pro: 'Pro', ai: 'AI natakar', premium: 'Premium' };
 function openProforma(id) {
   const s = salonsData.find(x => x.id === id);

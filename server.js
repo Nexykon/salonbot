@@ -804,6 +804,12 @@ app.post('/api/admin/mark-paid/:id', async (req, res) => {
     salon.billing_period === 'yearly' ? base.setFullYear(base.getFullYear() + 1) : base.setMonth(base.getMonth() + 1);
     const updates = { billing_status: 'paid', paid_at: new Date().toISOString(), subscription_status: 'active', valid_until: base.toISOString(), renewal_reminded_at: null };
     if (req.body?.invoice_no) updates.invoice_no = String(req.body.invoice_no).trim();
+    // Če je stranka zahtevala nadgradnjo/podaljšanje na drug paket — ga uveljavi in počisti zahtevo
+    if (salon.renewal_requested_plan) {
+      updates.subscription_plan = salon.renewal_requested_plan;
+      updates.renewal_requested_plan = null;
+      updates.renewal_requested_at = null;
+    }
     const updated = await db.updateSalonSettings(salon.id, updates);
     console.log('Salon marked paid:', salon.id, salon.name);
     res.json({ success: true, salon: updated || null });
@@ -831,8 +837,34 @@ app.post('/api/settings/request-renewal', async (req, res) => {
       '', `Salon ID: ${salon.id}`,
       'Izdaj predračun in po plačilu klikni "Označi plačano" (podaljša veljavnost).'
     ].join('\n'));
+    await db.updateSalonSettings(salon.id, { renewal_requested_plan: desiredPlan, renewal_requested_at: new Date().toISOString() }).catch(() => {});
     res.json({ success: true, message: 'Zahteva je poslana. Kmalu vas kontaktiramo s predračunom.' });
   } catch (err) { console.error('Renewal request error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// ─── Pošlji predračun na email stranke (HTML + PDF priponka) — master ───
+app.post('/api/admin/send-proforma/:id', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
+    if (!salon.owner_email) return res.status(400).json({ error: 'Salon nima emaila stranke.' });
+    const plan = PLAN_CATALOG[req.body?.plan] ? req.body.plan : (salon.renewal_requested_plan || salon.subscription_plan);
+    const proforma = require('./src/proforma');
+    const c = proforma.computeProforma(salon, plan);
+    const html = proforma.proformaHtml(salon, plan);
+    let attachments = [];
+    try {
+      const pdf = await proforma.proformaPdf(salon, plan);
+      attachments = [{ filename: `Predracun-${c.no}.pdf`, content: pdf.toString('base64') }];
+    } catch (e) { console.warn('Proforma PDF ni uspel, pošiljam samo HTML:', e.message); }
+    const sent = await mail.sendEmail(salon.owner_email, `Predračun ${c.no} — FlowTiq`, html, attachments);
+    if (!sent) return res.status(500).json({ error: 'Email ni bil poslan (preveri Resend).' });
+    const updated = await db.updateSalonSettings(salon.id, {
+      billing_status: 'awaiting', proforma_no: c.no, proforma_amount: c.amount, proforma_issued_at: new Date().toISOString()
+    });
+    res.json({ success: true, pdf: attachments.length > 0, message: `Predračun ${c.no} poslan na ${salon.owner_email}${attachments.length ? ' (s PDF)' : ' (brez PDF)'}.`, salon: updated || null });
+  } catch (err) { console.error('send-proforma error:', err.message); res.status(500).json({ error: err.message }); }
 });
 
 
@@ -915,6 +947,16 @@ app.get('/salons', async (req, res) => {
       owner_password_configured: !!s.owner_password_hash,
       subscription_status: s.subscription_status,
       subscription_plan: s.subscription_plan,
+      signup_status: s.signup_status || 'active',
+      billing_status: s.billing_status || 'none',
+      billing_period: s.billing_period || 'monthly',
+      valid_until: s.valid_until || null,
+      company_name: s.company_name || '',
+      vat_id: s.vat_id || '',
+      contact_person: s.contact_person || '',
+      address: s.address || '',
+      renewal_requested_plan: s.renewal_requested_plan || null,
+      renewal_requested_at: s.renewal_requested_at || null,
       admin_phone: s.admin_phone,
       created_at: s.created_at
     })));
