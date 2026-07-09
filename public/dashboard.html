@@ -1856,16 +1856,25 @@ function renderTable() {
           <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>Osnovno €49,99/mes</option>
           <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>POS €79,99/mes</option>
           <option value="ai" ${s.subscription_plan === 'ai' ? 'selected' : ''}>🤖 AI €159,99/mes</option>
+          <option value="premium" ${s.subscription_plan === 'premium' ? 'selected' : ''}>Premium €299/mes</option>
         </select>
       </td>
       <td><span class="usage-cell" data-salon="${s.id}" style="font-size:13px;color:var(--text2)">—</span></td>
-      <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+      <td>
+        <span class="badge ${statusClass}">${statusLabel}</span>
+        ${s.signup_status === 'pending' ? '<div style="margin-top:4px"><span class="badge trial">⏳ čaka na priklop</span></div>' : ''}
+        ${s.billing_status === 'awaiting' ? '<div style="margin-top:4px"><span class="badge inactive">💶 predračun neplačan</span></div>' : ''}
+        ${s.billing_status === 'paid' ? '<div style="margin-top:4px"><span class="badge active">✅ plačano</span></div>' : ''}
+      </td>
       <td style="color:var(--text2);font-size:13px">${date}</td>
       <td>
         <div class="actions">
           ${canActivate ? `<button class="btn-action btn-activate" onclick="activateSalon('${s.id}')">✅ Aktiviraj</button>` : ''}
           ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
+          ${s.signup_status === 'pending' ? `<button class="btn-action btn-activate" onclick="priklopSalon('${s.id}')">🔌 Priklopi</button>` : ''}
+          ${s.billing_status === 'awaiting' ? `<button class="btn-action" style="color:#059669;border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.08)" onclick="markPaidSalon('${s.id}')">💶 Označi plačano</button>` : ''}
           <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
+          <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 Predračun</button>
           <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
           <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.08)" onclick="deleteSalon('${s.id}','${s.name}')">🗑️ Briši</button>
         </div>
@@ -2030,6 +2039,82 @@ async function activateSalon(id) {
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
 
+// ── Priklop (aktivacija) registrirane stranke ──
+async function priklopSalon(id) {
+  const s = salonsData.find(x => x.id === id);
+  const wa = prompt('WhatsApp Phone Number ID za priklop (lahko pustiš prazno in nastaviš kasneje):', s?.whatsapp_phone_number_id || '');
+  if (wa === null) return;
+  const body = {};
+  if (wa.trim()) body.whatsapp_phone_number_id = wa.trim();
+  const isAi = s && (s.subscription_plan === 'ai' || s.subscription_plan === 'premium');
+  if (isAi && s.billing_status !== 'paid') {
+    if (!confirm('AI paket še ni označen kot plačan. Vseeno priklopim?')) return;
+    body.force = true;
+  }
+  try {
+    const res = await apiFetch(`/api/admin/activate/${id}`, { method: 'POST', body: JSON.stringify(body) });
+    const d = await res.json();
+    if (res.ok && d.success) { showToast('🔌 Priklopljeno in aktivirano!', 'success'); await refreshSalons(); }
+    else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+// ── Označi predračun kot plačan ──
+async function markPaidSalon(id) {
+  const inv = prompt('Številka računa (neobvezno — vpiši, če si ga že izdal):', '');
+  if (inv === null) return;
+  try {
+    const res = await apiFetch(`/api/admin/mark-paid/${id}`, { method: 'POST', body: JSON.stringify(inv.trim() ? { invoice_no: inv.trim() } : {}) });
+    const d = await res.json();
+    if (res.ok && d.success) { showToast('💶 Označeno kot plačano.', 'success'); await refreshSalons(); }
+    else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+
+// ── Predračun (polavtomatika: natisljiv HTML -> PDF) ──
+// TODO: vpiši svoje podatke s.p. za izdajatelja.
+const PROFORMA_ISSUER = {
+  name: 'Webacus, Valentin Iljaž s.p.',
+  address: 'Nova vas 12, Bizeljsko',
+  vat: '35880643',
+  iban: 'SI56 0298 5266 0633 091',
+  novat: 'Nisem zavezanec za DDV (1. odst. 94. člena ZDDV-1). DDV ni obračunan.'
+};
+const PROFORMA_PRICE = { starter: 49.99, pro: 79.99, ai: 159.99, premium: 299 };
+const PROFORMA_PLANNAME = { starter: 'Osnovni', pro: 'Pro', ai: 'AI natakar', premium: 'Premium' };
+function openProforma(id) {
+  const s = salonsData.find(x => x.id === id);
+  if (!s) { showToast('Salon ni najden', 'error'); return; }
+  const plan = s.subscription_plan || 'starter';
+  const yearly = s.billing_period === 'yearly';
+  const monthly = PROFORMA_PRICE[plan] || 0;
+  const amount = yearly ? monthly * 12 : monthly;
+  const period = yearly ? 'letna naročnina' : 'mesečna naročnina';
+  const eur = n => n.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  const today = new Date().toLocaleDateString('sl-SI');
+  const due = new Date(Date.now() + 8 * 24 * 3600 * 1000).toLocaleDateString('sl-SI');
+  const no = 'PR-' + new Date().getFullYear() + '-' + String(id).replace(/[^0-9a-f]/gi, '').slice(-6).toUpperCase();
+  const sklic = 'SI00 ' + (String(id).replace(/\D/g, '').slice(-8) || '0');
+  const w = window.open('', '_blank');
+  if (!w) { showToast('Dovolite pojavna okna za predračun', 'error'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="sl"><head><meta charset="utf-8"><title>Predračun ${no}</title>
+  <style>body{font-family:Arial,Helvetica,sans-serif;color:#111;max-width:760px;margin:24px auto;padding:0 20px}
+  h1{font-size:22px;margin:0}table{width:100%;border-collapse:collapse;margin:18px 0}td,th{border:1px solid #ccc;padding:8px;text-align:left}
+  .r{text-align:right}.muted{color:#666;font-size:13px}.tot{font-weight:700}.head{display:flex;justify-content:space-between;gap:20px}
+  .box{font-size:14px;line-height:1.5}@media print{.noprint{display:none}}</style></head><body>
+  <div class="head"><div class="box"><b>${PROFORMA_ISSUER.name}</b><br>${PROFORMA_ISSUER.address}<br>Davčna št.: ${PROFORMA_ISSUER.vat}</div>
+  <div class="box r"><h1>PREDRAČUN</h1>Št.: <b>${no}</b><br>Datum: ${today}<br>Rok plačila: ${due}</div></div>
+  <div class="box" style="margin-top:16px"><b>Kupec:</b><br>${s.company_name || s.name || '—'}<br>${s.address || ''}<br>${s.vat_id ? ('Davčna št.: ' + s.vat_id) : ''}</div>
+  <table><tr><th>Opis</th><th class="r">Znesek</th></tr>
+  <tr><td>FlowTiq paket ${PROFORMA_PLANNAME[plan] || plan} — ${period}</td><td class="r">${eur(amount)}</td></tr>
+  <tr class="tot"><td class="r">Za plačilo</td><td class="r">${eur(amount)}</td></tr></table>
+  <div class="box"><b>Plačilo po nakazilu:</b> IBAN <b>${PROFORMA_ISSUER.iban}</b><br>Sklic: <b>${sklic}</b><br>Namen: FlowTiq ${no}</div>
+  <p class="muted">${PROFORMA_ISSUER.novat}<br>Predračun ni davčni dokument. Po prejemu plačila izdamo račun in aktiviramo storitev.</p>
+  <button class="noprint" onclick="window.print()" style="padding:10px 16px;margin-top:8px">Natisni / shrani kot PDF</button>
+  </body></html>`);
+  w.document.close();
+}
 
 async function deleteSalon(id, name) {
   if (!confirm(`Res želite izbrisati salon "${name}"?\nTo bo trajno izbrisalo VSE podatke (rezervacije, storitve...).`)) return;

@@ -582,13 +582,8 @@
 <div id="sm-panel-general">
     <div class="card owner-panel settings-panel" id="billing-card">
       <div class="card-title">💳 Naročnina</div>
-      <div id="billing-info" style="font-size:14px;color:#64748b;margin-bottom:14px">Nalagam ...</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn" onclick="billingCheckout('starter')" style="flex:1;min-width:180px">Osnovni — 49,99 €/mes</button>
-        <button class="btn btn-primary" onclick="billingCheckout('pro')" style="flex:1;min-width:180px">Pro (POS) — 79,99 €/mes</button>
-      </div>
-      <button class="btn" id="billing-portal-btn" onclick="billingPortal()" style="margin-top:10px;width:100%;display:none">🧾 Uredi naročnino / računi</button>
-      <p style="font-size:12px;color:#64748b;margin:8px 0 0">Prva aktivacija vključuje 30 dni brezplačno. Plačilo varno prek Stripe.</p>
+      <div id="billing-info" style="font-size:14px;color:#64748b;margin-bottom:8px">Nalagam ...</div>
+      <div id="billing-note" style="font-size:13px;color:#64748b;margin-top:6px"></div>
     </div>
     <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
@@ -1169,11 +1164,30 @@ async function initLocationSwitcher(tokenGetter, tokenSetter) {
 function renderBilling(d) {
   const el = document.getElementById('billing-info');
   if (!el) return;
-  const planLabel = d.subscription_plan === 'pro' ? 'Pro (79,99 €/mes)' : 'Osnovni (49,99 €/mes)';
-  const stLabel = { active: '✅ Aktivna', trial: '🎁 Preizkusno obdobje', inactive: '⛔ Neaktivna' }[d.subscription_status] || (d.subscription_status || '—');
-  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + stLabel + '</b>';
-  const pb = document.getElementById('billing-portal-btn');
-  if (pb) pb.style.display = d.stripe_active ? 'block' : 'none';
+  const PLAN_LABELS = { starter:'Osnovni (49,99 €/mes)', pro:'Pro (79,99 €/mes)', ai:'AI natakar (159,99 €/mes)', premium:'Premium (299 €/mes)' };
+  const planLabel = PLAN_LABELS[d.subscription_plan] || 'Osnovni';
+  const isAi = d.subscription_plan === 'ai' || d.subscription_plan === 'premium';
+  let statusHtml, note = '';
+  if (d.signup_status === 'pending') {
+    if (isAi && d.billing_status !== 'paid') {
+      statusHtml = '⏳ Čaka na plačilo predračuna';
+      note = 'Za aktivacijo poravnajte predračun, ki vam ga pošljemo na email. Po plačilu vas priklopimo in vam izdamo račun.';
+    } else {
+      statusHtml = '⏳ Čaka na priklop';
+      note = 'Vaš račun je ustvarjen. Kontaktirali vas bomo za priklop (aktivacijo bota) — običajno v nekaj urah.';
+    }
+  } else if (d.subscription_status === 'active') {
+    statusHtml = '✅ Aktivno';
+    note = 'Vaš bot je aktiven.';
+  } else if (d.subscription_status === 'trial') {
+    statusHtml = '🎁 Brezplačni preizkus (30 dni)';
+  } else {
+    statusHtml = '⛔ Neaktivno';
+    note = 'Za ponovno aktivacijo nas kontaktirajte.';
+  }
+  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + statusHtml + '</b>';
+  const nb = document.getElementById('billing-note');
+  if (nb) nb.textContent = note;
 }
 async function billingCheckout(plan) {
   try {

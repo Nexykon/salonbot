@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowTiq — Registracija</title>
+<style>
+  :root{
+    --bg:#f8f7ff; --surface:#fff; --border:#e8e7f0; --text:#111118;
+    --muted:#6b7280; --accent:#25D366; --accent-dark:#1aab50; --green:#059669;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+       background:var(--bg);color:var(--text);line-height:1.5;padding:24px 16px}
+  .wrap{max-width:620px;margin:0 auto}
+  .logo{text-align:center;margin-bottom:8px}
+  .logo img{height:44px}
+  h1{font-size:26px;text-align:center;margin:12px 0 4px}
+  .sub{text-align:center;color:var(--muted);margin:0 0 28px;font-size:15px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;
+        box-shadow:0 4px 20px rgba(0,0,0,.04)}
+  label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
+  .req{color:var(--green)}
+  input,select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;
+        font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .hint{font-size:12px;color:var(--muted);margin-top:4px}
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .plan{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.15s}
+  .plan:hover{border-color:var(--accent)}
+  .plan.sel{border-color:var(--accent);background:#f0fdf4}
+  .plan .pn{font-weight:700;font-size:15px}
+  .plan .pp{color:var(--green);font-weight:700;font-size:14px;margin-top:2px}
+  .plan .pd{font-size:12px;color:var(--muted);margin-top:4px}
+  .plan .badge{display:inline-block;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;
+        border-radius:6px;padding:1px 6px;margin-top:6px}
+  .plan .badge.free{background:#dcfce7;color:#166534}
+  .period{display:flex;gap:10px;margin-top:6px}
+  .period label{flex:1;margin:0;border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;
+        cursor:pointer;font-weight:600;font-size:14px}
+  .period input{display:none}
+  .period label.sel{border-color:var(--accent);background:#f0fdf4}
+  .hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
+  button.submit{width:100%;margin-top:22px;padding:15px;border:none;border-radius:12px;
+        background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+  button.submit:hover{background:var(--accent-dark)}
+  button.submit:disabled{opacity:.6;cursor:not-allowed}
+  .msg{margin-top:16px;padding:14px;border-radius:10px;font-size:14px;display:none}
+  .msg.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;display:block}
+  .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;display:block}
+  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:20px}
+  .success-box{display:none;text-align:center;padding:10px}
+  .success-box .big{font-size:44px}
+  .success-box h2{margin:8px 0}
+  @media(max-width:520px){.plans{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><img src="/flowtiq_logo.png" alt="FlowTiq" onerror="this.style.display='none'"></div>
+  <h1>Ustvarite račun</h1>
+  <p class="sub">Registrirajte se, mi pa vas kontaktiramo za priklop (aktivacijo).</p>
+
+  <div class="card" id="formCard">
+    <form id="signupForm" autocomplete="on">
+      <label>Izberite paket <span class="req">*</span></label>
+      <div class="plans" id="plans"></div>
+
+      <label>Obračun</label>
+      <div class="period" id="period">
+        <label class="sel"><input type="radio" name="billing_period" value="monthly" checked> Mesečno</label>
+        <label><input type="radio" name="billing_period" value="yearly"> Letno</label>
+      </div>
+
+      <label>Naziv firme <span class="req">*</span></label>
+      <input type="text" id="company_name" placeholder="npr. Gostilna Pri Lipi d.o.o." required>
+
+      <label>DDV / davčna številka</label>
+      <input type="text" id="vat_id" placeholder="npr. SI12345678">
+
+      <label>Naslov firme</label>
+      <input type="text" id="address" placeholder="Ulica in hišna št., pošta in kraj">
+
+      <label>Kontaktna oseba <span class="req">*</span></label>
+      <input type="text" id="contact_person" placeholder="Ime in priimek" required>
+
+      <label>Email <span class="req">*</span></label>
+      <input type="email" id="owner_email" placeholder="vas@email.si" required>
+
+      <label>Telefon</label>
+      <input type="tel" id="phone" placeholder="npr. 040 123 456">
+
+      <label>Dejavnost</label>
+      <select id="business_type"></select>
+
+      <!-- honeypot proti botom -->
+      <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+
+      <button type="submit" class="submit" id="submitBtn">Registracija</button>
+      <div class="msg" id="msg"></div>
+    </form>
+  </div>
+
+  <div class="card success-box" id="successBox">
+    <div class="big">✅</div>
+    <h2>Registracija uspešna!</h2>
+    <p id="successMsg"></p>
+    <p class="hint">Na email smo poslali povezavo za nastavitev gesla in dostop do nadzorne plošče.</p>
+  </div>
+
+  <p class="foot">Bot se aktivira po priklopu. Podatki so uporabljeni izključno za izvedbo storitve.</p>
+</div>
+
+<script>
+  const YEARLY_MULT = 12; // letno = 12x mesečno (brez popusta)
+  const PLANS = [
+    { id:'starter', name:'Osnovni',    m:49.99,  desc:'WhatsApp rezervacije 24/7',        free:true  },
+    { id:'pro',     name:'Pro',        m:79.99,  desc:'Vse iz Osnovni + POS integracija', free:true  },
+    { id:'ai',      name:'AI natakar', m:159.99, desc:'AI naročanje za restavracije',     free:false },
+    { id:'premium', name:'Premium',    m:299,    desc:'Vse + 10.000 naročil / mesec',     free:false }
+  ];
+  const eur = (n) => n.toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
+  function billingPeriod(){ const el=document.querySelector('input[name=billing_period]:checked'); return el?el.value:'monthly'; }
+  function priceHtml(p){
+    return billingPeriod()==='yearly'
+      ? `${eur(p.m*YEARLY_MULT)}<span style="color:#6b7280;font-weight:400"> / leto</span>`
+      : `${eur(p.m)}<span style="color:#6b7280;font-weight:400"> / mes</span>`;
+  }
+  const params = new URLSearchParams(location.search);
+  let selectedPlan = PLANS.some(p=>p.id===params.get('plan')) ? params.get('plan') : 'starter';
+
+  function renderPlans(){
+    document.getElementById('plans').innerHTML = PLANS.map(p => `
+      <div class="plan ${p.id===selectedPlan?'sel':''}" data-id="${p.id}">
+        <div class="pn">${p.name}</div>
+        <div class="pp">${priceHtml(p)}</div>
+        <div class="pd">${p.desc}</div>
+        <span class="badge ${p.free?'free':''}">${p.free?'30 dni brezplačno':'brez brezplačnega testa'}</span>
+      </div>`).join('');
+    document.querySelectorAll('.plan').forEach(el=>el.onclick=()=>{
+      selectedPlan = el.dataset.id; renderPlans();
+    });
+  }
+  renderPlans();
+
+  // period toggle
+  document.querySelectorAll('#period label').forEach(l=>l.onclick=()=>{
+    document.querySelectorAll('#period label').forEach(x=>x.classList.remove('sel'));
+    l.classList.add('sel');
+    const radio = l.querySelector('input'); if(radio) radio.checked = true;
+    renderPlans();
+  });
+
+  // business types
+  fetch('/api/business-types').then(r=>r.json()).then(list=>{
+    const sel = document.getElementById('business_type');
+    sel.innerHTML = list.map(t=>`<option value="${t.value}">${t.label}</option>`).join('');
+  }).catch(()=>{
+    document.getElementById('business_type').innerHTML = '<option value="custom">Druga dejavnost</option>';
+  });
+
+  const form = document.getElementById('signupForm');
+  const msg = document.getElementById('msg');
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    msg.className = 'msg';
+    const btn = document.getElementById('submitBtn');
+    const payload = {
+      plan: selectedPlan,
+      billing_period: document.querySelector('input[name=billing_period]:checked').value,
+      company_name: document.getElementById('company_name').value.trim(),
+      vat_id: document.getElementById('vat_id').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      contact_person: document.getElementById('contact_person').value.trim(),
+      owner_email: document.getElementById('owner_email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      business_type: document.getElementById('business_type').value,
+      website: document.getElementById('website').value
+    };
+    if(!payload.company_name || !payload.contact_person || !payload.owner_email){
+      msg.className='msg err'; msg.textContent='Prosimo, izpolnite obvezna polja (naziv, kontaktna oseba, email).'; return;
+    }
+    btn.disabled = true; btn.textContent = 'Pošiljam...';
+    try{
+      const r = await fetch('/api/signup', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
+      });
+      const data = await r.json();
+      if(!r.ok || !data.success){ throw new Error(data.error || 'Napaka pri registraciji.'); }
+      document.getElementById('formCard').style.display='none';
+      document.getElementById('successBox').style.display='block';
+      document.getElementById('successMsg').textContent = data.message || 'Hvala za registracijo!';
+      window.scrollTo({top:0,behavior:'smooth'});
+    }catch(err){
+      msg.className='msg err'; msg.textContent = err.message;
+      btn.disabled=false; btn.textContent='Registracija';
+    }
+  };
+</script>
+</body>
+</html>

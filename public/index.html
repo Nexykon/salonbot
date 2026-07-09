@@ -780,7 +780,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
       <li><a href="#faq">Vprašanja</a></li>
     </ul>
     <div class="nav-actions">
-      <button onclick="openModal()" class="btn-wa">Začni brezplačno</button>
+      <button onclick="location.href='/prijava.html'" class="btn-wa">Začni brezplačno</button>
       <a href="/settings.html" class="btn-login">Prijava</a>
     </div>
   </div>
@@ -795,7 +795,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
         <h1>Naj se stranke<br><em>naročajo same.</em></h1>
         <p class="hero-sub">Stranka napiše na vaš WhatsApp — FlowTiq ji odgovori v sekundi. Za <strong>salone, tattoo studie in fotografe</strong> rezervira termine, za <strong>picerije in restavracije</strong> sprejema naročila. Vi mirno delate naprej.</p>
         <div class="hero-cta">
-          <button onclick="openModal()" class="btn-primary">
+          <button onclick="location.href='/prijava.html'" class="btn-primary">
             Začni brezplačno →
           </button>
           <a href="#how" class="btn-secondary">Kako to deluje →</a>
@@ -1042,7 +1042,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
           <li>Postavitev in podpora vključeni</li>
           <li class="li-off">POS integracija (Poster, Square, iiko)</li>
         </ul>
-        <button onclick="openModal()" class="btn-primary">Začni brezplačno →</button>
+        <button onclick="location.href='/prijava.html?plan=starter'" class="btn-primary">Začni brezplačno →</button>
       </div>
       <div class="price-card featured">
         <span class="plan-badge">NAJBOLJ PRILJUBLJEN</span>
@@ -1056,24 +1056,36 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
           <li>Naročila samodejno v kuhinjo — brez pretipkavanja</li>
           <li>Prednostna podpora</li>
         </ul>
-        <button onclick="openModal()" class="btn-primary">Začni brezplačno →</button>
+        <button onclick="location.href='/prijava.html?plan=pro'" class="btn-primary">Začni brezplačno →</button>
       </div>
       <div class="price-card">
         <span class="plan-badge" style="background:#a78bfa;color:#2e1065">🤖 AI</span>
         <h3>AI</h3>
         <div class="plan-for">Za lokale, ki želijo vrhunsko izkušnjo — AI natakar se s stranko pogovarja kot človek.</div>
         <div class="plan-price">159,99 € <span>/ mesec</span></div>
-        <div class="plan-trial">Prvi mesec brezplačno</div>
+        <div class="plan-trial" style="color:#fbbf24">Brez brezplačnega testa · plačilo pred aktivacijo</div>
         <ul>
           <li>Vse iz paketa Pro (vključno s POS)</li>
           <li>AI natakar: stranka napiše "eno capriccioso in dve koli" — in je v košarici</li>
           <li>Zapomni si stranke: "enako kot zadnjič" preprosto deluje</li>
           <li>Odgovarja na vprašanja o ponudbi kot pravi natakar</li>
         </ul>
-        <button onclick="openModal()" class="btn-primary">Začni brezplačno →</button>
+        <button onclick="location.href='/prijava.html?plan=ai'" class="btn-primary">Registracija →</button>
+      </div>
+      <div class="price-card">
+        <span class="plan-badge" style="background:#fbbf24;color:#78350f">PREMIUM</span>
+        <h3>Premium</h3>
+        <div class="plan-for">Za večje lokale in verige z velikim obsegom naročil.</div>
+        <div class="plan-price">299 € <span>/ mesec</span></div>
+        <div class="plan-trial" style="color:#fbbf24">Brez brezplačnega testa · plačilo pred aktivacijo</div>
+        <ul>
+          <li>Vse iz paketa AI natakar</li>
+          <li>Vključenih 10.000 naročil na mesec</li>
+          <li>Prednostna podpora in prilagoditve</li>
+        </ul>
+        <button onclick="location.href='/prijava.html?plan=premium'" class="btn-primary">Registracija →</button>
       </div>
     </div>
-    <p style="color:rgba(255,255,255,.65);font-size:14px;margin:-32px auto 56px;max-width:560px">Večji obseg? <strong style="color:#fff">Enterprise — 299 € / mesec</strong> z vključenimi 10.000 naročili. <a href="#" onclick="openModal();return false" style="color:var(--green)">Pišite nam →</a></p>
 
     <div class="norisk-grid">
       <div class="norisk-card">
@@ -1094,7 +1106,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
       </div>
     </div>
     <div class="norisk-cta">
-      <button onclick="openModal()" class="btn-primary">Začni 30 dni brezplačno →</button>
+      <button onclick="location.href='/prijava.html'" class="btn-primary">Začni 30 dni brezplačno →</button>
       <p class="norisk-note">Odgovorimo v nekaj urah · Brez skritih stroškov</p>
     </div>
   </div>
@@ -1165,7 +1177,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
   <div class="container">
     <h2>Vaš telefon zvoni manj.<br>Naročila pa rastejo.</h2>
     <p>Izpolnite obrazec in v kratkem vam bomo pokazali, kako bi FlowTiq deloval pri vas — brez obveznosti.</p>
-    <button onclick="openModal()" class="btn-primary-white">
+    <button onclick="location.href='/prijava.html'" class="btn-primary-white">
       Začni brezplačno →
     </button>
     <p class="cta-final-note">30 dni brezplačno · Odpoved kadarkoli</p>

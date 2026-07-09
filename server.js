@@ -106,6 +106,7 @@ function defaultFormFields(salon) {
 }
 
 function defaultBookingMode(type) {
+  if (['restaurant', 'pizzeria', 'burger', 'kebab'].includes(type)) return 'delivery';
   if (type === 'tattoo' || type === 'photography') return 'inquiry';
   return 'exact_time';
 }
@@ -627,6 +628,168 @@ app.post('/onboard', async (req, res) => {
 });
 
 
+// ─── Katalog paketov (cene + ali vsebuje AI) ───────────────────
+const PLAN_CATALOG = {
+  starter: { label: 'Osnovni',    price: 49.99,  ai: false },
+  pro:     { label: 'Pro',        price: 79.99,  ai: false },
+  ai:      { label: 'AI natakar', price: 159.99, ai: true  },
+  premium: { label: 'Premium',    price: 299,    ai: true  }
+};
+function planInfo(plan) { return PLAN_CATALOG[plan] || PLAN_CATALOG.starter; }
+
+// ─── Javna samopostrežna registracija ──────────────────────────
+// Ustvari salon v statusu "čaka na priklop" (bot ugasnjen). AI paketi nimajo
+// brezplačnega testa -> billing_status='awaiting' (plačilo predračuna pred priklopom).
+app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
+  try {
+    const b = req.body || {};
+    if (b.website) return res.json({ success: true }); // honeypot (boti izpolnijo skrito polje)
+
+    const name    = String(b.company_name || b.name || '').trim();
+    const email   = String(b.owner_email || b.email || '').trim().toLowerCase();
+    const contact = String(b.contact_person || '').trim();
+    const vat     = String(b.vat_id || '').trim();
+    const address = String(b.address || '').trim();
+    const phone   = cleanPhone(b.phone);
+    const plan    = PLAN_CATALOG[b.plan] ? b.plan : 'starter';
+    const type    = normalizeBusinessType(b.business_type || 'custom');
+
+    if (!name || !email || !contact) {
+      return res.status(400).json({ error: 'Naziv firme, kontaktna oseba in email so obvezni.' });
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ error: 'Neveljaven email naslov.' });
+    }
+
+    const preset = getPreset(type);
+    const slugBase = slugify(b.business_slug || name);
+    let slug = slugBase, n = 2;
+    while (await db.getSalonBySlug(slug)) slug = `${slugBase}-${n++}`;
+
+    const info = planInfo(plan);
+    const bookingMode = plan === 'ai' ? 'delivery' : defaultBookingMode(type);
+
+    const salonData = {
+      name,
+      company_name: name,
+      owner_name: contact,
+      contact_person: contact,
+      email,
+      owner_email: email,
+      admin_phone: phone,
+      phone,
+      vat_id: vat,
+      address,
+      business_type: type,
+      business_label: preset.label,
+      business_slug: slug,
+      greeting_message: preset.greeting,
+      booking_mode: bookingMode,
+      form_fields: defaultFormFields({ business_type: type }),
+      subscription_plan: plan,
+      subscription_status: info.ai ? 'pending_payment' : 'trial',
+      signup_status: 'pending',
+      billing_status: info.ai ? 'awaiting' : 'none',
+      billing_period: b.billing_period === 'yearly' ? 'yearly' : 'monthly',
+      bot_active: false,          // bot ostane ugasnjen do priklopa
+      trial_ends_at: null,        // trial za osnovna paketa začne ob priklopu (+30 dni)
+      working_days: '1,2,3,4,5,6',
+      working_hours_start: '08:00',
+      working_hours_end: '19:00'
+      // NAMENOMA brez whatsapp_phone_number_id — priklop opravi admin
+    };
+
+    const salon = await db.createSalon(salonData);
+    if (preset.services && preset.services.length) {
+      await db.createServicesFromPreset(salon.id, preset.services).catch(() => {});
+    }
+
+    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
+
+    // 1) stranki: welcome + link za nastavitev gesla (dostop do dashboarda takoj)
+    let custEmail = false;
+    try { custEmail = await mail.sendWelcomeEmail(salon, setupUrl); }
+    catch (e) { console.warn('Signup welcome email failed:', e.message); }
+
+    // 2) tebi: obvestilo za priklop
+    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    try {
+      await mail.sendEmail(ownerEmail, `Nova registracija — ${name} (${info.label})`, [
+        'Nova registracija za priklop:', '',
+        `Firma: ${name}`,
+        `Kontaktna oseba: ${contact}`,
+        `Email: ${email}`,
+        `Telefon: ${phone || '-'}`,
+        `DDV / davčna: ${vat || '-'}`,
+        `Naslov: ${address || '-'}`,
+        `Dejavnost: ${preset.label}`,
+        `Paket: ${info.label} (${info.price} €${info.ai ? ' — vsebuje AI, plačilo predračuna PRED priklopom' : ' — 30 dni brezplačno od priklopa'})`,
+        `Obračun: ${salonData.billing_period === 'yearly' ? 'letno' : 'mesečno'}`,
+        '', `Salon ID: ${salon.id}`,
+        'Priklop opraviš v master dashboardu.'
+      ].join('\n'));
+    } catch (e) { console.warn('Owner notify email failed:', e.message); }
+
+    console.log('New self-signup:', salon.id, name, info.label, custEmail ? '(cust email sent)' : '(cust email failed)');
+    res.json({
+      success: true,
+      salon_id: salon.id,
+      ai: info.ai,
+      email_sent: custEmail,
+      message: info.ai
+        ? 'Registracija uspešna! Za aktivacijo prejmete predračun — po plačilu vas priklopimo in pošljemo račun.'
+        : 'Registracija uspešna! Kontaktirali vas bomo za priklop (aktivacijo). Preverite email za dostop do nadzorne plošče.'
+    });
+  } catch (err) {
+    console.error('Signup error:', err.message);
+    res.status(500).json({ error: 'Napaka pri registraciji. Poskusite znova ali nas kontaktirajte.' });
+  }
+});
+
+
+// ─── Priklop (aktivacija) salona — master ──────────────────────
+// Za AI pakete zahteva plačan predračun (razen ?force). Trial osnovnih paketov
+// začne ob priklopu (+30 dni). Bot se prižge (bot_active=true).
+app.post('/api/admin/activate/:id', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
+    const info = planInfo(salon.subscription_plan);
+    if (info.ai && salon.billing_status !== 'paid' && req.body?.force !== true) {
+      return res.status(400).json({ error: 'AI paket ni plačan. Najprej označi predračun kot plačan (ali pošlji force:true).' });
+    }
+    const updates = {
+      signup_status: 'active',
+      bot_active: true,
+      subscription_status: info.ai ? 'active' : 'trial',
+      activated_at: new Date().toISOString()
+    };
+    if (req.body?.whatsapp_phone_number_id) updates.whatsapp_phone_number_id = String(req.body.whatsapp_phone_number_id).trim();
+    if (req.body?.whatsapp_access_token)   updates.whatsapp_access_token   = String(req.body.whatsapp_access_token).trim();
+    if (!info.ai) updates.trial_ends_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const updated = await db.updateSalonSettings(salon.id, updates);
+    console.log('Salon activated (priklop):', salon.id, salon.name);
+    res.json({ success: true, salon: updated || null });
+  } catch (err) { console.error('Activate error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
+// ─── Označi predračun kot plačan — master ──────────────────────
+app.post('/api/admin/mark-paid/:id', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
+    const updates = { billing_status: 'paid', paid_at: new Date().toISOString(), subscription_status: 'active' };
+    if (req.body?.invoice_no) updates.invoice_no = String(req.body.invoice_no).trim();
+    const updated = await db.updateSalonSettings(salon.id, updates);
+    console.log('Salon marked paid:', salon.id, salon.name);
+    res.json({ success: true, salon: updated || null });
+  } catch (err) { console.error('Mark-paid error:', err.message); res.status(500).json({ error: err.message }); }
+});
+
+
 // ─── Delete salon (master admin only) ──────────────────────────
 app.delete('/api/admin/salons/:id', async (req, res) => {
   if (!adminAuth(req, res)) return;
@@ -1021,6 +1184,9 @@ app.get('/api/settings', async (req, res) => {
       delivery_fee: parseFloat(salon.delivery_fee || 0),
       subscription_plan: salon.subscription_plan || 'starter',
       subscription_status: salon.subscription_status || 'trial',
+      signup_status: salon.signup_status || 'active',
+      billing_status: salon.billing_status || 'none',
+      billing_period: salon.billing_period || 'monthly',
       stripe_active: !!salon.stripe_customer_id,
       pos_type: salon.pos_type || '',
       pos_account: salon.pos_account || '',

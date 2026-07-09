@@ -1,4 +1,64 @@
 const BUSINESS_TYPES = {
+  restaurant: {
+    label: 'Restavracije (dostava)',
+    greeting: 'Pozdravljeni! Sem avtomatski natakar za narocila. Zelite kaj narociti?',
+    services: [
+      { name: 'Dunajski zrezek',     price: 12,  category: 'Glavne jedi', sort_order: 1 },
+      { name: 'Testenine Carbonara', price: 8.5, category: 'Testenine',   sort_order: 2 },
+      { name: 'Solata Cezar',        price: 7,   category: 'Solate',      sort_order: 3 },
+      { name: 'Coca-Cola 0,5 l',     price: 2.5, category: 'Pijaca',      sort_order: 4 }
+    ]
+  },
+  pizzeria: {
+    label: 'Picerije (dostava)',
+    greeting: 'Pozdravljeni! Sem avtomatski natakar picerije za narocila. Zelite kaj narociti?',
+    services: [
+      { name: 'Margerita',       price: 7.5, category: 'Pice',   sort_order: 1 },
+      { name: 'Capricciosa',     price: 9,   category: 'Pice',   sort_order: 2 },
+      { name: 'Vegetarijana',    price: 9,   category: 'Pice',   sort_order: 3 },
+      { name: 'Coca-Cola 0,5 l', price: 2.5, category: 'Pijaca', sort_order: 4 }
+    ]
+  },
+  burger: {
+    label: 'Burgerji / Fast food (dostava)',
+    greeting: 'Pozdravljeni! Sem avtomatski natakar za narocila. Zelite kaj narociti?',
+    services: [
+      { name: 'Classic burger',  price: 7,   category: 'Burgerji', sort_order: 1 },
+      { name: 'Cheeseburger',    price: 7.5, category: 'Burgerji', sort_order: 2 },
+      { name: 'Krompircek',      price: 3,   category: 'Priloge',  sort_order: 3 },
+      { name: 'Coca-Cola 0,5 l', price: 2.5, category: 'Pijaca',   sort_order: 4 }
+    ]
+  },
+  kebab: {
+    label: 'Kebab (dostava)',
+    greeting: 'Pozdravljeni! Sem avtomatski natakar za narocila. Zelite kaj narociti?',
+    services: [
+      { name: 'Kebab v lepinji',  price: 4.5, category: 'Kebab',  sort_order: 1 },
+      { name: 'Kebab v tortilji', price: 5,   category: 'Kebab',  sort_order: 2 },
+      { name: 'Durum',            price: 6,   category: 'Kebab',  sort_order: 3 },
+      { name: 'Coca-Cola 0,5 l',  price: 2.5, category: 'Pijaca', sort_order: 4 }
+    ]
+  },
+  dog_grooming: {
+    label: 'Pasji saloni (nega)',
+    greeting: 'Pozdravljeni! Sem avtomatski asistent pasjega salona za narocanje terminov.',
+    services: [
+      { name: 'Kopanje',          price: 20, duration_minutes: 45, sort_order: 1 },
+      { name: 'Strizenje',        price: 35, duration_minutes: 60, sort_order: 2 },
+      { name: 'Nega krempljev',   price: 10, duration_minutes: 20, sort_order: 3 },
+      { name: 'Celotna nega',     price: 50, duration_minutes: 90, sort_order: 4 }
+    ]
+  },
+  barber: {
+    label: 'Brivnice / Barber',
+    greeting: 'Pozdravljeni! Sem avtomatski asistent brivnice za narocanje terminov.',
+    services: [
+      { name: 'Strizenje',        price: 18, duration_minutes: 30, sort_order: 1 },
+      { name: 'Urejanje brade',   price: 12, duration_minutes: 20, sort_order: 2 },
+      { name: 'Strizenje + brada', price: 26, duration_minutes: 45, sort_order: 3 },
+      { name: 'Klasicno britje',  price: 20, duration_minutes: 30, sort_order: 4 }
+    ]
+  },
   cosmetics: {
     label: 'Kozmeticni studio',
     greeting: 'Pozdravljeni! Sem avtomatski asistent kozmeticnega studia za narocanje terminov.',
