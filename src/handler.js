@@ -699,7 +699,11 @@ async function handleMessage(msgObj, salon) {
     if (sess.step === 306 && sess.pendingItem && msgText) {
       const isAiPlan = salon.subscription_plan === 'ai';
       const qtyParsed = parseSloQty(msgText);
-      if (qtyParsed && qtyParsed.clean) {
+      // Posebnost (npr. "brez gob") prepustimo AI; sicer, če je podana količina
+      // (tudi z dodatnimi besedami, npr. "dve kot sem prej napisal"), dodaj determinsitično.
+      const hasNote = /(brez|extra|ekstra|dodatn|pikant|alergij|gluten|lakto)/i.test(msgText);
+      const canAddDet = qtyParsed && qtyParsed.q >= 1 && (qtyParsed.clean || (isAiPlan && !hasNote));
+      if (canAddDet) {
         const qty306 = qtyParsed.q;
         if (isAiPlan) {
           const item = sess.pendingItem;
@@ -1095,18 +1099,23 @@ async function handleMessage(msgObj, salon) {
       }
     }
 
-    // ── AI paket: zahteva za meni = VEDNO interaktivni seznam (deterministično, tudi večkrat) ──
+    // ── AI paket: zahteva za meni = interaktivni seznam; če omeni kategorijo (npr. "meni samo pic") -> samo ta kategorija ──
     if (msgText && !iId && salon.subscription_plan === 'ai' && !sess.checkoutStage && msgText.length < 60
         && /(^|\s)(meni|menij|jedilnik|ponudb\w*|cenik)\b/i.test(msgText)
         && !/(ime|priimek)/i.test(msgText)) {
       const curM = session.get(skey);
-      const menuSalonM = { ...salon, greeting_message: 'Izvolite meni:' };
-      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalonM, cartSummaryShort(curM.cart)));
+      const norm = x => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const catList = [...new Set(services.map(s => s.category || 'Ostalo'))];
+      const stop = ['meni', 'menij', 'jedilnik', 'ponudba', 'ponudbo', 'cenik', 'samo', 'daj', 'pokazi', 'zelim', 'imate', 'prosim'];
+      const mWords = norm(msgText).split(/\s+/).filter(w => w.length >= 3 && !stop.includes(w));
+      const matchedCat = catList.find(c => { const cn = norm(c); return mWords.some(w => cn.startsWith(w.slice(0, 4)) || w.startsWith(cn.slice(0, 4))); });
+      const menuSalonM = { ...salon, greeting_message: matchedCat ? matchedCat + ':' : 'Izvolite meni:' };
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalonM, cartSummaryShort(curM.cart), matchedCat || undefined));
       return;
     }
 
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
-    if (msgText && !iId && salon.subscription_plan === 'ai' && !(sess.cart || []).length && !sess.checkoutStage
+    if (msgText && !iId && salon.subscription_plan === 'ai' && !(sess.cart || []).length && !sess.checkoutStage && !sess.pendingItem
         && msgText.trim().length <= 15 && !findService(services, msgText)
         && /^\s*(da|ja|jaa|seveda|lahko|prosim|ok|okej|velja|zelim|želim|hočem|hocem|bi|itak)\b/i.test(msgText.trim())) {
       const cancelHint = sess.hintShown ? '' : '\n_Naročilo lahko kadar koli prekličete tako, da napišete *prekliči*._';
