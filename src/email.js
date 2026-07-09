@@ -202,7 +202,7 @@ async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, ti
               </td>
             </tr>
           </table>
-          <p style="color:#94a3b8;font-size:12px;text-align:center;margin:20px 0 0;">Ali upravljajte rezervacije v <a href="${baseUrl}/dashboard.html" style="color:#7c3aed;">FlowTiq dashboardu</a></p>
+          <p style="color:#94a3b8;font-size:12px;text-align:center;margin:20px 0 0;">Ali upravljajte rezervacije v <a href="${baseUrl}/admin.html" style="color:#7c3aed;">FlowTiq dashboardu</a></p>
         </td></tr>
       </table>
     </td></tr>

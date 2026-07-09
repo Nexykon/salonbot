@@ -22,6 +22,10 @@ app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // ─── Static files (dashboard) ─────────────────────────────
+// Preusmeritve po preimenovanju strani (stari zaznamki/emaili ostanejo veljavni)
+app.get('/dashboard.html', (req, res) => { const qs = req.originalUrl.split('?')[1]; res.redirect(302, '/admin.html' + (qs ? '?' + qs : '')); });
+app.get('/settings.html', (req, res) => { const qs = req.originalUrl.split('?')[1]; res.redirect(302, '/salon.html' + (qs ? '?' + qs : '')); });
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 function cleanPhone(phone) {
@@ -1153,7 +1157,7 @@ app.post('/api/admin/salons/:id/apply-preset', async (req, res) => {
   }
 });
 
-// ─── Owner Settings endpoints (settings.html) ────────────────
+// ─── Owner Settings endpoints (salon.html) ────────────────
 
 // GET /api/settings — vrne nastavitve salona za lastnika
 app.get('/api/settings', async (req, res) => {
@@ -1286,7 +1290,7 @@ app.post('/api/billing/checkout', async (req, res) => {
   if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" še ni nastavljena (env STRIPE_PRICE_${plan.toUpperCase()}).` });
   try {
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
-    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'settings.html';
+    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
@@ -1318,7 +1322,7 @@ app.post('/api/billing/portal', async (req, res) => {
   if (!salon.stripe_customer_id) return res.status(400).json({ error: 'Naročnina prek Stripe še ni aktivirana.' });
   try {
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
-    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'settings.html';
+    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
     const portal = await stripe.billingPortal.sessions.create({
       customer: salon.stripe_customer_id,
       return_url: `${baseUrl}/${returnPage}`
@@ -1502,7 +1506,7 @@ app.post('/api/auth/master-login', async (req, res) => {
     }
     const token = ownerAuth.createSession(null, 'master', { email });
     await db.updateMasterAdmin(admin.id, { last_login_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-    res.json({ success: true, token, role: 'master', redirect: '/dashboard.html' });
+    res.json({ success: true, token, role: 'master', redirect: '/admin.html' });
   } catch (err) {
     console.error('Master login error:', err.message);
     res.status(500).json({ error: 'Prijava trenutno ni uspela' });
@@ -1521,7 +1525,7 @@ app.post('/api/auth/master-forgot', async (req, res) => {
         reset_token_expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         updated_at: new Date().toISOString()
       });
-      const resetUrl = `${req.protocol}://${req.get('host')}/dashboard.html?reset=${token}`;
+      const resetUrl = `${req.protocol}://${req.get('host')}/admin.html?reset=${token}`;
       await mail.sendPasswordReset(email, resetUrl);
     }
     res.json({ success: true, message: 'Ce email obstaja, je povezava za ponastavitev poslana.' });
@@ -1609,7 +1613,7 @@ app.post('/api/auth/verify', async (req, res) => {
   if (!token) return res.status(401).json({ error: 'Napacna ali potekla koda' });
   const session = ownerAuth.getSession(token);
   if (session?.role === 'master') {
-    return res.json({ success: true, token, role: 'master', redirect: '/dashboard.html' });
+    return res.json({ success: true, token, role: 'master', redirect: '/admin.html' });
   }
   const salon = await db.getSalonById(session.salonId);
   res.json({ success: true, token, role: 'owner', salon: publicSalon(salon) });
@@ -1647,7 +1651,7 @@ app.post('/api/auth/switch', async (req, res) => {
     const salon = await db.getSalonById(targetId);
     if (!salon || salon.subscription_status === 'inactive') return res.status(404).json({ error: 'Lokal ni najden' });
     const token = ownerAuth.createSession(salon.id, 'owner', { email: session.email, allowedSalons: allowed });
-    const redirect = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? '/delivery.html' : '/settings.html';
+    const redirect = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? '/delivery.html' : '/salon.html';
     res.json({ success: true, token, redirect, salon: publicSalon(salon) });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1872,7 +1876,7 @@ function resultPage(title, body, color) {
     <div style="font-size:48px;margin-bottom:16px;">${color === '#22c55e' ? '✅' : '❌'}</div>
     <h2 style="color:${color};margin:0 0 12px;font-size:22px;">${title}</h2>
     <p style="color:#64748b;font-size:15px;line-height:1.6;margin:0 0 24px;">${body}</p>
-    <a href="/dashboard.html" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;">Odpri dashboard →</a>
+    <a href="/admin.html" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;">Odpri dashboard →</a>
   </div>
 </body></html>`;
 }

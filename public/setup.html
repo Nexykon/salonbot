@@ -207,7 +207,7 @@
         if (res.ok) {
           showMsg('✅ Geslo nastavljeno! Preusmerjam...', 'success');
           if (data.token) localStorage.setItem('owner_token', data.token);
-          setTimeout(() => { window.location.href = '/settings.html'; }, 1500);
+          setTimeout(() => { window.location.href = '/salon.html'; }, 1500);
         } else {
           showMsg(data.error || 'Napaka pri nastavitvi gesla.', 'error');
           btn.disabled = false;

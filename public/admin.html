@@ -1647,7 +1647,7 @@ async function resetMasterPassword() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Gesla ni bilo mogoče nastaviti.');
-    history.replaceState(null, '', '/dashboard.html');
+    history.replaceState(null, '', '/admin.html');
     showMasterLogin();
     document.getElementById('login-error').textContent = 'Geslo je nastavljeno. Zdaj se prijavite.';
     document.getElementById('login-error').style.display = 'block';
@@ -2356,7 +2356,7 @@ function openOwnerDashboard(id) {
     showToast('Najprej se prijavite z master WhatsApp OTP.', 'error');
     return;
   }
-  window.open(`/settings.html?salonId=${encodeURIComponent(id)}&master_token=${encodeURIComponent(masterToken)}`, '_blank', 'noopener');
+  window.open(`/salon.html?salonId=${encodeURIComponent(id)}&master_token=${encodeURIComponent(masterToken)}`, '_blank', 'noopener');
 }
 
 function openSelectedDashboard() {

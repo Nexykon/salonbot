@@ -374,14 +374,8 @@ body {
       </div>
       <div class="settings-card">
         <div class="settings-card-title">Naročnina</div>
-        <div id="billing-info" style="font-size:14px;margin-bottom:14px;color:var(--muted)">Nalagam ...</div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn-save" style="flex:1;background:var(--surface2);color:var(--text);border:1px solid var(--border)" onclick="billingCheckout('starter')">Osnovni — 49,99 €/mes</button>
-          <button class="btn-save" style="flex:1" onclick="billingCheckout('pro')">Pro (POS) — 79,99 €/mes</button>
-          <button class="btn-save" style="flex:1;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff" onclick="billingCheckout('ai')">🤖 AI — 159,99 €/mes</button>
-        </div>
-        <button class="btn-save" id="billing-portal-btn" style="margin-top:10px;width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);display:none" onclick="billingPortal()">🧾 Uredi naročnino / računi</button>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">Prva aktivacija vključuje 30 dni brezplačno. Plačilo varno prek Stripe.</div>
+        <div id="billing-info" style="font-size:14px;margin-bottom:8px;color:var(--muted)">Nalagam ...</div>
+        <div id="billing-note" style="font-size:13px;color:var(--muted);margin-top:6px"></div>
       </div>
       <div class="settings-card">
         <div class="settings-card-title">Način naročanja</div>
@@ -655,9 +649,9 @@ async function doLogin() {
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'Prijava ni uspela');
-    if (d.role === 'master') { window.location.href = '/dashboard.html'; return; }
+    if (d.role === 'master') { window.location.href = '/admin.html'; return; }
     if (!d.salon || d.salon.booking_mode !== 'delivery') {
-      window.location.href = '/settings.html'; return;
+      window.location.href = '/salon.html'; return;
     }
     ownerToken = d.token;
     localStorage.setItem('ft_delivery_token', ownerToken);
@@ -1301,10 +1295,30 @@ async function initLocationSwitcher(tokenGetter, tokenSetter) {
 function renderBilling(d) {
   const el = document.getElementById('billing-info');
   if (!el) return;
-  const planLabel = d.subscription_plan === 'ai' ? '🤖 AI (159,99 €/mes)' : (d.subscription_plan === 'pro' ? 'Pro (79,99 €/mes)' : 'Osnovni (49,99 €/mes)');
-  const stLabel = { active: '✅ Aktivna', trial: '🎁 Preizkusno obdobje', inactive: '⛔ Neaktivna' }[d.subscription_status] || (d.subscription_status || '—');
-  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + stLabel + '</b>';
-  document.getElementById('billing-portal-btn').style.display = d.stripe_active ? 'block' : 'none';
+  const PLAN_LABELS = { starter:'Osnovni (49,99 €/mes)', pro:'Pro (79,99 €/mes)', ai:'AI natakar (159,99 €/mes)', premium:'Premium (299 €/mes)' };
+  const planLabel = PLAN_LABELS[d.subscription_plan] || 'Osnovni';
+  const isAi = d.subscription_plan === 'ai' || d.subscription_plan === 'premium';
+  let statusHtml, note = '';
+  if (d.signup_status === 'pending') {
+    if (isAi && d.billing_status !== 'paid') {
+      statusHtml = '⏳ Čaka na plačilo predračuna';
+      note = 'Za aktivacijo poravnajte predračun, ki vam ga pošljemo na email. Po plačilu vas priklopimo in vam izdamo račun.';
+    } else {
+      statusHtml = '⏳ Čaka na priklop';
+      note = 'Vaš račun je ustvarjen. Kontaktirali vas bomo za priklop (aktivacijo bota) — običajno v nekaj urah.';
+    }
+  } else if (d.subscription_status === 'active') {
+    statusHtml = '✅ Aktivno';
+    note = 'Vaš bot je aktiven.';
+  } else if (d.subscription_status === 'trial') {
+    statusHtml = '🎁 Brezplačni preizkus (30 dni)';
+  } else {
+    statusHtml = '⛔ Neaktivno';
+    note = 'Za ponovno aktivacijo nas kontaktirajte.';
+  }
+  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + statusHtml + '</b>';
+  const nb = document.getElementById('billing-note');
+  if (nb) nb.textContent = note;
 }
 async function billingCheckout(plan) {
   try {

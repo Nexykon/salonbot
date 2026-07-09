@@ -857,7 +857,7 @@ const DAYS_SL = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
 
 if (masterToken) sessionStorage.setItem('ft_master_token', masterToken);
 if (settingsParams.get('master_token')) {
-  const cleanUrl = previewSalonId ? `/settings.html?salonId=${encodeURIComponent(previewSalonId)}` : '/settings.html';
+  const cleanUrl = previewSalonId ? `/salon.html?salonId=${encodeURIComponent(previewSalonId)}` : '/salon.html';
   history.replaceState(null, '', cleanUrl);
 }
 
@@ -1020,7 +1020,7 @@ async function loginWithPassword() {
     }
     if (r.ok && data.role === 'master') {
       sessionStorage.setItem('ft_master_token', data.token);
-      window.location.href = '/dashboard.html';
+      window.location.href = '/admin.html';
       return;
     }
     if (!r.ok) throw new Error(data.error || 'Prijava ni uspela');
@@ -1073,7 +1073,7 @@ async function verifyOtp() {
     if (!r.ok) throw new Error(data.error || 'Napacna koda');
     if (data.role === 'master') {
       sessionStorage.setItem('ft_master_token', data.token);
-      window.location.href = '/dashboard.html';
+      window.location.href = '/admin.html';
       return;
     }
     ownerToken = data.token;
