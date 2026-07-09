@@ -47,15 +47,18 @@ function hashToken(token) {
 }
 
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_KEY || 'flowtiq-fallback-secret';
-const SESSION_TTL = 30 * 24 * 60 * 60 * 1000; // 30 dni
+const SESSION_TTL_OWNER = 24 * 60 * 60 * 1000;        // 24 ur (lastniki salonov)
+const SESSION_TTL_MASTER = 30 * 24 * 60 * 60 * 1000;  // 30 dni (master admin)
 
 function createSession(salonId, role = 'owner', identity = {}) {
-  const payload = JSON.stringify({ salonId, role, ...identity, expiresAt: Date.now() + SESSION_TTL });
+  const ttl = role === 'master' ? SESSION_TTL_MASTER : SESSION_TTL_OWNER;
+  const expiresAt = Date.now() + ttl;
+  const payload = JSON.stringify({ salonId, role, ...identity, expiresAt });
   const payloadB64 = Buffer.from(payload).toString('base64url');
   const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
   const token = `${payloadB64}.${sig}`;
   // Ohrani tudi in-memory za backward compatibility
-  sessions.set(token, { salonId, role, ...identity, expiresAt: Date.now() + SESSION_TTL });
+  sessions.set(token, { salonId, role, ...identity, expiresAt });
   return token;
 }
 
