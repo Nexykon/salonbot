@@ -918,8 +918,8 @@ function renderMenu() {
     el.innerHTML='<div class="empty-state"><span class="emoji">🍽️</span><p>Meni je prazen</p></div>'; return;
   }
   // Sortiraj po sort_order
-  const svcs = [...allServices].sort((a,b) => (a.sort_order||0) - (b.sort_order||0));
-  // Grupiraj — vrstni red kategorij = min sort_order prve storitve v njej
+  const svcs = [...allServices].sort((a,b) => (a.sort_order||0) - (b.sort_order||0) || (a.name||'').localeCompare(b.name||'', 'sl'));
+// Grupiraj — vrstni red kategorij = min sort_order prve storitve v njej
   const grouped = {};
   const catMinOrder = {};
   svcs.forEach(s => {

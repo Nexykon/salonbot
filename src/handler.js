@@ -630,6 +630,17 @@ async function handleMessage(msgObj, salon) {
       return `${kosov} kosov | ${cartTotal(cart)} €`;
     }
 
+    // ── Izbrana kategorija → artikli te kategorije (ali cel meni kot besedilo) ──
+    if (iId.startsWith('cat_')) {
+      const cat = iId.slice(4);
+      if (cat === 'ALL') {
+        await wa.send(phoneId, token, wa.deliveryMenuText(from, services));
+      } else {
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart), cat));
+      }
+      return;
+    }
+
     // ── Artikel izbran → dodaj v košarico + cart gumbi (Dodaj še / Zaključi)
     if (iId.startsWith('menu_')) {
       const svcId = iId.replace('menu_', '');
