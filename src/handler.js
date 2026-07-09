@@ -639,32 +639,13 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
         return;
       }
-      // AI paket: vprašanje o količini in posebnostih postavi AI, naravno za ta artikel
+      // AI paket: po izbiri z menija VEDNO deterministično vprašaj po količini.
+      // (Prej je klic AI ob "2 pici" -> izbira izgubil količino in dodal 1.)
       if (salon.subscription_plan === 'ai') {
         const pending = { id: svc.id, name: svc.name, price: svc.price || 0 };
         session.set(skey, { ...sess, step: 306, pendingItem: pending });
-        if (aiConfigured() && sess.aiAllowed !== false) {
-          try {
-            const history = sess.aiHistory || [];
-            const result = await askOrderAI({
-              message: `[IZBRANO Z MENIJA: ${svc.name}]`, salon, services,
-              cart: sess.cart || [], history, phone: from, pendingItem: pending,
-              order: { mode: sess.orderMode || null, name: sess.customerName || null, address: sess.deliveryAddress || null },
-              note: sess.opomba || ''
-            });
-            if (result.reply) {
-              const newHistory = [...history,
-                { role: 'user', content: `[izbral z menija: ${svc.name}]` },
-                { role: 'assistant', content: result.reply }
-              ].slice(-60);
-              session.set(skey, { ...sess, step: 306, pendingItem: pending, aiHistory: newHistory });
-              await wa.send(phoneId, token, wa.textMsg(from, result.reply));
-              return;
-            }
-          } catch (e) { console.error('[AI natakar] izbira:', e.message); }
-        }
         await wa.send(phoneId, token, wa.textMsg(from,
-          `Koliko ${svc.name} želite? Če želite kakšno prilagoditev (npr. brez gob), kar pripišite.`
+          `Koliko *${svc.name}* želite? Če želite kakšno prilagoditev (npr. brez gob), kar pripišite.`
         ));
         return;
       }
@@ -995,15 +976,10 @@ async function handleMessage(msgObj, salon) {
         );
       }
       session.clear(skey);
-      await wa.send(phoneId, token, {
-        messaging_product: 'whatsapp', to: from, type: 'interactive',
-        interactive: {
-          type: 'button',
-          body: { text: botMsg(salon, isPickup ? 'submitted_pickup' : 'submitted_delivery', { ime: custName, ref: ref6 })
-                 + '\n\n_Naročilo lahko kadarkoli prekličete — kliknite spodaj ali napišite *prekliči*._' },
-          action: { buttons: [{ type: 'reply', reply: { id: 'cancel_request', title: '❌ Prekliči naročilo' } }] }
-        }
-      });
+      // Po oddaji naročila NE ponujamo preklica (da ni zmede v gostilni po pripravi).
+      await wa.send(phoneId, token, wa.textMsg(from,
+        botMsg(salon, isPickup ? 'submitted_pickup' : 'submitted_delivery', { ime: custName, ref: ref6 })
+      ));
       // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
       // (pri več sto naročilih na dan bi bil WhatsApp/email spam).
     };
@@ -1011,31 +987,15 @@ async function handleMessage(msgObj, salon) {
 
     // ── Stranka napiše "prekliči" ──
     if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]\w*|storno|cancel)\b/i.test(msgText))) {
-      // sredi naročanja: prekliči košarico
-      if (sess && sess.step >= 301 && sess.step <= 307) {
+      // Med naročanjem (košarica/zaključek še v teku): prekliči sejo.
+      if ((sess && sess.step >= 301 && sess.step <= 307) || sess.checkoutStage || (sess.cart && sess.cart.length)) {
         session.clear(skey);
         await wa.send(phoneId, token, wa.textMsg(from, 'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕'));
         return;
       }
-      // sicer: prekliči zadnje oddano naročilo
-      const active = await db.getActiveBookingByPhone(salon.id, from);
-      if (!active) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Nimate odprtega naročila, ki bi ga lahko preklicali.'));
-        return;
-      }
-      const refC = (active.id || '').slice(-6).toUpperCase();
-      session.set(skey, { ...sess, cancelBookingId: active.id, cancelRef: refC });
-      await wa.send(phoneId, token, {
-        messaging_product: 'whatsapp', to: from, type: 'interactive',
-        interactive: {
-          type: 'button',
-          body: { text: `Ali res želite preklicati naročilo *#${refC}*?` },
-          action: { buttons: [
-            { type: 'reply', reply: { id: 'cancel_yes', title: '✅ Da, prekliči' } },
-            { type: 'reply', reply: { id: 'cancel_no', title: '↩️ Ne, obdrži' } }
-          ]}
-        }
-      });
+      // Po ODDANEM naročilu preklic ni več mogoč (da ni zmede v gostilni).
+      await wa.send(phoneId, token, wa.textMsg(from,
+        'Naročilo je že oddano in ga ni več mogoče preklicati prek klepeta. Če je prišlo do napake, nas prosim pokličite.'));
       return;
     }
     if (iId === 'cancel_yes' && sess.cancelBookingId) {
@@ -1245,6 +1205,14 @@ async function handleMessage(msgObj, salon) {
           order: { mode: sess.orderMode || null, name: sess.customerName || null, address: sess.deliveryAddress || null },
           note: sess.opomba || ''
         });
+        // Ob PRVEM pogovoru pripni območje dostave + namig za preklic (samo enkrat).
+        const isFirstTurn = (sess.aiHistory || []).length === 0;
+        if (isFirstTurn && !sess.hintShown && result.reply) {
+          const areaTxt = salon.delivery_area ? `Dostavljamo po: ${salon.delivery_area}.` : '';
+          const cancelTxt = 'Naročilo lahko kadar koli prekličete tako, da napišete prekliči.';
+          const extra = [areaTxt, cancelTxt].filter(Boolean).join(' ');
+          if (extra) result.reply = `${result.reply}\n\n${extra}`;
+        }
         const newHistory = [...history,
           { role: 'user', content: msgText },
           { role: 'assistant', content: result.reply || 'V redu.' }
@@ -1253,6 +1221,7 @@ async function handleMessage(msgObj, salon) {
         const ord = result.order || {};
         session.set(skey, {
           ...sess, step: result.cart.length ? 301 : (sess.step || 300),
+          hintShown: sess.hintShown || isFirstTurn,
           cart: result.cart, aiHistory: newHistory, pendingItem: null, opomba: mergedNote,
           orderMode: ord.mode || sess.orderMode || null,
           customerName: ord.name || sess.customerName || null,
