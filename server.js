@@ -1449,7 +1449,7 @@ app.get('/api/settings/services', async (req, res) => {
 app.post('/api/settings/services', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  const { name, price, duration_minutes, description, category } = req.body;
+  const { name, price, duration_minutes, description, category, tags } = req.body;
   if (!name) return res.status(400).json({ error: 'Ime storitve je obvezno' });
   try {
     const svc = await db.createService(salon.id, {
@@ -1458,6 +1458,7 @@ app.post('/api/settings/services', async (req, res) => {
       duration_minutes: parseInt(duration_minutes) || 0,
       description: description || '',
       category: category || 'Ostalo',
+      tags: Array.isArray(tags) ? tags : [],
       is_active: true
     });
     res.json(svc);
@@ -1482,15 +1483,18 @@ app.post('/api/settings/services/reorder', async (req, res) => {
 app.patch('/api/settings/services/:id', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  const { name, price, duration_minutes } = req.body;
+  const { name, price, duration_minutes, description, category, tags } = req.body;
   try {
     const svc = await db.getServiceById(salon.id, req.params.id);
     if (!svc) return res.status(404).json({ error: 'Storitev ni najdena' });
-    await db.updateServiceById(svc.id,
-      price !== undefined ? parseFloat(price) : svc.price,
-      duration_minutes !== undefined ? parseInt(duration_minutes) : svc.duration_minutes,
-      name !== undefined ? name.trim() : svc.name
-    );
+    const fields = {};
+    if (name !== undefined) fields.name = name.trim();
+    if (price !== undefined) fields.price = parseFloat(price) || 0;
+    if (duration_minutes !== undefined) fields.duration_minutes = parseInt(duration_minutes) || 0;
+    if (description !== undefined) fields.description = description;
+    if (category !== undefined) fields.category = category;
+    if (Array.isArray(tags)) fields.tags = tags;
+    await db.patchService(svc.id, fields);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
