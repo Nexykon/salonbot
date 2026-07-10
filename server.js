@@ -311,7 +311,11 @@ app.post('/webhook', async (req, res) => {
     await handleMessage(msgObj, salon);
   } catch (err) {
     console.error('Handler error:', err.message);
-    try { await db.logError(salon?.id, 'handler', err.message, err.stack); } catch(_) {}
+    try {
+      const waBody = (err.waPayload ? 'PAYLOAD: ' + err.waPayload + '\n' : '')
+        + (err.response?.data ? JSON.stringify(err.response.data) : (err.stack || ''));
+      await db.logError(salon?.id, 'handler', err.message, waBody);
+    } catch(_) {}
     // Varnostna mreža: stranka nikoli ne sme dobiti tišine
     try {
       const entryErr = req.body?.entry?.[0]?.changes?.[0]?.value;
