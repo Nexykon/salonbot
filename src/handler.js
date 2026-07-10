@@ -630,11 +630,32 @@ async function handleMessage(msgObj, salon) {
       return `${kosov} kosov | ${cartTotal(cart)} €`;
     }
 
+    // ── Ostranjevanje kategorij: "▶️ Več kategorij" ──
+    if (iId.startsWith('catspage_')) {
+      const pg = parseInt(iId.slice(9)) || 0;
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart), null, pg));
+      return;
+    }
+    // ── Ostranjevanje artiklov znotraj kategorije: catpage_<stran>_<kategorija> ──
+    if (iId.startsWith('catpage_')) {
+      const rest = iId.slice(8);
+      const us = rest.indexOf('_');
+      const pg = us >= 0 ? (parseInt(rest.slice(0, us)) || 0) : 0;
+      const cat = us >= 0 ? rest.slice(us + 1) : rest;
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart), cat, pg));
+      return;
+    }
+    // ── Ostranjevanje enokategorijskega menija: menupage_<stran> ──
+    if (iId.startsWith('menupage_')) {
+      const pg = parseInt(iId.slice(9)) || 0;
+      await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart), null, pg));
+      return;
+    }
     // ── Izbrana kategorija → artikli te kategorije (ali cel meni kot besedilo) ──
     if (iId.startsWith('cat_')) {
       const cat = iId.slice(4);
       if (cat === 'ALL') {
-        await wa.send(phoneId, token, wa.deliveryMenuText(from, services));
+        for (const m of wa.deliveryMenuText(from, services)) await wa.send(phoneId, token, m);
       } else {
         await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess && sess.cart), cat));
       }

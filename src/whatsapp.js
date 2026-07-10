@@ -13,8 +13,16 @@ async function send(phoneId, token, payload) {
     const r = await wa.post('/messages', payload);
     return r.data;
   } catch (e) {
-    console.error('WA send error:', e.response?.data || e.message);
-    throw e;
+    const waErr = e.response?.data?.error;
+    const detail = waErr
+      ? `WA #${waErr.code}${waErr.error_subcode ? '/' + waErr.error_subcode : ''}: ${waErr.message}${waErr.error_data?.details ? ' — ' + waErr.error_data.details : ''} | tip:${payload?.type || '?'} phoneId:${phoneId}`
+      : e.message;
+    console.error('WA send error:', detail, '| payload:', JSON.stringify(payload).slice(0, 500));
+    const err = new Error(detail);
+    err.response = e.response;
+    err.waCode = waErr?.code;
+    err.waPayload = JSON.stringify(payload).slice(0, 600);
+    throw err;
   }
 }
 
@@ -169,7 +177,7 @@ function adminBookingNotifSession(to, customerName, phone, date, time, ref6) {
 }
 
 function adminPendingButtons(to, booking) {
-  const ref6 = (booking.id || '').slice(-6);
+  const ref6 = (booking.id || '').slice(-6).toUpperCase();
   const d = new Date((booking.booking_date || '').substring(0, 10) + 'T12:00:00');
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -260,41 +268,94 @@ function salesConfirmButtons(to, salonName, salonType, email) {
 // DELIVERY BOT FUNCTIONS (booking_mode = 'delivery')
 // ══════════════════════════════════════════════════════
 
-function deliveryMenuList(to, services, salon, cartSummary) {
-  // Grupiranje po kategorijah — vsaka je svoja sekcija
-  const categoryOrder = ['Pice', 'Mesne jedi', 'Vegetarijanske jedi', 'Solate', 'Dodatki', 'Sladice', 'Pijača', 'Ostalo'];
+const MENU_CAT_ORDER = ['Pice', 'Mesne jedi', 'Vegetarijanske jedi', 'Solate', 'Dodatki', 'Sladice', 'Pijača', 'Ostalo'];
+function groupByCategory(services) {
   const grouped = {};
-  for (const s of services) {
-    const cat = s.category || 'Ostalo';
-    if (!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(s);
-  }
-  // Uredi kategorije po predpisanem vrstnem redu
+  for (const s of (services || [])) { const cat = s.category || 'Ostalo'; (grouped[cat] = grouped[cat] || []).push(s); }
   const orderedCats = [
-    ...categoryOrder.filter(c => grouped[c]),
-    ...Object.keys(grouped).filter(c => !categoryOrder.includes(c))
+    ...MENU_CAT_ORDER.filter(c => grouped[c]),
+    ...Object.keys(grouped).filter(c => !MENU_CAT_ORDER.includes(c))
   ];
-  const itemSections = orderedCats.map(cat => ({
-    title: cat,
-    rows: grouped[cat].slice(0, 10).map(s => ({
+  return { grouped, orderedCats };
+}
+
+// Dvostopenjski meni z ostranjevanjem. WhatsApp seznam dovoli NAJVEČ 10 vrstic.
+// - brez izbrane kategorije + velik meni -> KATEGORIJE (ostranjene: "▶️ Več kategorij" / "📋 Cel meni")
+// - izbrana kategorija -> njeni artikli (ostranjeni: "▶️ Prikaži več")
+// Tako podpira poljubno velike menije (100+ jedi).
+const CATS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 9;
+function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page) {
+  page = Math.max(0, parseInt(page) || 0);
+  let items = services || [];
+  if (categoryFilter && categoryFilter !== 'ALL') items = items.filter(s => (s.category || 'Ostalo') === categoryFilter);
+  const { grouped, orderedCats } = groupByCategory(items);
+  const defaultGreeting = (salon && salon.greeting_message) ? salon.greeting_message : '👇 Izberite iz menija:';
+  const cartLine = cartSummary ? '🛒 *V košarici:* ' + cartSummary + '\n\n' : '';
+  const nItems = n => n + ' ' + (n === 1 ? 'artikel' : (n === 2 ? 'artikla' : (n < 5 ? 'artikli' : 'artiklov')));
+  const listMsg = (bodyText, button, sections) => ({
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: { type: 'list', body: { text: (bodyText || '👇').substring(0, 1024) }, action: { button: (button || 'Meni').substring(0, 20), sections } }
+  });
+
+  // ── VELIK meni brez izbrane kategorije -> KATEGORIJE (ostranjene) ──
+  if (!categoryFilter && items.length > 9 && orderedCats.length > 1) {
+    const start = page * CATS_PER_PAGE;
+    const pageCats = orderedCats.slice(start, start + CATS_PER_PAGE);
+    const moreCats = orderedCats.length > start + pageCats.length;
+    const rows = pageCats.map(cat => ({ id: 'cat_' + cat, title: cat.substring(0, 24), description: nItems(grouped[cat].length) }));
+    if (moreCats) rows.push({ id: 'catspage_' + (page + 1), title: '▶️ Več kategorij', description: 'Naslednja stran' });
+    else rows.push({ id: 'cat_ALL', title: '📋 Cel meni', description: 'Prikaži vse kot besedilo' });
+    return listMsg(cartLine + (cartSummary ? 'Izberite kategorijo:' : defaultGreeting), 'Kategorije', [{ title: 'Kategorije', rows }]);
+  }
+
+  // ── ARTIKLI (izbrana kategorija ali majhen meni) — ostranjeno, vedno <=10 vrstic ──
+  const cat = (categoryFilter && categoryFilter !== 'ALL') ? categoryFilter : null;
+  const flat = [];
+  for (const c of orderedCats) for (const s of grouped[c]) flat.push({ s, c });
+  let pageItems, hasMore;
+  if (flat.length <= 10) { pageItems = flat; hasMore = false; }
+  else {
+    const start = page * ITEMS_PER_PAGE;
+    pageItems = flat.slice(start, start + ITEMS_PER_PAGE);
+    hasMore = flat.length > start + pageItems.length;
+  }
+  // sekcije po kategorijah (znotraj strani), ohrani vrstni red
+  const sections = [];
+  for (const { s, c } of pageItems) {
+    let sec = sections.find(x => x._c === c);
+    if (!sec) { sec = { _c: c, title: c.substring(0, 24), rows: [] }; sections.push(sec); }
+    sec.rows.push({
       id: 'menu_' + s.id,
       title: (s.name).substring(0, 24),
       description: ((s.description ? s.description + ' · ' : '') + (s.price ? s.price + ' €' : '')).substring(0, 72)
-    }))
-  }));
-  const sections = itemSections;
-  const defaultGreeting = (salon && salon.greeting_message) ? salon.greeting_message : '👇 Izberite artikel iz menija:';
-  const bodyText = cartSummary
-    ? '🛒 *V košarici:* ' + cartSummary + '\n\nIzberite še artikel:'
-    : defaultGreeting;
-  return {
-    messaging_product: 'whatsapp', to, type: 'interactive',
-    interactive: {
-      type: 'list',
-      body: { text: bodyText },
-      action: { button: 'Odpri meni', sections }
-    }
-  };
+    });
+  }
+  if (hasMore && sections.length) {
+    const nextId = cat ? ('catpage_' + (page + 1) + '_' + cat) : ('menupage_' + (page + 1));
+    sections[sections.length - 1].rows.push({ id: nextId, title: '▶️ Prikaži več', description: 'Naslednja stran' });
+  }
+  sections.forEach(sec => delete sec._c);
+  const bodyText = cartSummary ? cartLine + 'Izberite še artikel:' : (cat ? cat + ':' : defaultGreeting);
+  return listMsg(bodyText, cat ? cat : 'Odpri meni', sections.length ? sections : [{ title: 'Meni', rows: [] }]);
+}
+
+// Cel meni kot besedilo — razbito na več sporočil, če je predolgo (WhatsApp meja ~4096 znakov).
+// Vrne POLJE payloadov (pošlji vsakega posebej).
+function deliveryMenuText(to, services) {
+  const { grouped, orderedCats } = groupByCategory(services);
+  const MAX = 3500;
+  const parts = [];
+  let txt = '*Naš meni*\n';
+  for (const cat of orderedCats) {
+    let block = '\n*' + cat + '*\n';
+    for (const s of grouped[cat]) block += '• ' + s.name + (s.price ? ' — ' + s.price + ' €' : '') + '\n';
+    if (txt.length + block.length > MAX) { parts.push(txt); txt = block; }
+    else txt += block;
+  }
+  txt += '\nNapišite, kaj želite (npr. "ena Margherita in dve koli").';
+  parts.push(txt);
+  return parts.map(body => ({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }));
 }
 
 function deliveryCartButtons(to, cartText, total) {
@@ -371,4 +432,4 @@ function posAdminNotif(to, customerPhone, cartText, comment, total, ref6) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };
