@@ -12,7 +12,8 @@ const DEFAULTS = {
   submitted_pickup:   '✅ Naročilo oddano, {ime}!\n\n🔑 Ref: *#{ref}*\n\nNaročilo bomo kmalu potrdili in vas obvestili, kdaj bo pripravljeno za prevzem. 🏃',
   accepted_delivery:  '🍕 Vaše naročilo je potrjeno!\n\n⏱️ Dostava v pribl. *{minute} minutah*\n\nHvala za naročilo! 😊',
   accepted_pickup:    '🏃 Vaše naročilo je potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *{minute} minutah*{naslov}\n\nHvala za naročilo! 😊',
-  rejected:           '😔 Žal vašega naročila nismo mogli sprejeti. Pokličite nas za več informacij.'
+  rejected:           '😔 Žal vašega naročila nismo mogli sprejeti. Pokličite nas za več informacij.',
+  bot_offline:        '⏸️ Trenutno žal ne sprejemamo naročil. Poskusite malo kasneje. Hvala za razumevanje! 🙏'
 };
 
 const KEYS = Object.keys(DEFAULTS);

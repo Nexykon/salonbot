@@ -27,7 +27,9 @@ async function send(phoneId, token, payload) {
 }
 
 function textMsg(to, body) {
-  return { messaging_product: 'whatsapp', to, type: 'text', text: { body } };
+  // WhatsApp zavrne prazno besedilo (#100). Varovalka: nikoli ne pošlji praznega.
+  const b = (body == null ? '' : String(body)).trim() || 'Trenutno vam ne moremo odgovoriti. Prosimo, poskusite čez trenutek.';
+  return { messaging_product: 'whatsapp', to, type: 'text', text: { body: b } };
 }
 
 function serviceList(to, services, salon = {}) {
