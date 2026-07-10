@@ -974,23 +974,29 @@
       
     </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Salon</th>
-            <th>Kontakt</th>
-            <th>Paket</th>
-            <th>Naročila/mes</th>
-            <th>Status</th>
-            <th>Datum</th>
-            <th>Akcije</th>
-          </tr>
-        </thead>
-        <tbody id="salons-table">
-          <tr class="loading-row"><td colspan="6"><span class="spinner"></span> Nalagam...</td></tr>
-        </tbody>
-      </table>
+    <style>
+      .salon-list{display:flex;flex-direction:column;gap:10px}
+      .salon-row{display:flex;gap:12px;align-items:flex-start;background:var(--surface,#fff);border:1px solid var(--border,#e8e7f0);border-radius:14px;padding:14px 16px}
+      .salon-av{width:40px;height:40px;border-radius:50%;background:rgba(37,211,102,.12);color:#059669;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+      .salon-main{flex:1;min-width:0}
+      .salon-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+      .salon-nm{font-size:15px;font-weight:700;color:var(--text,#111118)}
+      .salon-meta{font-size:12.5px;color:var(--text2,#64748b);margin-top:3px}
+      .salon-sub{color:var(--text3,#94a3b8);font-size:11.5px}
+      .salon-plan-row{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+      .salon-actions{display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:stretch;min-width:150px}
+      .sb{font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;white-space:nowrap}
+      .sb-ok{background:rgba(5,150,105,.12);color:#059669}
+      .sb-trial{background:rgba(37,99,235,.12);color:#2563eb}
+      .sb-off{background:rgba(100,116,139,.15);color:#475569}
+      .sb-plan{background:rgba(124,58,237,.12);color:#7c3aed}
+      .sb-warn{background:#fef3c7;color:#92400e}
+      .sb-danger{background:rgba(220,38,38,.1);color:#b91c1c}
+      .sb-req{background:#fef3c7;color:#92400e}
+      @media(max-width:720px){.salon-row{flex-wrap:wrap}.salon-actions{flex-direction:row;flex-wrap:wrap;width:100%;min-width:0}}
+    </style>
+    <div id="salons-table" class="salon-list">
+      <div style="padding:20px;text-align:center;color:var(--text2,#64748b)"><span class="spinner"></span> Nalagam...</div>
     </div>
 
     <!-- CALENDAR moved to owner dashboard -->
@@ -1793,71 +1799,63 @@ function renderStats() {
   document.getElementById('stat-revenue').textContent = revenue > 0 ? `€${revenue}` : '€0';
 }
 
+const PLAN_SHORT = { starter:'Osnovni', pro:'Pro (POS)', ai:'AI natakar', premium:'Premium' };
+function salonInitials(name){ return ((name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('')||'?').toUpperCase(); }
 function renderTable() {
-  const tbody = document.getElementById('salons-table');
+  const box = document.getElementById('salons-table');
   if (!salonsData.length) {
-    tbody.innerHTML = `<tr><td colspan="6">
-      <div class="empty-state">
-        <div class="empty-icon">🏪</div>
-        <p>Ni salonov</p>
-        <small>Kliknite "+ Nov salon" da dodate prvega</small>
-      </div>
-    </td></tr>`;
+    box.innerHTML = `<div class="empty-state"><div class="empty-icon">🏪</div><p>Ni strank</p><small>Kliknite "Nova stranka" da dodate prvo</small></div>`;
     return;
   }
-
-  tbody.innerHTML = salonsData.map(s => {
-    const statusClass = s.subscription_status === 'active' ? 'active' : s.subscription_status === 'trial' ? 'trial' : 'inactive';
-    const statusLabel = s.subscription_status === 'active' ? 'Aktiven' : s.subscription_status === 'trial' ? 'Preizkus' : 'Neaktiven';
-    const planClass = s.subscription_plan === 'ai' ? 'pro' : (s.subscription_plan === 'pro' ? 'pro' : 'starter');
-    const planLabel = s.subscription_plan === 'ai' ? '🤖 AI €159,99' : (s.subscription_plan === 'pro' ? 'POS €79,99' : 'Osnovno €49,99');
-    const date = s.created_at ? new Date(s.created_at).toLocaleDateString('sl-SI') : '—';
-
-    const canActivate = s.subscription_status !== 'active';
-    const canDeactivate = s.subscription_status === 'active';
-
-    return `<tr>
-      <td>
-        <div class="salon-name">${s.name || '—'}</div>
-        <div class="salon-owner">${s.business_label || s.business_type || '—'} · ${s.business_slug || 'brez-sluga'}</div>
-        <div class="salon-owner">${s.owner_name || ''}</div>
-      </td>
-      <td>
-        <div style="font-size:13px">${s.owner_email || '—'}</div>
-        <div style="font-size:12px;color:var(--text2)">+${s.admin_phone || '—'}</div>
-        <div style="font-size:12px;color:var(--text3)">WA ID: ${s.whatsapp_phone_number_id || '—'}</div>
-      </td>
-      <td>
-        <select class="plan-select ${planClass}" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
-          <option value="starter" ${s.subscription_plan === 'starter' ? 'selected' : ''}>Osnovno €49,99/mes</option>
-          <option value="pro" ${s.subscription_plan === 'pro' ? 'selected' : ''}>POS €79,99/mes</option>
-          <option value="ai" ${s.subscription_plan === 'ai' ? 'selected' : ''}>🤖 AI €159,99/mes</option>
-          <option value="premium" ${s.subscription_plan === 'premium' ? 'selected' : ''}>Premium €299/mes</option>
-        </select>
-      </td>
-      <td><span class="usage-cell" data-salon="${s.id}" style="font-size:13px;color:var(--text2)">—</span></td>
-      <td>
-        <span class="badge ${statusClass}">${statusLabel}</span>
-        ${s.signup_status === 'pending' ? '<div style="margin-top:4px"><span class="badge trial">⏳ čaka na priklop</span></div>' : ''}
-        ${s.billing_status === 'awaiting' ? '<div style="margin-top:4px"><span class="badge inactive">💶 predračun neplačan</span></div>' : ''}
-        ${s.billing_status === 'paid' ? '<div style="margin-top:4px"><span class="badge active">✅ plačano</span></div>' : ''}
-        ${s.renewal_requested_plan ? `<div style="margin-top:4px"><span class="badge" style="background:#fef3c7;color:#92400e">🔔 Želi: ${PROFORMA_PLANNAME[s.renewal_requested_plan] || s.renewal_requested_plan}</span></div>` : ''}
-      </td>
-      <td style="color:var(--text2);font-size:13px">${date}</td>
-      <td>
-        <div class="actions">
-          ${canActivate ? `<button class="btn-action btn-activate" onclick="activateSalon('${s.id}')">✅ Aktiviraj</button>` : ''}
-          ${canDeactivate ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">🔴 Deaktiviraj</button>` : ''}
-          ${s.signup_status === 'pending' ? `<button class="btn-action btn-activate" onclick="priklopSalon('${s.id}')">🔌 Priklopi</button>` : ''}
-          ${s.billing_status === 'awaiting' ? `<button class="btn-action" style="color:#059669;border-color:rgba(5,150,105,.25);background:rgba(5,150,105,.08)" onclick="markPaidSalon('${s.id}')">💶 Označi plačano</button>` : ''}
-          <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">💬 WA</button>
-          <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 Predračun</button>
-          <button class="btn-action btn-msg" onclick="sendProformaEmail('${s.id}')">📧 Pošlji predračun</button>
-          <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
-          <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.25);background:rgba(220,38,38,.08)" onclick="deleteSalon('${s.id}','${s.name}')">🗑️ Briši</button>
+  box.innerHTML = salonsData.map(s => {
+    const active = s.subscription_status === 'active';
+    const statusBadge = active ? '<span class="sb sb-ok">Aktivno</span>'
+      : (s.subscription_status === 'trial' ? '<span class="sb sb-trial">Preizkus</span>' : '<span class="sb sb-off">Neaktivno</span>');
+    const badges = [
+      statusBadge,
+      `<span class="sb sb-plan">${PLAN_SHORT[s.subscription_plan] || s.subscription_plan}</span>`,
+      s.signup_status === 'pending' ? '<span class="sb sb-warn">Čaka na priklop</span>' : '',
+      s.billing_status === 'awaiting' ? '<span class="sb sb-danger">Predračun neplačan</span>' : '',
+      s.billing_status === 'paid' ? '<span class="sb sb-ok">Plačano</span>' : '',
+      s.renewal_requested_plan ? `<span class="sb sb-req">🔔 Želi: ${PROFORMA_PLANNAME[s.renewal_requested_plan] || s.renewal_requested_plan}</span>` : ''
+    ].filter(Boolean).join('');
+    let validLine = '';
+    if (s.valid_until) {
+      const end = new Date(s.valid_until); const days = Math.ceil((end - new Date()) / 86400000);
+      validLine = `<div class="salon-meta">Velja do ${end.toLocaleDateString('sl-SI')}${days >= 0 ? ` · še ${days} dni` : ' · poteklo'}</div>`;
+    }
+    const company = [s.company_name, s.vat_id ? 'DŠ ' + s.vat_id : '', s.contact_person, s.admin_phone ? '+' + s.admin_phone : ''].filter(Boolean).join(' · ');
+    return `<div class="salon-row">
+      <div class="salon-av">${salonInitials(s.name)}</div>
+      <div class="salon-main">
+        <div class="salon-head"><span class="salon-nm">${s.name || '—'}</span>${badges}</div>
+        <div class="salon-meta">${s.business_label || s.business_type || '—'}${s.owner_email ? ' · ' + s.owner_email : ''}</div>
+        ${company ? `<div class="salon-meta salon-sub">${company}</div>` : ''}
+        ${s.address ? `<div class="salon-meta salon-sub">${s.address}</div>` : ''}
+        ${validLine}
+        <div class="salon-plan-row">
+          <select class="plan-select" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
+            <option value="starter" ${s.subscription_plan==='starter'?'selected':''}>Osnovni €49,99</option>
+            <option value="pro" ${s.subscription_plan==='pro'?'selected':''}>Pro €79,99</option>
+            <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI €159,99</option>
+            <option value="premium" ${s.subscription_plan==='premium'?'selected':''}>Premium €299</option>
+          </select>
+          <span class="usage-cell" data-salon="${s.id}" style="font-size:12px;color:var(--text2)">—</span>
         </div>
-      </td>
-    </tr>`;
+      </div>
+      <div class="salon-actions">
+        ${s.signup_status === 'pending'
+          ? `<button class="btn-action btn-activate" onclick="priklopSalon('${s.id}')">🔌 Priklopi</button>`
+          : (active ? `<button class="btn-action btn-deactivate" onclick="deactivateSalon('${s.id}')">Deaktiviraj</button>`
+                    : `<button class="btn-action btn-activate" onclick="activateSalon('${s.id}')">Aktiviraj</button>`)}
+        ${s.billing_status === 'awaiting' ? `<button class="btn-action" style="color:#059669;border-color:rgba(5,150,105,.3);background:rgba(5,150,105,.08)" onclick="markPaidSalon('${s.id}')">Označi plačano</button>` : ''}
+        <button class="btn-action btn-msg" onclick="sendProformaEmail('${s.id}')">📧 Predračun</button>
+        <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 PDF</button>
+        <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">WA</button>
+        <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
+        <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.06)" onclick="deleteSalon('${s.id}','${(s.name||'').replace(/'/g,'')}')">Briši</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
