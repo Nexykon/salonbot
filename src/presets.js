@@ -1,6 +1,6 @@
 const BUSINESS_TYPES = {
   restaurant: {
-    label: 'Restavracije (dostava)',
+    label: 'Restavracije',
     greeting: 'Pozdravljeni! Sem avtomatski natakar za narocila. Zelite kaj narociti?',
     services: [
       { name: 'Dunajski zrezek',     price: 12,  category: 'Glavne jedi', sort_order: 1 },
@@ -10,7 +10,7 @@ const BUSINESS_TYPES = {
     ]
   },
   pizzeria: {
-    label: 'Picerije (dostava)',
+    label: 'Picerije',
     greeting: 'Pozdravljeni! Sem avtomatski natakar picerije za narocila. Zelite kaj narociti?',
     services: [
       { name: 'Margerita',       price: 7.5, category: 'Pice',   sort_order: 1 },
@@ -20,7 +20,7 @@ const BUSINESS_TYPES = {
     ]
   },
   burger: {
-    label: 'Burgerji / Fast food (dostava)',
+    label: 'Burgerji / Fast food',
     greeting: 'Pozdravljeni! Sem avtomatski natakar za narocila. Zelite kaj narociti?',
     services: [
       { name: 'Classic burger',  price: 7,   category: 'Burgerji', sort_order: 1 },
@@ -30,7 +30,7 @@ const BUSINESS_TYPES = {
     ]
   },
   kebab: {
-    label: 'Kebab (dostava)',
+    label: 'Kebab',
     greeting: 'Pozdravljeni! Sem avtomatski natakar za narocila. Zelite kaj narociti?',
     services: [
       { name: 'Kebab v lepinji',  price: 4.5, category: 'Kebab',  sort_order: 1 },

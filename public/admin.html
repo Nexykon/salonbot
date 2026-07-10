@@ -995,9 +995,11 @@
       .sb-req{background:#fef3c7;color:#92400e}
       @media(max-width:720px){.salon-row{flex-wrap:wrap}.salon-actions{flex-direction:row;flex-wrap:wrap;width:100%;min-width:0}}
     </style>
+    <div id="salon-tabs" class="salon-tabs" style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"></div>
     <div id="salons-table" class="salon-list">
       <div style="padding:20px;text-align:center;color:var(--text2,#64748b)"><span class="spinner"></span> Nalagam...</div>
     </div>
+    <div id="salon-pager" style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap"></div>
 
     <!-- CALENDAR moved to owner dashboard -->
     <div class="section-header" style="margin-top:40px;display:none">
@@ -1801,13 +1803,31 @@ function renderStats() {
 
 const PLAN_SHORT = { starter:'Osnovni', pro:'Pro (POS)', ai:'AI natakar', premium:'Premium' };
 function salonInitials(name){ return ((name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('')||'?').toUpperCase(); }
+let salonFilter = 'all';
+let salonPage = 0;
+const SALON_PER_PAGE = 12;
+function isRestaurant(s){ return s.booking_mode === 'delivery' || ['restaurant','pizzeria','burger','kebab'].includes(s.business_type); }
+function setSalonFilter(f){ salonFilter = f; salonPage = 0; renderTable(); }
+function setSalonPage(p){ salonPage = p; renderTable(); window.scrollTo({top:0,behavior:'smooth'}); }
 function renderTable() {
   const box = document.getElementById('salons-table');
-  if (!salonsData.length) {
-    box.innerHTML = `<div class="empty-state"><div class="empty-icon">🏪</div><p>Ni strank</p><small>Kliknite "Nova stranka" da dodate prvo</small></div>`;
+  const pagerEl = document.getElementById('salon-pager');
+  const tabsEl = document.getElementById('salon-tabs');
+  if (tabsEl) {
+    const cAll = salonsData.length, cRest = salonsData.filter(isRestaurant).length, cSal = cAll - cRest;
+    const tab = (id,label,n)=>`<button onclick="setSalonFilter('${id}')" style="padding:7px 14px;border-radius:9px;border:1px solid ${salonFilter===id?'#25D366':'var(--border,#e8e7f0)'};background:${salonFilter===id?'rgba(37,211,102,.12)':'var(--surface,#fff)'};color:${salonFilter===id?'#059669':'var(--text,#111118)'};font-size:13px;font-weight:600;cursor:pointer">${label} <span style="opacity:.55">${n}</span></button>`;
+    tabsEl.innerHTML = tab('all','Vsi',cAll)+tab('salon','Saloni',cSal)+tab('rest','Restavracije',cRest);
+  }
+  const list = salonFilter==='salon' ? salonsData.filter(s=>!isRestaurant(s)) : (salonFilter==='rest' ? salonsData.filter(isRestaurant) : salonsData);
+  if (!list.length) {
+    box.innerHTML = `<div class="empty-state"><div class="empty-icon">🏪</div><p>Ni lokalov v tej kategoriji</p></div>`;
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  box.innerHTML = salonsData.map(s => {
+  const pages = Math.ceil(list.length / SALON_PER_PAGE);
+  if (salonPage >= pages) salonPage = 0;
+  if (pagerEl) pagerEl.innerHTML = pages <= 1 ? '' : Array.from({length:pages},(_,i)=>`<button onclick="setSalonPage(${i})" style="padding:6px 12px;border-radius:8px;border:1px solid ${i===salonPage?'#25D366':'var(--border,#e8e7f0)'};background:${i===salonPage?'rgba(37,211,102,.12)':'var(--surface,#fff)'};color:${i===salonPage?'#059669':'var(--text,#111118)'};font-weight:600;cursor:pointer">${i+1}</button>`).join('');
+  box.innerHTML = list.slice(salonPage*SALON_PER_PAGE, (salonPage+1)*SALON_PER_PAGE).map(s => {
     const active = s.subscription_status === 'active';
     const statusBadge = active ? '<span class="sb sb-ok">Aktivno</span>'
       : (s.subscription_status === 'trial' ? '<span class="sb sb-trial">Preizkus</span>' : '<span class="sb sb-off">Neaktivno</span>');

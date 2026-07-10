@@ -938,6 +938,7 @@ app.get('/salons', async (req, res) => {
       id: s.id,
       name: s.name,
       business_type: s.business_type || 'hair',
+      booking_mode: s.booking_mode || 'exact_time',
       business_label: s.business_label || getPreset(s.business_type || 'hair').label,
       business_slug: s.business_slug || '',
       bot_phone_display: s.bot_phone_display || '',
