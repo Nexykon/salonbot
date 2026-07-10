@@ -544,23 +544,51 @@
 
     <!-- Delovni čas -->
 <!-- settings content moved to modal -->
+    <style>
+      .cal-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+      .cal-stat{background:var(--surface2,#f8f7ff);border-radius:12px;padding:12px 14px}
+      .cal-stat .l{font-size:12px;color:var(--muted,#64748b)}
+      .cal-stat .v{font-size:22px;font-weight:800;color:var(--text,#111118);margin-top:2px}
+      .cal-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+      .cal-nav2{display:flex;align-items:center;gap:8px}
+      .cal-view-toggle{display:flex;gap:3px;background:var(--surface2,#f1efe8);border-radius:9px;padding:3px}
+      .cal-view-btn{padding:5px 14px;font-size:13px;font-weight:600;border:none;background:transparent;color:var(--muted,#64748b);border-radius:7px;cursor:pointer}
+      .cal-view-btn.active{background:var(--surface,#fff);color:var(--text,#111118);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+      .cal-agenda{display:flex;flex-direction:column;gap:8px}
+      .ag-row{display:flex;align-items:center;gap:14px;background:var(--surface,#fff);border:1px solid var(--border,#e8e7f0);border-left:3px solid var(--border,#e8e7f0);border-radius:0 12px 12px 0;padding:12px 16px}
+      .ag-row.confirmed{border-left-color:#059669}
+      .ag-row.pending{border-left-color:#f59e0b}
+      .ag-row.cancelled{border-left-color:#dc2626;opacity:.55}
+      .ag-time{font-size:15px;font-weight:700;min-width:52px;color:var(--text,#111118)}
+      .ag-main{flex:1;min-width:0}
+      .ag-name{font-size:15px;font-weight:600;color:var(--text,#111118)}
+      .ag-meta{font-size:13px;color:var(--muted,#64748b);margin-top:2px}
+      .ag-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:7px;white-space:nowrap}
+      .ag-badge.confirmed{background:rgba(5,150,105,.12);color:#059669}
+      .ag-badge.pending{background:#fef3c7;color:#92400e}
+      .ag-badge.cancelled{background:rgba(220,38,38,.1);color:#b91c1c}
+      .ag-act{display:flex;gap:6px;flex-shrink:0}
+      .ag-act button{border:1px solid var(--border,#e8e7f0);background:var(--surface,#fff);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:14px}
+      .ag-empty{padding:24px;text-align:center;color:var(--muted,#94a3b8);border:1px dashed var(--border,#e8e7f0);border-radius:12px}
+    </style>
     <div class="card owner-panel calendar-panel tab-hidden" id="calendar-card">
-      <div class="card-title">Koledar rezervacij</div>
-      <div class="cal-toolbar">
-        <button class="cal-nav-btn" onclick="calChangeMonth(-1)">‹</button>
-        <div>
-          <div class="cal-month-title" id="cal-title">—</div>
-          <div class="cal-legend" style="margin-top:6px">
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--green)"></span>Potrjeno</div>
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:#f59e0b"></span>V čakanju</div>
-            <div class="cal-leg-item"><span class="cal-leg-dot" style="background:var(--red)"></span>Odpovedano</div>
-          </div>
+      <div id="cal-stats" class="cal-stats"></div>
+      <div class="cal-bar">
+        <div class="cal-nav2">
+          <button class="cal-nav-btn" onclick="calNav(-1)" aria-label="Nazaj">‹</button>
+          <div class="cal-month-title" id="cal-title" style="min-width:150px;text-align:center">—</div>
+          <button class="cal-nav-btn" onclick="calNav(1)" aria-label="Naprej">›</button>
+          <button class="btn btn-secondary" style="padding:5px 12px;font-size:13px" onclick="calToday()">Danes</button>
         </div>
-        <button class="cal-nav-btn" onclick="calChangeMonth(1)">›</button>
+        <div class="cal-view-toggle">
+          <button id="cal-tab-day" class="cal-view-btn active" onclick="calSetView('day')">Dan</button>
+          <button id="cal-tab-month" class="cal-view-btn" onclick="calSetView('month')">Mesec</button>
+        </div>
       </div>
-      <div id="cal-grid" class="cal-grid"></div>
-      <div class="day-detail" id="day-detail">
-        <div class="card-title" id="day-detail-title" style="margin-top:16px">—</div>
+      <div id="cal-agenda" class="cal-agenda"></div>
+      <div id="cal-grid" class="cal-grid" style="display:none"></div>
+      <div class="day-detail" id="day-detail" style="display:none">
+        <div class="card-title" id="day-detail-title">—</div>
         <div id="day-detail-list"></div>
       </div>
     </div>
@@ -857,6 +885,8 @@ let calMonth = new Date().getMonth();
 let calBookings = [];
 let calServices = [];
 let selectedCalDate = null;
+let calView = 'day';
+let calSelectedDate = new Date();
 const MONTHS_SL = ['Januar','Februar','Marec','April','Maj','Junij','Julij','Avgust','September','Oktober','November','December'];
 const DAYS_SL = ['Pon','Tor','Sre','Čet','Pet','Sob','Ned'];
 
@@ -894,16 +924,88 @@ async function loadCalendar() {
   calBookings = await r.json();
   const sr = await fetch(scopedPath('/api/settings/services'), { headers: authHeaders() });
   calServices = sr.ok ? await sr.json() : [];
-  renderCalendar();
+  renderView();
 }
 
-function calChangeMonth(delta) {
-  calMonth += delta;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  if (calMonth > 11) { calMonth = 0; calYear++; }
-  selectedCalDate = null;
-  document.getElementById('day-detail')?.classList.remove('open');
-  loadCalendar();
+function ymd(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function calNav(delta) {
+  const cur = new Date(calSelectedDate);
+  if (calView === 'day') {
+    const pm = cur.getMonth();
+    cur.setDate(cur.getDate() + delta);
+    calSelectedDate = cur;
+    if (cur.getMonth() !== pm) loadCalendar(); else renderView();
+  } else {
+    cur.setMonth(cur.getMonth() + delta, 1);
+    calSelectedDate = cur;
+    loadCalendar();
+  }
+}
+function calToday() { calSelectedDate = new Date(); loadCalendar(); }
+function calChangeMonth(delta) { calView = 'month'; calNav(delta); }
+function calSetView(v) {
+  calView = v;
+  document.getElementById('cal-tab-day').classList.toggle('active', v === 'day');
+  document.getElementById('cal-tab-month').classList.toggle('active', v === 'month');
+  document.getElementById('cal-agenda').style.display = v === 'day' ? 'flex' : 'none';
+  document.getElementById('cal-grid').style.display = v === 'month' ? 'grid' : 'none';
+  document.getElementById('day-detail').style.display = 'none';
+  renderView();
+}
+function renderView() {
+  renderStats();
+  const titleEl = document.getElementById('cal-title');
+  if (calView === 'day') {
+    const d = calSelectedDate;
+    titleEl.textContent = `${DAYS_SL[(d.getDay()+6)%7]}, ${d.getDate()}. ${MONTHS_SL[d.getMonth()].toLowerCase()}`;
+    renderAgenda();
+  } else {
+    calYear = calSelectedDate.getFullYear(); calMonth = calSelectedDate.getMonth();
+    titleEl.textContent = `${MONTHS_SL[calMonth]} ${calYear}`;
+    renderCalendar();
+  }
+}
+function renderStats() {
+  const el = document.getElementById('cal-stats'); if (!el) return;
+  const todayStr = ymd(new Date());
+  const active = calBookings.filter(b => b.status !== 'cancelled');
+  const danes = active.filter(b => (b.booking_date||'').slice(0,10) === todayStr).length;
+  const now = new Date(); const wd = (now.getDay()+6)%7;
+  const monday = new Date(now); monday.setDate(now.getDate()-wd);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  const wkStart = ymd(monday), wkEnd = ymd(sunday);
+  const teden = active.filter(b => { const d=(b.booking_date||'').slice(0,10); return d>=wkStart && d<=wkEnd; }).length;
+  const cakajo = calBookings.filter(b => b.status === 'pending').length;
+  const stat = (l,v,c) => `<div class="cal-stat"><div class="l">${l}</div><div class="v"${c?` style="color:${c}"`:''}>${v}</div></div>`;
+  el.innerHTML = stat('Danes', danes) + stat('Ta teden', teden) + stat('Čakajo potrditev', cakajo, cakajo>0?'#d97706':'');
+}
+function renderAgenda() {
+  const el = document.getElementById('cal-agenda'); if (!el) return;
+  const dateStr = ymd(calSelectedDate);
+  const items = calBookings.filter(b => (b.booking_date||'').slice(0,10) === dateStr)
+    .sort((a,b) => (a.booking_time||'').localeCompare(b.booking_time||''));
+  const serviceOptions = calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('');
+  const rows = items.length ? items.map(b => {
+    const ref = (b.id||'').slice(-6);
+    const t = (b.booking_time||'').slice(0,5);
+    const st = b.status || 'pending';
+    const stLabel = st==='confirmed'?'Potrjeno':(st==='cancelled'?'Odpovedano':'Čaka potrditev');
+    let svc = b.service_name || '';
+    if (!svc && b.form_answers) { try { const o = typeof b.form_answers==='object'?b.form_answers:JSON.parse(b.form_answers); svc = o.storitev || o.service || ''; } catch(e){} }
+    return `<div class="ag-row ${st}">
+      <div class="ag-time">${(!t||t==='00:00')?'—':t}</div>
+      <div class="ag-main">
+        <div class="ag-name">${escHtml(b.customer_name||'?')}</div>
+        <div class="ag-meta">${svc?escHtml(svc)+' · ':''}${escHtml(b.customer_phone||'-')}</div>
+      </div>
+      <span class="ag-badge ${st}">${stLabel}</span>
+      <div class="ag-act">
+        ${st==='pending'?`<button title="Potrdi" onclick="calConfirm('${ref}')">✓</button>`:''}
+        ${st!=='cancelled'?`<button title="Odpovej" onclick="calCancel('${ref}')">✕</button>`:''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="ag-empty">Ni rezervacij za ta dan.</div>';
+  el.innerHTML = rows + `<div class="preview-box" style="margin-top:8px"><div class="preview-title">Dodaj rezervacijo</div><div class="manual-booking-grid"><input class="dur-input" id="mb-time" type="time"><input class="dur-input" id="mb-name" placeholder="Ime stranke"><input class="dur-input" id="mb-phone" placeholder="Telefon"><select class="dur-input" id="mb-service"><option value="">Brez storitve</option>${serviceOptions}</select></div><button class="btn btn-secondary" style="margin-top:12px" onclick="saveManualBooking('${dateStr}')">Dodaj rezervacijo</button></div>`;
 }
 
 function renderCalendar() {
@@ -931,27 +1033,8 @@ function renderCalendar() {
 }
 
 function showDayDetail(dateStr) {
-  selectedCalDate = dateStr;
-  renderCalendar();
-  const items = calBookings.filter(b => (b.booking_date || '').substring(0,10) === dateStr);
-  const active = items.filter(b => b.status !== 'cancelled');
-  const detail = document.getElementById('day-detail');
-  document.getElementById('day-detail-title').textContent = `${dateStr} - ${active.length} rezervacij`;
-  const rows = active.length ? active.map(b => {
-    const ref = (b.id || '').slice(-6);
-    const t = (b.booking_time || '').substring(0,5);
-    let answersObj = {};
-    try { answersObj = b.form_answers ? (typeof b.form_answers === 'object' ? b.form_answers : JSON.parse(b.form_answers)) : {}; } catch(e){}
-    const answers = Object.keys(answersObj).length
-      ? '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(0,0,0,0.08)">' +
-        Object.entries(answersObj).map(([k,v]) => `<span style="display:block"><b>${escHtml(k)}:</b> ${escHtml(String(v))}</span>`).join('') +
-        '</div>'
-      : '';
-    return `<div class="day-booking-item"><div class="day-booking-top"><div class="day-booking-time">${t === '00:00' ? 'Brez ure' : t}</div><div style="flex:1"><div class="day-booking-name">${b.customer_name || '?'}</div><div class="day-booking-meta"><span>Telefon: ${b.customer_phone || '-'}</span><span>Status: ${b.status || 'pending'}</span><span>Ref: ${ref}</span>${answers}</div></div></div><div class="day-booking-actions">${b.status === 'pending' ? `<button class="small-btn ok" onclick="calConfirm('${ref}')">Potrdi</button>` : ''}<button class="small-btn bad" onclick="calCancel('${ref}')">Odpovej</button></div></div>`;
-  }).join('') : '<div class="service-empty">Ni rezervacij za ta dan.</div>';
-  const serviceOptions = calServices.map(s => `<option value="${s.id}">${s.name} (${s.duration_minutes} min)</option>`).join('');
-  document.getElementById('day-detail-list').innerHTML = rows + `<div class="preview-box"><div class="preview-title">Dodaj rezervacijo</div><div class="manual-booking-grid"><input class="dur-input" id="mb-time" type="time"><input class="dur-input" id="mb-name" placeholder="Ime stranke"><input class="dur-input" id="mb-phone" placeholder="Telefon"><select class="dur-input" id="mb-service"><option value="">Brez storitve</option>${serviceOptions}</select></div><button class="btn btn-secondary" style="margin-top:12px" onclick="saveManualBooking('${dateStr}')">Dodaj rezervacijo</button></div>`;
-  detail.classList.add('open');
+  calSelectedDate = new Date(dateStr + 'T12:00:00');
+  calSetView('day');
 }
 
 async function calConfirm(ref) {
@@ -959,7 +1042,6 @@ async function calConfirm(ref) {
   if (!r.ok) return showToast('Napaka pri potrditvi', 'error');
   showToast('Rezervacija potrjena', 'success');
   await loadCalendar();
-  if (selectedCalDate) showDayDetail(selectedCalDate);
 }
 
 async function calCancel(ref) {
@@ -968,7 +1050,6 @@ async function calCancel(ref) {
   if (!r.ok) return showToast('Napaka pri odpovedi', 'error');
   showToast('Rezervacija odpovedana', 'success');
   await loadCalendar();
-  if (selectedCalDate) showDayDetail(selectedCalDate);
 }
 
 async function saveManualBooking(dateStr) {
@@ -985,7 +1066,6 @@ async function saveManualBooking(dateStr) {
   if (!r.ok) { const data = await r.json().catch(() => ({})); return showToast(data.error || 'Napaka pri dodajanju', 'error'); }
   showToast('Rezervacija dodana', 'success');
   await loadCalendar();
-  showDayDetail(dateStr);
 }
 
 // ── Login ──────────────────────────────────────────────────
