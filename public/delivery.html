@@ -410,6 +410,14 @@ body {
           <label>Območje dostave (obvestilo stranki ob vnosu naslova)</label>
           <input type="text" id="s-delivery-area" placeholder='npr. "Kranj z okolico" ali "Kranj, Naklo, Šenčur"'>
         </div>
+        <div class="s-row">
+          <label>Delovni čas (odpiralni čas — natakar ga sporoči strankam)</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="time" id="s-open" style="max-width:140px">
+            <span style="color:var(--muted)">do</span>
+            <input type="time" id="s-close" style="max-width:140px">
+          </div>
+        </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Če sta omogočena oba načina, bot stranko vpraša "Dostava ali osebni prevzem?". Pri prevzemu se dostava ne zaračuna.</div>
       </div>
       <div class="settings-card">
@@ -1145,6 +1153,8 @@ async function loadSettingsData() {
     document.getElementById('s-pick-pack').checked  = d.pickup_packaging !== false;
     document.getElementById('s-pickup-addr').value  = d.pickup_address || '';
     document.getElementById('s-delivery-area').value = d.delivery_area || '';
+    if (document.getElementById('s-open')) document.getElementById('s-open').value = d.working_hours_start || '';
+    if (document.getElementById('s-close')) document.getElementById('s-close').value = d.working_hours_end || '';
     botActive = d.bot_active !== false;
     renderBotToggle();
   } catch(e) {}
@@ -1463,7 +1473,7 @@ async function billingPortal() {
 // ── POS terminal (samo Pro paket) ──────────────────────
 let currentPlan = 'starter';
 function renderPosTab(d) {
-  const pro = currentPlan === 'pro' || currentPlan === 'ai';
+  const pro = currentPlan === 'pro' || currentPlan === 'ai' || currentPlan === 'premium';
   document.getElementById('pos-locked').style.display = pro ? 'none' : 'block';
   document.getElementById('pos-form').style.display = pro ? 'block' : 'none';
   if (!pro) return;
@@ -1527,7 +1537,9 @@ async function saveSettings() {
         allow_pickup:document.getElementById('s-allow-pick').checked,
         pickup_packaging:document.getElementById('s-pick-pack').checked,
         pickup_address:document.getElementById('s-pickup-addr').value.trim(),
-        delivery_area:document.getElementById('s-delivery-area').value.trim()
+        delivery_area:document.getElementById('s-delivery-area').value.trim(),
+        working_hours_start:document.getElementById('s-open').value||null,
+        working_hours_end:document.getElementById('s-close').value||null
       })
     });
     showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');

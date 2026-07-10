@@ -1288,6 +1288,9 @@ app.get('/api/settings', async (req, res) => {
       pickup_address: salon.pickup_address || '',
       bot_active: salon.bot_active !== false,
       delivery_area: salon.delivery_area || '',
+      working_hours_start: salon.working_hours_start || '',
+      working_hours_end: salon.working_hours_end || '',
+      working_days: salon.working_days || '1,2,3,4,5,6',
       bot_messages: (salon.bot_messages && typeof salon.bot_messages === 'object') ? salon.bot_messages : {},
       bot_messages_defaults: BOT_MSG_DEFAULTS,
       review_link: salon.review_link || ''
@@ -1335,7 +1338,7 @@ app.patch('/api/settings', async (req, res) => {
       updates.bot_messages = cleanBm;
     }
     const POS_KEYS = ['pos_type', 'pos_token', 'pos_account', 'pos_spot_id'];
-    if (POS_KEYS.some(k => updates[k] !== undefined) && !['pro', 'ai'].includes(salon.subscription_plan || 'starter')) {
+    if (POS_KEYS.some(k => updates[k] !== undefined) && !['pro', 'ai', 'premium'].includes(salon.subscription_plan || 'starter')) {
       return res.status(403).json({ error: 'POS integracija je na voljo v Pro paketu.' });
     }
     if (updates.pos_spot_id !== undefined) updates.pos_spot_id = parseInt(updates.pos_spot_id) || 1;
@@ -1348,7 +1351,7 @@ app.patch('/api/settings', async (req, res) => {
 app.post('/api/settings/pos-test', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  if (!['pro', 'ai'].includes(salon.subscription_plan || 'starter')) {
+  if (!['pro', 'ai', 'premium'].includes(salon.subscription_plan || 'starter')) {
     return res.status(403).json({ ok: false, msg: 'POS integracija je na voljo v Pro paketu.' });
   }
   try {

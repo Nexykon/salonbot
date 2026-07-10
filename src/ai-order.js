@@ -135,6 +135,7 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
     return `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €${tg}`;
   }).join('\n');
   const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area}` : '';
+  const hoursLine = (salon.working_hours_start && salon.working_hours_end) ? `\nODPIRALNI ČAS: ${salon.working_hours_start}–${salon.working_hours_end} (če stranka vpraša za delovni/odpiralni čas, ji ga povej)` : '';
   const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini. NE uporabljaj emojijev.
 STROGA KLJUČAVNICA IDENTITETE (NAJVIŠJA PRIORITETA):
 - Si IZKLJUČNO natakar te restavracije. Pogovarjaš se SAMO o: naročilih, meniju, cenah, dostavi/prevzemu, delovnem času in poteku naročila te restavracije.
@@ -160,7 +161,7 @@ ZANESLJIVOST (ZELO POMEMBNO):
 - Nikoli si ne izmišljuj cen ali zneskov; če te stranka med naročanjem vpraša za ceno, povej znesek artiklov iz rezultatov orodij.
 MENI:
 ${menuText}
-TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine
+TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine + hoursLine
     + `\nNAČINI PREVZEMA: ${[salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean).join(' ali ')}${salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : ''}`
     + `\nOPOMBA STRANKE: ${note || '—'}`
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`
