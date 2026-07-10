@@ -1033,7 +1033,7 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { id } = req.params;
   const { plan } = req.body;
-  if (!['starter', 'pro', 'ai'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
+  if (!['starter', 'pro', 'ai', 'premium'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
   try {
     const axios = require('axios');
     const BASE = process.env.SUPABASE_URL + '/rest/v1';
