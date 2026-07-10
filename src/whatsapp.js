@@ -360,6 +360,25 @@ function deliveryMenuText(to, services) {
   return parts.map(body => ({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }));
 }
 
+// Dobrodošlica ob prvem stiku (brez emojijev, profesionalno). Vrstice se pokažejo le, če so podatki.
+function deliveryWelcome(salon) {
+  const stripEmoji = s => String(s || '')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
+    .replace(/\s+/g, ' ').trim();
+  const name = stripEmoji(salon && salon.name) || 'naši restavraciji';
+  const info = [];
+  if ((salon.allow_delivery !== false) && salon.delivery_area) info.push('Dostava: ' + salon.delivery_area);
+  if (salon.allow_pickup && salon.pickup_address) info.push('Osebni prevzem: ' + salon.pickup_address);
+  if (salon.working_hours_start && salon.working_hours_end) {
+    info.push('Delovni čas: ' + String(salon.working_hours_start).substring(0, 5) + '–' + String(salon.working_hours_end).substring(0, 5));
+  }
+  let txt = 'Pozdravljeni v *' + name + '*.';
+  if (info.length) txt += '\n\n' + info.join('\n');
+  txt += '\n\nNaročilo lahko kadar koli prekličete – dovolj je, da napišete *preklic*.';
+  txt += '\n\nBi si želeli kaj naročiti?';
+  return txt;
+}
+
 function deliveryCartButtons(to, cartText, total) {
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
@@ -434,4 +453,4 @@ function posAdminNotif(to, customerPhone, cartText, comment, total, ref6) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };
+module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryWelcome, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };

@@ -1246,13 +1246,15 @@ async function handleMessage(msgObj, salon) {
           order: { mode: sess.orderMode || null, name: sess.customerName || null, address: sess.deliveryAddress || null },
           note: sess.opomba || ''
         });
-        // Ob PRVEM pogovoru pripni območje dostave + namig za preklic (samo enkrat).
+        // Ob PRVEM stiku pošlji lepo dobrodošlico (ime, dostava/prevzem, delovni čas, preklic).
         const isFirstTurn = (sess.aiHistory || []).length === 0;
-        if (isFirstTurn && !sess.hintShown && result.reply) {
-          const areaTxt = salon.delivery_area ? `Dostavljamo po: ${salon.delivery_area}.` : '';
-          const cancelTxt = 'Naročilo lahko kadar koli prekličete tako, da napišete prekliči.';
-          const extra = [areaTxt, cancelTxt].filter(Boolean).join(' ');
-          if (extra) result.reply = `${result.reply}\n\n${extra}`;
+        if (isFirstTurn && !sess.hintShown) {
+          const welcome = wa.deliveryWelcome(salon);
+          // Če je stranka že kaj naročila, obdrži AI odgovor + dobrodošlico spredaj;
+          // sicer dobrodošlica nadomesti pozdrav AI (da se ne podvaja).
+          result.reply = (result.cart && result.cart.length)
+            ? welcome + (result.reply ? '\n\n' + result.reply : '')
+            : welcome;
         }
         const newHistory = [...history,
           { role: 'user', content: msgText },
