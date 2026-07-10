@@ -490,7 +490,7 @@ app.post('/stripe/webhook', async (req, res) => {
       case 'checkout.session.completed': {
         const cs = event.data.object;
         const salonId = cs.metadata?.salon_id;
-        const csPlan = ['pro', 'ai'].includes(cs.metadata?.plan) ? cs.metadata.plan : 'starter';
+        const csPlan = ['pro', 'ai', 'premium'].includes(cs.metadata?.plan) ? cs.metadata.plan : 'starter';
         if (salonId && cs.mode === 'subscription' && cs.subscription) {
           await db.updateSalonStripe(salonId, cs.customer, cs.subscription, 'active', csPlan);
           console.log('Checkout completed — salon', salonId, 'plan', csPlan);
@@ -1374,7 +1374,7 @@ app.post('/api/billing/checkout', async (req, res) => {
   if (!salon) return;
   const stripe = stripeClient();
   if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
-  const plan = ['pro', 'ai'].includes(req.body.plan) ? req.body.plan : 'starter';
+  const plan = ['pro', 'ai', 'premium'].includes(req.body.plan) ? req.body.plan : 'starter';
   const priceId = (plan === 'ai' && salon.custom_price_id) ? salon.custom_price_id : stripePlanPrices()[plan];
   if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" še ni nastavljena (env STRIPE_PRICE_${plan.toUpperCase()}).` });
   try {

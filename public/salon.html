@@ -1678,8 +1678,6 @@ function makeFixedRow(icon, label) {
   return row;
 }
 
-function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
 function ffAddField() {
   const label = document.getElementById('ff-new-label').value.trim();
   if (!label) { showToast('Vnesite besedilo vprašanja', 'error'); return; }
@@ -1824,59 +1822,6 @@ async function loadServices() {
   }
 }
 
-function renderServices(services) {
-  const el = document.getElementById('services-list');
-  if (!services.length) {
-    el.innerHTML = '<div class="service-empty">Ni storitev. Dodajte jih v admin panelu.</div>';
-    return;
-  }
-  el.innerHTML = services.map(svc => {
-    const dur = svc.duration_minutes || '';
-    const price = svc.price ? `${svc.price} €` : '';
-    return `
-      <div class="service-row" id="srow-${svc.id}">
-        <div class="service-info">
-          <div class="service-name">${svc.name || '—'}</div>
-          ${price ? `<div class="service-price">${price}</div>` : ''}
-        </div>
-        <div class="dur-input-wrap">
-          <input class="dur-input" type="number" min="5" max="480" step="5"
-            value="${dur}" placeholder="min" id="dur-${svc.id}"
-            onkeydown="if(event.key==='Enter') saveDuration('${svc.id}')">
-          <span class="dur-label">min</span>
-          <button class="dur-save-btn" id="dbtn-${svc.id}" onclick="saveDuration('${svc.id}')">Shrani</button>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-async function saveDuration(svcId) {
-  const input = document.getElementById('dur-' + svcId);
-  const btn = document.getElementById('dbtn-' + svcId);
-  const dur = parseInt(input.value);
-  if (isNaN(dur) || dur < 5 || dur > 480) { showToast('Trajanje mora biti med 5 in 480 minut', 'error'); return; }
-
-  btn.textContent = '…';
-  const headers = { 'Content-Type': 'application/json' };
-  Object.assign(headers, authHeaders());
-
-  try {
-    const r = await fetch(scopedPath(`/api/settings/services/${svcId}`), {
-      method: 'PATCH', headers,
-      body: JSON.stringify({ duration_minutes: dur })
-    });
-    const data = await r.json();
-    if (!r.ok) throw new Error(data.error);
-    btn.textContent = '✓ Shranjeno';
-    btn.classList.add('saved');
-    setTimeout(() => { btn.textContent = 'Shrani'; btn.classList.remove('saved'); }, 2500);
-  } catch (e) {
-    btn.textContent = 'Shrani';
-    showToast('Napaka: ' + e.message, 'error');
-  }
-}
-
-// ── Auto-login if token saved ──────────────────────────────
 function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function renderServices(services) {
