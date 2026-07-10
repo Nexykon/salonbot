@@ -658,7 +658,10 @@ const TAG_DEFS = [
 ];
 let activeMenuCat = null;   // izbrani zavihek kategorije (null = vse)
 let editingId = null;       // ID artikla v urejanju (null = nov)
-function setMenuCat(c) { activeMenuCat = c; renderMenu(); }
+let menuPage = 0;           // trenutna stran menija
+const MENU_PER_PAGE = 8;
+function setMenuCat(c) { activeMenuCat = c; menuPage = 0; renderMenu(); }
+function setMenuPage(p) { menuPage = p; renderMenu(); }
 async function toggleTag(id, tag) {
   const item = allServices.find(s => s.id === id); if (!item) return;
   const cur = Array.isArray(item.tags) ? item.tags.slice() : [];
@@ -970,43 +973,84 @@ function renderMenu() {
   // Zavihki kategorij + gumb za dodajanje (nova kategorija se samodejno pojavi kot zavihek)
   const tabsEl = document.getElementById('menu-tabs');
   if (tabsEl) {
-    const tabBtn = (label, val) => { const on = (val === activeMenuCat); return `<button onclick="setMenuCat(${val === null ? 'null' : `'${String(val).replace(/'/g, "\\'")}'`})" style="padding:6px 12px;border-radius:8px;border:1px solid ${on?'#25D366':'var(--border)'};background:${on?'rgba(37,211,102,.15)':'var(--surface2)'};color:${on?'#059669':'var(--text)'};font-size:13px;font-weight:600;cursor:pointer">${label}</button>`; };
-    tabsEl.innerHTML = tabBtn('Vse', null) + orderedCats.map(c => tabBtn(c, c)).join('') + '<button onclick="addMenuItem()" style="padding:6px 12px;border-radius:8px;border:1px solid #25D366;background:#25D366;color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto">➕ Dodaj artikel</button>';
+    const tabBtn = (label, val) => { const on = (val === activeMenuCat); return `<button onclick="setMenuCat(${val === null ? 'null' : `'${String(val).replace(/'/g, "\\'")}'`})" style="padding:8px 17px;border-radius:22px;border:1px solid ${on?'#25D366':'var(--border)'};background:${on?'rgba(37,211,102,.12)':'var(--surface)'};color:${on?'#059669':'var(--text)'};font-size:13px;font-weight:600;cursor:pointer">${label}</button>`; };
+    tabsEl.innerHTML = tabBtn('Vse', null) + orderedCats.map(c => tabBtn(c, c)).join('') + '<button onclick="addMenuItem()" style="padding:8px 17px;border-radius:22px;border:1px solid #25D366;background:#25D366;color:#fff;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto">➕ Dodaj artikel</button>';
   }
-  const catsToShow = activeMenuCat ? [activeMenuCat] : orderedCats;
-
-  el.innerHTML = catsToShow.map((cat) => {
-    const catIdx = orderedCats.indexOf(cat);
-    const isFirstCat = catIdx === 0;
-    const isLastCat  = catIdx === orderedCats.length - 1;
-    const items = grouped[cat];
-    return `
-      <div style="margin-bottom:8px;" data-cat="${cat}">
-        ${activeMenuCat ? '' : `<div style="display:flex;align-items:center;gap:6px;padding:8px 4px 4px;">
-          <span style="font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;flex:1">${cat}</span>
-          <button onclick="moveCat('${cat}','up')" ${isFirstCat?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px;color:var(--muted);opacity:${isFirstCat?'.3':'1'}">↑</button>
-          <button onclick="moveCat('${cat}','down')" ${isLastCat?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:13px;color:var(--muted);opacity:${isLastCat?'.3':'1'}">↓</button>
-        </div>`}
-        ${items.map((s, idx) => `
-          <div class="menu-item" style="gap:8px;">
-            <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
-              <button onclick="moveItem('${s.id}','${cat}','up')" ${idx===0?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:5px;width:24px;height:22px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1;opacity:${idx===0?'.3':'1'}">↑</button>
-              <button onclick="moveItem('${s.id}','${cat}','down')" ${idx===items.length-1?'disabled':''} style="background:none;border:1px solid var(--border);border-radius:5px;width:24px;height:22px;cursor:pointer;font-size:11px;color:var(--muted);line-height:1;opacity:${idx===items.length-1?'.3':'1'}">↓</button>
-            </div>
-            <div class="menu-item-info">
-              <div class="menu-item-name">${s.name}</div>
-              ${s.description?`<div class="menu-item-desc">${s.description}</div>`:''}
-              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
-                ${TAG_DEFS.map(t=>{const on=(s.tags||[]).includes(t.k);return `<span onclick="toggleTag('${s.id}','${t.k}')" style="cursor:pointer;font-size:10px;border-radius:6px;padding:1px 6px;border:1px solid ${on?'#25D366':'var(--border)'};background:${on?'rgba(37,211,102,.15)':'transparent'};color:${on?'#059669':'var(--muted)'}">${t.l}</span>`;}).join('')}
-              </div>
-            </div>
-            <div class="menu-item-price">${s.price} €</div>
-            <button title="Uredi" onclick="editMenuItem('${s.id}')" style="background:none;border:none;font-size:15px;cursor:pointer;padding:0 4px;flex-shrink:0;opacity:.75;">✏️</button>
-            <button data-del-id="${s.id}" style="background:none;border:none;color:#dc2626;font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0;opacity:.6;" title="Izbriši" onclick="deleteItem(this.dataset.delId)">🗑</button>
-          </div>`).join('')}
-      </div>`;
-  }).join('');
+  const tagStyle = k => (k === 'pikantno') ? 'background:rgba(220,38,38,.1);color:#b91c1c'
+    : (k === 'vegetarijansko' || k === 'vegansko') ? 'background:rgba(5,150,105,.1);color:#059669'
+    : 'background:rgba(37,99,235,.1);color:#2563eb';
+  const catColors = ['#2563eb','#059669','#7c3aed','#d97706','#db2777','#0891b2'];
+  const card = (s) => {
+    const activeTags = TAG_DEFS.filter(t => (s.tags || []).includes(t.k));
+    const tagsHtml = activeTags.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px">${activeTags.map(t => `<span style="font-size:11px;padding:3px 11px;border-radius:20px;${tagStyle(t.k)}">${t.l}</span>`).join('')}</div>` : '';
+    return `<div class="mcard" draggable="true" data-id="${s.id}" ondragstart="menuDragStart(event,'${s.id}')" ondragover="menuDragOver(event)" ondrop="menuDrop(event,'${s.id}')" ondragend="menuDragEnd(event)" style="background:var(--surface,#fff);border:1px solid var(--border,#e8e7f0);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px">
+      <span title="Povleci za premik" ontouchstart="menuTouchStart(event,'${s.id}')" style="color:var(--muted);font-size:22px;cursor:grab;flex-shrink:0;user-select:none;touch-action:none;padding:4px 2px">⣿</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:16px;font-weight:700;color:var(--text)">${s.name}</div>
+        ${s.description ? `<div style="font-size:14px;color:var(--muted);margin-top:3px">${s.description}</div>` : ''}
+        ${tagsHtml}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:12px;flex-shrink:0">
+        <span style="font-size:14px;font-weight:700;background:rgba(5,150,105,.1);color:#059669;padding:5px 15px;border-radius:20px">${s.price} €</span>
+        <div style="display:flex;gap:8px">
+          <button title="Uredi" onclick="editMenuItem('${s.id}')" style="width:36px;height:36px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:14px">✏️</button>
+          <button title="Izbriši" onclick="deleteItem('${s.id}')" style="width:36px;height:36px;border:1px solid var(--border);border-radius:11px;background:var(--surface);cursor:pointer;font-size:15px;color:#dc2626">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  };
+  const catHead = (cat, n, i) => `<div style="display:flex;align-items:center;gap:10px;margin:18px 2px 12px">
+    <span style="width:9px;height:9px;border-radius:50%;background:${catColors[i % catColors.length]}"></span>
+    <span style="font-size:15px;font-weight:700;color:var(--text)">${cat}</span>
+    <span style="font-size:13px;color:var(--muted)">${n} ${n===1?'artikel':(n===2?'artikla':(n<5?'artikli':'artiklov'))}</span>
+  </div>`;
+  if (activeMenuCat) {
+    const listA = grouped[activeMenuCat];
+    const pages = Math.ceil(listA.length / MENU_PER_PAGE);
+    if (menuPage >= pages) menuPage = 0;
+    const pageItems = listA.slice(menuPage * MENU_PER_PAGE, (menuPage + 1) * MENU_PER_PAGE);
+    const pager = pages <= 1 ? '' : `<div style="display:flex;gap:6px;justify-content:center;margin-top:18px;flex-wrap:wrap">${Array.from({length:pages},(_,i)=>`<button onclick="setMenuPage(${i})" style="width:36px;height:36px;border-radius:11px;border:1px solid ${i===menuPage?'#25D366':'var(--border)'};background:${i===menuPage?'rgba(37,211,102,.12)':'var(--surface)'};color:${i===menuPage?'#059669':'var(--text)'};font-weight:700;cursor:pointer">${i+1}</button>`).join('')}</div>`;
+    el.innerHTML = catHead(activeMenuCat, listA.length, orderedCats.indexOf(activeMenuCat)) + `<div style="display:flex;flex-direction:column;gap:12px">${pageItems.map(card).join('')}</div>` + pager;
+  } else {
+    el.innerHTML = orderedCats.map((cat, i) => catHead(cat, grouped[cat].length, i) + `<div style="display:flex;flex-direction:column;gap:12px">${grouped[cat].map(card).join('')}</div>`).join('');
+  }
 }
+
+let menuDragId = null;
+let touchDragId = null, touchTargetId = null;
+function reorderMenu(src, targetId) {
+  if (!src || src === targetId) return;
+  const arr = [...allServices].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || (a.name || '').localeCompare(b.name || '', 'sl'));
+  const from = arr.findIndex(s => s.id === src);
+  const to = arr.findIndex(s => s.id === targetId);
+  if (from < 0 || to < 0) return;
+  const [moved] = arr.splice(from, 1);
+  arr.splice(to, 0, moved);
+  arr.forEach((s, i) => { const it = allServices.find(x => x.id === s.id); if (it) it.sort_order = i; });
+  renderMenu();
+  fetch('/api/settings/services/reorder', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken }, body: JSON.stringify({ items: arr.map((s, i) => ({ id: s.id, sort_order: i })) }) }).catch(() => {});
+}
+function menuDragStart(e, id) { menuDragId = id; try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', id); } catch (_) {} const el = e.currentTarget; if (el) el.style.opacity = '.5'; }
+function menuDragEnd(e) { const el = e.currentTarget; if (el) el.style.opacity = '1'; }
+function menuDragOver(e) { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (_) {} }
+function menuDrop(e, targetId) { e.preventDefault(); const src = menuDragId; menuDragId = null; reorderMenu(src, targetId); }
+// Dotik (mobilni) — poteg z ročaja
+function menuTouchStart(e, id) { touchDragId = id; touchTargetId = null; const c = (e.target && e.target.closest) ? e.target.closest('.mcard') : null; if (c) c.style.opacity = '.5'; }
+function menuTouchMoveG(e) {
+  if (!touchDragId) return;
+  e.preventDefault();
+  const t = e.touches[0]; if (!t) return;
+  const under = document.elementFromPoint(t.clientX, t.clientY);
+  const card = (under && under.closest) ? under.closest('.mcard') : null;
+  if (card) { const id = card.getAttribute('data-id'); if (id && id !== touchDragId) touchTargetId = id; }
+}
+function menuTouchEndG() {
+  const src = touchDragId, tgt = touchTargetId;
+  touchDragId = null; touchTargetId = null;
+  document.querySelectorAll('.mcard').forEach(c => { c.style.opacity = '1'; });
+  if (src && tgt) reorderMenu(src, tgt);
+}
+if (!window.__menuTouchInit) { window.__menuTouchInit = true; document.addEventListener('touchmove', menuTouchMoveG, { passive: false }); document.addEventListener('touchend', menuTouchEndG); }
 
 async function deleteItem(id) {
   if (!confirm('Izbrisati artikel?')) return;
