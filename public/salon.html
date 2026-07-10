@@ -542,6 +542,11 @@
       </div>
     </div>
 
+    <div style="display:flex;gap:8px;margin:0 0 16px">
+      <button id="tabbtn-calendar" class="stab active" onclick="showOwnerTab('calendar')">Koledar</button>
+      <button id="tabbtn-customers" class="stab" onclick="showOwnerTab('customers')">Stranke</button>
+    </div>
+    <style>.stab{padding:8px 16px;border-radius:10px;border:1px solid var(--border,#e8e7f0);background:var(--surface,#fff);color:var(--text,#111118);font-size:14px;font-weight:600;cursor:pointer}.stab.active{background:var(--purple,#25D366);color:#fff;border-color:var(--purple,#25D366)}</style>
     <!-- Delovni čas -->
 <!-- settings content moved to modal -->
     <style>
@@ -591,6 +596,11 @@
         <div class="card-title" id="day-detail-title">—</div>
         <div id="day-detail-list"></div>
       </div>
+    </div>
+
+    <div class="card owner-panel customers-panel tab-hidden" id="customers-card">
+      <div class="card-title">Stranke</div>
+      <div id="customers-list"></div>
     </div>
 
   </div>
@@ -913,9 +923,38 @@ function showOwnerTab(tab) {
   try{
     document.querySelectorAll('.owner-panel').forEach(p=>p&&p.classList.add('tab-hidden'));
     document.querySelectorAll('.'+tab+'-panel').forEach(p=>p&&p.classList.remove('tab-hidden'));
+    document.getElementById('tabbtn-calendar')?.classList.toggle('active', tab==='calendar');
+    document.getElementById('tabbtn-customers')?.classList.toggle('active', tab==='customers');
   }catch(_e){}
   if(tab==='calendar')loadCalendar();
+  if(tab==='customers')loadCustomers();
   if(tab==='settings')loadServices();
+}
+
+async function loadCustomers() {
+  const el = document.getElementById('customers-list');
+  if (el) el.innerHTML = '<div class="ag-empty">Nalagam...</div>';
+  try {
+    const r = await fetch(scopedPath('/api/settings/customers'), { headers: authHeaders() });
+    if (!r.ok) { showToast('Napaka pri nalaganju strank', 'error'); return; }
+    const d = await r.json();
+    renderCustomers(d.customers || [], d.totalVisits || 0);
+  } catch (e) { showToast('Napaka', 'error'); }
+}
+function renderCustomers(list, totalVisits) {
+  const el = document.getElementById('customers-list'); if (!el) return;
+  const stats = `<div class="cal-stats"><div class="cal-stat"><div class="l">Strank</div><div class="v">${list.length}</div></div><div class="cal-stat"><div class="l">Obiskov skupaj</div><div class="v">${totalVisits}</div></div></div>`;
+  const rows = list.length ? list.map(c => {
+    const last = c.lastDate ? c.lastDate.split('-').reverse().join('.') : '';
+    return `<div class="ag-row" style="border-left-color:#7c3aed">
+      <div class="ag-main">
+        <div class="ag-name">${escHtml(c.name || 'Neznano')}</div>
+        <div class="ag-meta">${escHtml(c.phone || '-')}${last ? ' · zadnji obisk ' + last : ''}${c.cancelled ? ' · ' + c.cancelled + ' odpovedi' : ''}</div>
+      </div>
+      <span class="ag-badge" style="background:rgba(124,58,237,.12);color:#7c3aed">${c.visits} ${c.visits === 1 ? 'obisk' : 'obiskov'}</span>
+    </div>`;
+  }).join('') : '<div class="ag-empty">Ni strank še.</div>';
+  el.innerHTML = stats + '<div class="cal-agenda" style="margin-top:8px">' + rows + '</div>';
 }
 
 async function loadCalendar() {

@@ -1446,6 +1446,28 @@ app.get('/api/settings/services', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/settings/customers — agregirane stranke iz rezervacij (obiski, zadnji obisk)
+app.get('/api/settings/customers', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const bookings = await db.listBookings(salon.id);
+    const map = new Map();
+    for (const b of bookings) {
+      const key = (b.customer_phone || '').trim() || (b.customer_name || '?');
+      let c = map.get(key);
+      if (!c) { c = { phone: b.customer_phone || '', name: b.customer_name || '', visits: 0, cancelled: 0, lastDate: null }; map.set(key, c); }
+      if (!c.name && b.customer_name) c.name = b.customer_name;
+      const d = (b.booking_date || '').slice(0, 10);
+      if (b.status === 'cancelled') c.cancelled++;
+      else { c.visits++; if (!c.lastDate || d > c.lastDate) c.lastDate = d; }
+    }
+    const customers = [...map.values()].sort((a, b) => (b.lastDate || '').localeCompare(a.lastDate || ''));
+    const totalVisits = customers.reduce((s, c) => s + c.visits, 0);
+    res.json({ customers, total: customers.length, totalVisits });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // POST /api/settings/services — nova storitev
 app.post('/api/settings/services', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
