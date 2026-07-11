@@ -374,7 +374,7 @@ function deliveryWelcome(salon) {
   }
   let txt = 'Pozdravljeni v *' + name + '*.';
   if (info.length) txt += '\n\n' + info.join('\n');
-  txt += '\n\nNaročilo lahko kadar koli prekličete – dovolj je, da napišete *preklic*.';
+  txt += '\n\nNaročilo lahko kadar koli prekličete – dovolj je, da napišete *prekliči*.';
   txt += '\n\nBi si želeli kaj naročiti?';
   return txt;
 }
