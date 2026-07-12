@@ -92,6 +92,8 @@
       <label>Geslo <span class="req">*</span></label>
       <input type="password" id="password" placeholder="Najmanj 8 znakov" minlength="8" required>
       <div class="hint">S tem geslom se boste prijavili v nadzorno ploščo.</div>
+      <label style="margin-top:14px">Potrdi geslo <span class="req">*</span></label>
+      <input type="password" id="password2" placeholder="Ponovite geslo" minlength="8" required>
 
       <label>Telefon</label>
       <input type="tel" id="phone" placeholder="npr. 040 123 456">
@@ -190,6 +192,9 @@
     }
     if((payload.password||'').length < 8){
       msg.className='msg err'; msg.textContent='Geslo mora imeti vsaj 8 znakov.'; return;
+    }
+    if(payload.password !== document.getElementById('password2').value){
+      msg.className='msg err'; msg.textContent='Gesli se ne ujemata.'; return;
     }
     btn.disabled = true; btn.textContent = 'Pošiljam...';
     try{
