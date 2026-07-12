@@ -2040,8 +2040,11 @@ async function priklopSalon(id) {
   const s = salonsData.find(x => x.id === id);
   const wa = prompt('WhatsApp Phone Number ID za priklop (lahko pustiš prazno in nastaviš kasneje):', s?.whatsapp_phone_number_id || '');
   if (wa === null) return;
+  const tok = prompt('WhatsApp trajni žeton (System User token). Pusti prazno = uporabi globalni rezervni žeton:', s?.whatsapp_access_token || '');
+  if (tok === null) return;
   const body = {};
   if (wa.trim()) body.whatsapp_phone_number_id = wa.trim();
+  if (tok.trim()) body.whatsapp_access_token = tok.trim();
   const isAi = s && (s.subscription_plan === 'ai' || s.subscription_plan === 'premium');
   if (isAi && s.billing_status !== 'paid') {
     if (!confirm('AI paket še ni označen kot plačan. Vseeno priklopim?')) return;
