@@ -438,6 +438,28 @@ body {
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Embalaža se zaračuna za vsak kos (3 pice = 3× embalaža), dostava enkrat na naročilo. Bot zneska prikaže stranki ločeno.</div>
       </div>
+
+      <div class="settings-card" style="margin-top:16px">
+        <div class="settings-card-title">⭐ Google ocene <span style="font-weight:400;color:var(--muted);font-size:13px">(neobvezno)</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin:6px 0 14px">
+          <input type="checkbox" id="s-review-on" style="accent-color:#7c3aed;width:17px;height:17px">
+          <label for="s-review-on" style="margin:0;cursor:pointer">Po naročilu pošlji stranki prošnjo za Google oceno</label>
+        </div>
+        <div class="s-row">
+          <label>Povezava do Google ocene</label>
+          <input type="text" id="s-review-link" placeholder="npr. https://g.page/r/..../review">
+        </div>
+        <div class="s-row">
+          <label>Koliko ur po naročilu pošlje (1–48)</label>
+          <input type="number" id="s-review-delay" min="1" max="48" step="1" placeholder="2" style="max-width:120px">
+        </div>
+        <div class="s-row">
+          <label>Besedilo prošnje <span style="color:var(--muted);font-weight:400">(prazno = privzeto)</span></label>
+          <textarea id="s-review-msg" rows="3" placeholder="Hvala za naročilo! Bi nam pomagali z oceno na Google?"></textarea>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Bot samodejno pošlje povezavo izbrano število ur po naročilu (znotraj 24 ur, brez dodatnih stroškov). Google povezavo dobiš v Google Business profilu → gumb „Prosi za mnenja".</div>
+      </div>
+
       <button class="btn-save" onclick="saveSettings()">💾 Shrani nastavitve</button>
     </div>
 
@@ -1151,6 +1173,10 @@ async function loadSettingsData() {
     document.getElementById('s-delivery-area').value = d.delivery_area || '';
     if (document.getElementById('s-open')) document.getElementById('s-open').value = d.working_hours_start || '';
     if (document.getElementById('s-close')) document.getElementById('s-close').value = d.working_hours_end || '';
+    if (document.getElementById('s-review-on')) document.getElementById('s-review-on').checked = d.review_enabled === true;
+    if (document.getElementById('s-review-link')) document.getElementById('s-review-link').value = d.review_link || '';
+    if (document.getElementById('s-review-delay')) document.getElementById('s-review-delay').value = d.review_delay_hours || 2;
+    if (document.getElementById('s-review-msg')) document.getElementById('s-review-msg').value = d.review_message || '';
     botActive = d.bot_active !== false;
     renderBotToggle();
   } catch(e) {}
@@ -1535,7 +1561,11 @@ async function saveSettings() {
         pickup_address:document.getElementById('s-pickup-addr').value.trim(),
         delivery_area:document.getElementById('s-delivery-area').value.trim(),
         working_hours_start:document.getElementById('s-open').value||null,
-        working_hours_end:document.getElementById('s-close').value||null
+        working_hours_end:document.getElementById('s-close').value||null,
+        review_enabled:document.getElementById('s-review-on').checked,
+        review_link:document.getElementById('s-review-link').value.trim(),
+        review_delay_hours:parseInt(document.getElementById('s-review-delay').value)||2,
+        review_message:document.getElementById('s-review-msg').value.trim()
       })
     });
     showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');

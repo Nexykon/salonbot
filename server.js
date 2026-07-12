@@ -1297,7 +1297,10 @@ app.get('/api/settings', async (req, res) => {
       working_days: salon.working_days || '1,2,3,4,5,6',
       bot_messages: (salon.bot_messages && typeof salon.bot_messages === 'object') ? salon.bot_messages : {},
       bot_messages_defaults: BOT_MSG_DEFAULTS,
-      review_link: salon.review_link || ''
+      review_link: salon.review_link || '',
+      review_message: salon.review_message || '',
+      review_enabled: salon.review_enabled === true,
+      review_delay_hours: salon.review_delay_hours || 2
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1313,10 +1316,16 @@ app.patch('/api/settings', async (req, res) => {
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
       'packaging_price', 'delivery_fee',
       'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
-      'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message'];
+      'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message',
+      'review_enabled', 'review_delay_hours'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+    if (updates.review_enabled !== undefined) updates.review_enabled = updates.review_enabled === true || updates.review_enabled === 'true';
+    if (updates.review_delay_hours !== undefined) {
+      const h = parseInt(updates.review_delay_hours);
+      updates.review_delay_hours = (isNaN(h) || h < 1) ? 2 : Math.min(48, h);
     }
     if (updates.booking_mode) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
     if (updates.datetime_position) updates.datetime_position = updates.datetime_position === 'last' ? 'last' : 'first';

@@ -59,39 +59,52 @@ async function sendReminders() {
   }
 }
 
-// ─── 2. PROŠNJA ZA RECENZIJO (2h po terminu) ─────────────────────────────────
-// Teče vsako uro — pogleda termine ki so bili danes in imajo booking_time <= zdaj - 2h
+// ─── 2. PROŠNJA ZA RECENZIJO (opcijsko, nastavljiv zamik) ────────────────────
+// Teče vsako uro. Pošlje samo, če ima lokal review_enabled=true.
+// Zamik (review_delay_hours) je nastavljiv. Za dostavo šteje čas od oddaje naročila
+// (created_at), za rezervacije od ure termina (booking_time).
 async function sendReviewRequests() {
   try {
     const salons = await db.getAllSalons();
     const today = todayStr();
 
     for (const salon of salons) {
+      if (salon.review_enabled !== true) continue;          // opcijsko — privzeto izklopljeno
       if (!salon.whatsapp_phone_number_id) continue;
       const phoneId = salon.whatsapp_phone_number_id;
       const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
+      const isDelivery = salon.booking_mode === 'delivery';
+      const delayH = Math.max(1, Math.min(48, parseInt(salon.review_delay_hours) || 2));
 
       const reviewLink = salon.review_link || '';
       const reviewMsg = salon.review_message ||
-        `Hvala za obisk! 🌟 Bi nam pomagali z oceno na Google? Vsaka recenzija nam ogromno pomeni.\n\n` +
+        `${isDelivery ? 'Hvala za naročilo!' : 'Hvala za obisk!'} 🌟 Bi nam pomagali z oceno na Google? Vsaka recenzija nam ogromno pomeni.\n\n` +
         (reviewLink ? `👉 ${reviewLink}\n\n` : '') +
         `Hvala lepa! 🙏`;
 
       const bookings = await db.getBookingsForReview(salon.id, today);
       for (const b of bookings) {
         try {
-          const [h, m] = (b.booking_time || '00:00').split(':').map(Number);
-          const [nh, nm] = t.nowTimeStr().split(':').map(Number);
-          const diffHours = ((nh * 60 + nm) - (h * 60 + m)) / 60;
+          let diffHours;
+          if (isDelivery) {
+            // dostava/naročilo: zamik od časa oddaje naročila
+            if (!b.created_at) continue;
+            diffHours = (Date.now() - new Date(b.created_at).getTime()) / 3600000;
+          } else {
+            // rezervacija: zamik od ure termina
+            const [h, m] = (b.booking_time || '00:00').split(':').map(Number);
+            const [nh, nm] = t.nowTimeStr().split(':').map(Number);
+            diffHours = ((nh * 60 + nm) - (h * 60 + m)) / 60;
+          }
 
-          // Pošlji samo če je minilo 2–4 ure od termina
-          if (diffHours >= 2 && diffHours < 4) {
+          // Okno [delayH, delayH+2) — teče vsako uro; review_sent prepreči podvajanje.
+          if (diffHours >= delayH && diffHours < delayH + 2) {
             const firstName = (b.customer_name || '').split(' ')[0];
             const greeting = firstName ? `${firstName}, ` : '';
             const msg = `${greeting}${reviewMsg}`;
             await wa.send(phoneId, token, wa.textMsg(b.customer_phone, msg));
             await db.updateBookingFields(b.id, { review_sent: true });
-            console.log(`[review] Sent to ${b.customer_phone} for booking ${b.id}`);
+            console.log(`[review] Sent to ${b.customer_phone} for ${isDelivery ? 'order' : 'booking'} ${b.id}`);
           }
         } catch (e) {
           console.error(`[review] Error for booking ${b.id}:`, e.message);
