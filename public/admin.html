@@ -1855,10 +1855,10 @@ function renderTable() {
         ${validLine}
         <div class="salon-plan-row">
           <select class="plan-select" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
-            <option value="starter" ${s.subscription_plan==='starter'?'selected':''}>Osnovni €49,99</option>
-            <option value="pro" ${s.subscription_plan==='pro'?'selected':''}>Pro €79,99</option>
-            <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI €159,99</option>
-            <option value="premium" ${s.subscription_plan==='premium'?'selected':''}>Premium €299</option>
+            <option value="starter" ${s.subscription_plan==='starter'?'selected':''}>Osnovni · 49,99 €/mes</option>
+            <option value="pro" ${s.subscription_plan==='pro'?'selected':''}>Pro · 79,99 €/mes</option>
+            <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI · 159,99 €/mes</option>
+            <option value="premium" ${s.subscription_plan==='premium'?'selected':''}>Premium · 299 €/mes</option>
           </select>
           <select class="plan-select" onchange="changePeriod('${s.id}', this.value)" title="Obdobje plačila">
             <option value="monthly" ${s.billing_period!=='yearly'?'selected':''}>Mesečno</option>
