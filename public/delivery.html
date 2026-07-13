@@ -688,6 +688,8 @@ body {
 
 <script>
 let ownerToken = '';
+let masterToken = '';       // admin pregled (master token)
+let previewSalonId = '';    // admin pregled (kateri lokal)
 const TAG_DEFS = [
   { k: 'brez_laktoze', l: 'brez laktoze' },
   { k: 'vegetarijansko', l: 'vegetarijansko' },
@@ -1701,6 +1703,34 @@ function showToast(msg,type='success'){
 // ── INIT ─────────────────────────────────────────────────
 (function(){
   const params=new URLSearchParams(window.location.search);
+
+  // ── ADMIN PREGLED (master token + salonId) ──────────────
+  const mToken=params.get('master_token');
+  const sId=params.get('salonId');
+  if(mToken && sId){
+    masterToken=mToken; previewSalonId=sId;
+    // vsem /api/ klicem samodejno dodaj salonId + master avtorizacijo
+    const _fetch=window.fetch.bind(window);
+    window.fetch=function(url,opts){
+      if(typeof url==='string' && url.indexOf('/api/')===0 && url.indexOf('/api/auth/')!==0 && url.indexOf('/api/my-salons')!==0){
+        url += (url.indexOf('?')>=0?'&':'?') + 'salonId=' + encodeURIComponent(previewSalonId);
+        opts=opts||{};
+        opts.headers=Object.assign({},opts.headers,{'Authorization':'Bearer '+masterToken});
+      }
+      return _fetch(url,opts);
+    };
+    history.replaceState({},'','/delivery.html');
+    const banner=document.createElement('div');
+    banner.textContent='ADMIN PREGLED — urejate meni tega lokala';
+    banner.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#7c3aed;color:#fff;text-align:center;font-weight:700;font-size:12px;padding:6px 8px';
+    (document.body?document.body:document.documentElement).appendChild(banner);
+    fetch('/api/settings')
+      .then(r=>r.ok?r.json():null)
+      .then(d=>{ showApp(((d&&d.name)||'Lokal')+' — admin'); })
+      .catch(()=>{ showApp('Lokal — admin'); });
+    return;
+  }
+
   const urlToken=params.get('token');
   if(urlToken){localStorage.setItem('ft_delivery_token',urlToken);history.replaceState({},'','/delivery.html');}
   const saved=localStorage.getItem('ft_delivery_token');

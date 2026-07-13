@@ -1882,6 +1882,7 @@ function renderTable() {
         <button class="btn-action btn-msg" onclick="sendProformaEmail('${s.id}')">📧 Predračun</button>
         <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 PDF</button>
         <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">WA</button>
+        <button class="btn-action" style="color:#7c3aed;border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.07)" onclick="openOwnerDashboard('${s.id}')">${isRestaurant(s) ? '🍽️ Meni' : '🖥️ Dashboard'}</button>
         <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
         <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.06)" onclick="deleteSalon('${s.id}','${(s.name||'').replace(/'/g,'')}')">Briši</button>
       </div>
@@ -2393,7 +2394,9 @@ function openOwnerDashboard(id) {
     showToast('Najprej se prijavite z master WhatsApp OTP.', 'error');
     return;
   }
-  window.open(`/salon.html?salonId=${encodeURIComponent(id)}&master_token=${encodeURIComponent(masterToken)}`, '_blank', 'noopener');
+  const s = salonsData.find(x => x.id === id);
+  const page = (s && isRestaurant(s)) ? 'delivery.html' : 'salon.html';
+  window.open(`/${page}?salonId=${encodeURIComponent(id)}&master_token=${encodeURIComponent(masterToken)}`, '_blank', 'noopener');
 }
 
 function openSelectedDashboard() {

@@ -1967,43 +1967,4 @@ function updateSettingsPreview(data){
   document.querySelectorAll("#prev-name").forEach(el=>el.textContent=name);
   document.querySelectorAll("#prev-greeting-text").forEach(el=>el.textContent=greeting);
   const svcs=(typeof calServices!=="undefined"&&calServices.length)?calServices:[];
-  document.querySelectorAll("#prev-svc-rows").forEach(el=>{
-    el.innerHTML=svcs.length?svcs.slice(0,5).map(s=>`<div style="padding:7px 9px;border-bottom:1px solid rgba(0,0,0,0.05);font-size:11px"><div style="font-weight:700;color:#1a1a1a">${s.name}</div><div style="font-size:9.5px;color:#888;margin-top:1px">${s.duration_minutes} min${s.price?" · "+s.price+" EUR":""}</div></div>`).join(""):"<div style=\"padding:8px 9px;font-size:11px;color:#888\">Ni storitev</div>";
-  });
-  const qEl=document.getElementById("prev-questions");
-  if(!qEl)return;
-  const fields=(typeof currentFormFields!=="undefined")?currentFormFields:[];
-  const mode=(typeof currentBookingMode!=="undefined")?currentBookingMode:"exact_time";
-  const dtPos=(typeof currentDatetimePosition!=="undefined")?currentDatetimePosition:"last";
-  const modeLabels={"exact_time":"📅 Točen termin","date_only":"📆 Samo datum","inquiry":"💬 Povpraševanje"};
-  const qs=[];
-  const dtQ=mode==="date_only"?"Kateri datum vam ustreza?":"Kateri datum in ura vam ustreza?";
-  if(mode==="inquiry"){
-    qs.push("Kakšno je vaše ime in priimek?");
-    fields.forEach(f=>qs.push(f.label));
-  } else if(dtPos==="first"){
-    qs.push(dtQ);
-    fields.forEach(f=>qs.push(f.label));
-    qs.push("Kakšno je vaše ime in priimek?");
-  } else {
-    fields.forEach(f=>qs.push(f.label));
-    qs.push(dtQ);
-    qs.push("Kakšno je vaše ime in priimek?");
-  }
-  const b=t=>`<div style="background:#fff;border-radius:0 11px 11px 11px;padding:9px 10px 6px;font-size:12px;line-height:1.45;color:#111;max-width:93%;box-shadow:0 1px 2px rgba(0,0,0,0.12);position:relative;margin-bottom:7px"><div style="position:absolute;top:0;left:-7px;border:7px solid transparent;border-top:0;border-right:7px solid #fff"></div>${t}<div style="text-align:right;font-size:9px;color:rgba(0,0,0,0.38);margin-top:4px">✓✓</div></div>`;
-  qEl.innerHTML=`<div style="text-align:center;margin:4px 0 8px"><span style="background:rgba(37,211,102,0.15);border-radius:7px;padding:2px 10px;font-size:9px;color:#0d7a40;font-weight:700;border:1px solid rgba(37,211,102,0.3)">${modeLabels[mode]||mode}</span></div>`+qs.map(b).join("");
-}
-
-// ── Auto-init ────────────────────────────────────────────────
-(function init() {
-  const stored=localStorage.getItem('ft_master_token')||localStorage.getItem('ft_owner_token')||sessionStorage.getItem('ft_master_token')||sessionStorage.getItem('ft_owner_token');
-  if (stored) {
-    document.getElementById('auth-token').value = stored;
-    doLogin(stored);
-  } else if (previewSalonId && masterToken) {
-    doLogin(masterToken);
-  }
-})();
-</script>
-</body>
-</html>
+  d
