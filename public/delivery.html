@@ -172,7 +172,9 @@ body {
 /* ETA MODAL */
 .modal-overlay { position: fixed; inset: 0; background: rgba(17,17,24,.5); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
 .modal-overlay.open { display: flex; }
-.modal-sheet { background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 0 0; padding: 28px 24px 40px; width: 100%; max-width: 520px; box-shadow: 0 -8px 40px rgba(0,0,0,.12); }
+.modal-sheet { background: var(--surface); border: 1px solid var(--border); border-radius: 24px 24px 0 0; padding: 28px 24px calc(40px + env(safe-area-inset-bottom)); width: 100%; max-width: 520px; box-shadow: 0 -8px 40px rgba(0,0,0,.12); max-height: 92vh; overflow-y: auto; }
+.modal-btns { display: flex; gap: 10px; }
+.modal-btns button { min-height: 48px; }
 .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 4px; }
 .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
 .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -885,10 +887,7 @@ function renderCards(orders) {
       <div class="order-actions">
         <button class="btn-accept" onclick="openModal('${o.id}')">✅ Sprejmi naročilo</button>
         <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Zavrni</button>
-      </div>` : (o.status === 'confirmed' ? `
-      <div class="order-actions">
-        <button class="btn-reject" onclick="rejectOrder('${o.id}','${ref6}')">✗ Prekliči naročilo</button>
-      </div>` : '');
+      </div>` : '';
     // Price breakdown
     const priceRows = artikli
       ? [

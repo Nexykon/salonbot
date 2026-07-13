@@ -1860,7 +1860,11 @@ function renderTable() {
             <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI €159,99</option>
             <option value="premium" ${s.subscription_plan==='premium'?'selected':''}>Premium €299</option>
           </select>
-          <span class="usage-cell" data-salon="${s.id}" style="font-size:12px;color:var(--text2)">—</span>
+          <select class="plan-select" onchange="changePeriod('${s.id}', this.value)" title="Obdobje plačila">
+            <option value="monthly" ${s.billing_period!=='yearly'?'selected':''}>Mesečno</option>
+            <option value="yearly" ${s.billing_period==='yearly'?'selected':''}>Letno ×12</option>
+          </select>
+          <span class="usage-cell" data-salon="${s.id}" style="font-size:12px;color:var(--text2);font-weight:700" title="Naročila prek bota ta mesec">📦 —</span>
         </div>
       </div>
       <div class="salon-actions">
@@ -1988,7 +1992,7 @@ function fillUsageCells() {
     const isAi = salon && salon.subscription_plan === 'ai';
     const lim = (usageData.limits && usageData.limits[el.dataset.salon]) || usageData.limit;
     const over = isAi && cnt >= lim;
-    el.textContent = isAi ? `${cnt} / ${lim}` : cnt;
+    el.textContent = isAi ? `📦 ${cnt} / ${lim}` : `📦 ${cnt} naročil`;
     el.style.fontWeight = '700';
     el.style.color = over ? 'var(--red)' : (cnt > lim * 0.8 && isAi ? 'var(--yellow)' : 'var(--text2)');
     el.title = over ? `Presežena AI meja (${lim}) — ponudi višji paket!` : `Naročila v ${usageData.month}`;
@@ -1998,9 +2002,10 @@ function fillUsageCells() {
 async function changePlan(id, plan) {
   const labels = { starter: 'Osnovno €49,99', pro: 'POS €79,99', ai: '🤖 AI €159,99' };
   try {
+    const cur0 = salonsData.find(s => s.id === id);
     const res = await apiFetch(`/api/salons/${id}/plan`, {
       method: 'PATCH',
-      body: JSON.stringify({ plan })
+      body: JSON.stringify({ plan, billing_period: cur0?.billing_period || 'monthly' })
     });
     if (res.ok) {
       const salon = salonsData.find(s => s.id === id);
@@ -2016,6 +2021,23 @@ async function changePlan(id, plan) {
     showToast('Napaka pri menjavi paketa', 'error');
     renderAll();
   }
+}
+
+async function changePeriod(id, period) {
+  const cur = salonsData.find(s => s.id === id);
+  try {
+    const res = await apiFetch(`/api/salons/${id}/plan`, {
+      method: 'PATCH',
+      body: JSON.stringify({ plan: cur?.subscription_plan || 'starter', billing_period: period })
+    });
+    if (res.ok) {
+      if (cur) cur.billing_period = period;
+      renderAll();
+      showToast(`✅ ${cur?.name || 'Salon'} → ${period === 'yearly' ? 'letno (×12)' : 'mesečno'}`, 'success');
+    } else {
+      showToast('Napaka pri spremembi obdobja', 'error'); renderAll();
+    }
+  } catch (e) { showToast('Napaka', 'error'); renderAll(); }
 }
 
 async function activateSalon(id) {

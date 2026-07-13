@@ -1036,7 +1036,7 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
 app.patch('/api/salons/:id/plan', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { id } = req.params;
-  const { plan } = req.body;
+  const { plan, billing_period } = req.body;
   if (!['starter', 'pro', 'ai', 'premium'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
   try {
     const axios = require('axios');
@@ -1047,9 +1047,11 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
       'Content-Type': 'application/json',
       Prefer: 'return=minimal'
     };
-    await axios.patch(`${BASE}/sb_salons?id=eq.${id}`, { subscription_plan: plan }, { headers: HEADERS });
-    console.log(`Salon ${id} plan → ${plan}`);
-    res.json({ success: true, plan });
+    const patch = { subscription_plan: plan };
+    if (billing_period === 'yearly' || billing_period === 'monthly') patch.billing_period = billing_period;
+    await axios.patch(`${BASE}/sb_salons?id=eq.${id}`, patch, { headers: HEADERS });
+    console.log(`Salon ${id} plan → ${plan}${patch.billing_period ? ' (' + patch.billing_period + ')' : ''}`);
+    res.json({ success: true, plan, billing_period: patch.billing_period });
   } catch (err) {
     console.error('Plan update error:', err.message);
     res.status(500).json({ error: err.message });
