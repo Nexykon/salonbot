@@ -1281,6 +1281,12 @@ app.get('/api/settings', async (req, res) => {
       billing_status: salon.billing_status || 'none',
       billing_period: salon.billing_period || 'monthly',
       valid_until: salon.valid_until || salon.trial_ends_at || null,
+      company_name: salon.company_name || '',
+      vat_id: salon.vat_id || '',
+      address: salon.address || '',
+      contact_person: salon.contact_person || '',
+      owner_email: salon.owner_email || '',
+      account_phone: salon.admin_phone || '',
       stripe_active: !!salon.stripe_customer_id,
       pos_type: salon.pos_type || '',
       pos_account: salon.pos_account || '',
@@ -1317,7 +1323,8 @@ app.patch('/api/settings', async (req, res) => {
       'packaging_price', 'delivery_fee',
       'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message',
-      'review_enabled', 'review_delay_hours'];
+      'review_enabled', 'review_delay_hours',
+      'company_name', 'vat_id', 'address', 'contact_person'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];

@@ -629,6 +629,16 @@
       <button class="btn" style="margin-top:12px;width:100%" onclick="requestRenewal()">🔁 Zaprosi za podaljšanje</button>
     </div>
     <div class="card owner-panel settings-panel">
+      <div class="card-title">🏢 Podatki podjetja <span style="font-weight:400;color:#64748b;font-size:13px">(za račune)</span></div>
+      <div class="form-group"><label>Naziv firme</label><input type="text" id="acc-company" placeholder="npr. Frizerski salon Ana s.p."></div>
+      <div class="form-group"><label>DDV / davčna številka</label><input type="text" id="acc-vat" placeholder="npr. SI12345678"></div>
+      <div class="form-group"><label>Naslov firme</label><input type="text" id="acc-address" placeholder="Ulica in hišna št., pošta in kraj"></div>
+      <div class="form-group"><label>Kontaktna oseba</label><input type="text" id="acc-contact" placeholder="Ime in priimek"></div>
+      <div class="form-group"><label>Email <span style="color:#64748b;font-weight:400">(prijava — sprememba prek podpore)</span></label><input type="email" id="acc-email" disabled style="opacity:.65"></div>
+      <div class="form-group"><label>Telefon <span style="color:#64748b;font-weight:400">(sprememba prek podpore)</span></label><input type="text" id="acc-phone" disabled style="opacity:.65"></div>
+      <button class="btn" style="margin-top:8px;width:100%" onclick="saveCompany()">💾 Shrani podatke podjetja</button>
+    </div>
+    <div class="card owner-panel settings-panel">
       <div class="card-title">🕐 Delovni čas</div>
 
       <div class="form-group">
@@ -1285,6 +1295,22 @@ async function initLocationSwitcher(tokenGetter, tokenSetter) {
 }
 
 // ── Naročnina (Stripe) ─────────────────────────────────────
+async function saveCompany() {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    Object.assign(headers, authHeaders());
+    const r = await fetch(scopedPath('/api/settings'), {
+      method: 'PATCH', headers,
+      body: JSON.stringify({
+        company_name: document.getElementById('acc-company').value.trim(),
+        vat_id: document.getElementById('acc-vat').value.trim(),
+        address: document.getElementById('acc-address').value.trim(),
+        contact_person: document.getElementById('acc-contact').value.trim()
+      })
+    });
+    showToast(r.ok ? 'Podatki podjetja shranjeni' : 'Napaka pri shranjevanju', r.ok ? 'success' : 'error');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
 function renderBilling(d) {
   const el = document.getElementById('billing-info');
   if (!el) return;
@@ -1435,6 +1461,14 @@ function loadUI(data) {
   loadServices();
   ffLoadFromData(data);
   renderBilling(data);
+  if (document.getElementById('acc-company')) {
+    document.getElementById('acc-company').value = data.company_name || '';
+    document.getElementById('acc-vat').value = data.vat_id || '';
+    document.getElementById('acc-address').value = data.address || '';
+    document.getElementById('acc-contact').value = data.contact_person || '';
+    document.getElementById('acc-email').value = data.owner_email || '';
+    document.getElementById('acc-phone').value = data.account_phone || '';
+  }
   if (ownerToken) initLocationSwitcher(
     () => ownerToken,
     (t) => { ownerToken = t; localStorage.setItem('ft_owner_token', t); sessionStorage.setItem('ft_owner_token', t); }

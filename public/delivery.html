@@ -375,6 +375,16 @@ body {
         <button class="btn-save" style="width:100%" onclick="openBmModal()">✏️ Uredi sporočila bota</button>
       </div>
       <div class="settings-card">
+        <div class="settings-card-title">Podatki podjetja <span style="font-weight:400;color:var(--muted);font-size:13px">(za račune)</span></div>
+        <div class="s-row"><label>Naziv firme</label><input type="text" id="s-company" placeholder="npr. Gostilna Pri Lipi d.o.o."></div>
+        <div class="s-row"><label>DDV / davčna številka</label><input type="text" id="s-vat" placeholder="npr. SI12345678"></div>
+        <div class="s-row"><label>Naslov firme</label><input type="text" id="s-address" placeholder="Ulica in hišna št., pošta in kraj"></div>
+        <div class="s-row"><label>Kontaktna oseba</label><input type="text" id="s-contact" placeholder="Ime in priimek"></div>
+        <div class="s-row"><label>Email <span style="color:var(--muted);font-weight:400">(prijava — sprememba prek podpore)</span></label><input type="email" id="s-email" disabled style="opacity:.65"></div>
+        <div class="s-row"><label>Telefon <span style="color:var(--muted);font-weight:400">(sprememba prek podpore)</span></label><input type="text" id="s-account-phone" disabled style="opacity:.65"></div>
+        <button class="btn-save" style="margin-top:12px;width:100%" onclick="saveCompany()">💾 Shrani podatke podjetja</button>
+      </div>
+      <div class="settings-card">
         <div class="settings-card-title">Naročnina</div>
         <div id="billing-info" style="font-size:14px;margin-bottom:8px;color:var(--muted)">Nalagam ...</div>
         <div id="billing-note" style="font-size:13px;color:var(--muted);margin-top:6px"></div>
@@ -1177,6 +1187,12 @@ async function loadSettingsData() {
     if (document.getElementById('s-review-link')) document.getElementById('s-review-link').value = d.review_link || '';
     if (document.getElementById('s-review-delay')) document.getElementById('s-review-delay').value = d.review_delay_hours || 2;
     if (document.getElementById('s-review-msg')) document.getElementById('s-review-msg').value = d.review_message || '';
+    if (document.getElementById('s-company')) document.getElementById('s-company').value = d.company_name || '';
+    if (document.getElementById('s-vat')) document.getElementById('s-vat').value = d.vat_id || '';
+    if (document.getElementById('s-address')) document.getElementById('s-address').value = d.address || '';
+    if (document.getElementById('s-contact')) document.getElementById('s-contact').value = d.contact_person || '';
+    if (document.getElementById('s-email')) document.getElementById('s-email').value = d.owner_email || '';
+    if (document.getElementById('s-account-phone')) document.getElementById('s-account-phone').value = d.account_phone || '';
     botActive = d.bot_active !== false;
     renderBotToggle();
   } catch(e) {}
@@ -1541,6 +1557,21 @@ async function posSave() {
     const d = await r.json().catch(() => ({}));
     showToast(r.ok ? '✅ POS nastavitve shranjene!' : '❌ ' + (d.error || 'Napaka pri shranjevanju'), r.ok ? 'success' : 'error');
     if (r.ok) loadSettingsData();
+  } catch (e) { showToast('Napaka', 'error'); }
+}
+async function saveCompany() {
+  try {
+    const r = await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify({
+        company_name: document.getElementById('s-company').value.trim(),
+        vat_id: document.getElementById('s-vat').value.trim(),
+        address: document.getElementById('s-address').value.trim(),
+        contact_person: document.getElementById('s-contact').value.trim()
+      })
+    });
+    showToast(r.ok ? '✅ Podatki podjetja shranjeni!' : 'Napaka pri shranjevanju', r.ok ? 'success' : 'error');
   } catch (e) { showToast('Napaka', 'error'); }
 }
 async function saveSettings() {
