@@ -1066,19 +1066,24 @@
       <div class="form-group">
         <label>Panoga *</label>
         <select id="f-business-type">
+          <option value="restaurant">Restavracije</option>
+          <option value="pizzeria">Picerije</option>
+          <option value="burger">Burgerji / Fast food</option>
+          <option value="kebab">Kebab</option>
+          <option value="dog_grooming">Pasji saloni (nega)</option>
+          <option value="barber">Brivnice / Barber</option>
+          <option value="cosmetics">Kozmetični studio</option>
           <option value="hair">Frizerstvo</option>
           <option value="beauty">Nohti / Beauty</option>
-          <option value="cosmetics">Kozmetični studio</option>
           <option value="massage">Masaže</option>
           <option value="tattoo">Tattoo / Piercing</option>
+          <option value="dentist">Zobozdravstvo</option>
           <option value="fitness">Fitness in trenerji</option>
           <option value="wellness">Wellness center</option>
-          <option value="dentist">Zobozdravstvo</option>
           <option value="veterinary">Veterinar</option>
-          <option value="physiotherapy">Fizioterapija</option>
           <option value="optical">Optika</option>
+          <option value="physiotherapy">Fizioterapija</option>
           <option value="photography">Fotografija</option>
-          <option value="restaurant">Restavracija / Picerija</option>
           <option value="custom">Drugo / Custom</option>
         </select>
         <div class="form-hint">Panoga nastavi začetne storitve in besedila bota.</div>
@@ -1185,17 +1190,23 @@
               <div class="form-group">
                 <label>Panoga</label>
                 <select id="bs-business-type" onchange="updateBotStudioPreview()">
+                  <option value="restaurant">Restavracije</option>
+                  <option value="pizzeria">Picerije</option>
+                  <option value="burger">Burgerji / Fast food</option>
+                  <option value="kebab">Kebab</option>
+                  <option value="dog_grooming">Pasji saloni (nega)</option>
+                  <option value="barber">Brivnice / Barber</option>
                   <option value="cosmetics">Kozmetični studii</option>
                   <option value="hair">Frizerji</option>
                   <option value="beauty">Nohti / Beauty</option>
-                  <option value="dentist">Zobozdravniki</option>
                   <option value="massage">Masažni saloni</option>
+                  <option value="tattoo">Tattoo studio</option>
+                  <option value="dentist">Zobozdravniki</option>
                   <option value="fitness">Fitness &amp; trenerji</option>
                   <option value="wellness">Wellness centri</option>
                   <option value="veterinary">Veterinarji</option>
                   <option value="optical">Optiki</option>
                   <option value="physiotherapy">Fizioterapevti</option>
-                  <option value="tattoo">Tattoo studio</option>
                   <option value="photography">Fotografi</option>
                   <option value="custom">+ vaša dejavnost</option>
                 </select>
@@ -1234,14 +1245,9 @@
                 <input type="email" id="bs-owner-email" placeholder="ana@salon.si">
               </div>
               <div class="form-group">
-                <label>Stripe cena po meri <span style="color:var(--text3);font-weight:400">(Enterprise — neobvezno)</span></label>
-                <input type="text" id="bs-custom-price" placeholder="price_... (pusti prazno za standardno ceno)">
-                <div class="form-hint">Če je nastavljeno, AI checkout za ta lokal uporabi to Stripe ceno (npr. Enterprise 299 €).</div>
-              </div>
-              <div class="form-group">
                 <label>AI meja naročil/mesec <span style="color:var(--text3);font-weight:400">(0 = privzeta)</span></label>
-                <input type="number" id="bs-ai-limit" min="0" placeholder="npr. 10000 za Enterprise">
-                <div class="form-hint">Nad mejo bot preklopi na klasične gumbe (naročila tečejo naprej), ti pa dobiš email. Enterprise 299 € = 10000.</div>
+                <input type="number" id="bs-ai-limit" min="0" placeholder="npr. 10000 za Premium">
+                <div class="form-hint">Nad mejo bot preklopi na klasične gumbe (naročila tečejo naprej), ti pa dobiš email. Premium 299 € = 10000.</div>
               </div>
               <div class="form-group">
                 <label>Novo geslo <span style="color:var(--text3);font-weight:400">(neobvezno)</span></label>
@@ -2350,7 +2356,6 @@ async function openManageSalon(id) {
     document.getElementById('bs-slug').value = settings.business_slug || '';
     document.getElementById('bs-bot-phone').value = settings.bot_phone_display || '';
     document.getElementById('bs-owner-email').value = settings.owner_email || '';
-    document.getElementById('bs-custom-price').value = settings.custom_price_id || '';
     document.getElementById('bs-ai-limit').value = settings.ai_monthly_limit || 0;
     document.getElementById('bs-owner-password').value = '';
     document.getElementById('bs-greeting').value = settings.greeting_message || '';
@@ -2776,7 +2781,6 @@ async function saveBotStudio() {
     var settingsPayload = {
       name: document.getElementById('bs-name').value.trim(),
       owner_email: document.getElementById('bs-owner-email').value.trim(),
-      custom_price_id: document.getElementById('bs-custom-price').value.trim(),
       ai_monthly_limit: parseInt(document.getElementById('bs-ai-limit').value) || 0,
       business_type: document.getElementById('bs-business-type').value,
       business_slug: document.getElementById('bs-slug').value.trim(),
