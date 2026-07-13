@@ -301,6 +301,9 @@ body {
     <div class="tab" onclick="switchTab('stats')">
       <span class="tab-icon">📊</span>Statistika
     </div>
+    <div class="tab" onclick="switchTab('account')">
+      <span class="tab-icon">👤</span>Moj račun
+    </div>
   </div>
 
   <div class="main">
@@ -359,23 +362,7 @@ body {
     <!--
 
     <!-- NASTAVITVE -->
-    <div class="tab-content" id="tab-settings">
-      <div class="settings-card">
-        <div class="settings-card-title">Osnovno</div>
-        <div class="s-row">
-          <label>Ime podjetja</label>
-          <input type="text" id="s-name" placeholder="Pizzeria Roma">
-        </div>
-        <div class="s-row">
-          <label>Bot telefonska številka (za prikaz)</label>
-          <input type="text" id="s-botnum" placeholder="+386 XX XXX XXX">
-        </div>
-      </div>
-      <div class="settings-card">
-        <div class="settings-card-title">Sporočila bota</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Prilagodite vsa besedila, ki jih bot pošilja strankam — s predogledom pogovora v živo na telefonu.</div>
-        <button class="btn-save" style="width:100%" onclick="openBmModal()">✏️ Uredi sporočila bota</button>
-      </div>
+    <div class="tab-content" id="tab-account">
       <div class="settings-card">
         <div class="settings-card-title">Podatki podjetja <span style="font-weight:400;color:var(--muted);font-size:13px">(za račune)</span></div>
         <div class="s-row"><label>Naziv firme</label><input type="text" id="s-company" placeholder="npr. Gostilna Pri Lipi d.o.o."></div>
@@ -393,6 +380,24 @@ body {
         <div id="billing-expiry" style="font-size:13px;color:var(--muted);margin-top:6px"></div>
         <div id="plan-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:14px"></div>
         <button class="btn-save" style="margin-top:12px;width:100%" onclick="requestRenewal()">🔁 Zaprosi za podaljšanje</button>
+      </div>
+    </div>
+    <div class="tab-content" id="tab-settings">
+      <div class="settings-card">
+        <div class="settings-card-title">Osnovno</div>
+        <div class="s-row">
+          <label>Ime podjetja</label>
+          <input type="text" id="s-name" placeholder="Pizzeria Roma">
+        </div>
+        <div class="s-row">
+          <label>Bot telefonska številka (za prikaz)</label>
+          <input type="text" id="s-botnum" placeholder="+386 XX XXX XXX">
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-title">Sporočila bota</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Prilagodite vsa besedila, ki jih bot pošilja strankam — s predogledom pogovora v živo na telefonu.</div>
+        <button class="btn-save" style="width:100%" onclick="openBmModal()">✏️ Uredi sporočila bota</button>
       </div>
       <div class="settings-card">
         <div class="settings-card-title">Način naročanja</div>
@@ -762,9 +767,11 @@ function showApp(name) {
 
 // ── TABS ────────────────────────────────────────────────
 function switchTab(tab) {
-  const tabs = ['orders','menu','settings','pos','stats'];
-  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
-  document.querySelectorAll('.tab-content').forEach((t,i) => t.classList.toggle('active', tabs[i]===tab));
+  document.querySelectorAll('.tab').forEach(t => {
+    const m = (t.getAttribute('onclick') || '').match(/switchTab\('(\w+)'\)/);
+    t.classList.toggle('active', !!m && m[1] === tab);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
   if (tab === 'stats') loadStats();
 }
 
