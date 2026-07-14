@@ -213,6 +213,22 @@ async function getLastOrderItemsByPhone(salonId, phone) {
   return r.data || [];
 }
 
+// Ime + datum zadnjega naročila stranke — za prepoznavo vračajoče se stranke
+async function getLastCustomerByPhone(salonId, phone) {
+  try {
+    const r = await axios.get(
+      `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&status=neq.cancelled&order=created_at.desc&limit=1&select=customer_name,created_at`,
+      { headers: HEADERS }
+    );
+    const bk = r.data[0];
+    if (!bk || !bk.customer_name) return null;
+    const nm = String(bk.customer_name).trim();
+    // preskoči telefonske "imena" (npr. shranjeno kot številka)
+    if (!nm || /^\+?\d[\d\s]{5,}$/.test(nm)) return null;
+    return { name: nm, lastAt: bk.created_at || null };
+  } catch (_e) { return null; }
+}
+
 // Zadnje odprto (pending/confirmed) današnje naročilo stranke — za preklic
 async function getActiveBookingByPhone(salonId, phone) {
   const today = t.todayStr();
@@ -692,7 +708,7 @@ module.exports = {
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
   createOrderItems, getOrderItems, getOrderItemsBysalon,
-  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
+  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,

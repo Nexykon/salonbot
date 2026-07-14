@@ -821,6 +821,16 @@ async function handleMessage(msgObj, salon) {
     };
     if (iId === 'delivery_checkout') { await startCheckout(); return; }
 
+    // Ime vračajoče se stranke (preveri enkrat na sejo; null = preverjeno, brez)
+    const resolveKnownName = async () => {
+      const cur = session.get(skey);
+      if (cur.knownName !== undefined) return cur.knownName;
+      let nm = null, at = null;
+      try { const kc = await db.getLastCustomerByPhone(salon.id, from); if (kc) { nm = kc.name; at = kc.lastAt; } } catch (_e) {}
+      session.set(skey, { ...session.get(skey), knownName: nm, knownLastAt: at });
+      return nm;
+    };
+
     // ── AI paket: deterministični tekoči trak zaključka (po vrsti, sproti shranjeno, VEDNO odda) ──
     const sendCheckoutSummary = async () => {
       const cur = session.get(skey);
@@ -849,10 +859,17 @@ async function handleMessage(msgObj, salon) {
       const cur = session.get(skey);
       const tot = computeTotals(salon, cur.cart || [], mode);
       const pickNote = mode === 'prevzem' && salon.pickup_address ? ` Prevzem bo na naslovu ${salon.pickup_address}.` : '';
-      session.set(skey, { ...cur, orderMode: mode, checkoutStage: 'name', grandTotal: tot.grand, packFee: tot.packFee, delFee: tot.delFee });
-      await wa.send(phoneId, token, wa.textMsg(from,
-        `${mode === 'dostava' ? 'Dostava.' : 'Osebni prevzem.'}${pickNote} ${tot.text}\n\nProsim, napišite vaše ime in priimek.`
-      ));
+      const known = cur.customerName || await resolveKnownName();
+      session.set(skey, { ...session.get(skey), orderMode: mode, customerName: known || null, grandTotal: tot.grand, packFee: tot.packFee, delFee: tot.delFee });
+      const head = `${mode === 'dostava' ? 'Dostava.' : 'Osebni prevzem.'}${pickNote} ${tot.text}`;
+      if (known) {
+        // Ime že poznamo — ne sprašuj znova, nadaljuj na naslov/povzetek
+        await wa.send(phoneId, token, wa.textMsg(from, head));
+        await promptForStage(session.get(skey));
+      } else {
+        session.set(skey, { ...session.get(skey), checkoutStage: 'name' });
+        await wa.send(phoneId, token, wa.textMsg(from, `${head}\n\nProsim, napišite vaše ime in priimek.`));
+      }
     };
     const startAiCheckout = async () => {
       const cur = session.get(skey);
@@ -875,9 +892,15 @@ async function handleMessage(msgObj, salon) {
       if (!(cur.cart || []).length) { await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna.')); return; }
       if (!cur.orderMode) { await startAiCheckout(); return; }
       if (!cur.customerName) {
-        session.set(skey, { ...cur, checkoutStage: 'name' });
-        await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, napišite vaše ime in priimek.'));
-        return;
+        const known = await resolveKnownName();
+        if (known) {
+          cur = { ...cur, customerName: known };
+          session.set(skey, cur);
+        } else {
+          session.set(skey, { ...cur, checkoutStage: 'name' });
+          await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, napišite vaše ime in priimek.'));
+          return;
+        }
       }
       if (cur.orderMode === 'dostava' && !cur.deliveryAddress) {
         session.set(skey, { ...cur, checkoutStage: 'address' });
@@ -1239,17 +1262,25 @@ async function handleMessage(msgObj, salon) {
       }
       if (sess.aiAllowed) try {
         const history = sess.aiHistory || [];
+        // Prepoznaj vračajočo se stranko (enkrat na sejo)
+        if (sess.knownName === undefined) {
+          const kc = await db.getLastCustomerByPhone(salon.id, from).catch(() => null);
+          sess.knownName = kc ? kc.name : null;
+          sess.knownLastAt = kc ? kc.lastAt : null;
+          session.set(skey, { ...session.get(skey), knownName: sess.knownName, knownLastAt: sess.knownLastAt });
+        }
         const result = await askOrderAI({
           message: msgText, salon, services,
           cart: sess.cart || [], history, phone: from,
           pendingItem: sess.pendingItem || null,
           order: { mode: sess.orderMode || null, name: sess.customerName || null, address: sess.deliveryAddress || null },
-          note: sess.opomba || ''
+          note: sess.opomba || '',
+          knownName: sess.knownName || null, lastOrderAt: sess.knownLastAt || null
         });
         // Ob PRVEM stiku pošlji lepo dobrodošlico (ime, dostava/prevzem, delovni čas, preklic).
         const isFirstTurn = (sess.aiHistory || []).length === 0;
         if (isFirstTurn && !sess.hintShown) {
-          const welcome = wa.deliveryWelcome(salon);
+          const welcome = wa.deliveryWelcome(salon, sess.knownName);
           // Če je stranka že kaj naročila, obdrži AI odgovor + dobrodošlico spredaj;
           // sicer dobrodošlica nadomesti pozdrav AI (da se ne podvaja).
           result.reply = (result.cart && result.cart.length)

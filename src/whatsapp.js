@@ -361,7 +361,7 @@ function deliveryMenuText(to, services) {
 }
 
 // Dobrodošlica ob prvem stiku (brez emojijev, profesionalno). Vrstice se pokažejo le, če so podatki.
-function deliveryWelcome(salon) {
+function deliveryWelcome(salon, customerName) {
   const stripEmoji = s => String(s || '')
     .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, '')
     .replace(/\s+/g, ' ').trim();
@@ -372,7 +372,10 @@ function deliveryWelcome(salon) {
   if (salon.working_hours_start && salon.working_hours_end) {
     info.push('Delovni čas: ' + String(salon.working_hours_start).substring(0, 5) + '–' + String(salon.working_hours_end).substring(0, 5));
   }
-  let txt = 'Pozdravljeni v *' + name + '*.';
+  const firstName = stripEmoji(customerName).split(' ')[0];
+  let txt = firstName
+    ? 'Pozdravljeni, *' + firstName + '*! Lepo, da ste spet pri *' + name + '*.'
+    : 'Pozdravljeni v *' + name + '*.';
   if (info.length) txt += '\n\n' + info.join('\n');
   txt += '\n\nNaročilo lahko kadar koli prekličete – dovolj je, da napišete *prekliči*.';
   txt += '\n\nBi si želeli kaj naročiti?';

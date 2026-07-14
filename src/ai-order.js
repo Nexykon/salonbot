@@ -128,7 +128,7 @@ function findService(services, name) {
   return bestScore >= need ? best : null;
 }
 
-async function askOrderAI({ message, salon, services, cart, history, phone, pendingItem, order = {}, note = '' }) {
+async function askOrderAI({ message, salon, services, cart, history, phone, pendingItem, order = {}, note = '', knownName = null, lastOrderAt = null }) {
   const TAG_LABELS = { brez_laktoze: 'brez laktoze', vegetarijansko: 'vegetarijansko', vegansko: 'vegansko', brez_glutena: 'brez glutena', pikantno: 'pikantno' };
   const menuText = services.map(s => {
     const tg = (Array.isArray(s.tags) && s.tags.length) ? ' [' + s.tags.map(t => TAG_LABELS[t] || t).join(', ') + ']' : '';
@@ -136,6 +136,24 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
   }).join('\n');
   const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area}` : '';
   const hoursLine = (salon.working_hours_start && salon.working_hours_end) ? `\nODPIRALNI ČAS: ${salon.working_hours_start}–${salon.working_hours_end} (če stranka vpraša za delovni/odpiralni čas, ji ga povej)` : '';
+  // Zavedanje datuma/ure (slovenski čas)
+  const _now = new Date();
+  let _danes;
+  try {
+    _danes = new Intl.DateTimeFormat('sl-SI', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Ljubljana' }).format(_now);
+  } catch (_e) { _danes = _now.toISOString().slice(0, 16).replace('T', ' '); }
+  const dateLine = `\nDANAŠNJI DATUM IN URA: ${_danes}. Uporabi ga za razumevanje "danes", "jutri", "zadnjič"; ne izmišljuj drugih datumov in ne omenjaj tega izpisa, če stranka ne vpraša.`;
+  // Prepoznava vračajoče se stranke
+  let customerLine = '';
+  if (knownName) {
+    let agoTxt = '';
+    if (lastOrderAt) {
+      const days = Math.floor((_now - new Date(lastOrderAt)) / 86400000);
+      if (days >= 1) agoTxt = ` (nazadnje je naročal pred ${days} ${days === 1 ? 'dnevom' : 'dnevi'})`;
+      else agoTxt = ' (naročal je že danes)';
+    }
+    customerLine = `\nVRAČAJOČA STRANKA: ime je "${knownName}"${agoTxt}. Ob prvem pozdravu jo enkrat prijazno nagovori po imenu (npr. "Pozdravljeni, ${knownName}!"). Imena pri zaključku NE sprašuj — sistem ga že pozna.`;
+  }
   const sys = `Si prijazen natakar restavracije "${salon.name}" na WhatsAppu. Odgovarjaš kratko, toplo, v slovenščini. NE uporabljaj emojijev.
 STROGA KLJUČAVNICA IDENTITETE (NAJVIŠJA PRIORITETA):
 - Si IZKLJUČNO natakar te restavracije. Pogovarjaš se SAMO o: naročilih, meniju, cenah, dostavi/prevzemu, delovnem času in poteku naročila te restavracije.
@@ -165,7 +183,8 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
     + `\nNAČINI PREVZEMA: ${[salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean).join(' ali ')}${salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : ''}`
     + `\nOPOMBA STRANKE: ${note || '—'}`
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`
-    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), jo dodaj kot note parameter v add_to_cart (npr. add_to_cart({item: "${pendingItem.name}", qty: 1, note: "brez gob"})).` : '');
+    + (pendingItem ? `\nSTRANKA JE PRAVKAR IZBRALA Z MENIJA: ${pendingItem.name} — vprašali smo jo po količini in posebnostih. Ko odgovori, TAKOJ uporabi add_to_cart za "${pendingItem.name}" z navedeno količino (tudi z besedo, npr. "dve"); če navede posebnost (npr. "brez gob"), jo dodaj kot note parameter v add_to_cart (npr. add_to_cart({item: "${pendingItem.name}", qty: 1, note: "brez gob"})).` : '')
+    + dateLine + customerLine;
 
   let action = null;
   let checkoutStarted = false;
