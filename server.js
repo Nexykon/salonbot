@@ -1357,7 +1357,13 @@ app.patch('/api/settings', async (req, res) => {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
     if (updates.review_enabled !== undefined) updates.review_enabled = updates.review_enabled === true || updates.review_enabled === 'true';
-    if (updates.listed_public !== undefined) updates.listed_public = updates.listed_public === true || updates.listed_public === 'true';
+    if (updates.listed_public !== undefined) {
+      updates.listed_public = updates.listed_public === true || updates.listed_public === 'true';
+      // Zabeleži trenutek privolitve (dokazilo o soglasju za objavo)
+      if (updates.listed_public === true && salon.listed_public !== true) {
+        updates.listed_public_at = new Date().toISOString();
+      }
+    }
     if (updates.review_delay_hours !== undefined) {
       const h = parseInt(updates.review_delay_hours);
       updates.review_delay_hours = (isNaN(h) || h < 1) ? 2 : Math.min(48, h);
