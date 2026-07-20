@@ -864,11 +864,20 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
 
 <!-- BRAND -->
 <!-- LOKALI, KI ŽE UPORABLJAJO FLOWTIQ -->
-<section id="uporabljajo" style="display:none;padding:44px 0;background:#fff;border-top:1px solid rgba(12,31,23,.07);border-bottom:1px solid rgba(12,31,23,.07)">
+<style>
+@keyframes ft-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+#uporabljajo-list.ft-scroll { justify-content: flex-start; width: max-content; gap: 0; animation: ft-marquee 30s linear infinite; }
+#uporabljajo-list.ft-scroll > a { margin-right: 14px; }
+#uporabljajo-wrap:hover #uporabljajo-list.ft-scroll { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { #uporabljajo-list.ft-scroll { animation: none; } }
+</style>
+<section id="uporabljajo" style="display:none;padding:54px 0;background:linear-gradient(135deg,#e3f6ea 0%,#e8eefb 100%)">
   <div class="container">
-    <p style="text-align:center;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#51635b;margin:0 0 22px">Že sprejemajo naročila prek WhatsAppa</p>
-    <div id="uporabljajo-list" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px 30px"></div>
-    <p style="text-align:center;margin:24px 0 0"><a href="/restavracije" style="color:#06c167;font-weight:700;text-decoration:none;font-size:14.5px">Poglejte vse lokale →</a></p>
+    <p style="text-align:center;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#3f6b52;margin:0 0 26px">Že sprejemajo naročila prek WhatsAppa</p>
+    <div id="uporabljajo-wrap" style="overflow:hidden">
+      <div id="uporabljajo-list" style="display:flex;flex-wrap:nowrap;justify-content:center;align-items:stretch;gap:14px"></div>
+    </div>
+    <p style="text-align:center;margin:28px 0 0"><a href="/restavracije" style="color:#047840;font-weight:700;text-decoration:none;font-size:14.5px">Poglejte vse lokale →</a></p>
   </div>
 </section>
 <script>
@@ -877,12 +886,25 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
   const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const ini=n=>(String(n||'').replace(/[^\p{L}\p{N}]/gu,'').charAt(0)||'?').toUpperCase();
   document.getElementById('uporabljajo-list').innerHTML=list.slice(0,10).map(r=>
-    '<a href="/restavracije" style="display:flex;align-items:center;gap:9px;text-decoration:none;color:#0c1f17">'+
+    '<a href="/restavracije" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:#0c1f17;background:#fff;border:1px solid rgba(12,31,23,.06);border-radius:14px;padding:13px 20px;box-shadow:0 1px 3px rgba(12,31,23,.05)">'+
     (r.logo_url
-      ? '<img src="'+esc(r.logo_url)+'" alt="'+esc(r.name)+'" style="width:38px;height:38px;border-radius:10px;object-fit:cover">'
-      : '<span style="width:38px;height:38px;border-radius:10px;background:rgba(6,193,103,.1);color:#047840;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">'+ini(r.name)+'</span>')+
-    '<span style="font-weight:700;font-size:14.5px">'+esc(r.name)+'</span></a>').join('');
+      ? '<img src="'+esc(r.logo_url)+'" alt="'+esc(r.name)+'" style="width:40px;height:40px;border-radius:11px;object-fit:cover;flex:0 0 auto">'
+      : '<span style="width:40px;height:40px;border-radius:11px;background:rgba(6,193,103,.1);color:#047840;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:0 0 auto">'+ini(r.name)+'</span>')+
+    '<span style="font-weight:700;font-size:15px;white-space:nowrap">'+esc(r.name)+'</span></a>').join('');
   document.getElementById('uporabljajo').style.display='';
+  // Kartice mirujejo, dokler gredo v širino; ko je preozko, se vrtijo v neskončni zanki
+  const setupMarquee=()=>{
+    const wrap=document.getElementById('uporabljajo-wrap');
+    const track=document.getElementById('uporabljajo-list');
+    if(!wrap||!track||track.classList.contains('ft-scroll'))return;
+    if(track.scrollWidth > wrap.clientWidth + 4){
+      track.innerHTML += track.innerHTML;
+      track.style.animationDuration = Math.max(20, Math.round(track.scrollWidth/60)) + 's';
+      track.classList.add('ft-scroll');
+    }
+  };
+  requestAnimationFrame(setupMarquee);
+  window.addEventListener('resize', setupMarquee);
 }).catch(()=>{});
 </script>
 
