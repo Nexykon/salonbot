@@ -47,7 +47,7 @@ function hashToken(token) {
 }
 
 const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_KEY || 'flowtiq-fallback-secret';
-const SESSION_TTL_OWNER = 24 * 60 * 60 * 1000;        // 24 ur (lastniki salonov)
+const SESSION_TTL_OWNER = 30 * 24 * 60 * 60 * 1000;   // 30 dni (lastniki salonov)
 const SESSION_TTL_MASTER = 30 * 24 * 60 * 60 * 1000;  // 30 dni (master admin)
 
 function createSession(salonId, role = 'owner', identity = {}) {
