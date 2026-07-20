@@ -213,6 +213,36 @@ async function getLastOrderItemsByPhone(salonId, phone) {
   return r.data || [];
 }
 
+// Javno objavljeni lokali — za stran /restavracije
+async function getPublicRestaurants() {
+  const cols = 'id,name,logo_url,address,delivery_area,pickup_address,working_hours_start,working_hours_end,bot_phone_display,business_type,business_slug,allow_delivery,allow_pickup';
+  const r = await axios.get(
+    `${BASE}/sb_salons?listed_public=eq.true&subscription_status=neq.inactive&select=${cols}&order=name`,
+    { headers: HEADERS }
+  );
+  return (r.data || []).filter(s => s.is_active !== false);
+}
+
+// Naloži logotip v Storage (bucket "logos") in vrni javni URL
+async function uploadLogo(salonId, buffer, contentType, ext) {
+  const path = `${salonId}-${Date.now()}.${ext}`;
+  await axios.post(
+    `${process.env.SUPABASE_URL}/storage/v1/object/logos/${path}`,
+    buffer,
+    {
+      headers: {
+        apikey: process.env.SUPABASE_KEY,
+        Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+        'Content-Type': contentType,
+        'x-upsert': 'true'
+      },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity
+    }
+  );
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/logos/${path}`;
+}
+
 // Ime + datum zadnjega naročila stranke — za prepoznavo vračajoče se stranke
 async function getLastCustomerByPhone(salonId, phone) {
   try {
@@ -708,6 +738,7 @@ module.exports = {
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
   createOrderItems, getOrderItems, getOrderItemsBysalon,
+  getPublicRestaurants, uploadLogo,
   getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,

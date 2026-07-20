@@ -19,7 +19,7 @@ const app = express();
 
 // ─── Raw body za Stripe webhook (mora biti pred express.json) ──
 app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+app.use(express.json({ limit: '3mb' }));
 
 // ─── Static files (dashboard) ─────────────────────────────
 // Preusmeritve po preimenovanju strani (stari zaznamki/emaili ostanejo veljavni)
@@ -27,6 +27,7 @@ app.get('/dashboard.html', (req, res) => { const qs = req.originalUrl.split('?')
 app.get('/settings.html', (req, res) => { const qs = req.originalUrl.split('?')[1]; res.redirect(302, '/salon.html' + (qs ? '?' + qs : '')); });
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.get('/restavracije', (req, res) => res.sendFile(path.join(__dirname, 'public', 'restavracije.html')));
 
 function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
@@ -562,6 +563,28 @@ app.post('/stripe/webhook', async (req, res) => {
 // ─── Onboarding API — registracija novega salona ──────────────
 app.get('/api/business-types', (req, res) => {
   res.json(listBusinessTypes());
+});
+
+// GET /api/public/restaurants — javni seznam lokalov za stran /restavracije
+app.get('/api/public/restaurants', async (req, res) => {
+  try {
+    const list = await db.getPublicRestaurants();
+    res.json(list.map(s => ({
+      name: s.name || '',
+      logo_url: s.logo_url || '',
+      address: s.address || '',
+      delivery_area: s.delivery_area || '',
+      pickup_address: s.pickup_address || '',
+      hours: (s.working_hours_start && s.working_hours_end)
+        ? String(s.working_hours_start).slice(0, 5) + '–' + String(s.working_hours_end).slice(0, 5)
+        : '',
+      phone: s.bot_phone_display || '',
+      business_type: s.business_type || '',
+      slug: s.business_slug || '',
+      allow_delivery: s.allow_delivery !== false,
+      allow_pickup: s.allow_pickup !== false
+    })));
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/onboard', async (req, res) => {
@@ -1308,7 +1331,9 @@ app.get('/api/settings', async (req, res) => {
       review_link: salon.review_link || '',
       review_message: salon.review_message || '',
       review_enabled: salon.review_enabled === true,
-      review_delay_hours: salon.review_delay_hours || 2
+      review_delay_hours: salon.review_delay_hours || 2,
+      logo_url: salon.logo_url || '',
+      listed_public: salon.listed_public === true
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1325,13 +1350,14 @@ app.patch('/api/settings', async (req, res) => {
       'packaging_price', 'delivery_fee',
       'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message',
-      'review_enabled', 'review_delay_hours',
+      'review_enabled', 'review_delay_hours', 'listed_public',
       'company_name', 'vat_id', 'address', 'contact_person'];
     const updates = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
     }
     if (updates.review_enabled !== undefined) updates.review_enabled = updates.review_enabled === true || updates.review_enabled === 'true';
+    if (updates.listed_public !== undefined) updates.listed_public = updates.listed_public === true || updates.listed_public === 'true';
     if (updates.review_delay_hours !== undefined) {
       const h = parseInt(updates.review_delay_hours);
       updates.review_delay_hours = (isNaN(h) || h < 1) ? 2 : Math.min(48, h);
@@ -1462,6 +1488,23 @@ app.patch('/api/settings/password', async (req, res) => {
 });
 
 // GET /api/settings/services — seznam storitev za lastnika
+// POST /api/settings/logo — naloži logotip lokala (base64 data URL)
+app.post('/api/settings/logo', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const data = String(req.body.image || '');
+    const m = data.match(/^data:(image\/(png|jpeg|jpg|webp));base64,(.+)$/);
+    if (!m) return res.status(400).json({ error: 'Neveljavna slika — dovoljeni PNG, JPG ali WEBP.' });
+    const buffer = Buffer.from(m[3], 'base64');
+    if (buffer.length > 1024 * 1024) return res.status(400).json({ error: 'Logotip je prevelik (največ 1 MB).' });
+    const ext = m[2] === 'jpeg' ? 'jpg' : m[2];
+    const url = await db.uploadLogo(salon.id, buffer, m[1], ext);
+    await db.updateSalonSettings(salon.id, { logo_url: url });
+    res.json({ success: true, logo_url: url });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.get('/api/settings/services', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;

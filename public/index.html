@@ -863,6 +863,29 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
 
 
 <!-- BRAND -->
+<!-- LOKALI, KI ŽE UPORABLJAJO FLOWTIQ -->
+<section id="uporabljajo" style="display:none;padding:44px 0;background:#fff;border-top:1px solid rgba(12,31,23,.07);border-bottom:1px solid rgba(12,31,23,.07)">
+  <div class="container">
+    <p style="text-align:center;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#51635b;margin:0 0 22px">Že sprejemajo naročila prek WhatsAppa</p>
+    <div id="uporabljajo-list" style="display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:14px 30px"></div>
+    <p style="text-align:center;margin:24px 0 0"><a href="/restavracije" style="color:#06c167;font-weight:700;text-decoration:none;font-size:14.5px">Poglejte vse lokale →</a></p>
+  </div>
+</section>
+<script>
+fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
+  if(!Array.isArray(list)||!list.length)return;
+  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const ini=n=>(String(n||'').replace(/[^\p{L}\p{N}]/gu,'').charAt(0)||'?').toUpperCase();
+  document.getElementById('uporabljajo-list').innerHTML=list.slice(0,10).map(r=>
+    '<a href="/restavracije" style="display:flex;align-items:center;gap:9px;text-decoration:none;color:#0c1f17">'+
+    (r.logo_url
+      ? '<img src="'+esc(r.logo_url)+'" alt="'+esc(r.name)+'" style="width:38px;height:38px;border-radius:10px;object-fit:cover">'
+      : '<span style="width:38px;height:38px;border-radius:10px;background:rgba(6,193,103,.1);color:#047840;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">'+ini(r.name)+'</span>')+
+    '<span style="font-weight:700;font-size:14.5px">'+esc(r.name)+'</span></a>').join('');
+  document.getElementById('uporabljajo').style.display='';
+}).catch(()=>{});
+</script>
+
 <section class="brand-section">
   <div class="container">
     <div class="brand-inner">
