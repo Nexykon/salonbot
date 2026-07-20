@@ -490,7 +490,7 @@ body {
             <input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp" style="max-width:240px" onchange="uploadLogo()">
           </div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">Gostje vas najdejo v imeniku in z enim klikom začnejo naročanje prek WhatsApp. Prikažemo ime, logotip, naslov, območje dostave in delovni čas. PNG, JPG ali WEBP do 1 MB.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Gostje vas najdejo v imeniku in z enim klikom začnejo naročanje prek WhatsApp. Prikažemo ime, logotip, naslov, območje dostave in delovni čas. Naložite PNG, JPG ali WEBP v poljubni velikosti — sliko samodejno pomanjšamo.</div>
       </div>
 
       <button class="btn-save" onclick="saveSettings()">💾 Shrani nastavitve</button>
@@ -1730,27 +1730,50 @@ function setLogoPreview(url, name){
   }
 }
 
+// Pomanjšaj in stisni sliko že v brskalniku (daljša stranica max 400 px)
+function resizeImage(file, maxPx){
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('Slike ni bilo mogoče prebrati'));
+    fr.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Datoteka ni veljavna slika'));
+      img.onload = () => {
+        const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        let out = c.toDataURL('image/png');          // PNG ohrani prosojnost
+        if (out.length > 1300000) out = c.toDataURL('image/jpeg', 0.85);
+        resolve(out);
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+
 async function uploadLogo(){
   const inp = document.getElementById('logo-file');
   const file = inp && inp.files && inp.files[0];
   if (!file) return;
-  if (file.size > 1024 * 1024) { showToast('Logotip je prevelik (največ 1 MB)', 'error'); inp.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = async () => {
-    try {
-      const r = await fetch('/api/settings/logo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
-        body: JSON.stringify({ image: reader.result })
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Napaka pri nalaganju');
-      setLogoPreview(d.logo_url, '');
-      showToast('Logotip naložen', 'success');
-    } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
-    finally { inp.value = ''; }
-  };
-  reader.readAsDataURL(file);
+  if (file.size > 15 * 1024 * 1024) { showToast('Slika je prevelika (največ 15 MB)', 'error'); inp.value = ''; return; }
+  try {
+    showToast('Pripravljam logotip…');
+    const image = await resizeImage(file, 400);
+    const r = await fetch('/api/settings/logo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify({ image })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Napaka pri nalaganju');
+    setLogoPreview(d.logo_url, '');
+    showToast('Logotip naložen', 'success');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+  finally { inp.value = ''; }
 }
 
 // ── INIT ─────────────────────────────────────────────────
