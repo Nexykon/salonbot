@@ -1189,7 +1189,7 @@ async function loadSettingsData() {
     document.getElementById('s-name').value = d.name||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
     currentPlan = d.subscription_plan || 'starter';
-    initLocationSwitcher(() => ownerToken, (t) => { ownerToken = t; localStorage.setItem('ft_delivery_token', t); });
+    if (ownerToken && !masterToken) initLocationSwitcher(() => ownerToken, (t) => { ownerToken = t; localStorage.setItem('ft_delivery_token', t); });
     renderBotMessages(d);
     renderBilling(d);
     renderPosTab(d);
@@ -1786,6 +1786,12 @@ let _ftExpired = false;
 function sessionExpired(){
   if (_ftExpired) return;
   _ftExpired = true;
+  if (masterToken) {
+    // Admin pregled: nikoli ne odjavi in ne briši tokena lastnika
+    try { showToast('Admin seja je potekla — znova se prijavite v admin.', 'error'); } catch(_e) {}
+    _ftExpired = false;
+    return;
+  }
   try { localStorage.removeItem('ft_delivery_token'); } catch(_e) {}
   try { showToast('Seja je potekla — prijavite se znova.', 'error'); } catch(_e) {}
   setTimeout(function(){ location.href = '/delivery.html'; }, 1800);
@@ -1811,8 +1817,9 @@ function sessionExpired(){
       opts=opts||{};
       opts.headers=Object.assign({},opts.headers,{'Authorization':'Bearer '+masterToken});
     }
+    const isSwitcher = isApi && url.indexOf('/api/my-salons')===0;   // opcijski preklopnik — nikoli ne odjavi
     return _fetch(url,opts).then(function(r){
-      if(r.status===401 && isApi && !isAuth) sessionExpired();
+      if(r.status===401 && isApi && !isAuth && !isSwitcher) sessionExpired();
       return r;
     });
   };
