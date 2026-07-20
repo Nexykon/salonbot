@@ -1626,8 +1626,13 @@ async function saveSettings() {
         listed_public:!!document.getElementById('s-listed')?.checked
       })
     });
-    showToast(r.ok?'✅ Shranjeno!':'Napaka pri shranjevanju', r.ok?'success':'error');
-  } catch(e){showToast('Napaka','error');}
+    if (r.ok) {
+      showToast('✅ Shranjeno!', 'success');
+    } else {
+      const d = await r.json().catch(() => ({}));
+      showToast('Napaka pri shranjevanju: ' + (d.error || ('koda ' + r.status)), 'error');
+    }
+  } catch(e){showToast('Napaka: ' + e.message,'error');}
 }
 
 // ── STATS ────────────────────────────────────────────────
@@ -1776,6 +1781,16 @@ async function uploadLogo(){
   finally { inp.value = ''; }
 }
 
+// Potekla seja: odjavi in vrni na prijavo (namesto tihih napak)
+let _ftExpired = false;
+function sessionExpired(){
+  if (_ftExpired) return;
+  _ftExpired = true;
+  try { localStorage.removeItem('ft_delivery_token'); } catch(_e) {}
+  try { showToast('Seja je potekla — prijavite se znova.', 'error'); } catch(_e) {}
+  setTimeout(function(){ location.href = '/delivery.html'; }, 1800);
+}
+
 // ── INIT ─────────────────────────────────────────────────
 (function(){
   const params=new URLSearchParams(window.location.search);
@@ -1783,18 +1798,26 @@ async function uploadLogo(){
   // ── ADMIN PREGLED (master token + salonId) ──────────────
   const mToken=params.get('master_token');
   const sId=params.get('salonId');
-  if(mToken && sId){
-    masterToken=mToken; previewSalonId=sId;
-    // vsem /api/ klicem samodejno dodaj salonId + master avtorizacijo
-    const _fetch=window.fetch.bind(window);
-    window.fetch=function(url,opts){
-      if(typeof url==='string' && url.indexOf('/api/')===0 && url.indexOf('/api/auth/')!==0 && url.indexOf('/api/my-salons')!==0){
-        url += (url.indexOf('?')>=0?'&':'?') + 'salonId=' + encodeURIComponent(previewSalonId);
-        opts=opts||{};
-        opts.headers=Object.assign({},opts.headers,{'Authorization':'Bearer '+masterToken});
-      }
-      return _fetch(url,opts);
-    };
+  const isAdmin=!!(mToken && sId);
+  if(isAdmin){ masterToken=mToken; previewSalonId=sId; }
+
+  // Skupni ovoj: admin scoping + zaznava potekle seje (401)
+  const _fetch=window.fetch.bind(window);
+  window.fetch=function(url,opts){
+    const isApi  = typeof url==='string' && url.indexOf('/api/')===0;
+    const isAuth = isApi && url.indexOf('/api/auth/')===0;
+    if(isAdmin && isApi && !isAuth && url.indexOf('/api/my-salons')!==0){
+      url += (url.indexOf('?')>=0?'&':'?') + 'salonId=' + encodeURIComponent(previewSalonId);
+      opts=opts||{};
+      opts.headers=Object.assign({},opts.headers,{'Authorization':'Bearer '+masterToken});
+    }
+    return _fetch(url,opts).then(function(r){
+      if(r.status===401 && isApi && !isAuth) sessionExpired();
+      return r;
+    });
+  };
+
+  if(isAdmin){
     history.replaceState({},'','/delivery.html');
     const banner=document.createElement('div');
     banner.textContent='ADMIN PREGLED — urejate meni tega lokala';
