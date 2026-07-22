@@ -499,8 +499,9 @@ body {
         <div class="s-row">
           <label>Lastni zvoki</label>
           <div id="custom-sounds-list"></div>
-          <div id="s-sound-file-row" style="margin-top:8px">
-            <input type="file" id="s-sound-file" accept="audio/*" onchange="uploadSound()">
+          <div id="s-sound-file-row" style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="file" id="s-sound-file" accept="audio/*" onchange="onSoundFilePick()">
+            <button type="button" id="s-sound-upload-btn" onclick="uploadSound()" disabled style="border:1px solid var(--border);background:#7c3aed;color:#fff;border-radius:8px;padding:8px 16px;font-weight:700;cursor:pointer;opacity:.5">⬆ Naloži</button>
           </div>
           <div id="s-sound-hint" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
         </div>
@@ -1847,8 +1848,26 @@ const SOUNDS = {
   arcade: { label: 'Arkadni',      play: function(){ _tone(523,0,0.1,'square'); _tone(659,0.1,0.1,'square'); _tone(880,0.2,0.18,'square'); } }
 };
 function isCustomSel(){ return /^(https?:|data:)/.test(soundSel); }
+let _previewAudio = null, _previewSrc = null;
+function stopPreview(){
+  if (_previewAudio) { try { _previewAudio.pause(); _previewAudio.currentTime = 0; } catch(_e){} }
+  _previewAudio = null; _previewSrc = null;
+}
+function playFile(url){
+  stopPreview();
+  try {
+    _previewAudio = new Audio(url); _previewAudio.volume = 1; _previewSrc = url;
+    _previewAudio.onended = function(){ _previewAudio = null; _previewSrc = null; renderCustomSounds(); };
+    _previewAudio.play().catch(function(){});
+  } catch(_e){}
+}
+function previewToggle(url){
+  if (_previewSrc === url) { stopPreview(); renderCustomSounds(); return; }   // že igra -> pavza
+  playFile(url);
+  renderCustomSounds();
+}
 function beepOnce(){
-  if (isCustomSel()) { try { const a = new Audio(soundSel); a.volume = 1; a.play().catch(function(){}); } catch(_e){} return; }
+  if (isCustomSel()) { playFile(soundSel); return; }   // en sam predvajalnik — brez prekrivanja
   ensureAudio(); if (!_audioCtx) return;
   (SOUNDS[soundSel] || SOUNDS.chime).play();
 }
@@ -1894,11 +1913,18 @@ function initSoundSettings(){
   renderCustomSounds();
 }
 function onSoundChoice(){
+  stopPreview();
   soundSel = document.getElementById('s-sound-choice').value;
   localStorage.setItem('ft_sound_sel', soundSel);
   ensureAudio(); beepOnce();
   renderCustomSounds();
   if (alarmPending) applyAlarm();
+}
+function onSoundFilePick(){
+  const inp = document.getElementById('s-sound-file');
+  const btn = document.getElementById('s-sound-upload-btn');
+  const has = !!(inp && inp.files && inp.files[0]);
+  if (btn) { btn.disabled = !has; btn.style.opacity = has ? '1' : '.5'; }
 }
 function selectSound(url){
   soundSel = url;
@@ -1907,7 +1933,6 @@ function selectSound(url){
   renderCustomSounds();
   if (alarmPending) applyAlarm();
 }
-function previewUrl(url){ try { const a = new Audio(url); a.volume = 1; a.play().catch(function(){}); } catch(_e){} }
 function renderCustomSounds(){
   const box = document.getElementById('custom-sounds-list');
   const hint = document.getElementById('s-sound-hint');
@@ -1917,7 +1942,7 @@ function renderCustomSounds(){
     const active = soundSel === s.url;
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">'
       + '<span style="flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (active ? '✓ ' : '') + _esc(s.name) + '</span>'
-      + '<button type="button" onclick="previewUrl(\'' + s.url + '\')" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer">▶</button>'
+      + '<button type="button" onclick="previewToggle(\'' + s.url + '\')" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer">' + (_previewSrc === s.url ? '⏸' : '▶') + '</button>'
       + '<button type="button" onclick="selectSound(\'' + s.url + '\')" style="border:1px solid ' + (active ? '#25D366' : 'var(--border)') + ';background:' + (active ? 'rgba(37,211,102,.12)' : 'var(--surface)') + ';border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer">' + (active ? 'Izbran' : 'Izberi') + '</button>'
       + '<button type="button" onclick="deleteCustomSound(\'' + s.url + '\')" title="Odstrani" style="border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.06);color:#dc2626;border-radius:8px;padding:6px 10px;cursor:pointer">🗑</button>'
       + '</div>';
@@ -1964,9 +1989,9 @@ async function uploadSound(){
       beepOnce();
       showToast('Zvok naložen', 'success');
     } catch(e) { showToast('Napaka: ' + e.message, 'error'); }
-    finally { inp.value = ''; }
+    finally { inp.value = ''; onSoundFilePick(); }
   };
-  fr.onerror = function(){ showToast('Napaka pri branju datoteke', 'error'); inp.value = ''; };
+  fr.onerror = function(){ showToast('Napaka pri branju datoteke', 'error'); inp.value = ''; onSoundFilePick(); };
   fr.readAsDataURL(f);
 }
 
