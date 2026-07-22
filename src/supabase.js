@@ -243,6 +243,38 @@ async function uploadLogo(salonId, buffer, contentType, ext) {
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/logos/${path}`;
 }
 
+// Naloži zvočno datoteko v Storage (bucket "sounds") in vrni javni URL
+async function uploadSound(salonId, buffer, contentType, ext) {
+  const path = `${salonId}-${Date.now()}.${ext}`;
+  await axios.post(
+    `${process.env.SUPABASE_URL}/storage/v1/object/sounds/${path}`,
+    buffer,
+    {
+      headers: {
+        apikey: process.env.SUPABASE_KEY,
+        Authorization: 'Bearer ' + process.env.SUPABASE_KEY,
+        'Content-Type': contentType,
+        'x-upsert': 'true'
+      },
+      maxBodyLength: Infinity,
+      maxContentLength: Infinity
+    }
+  );
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/sounds/${path}`;
+}
+
+// Izbriši zvočno datoteko iz Storagea po javnem URL-ju
+async function deleteSound(url) {
+  const marker = '/storage/v1/object/public/sounds/';
+  const idx = String(url || '').indexOf(marker);
+  if (idx === -1) return;
+  const path = url.slice(idx + marker.length);
+  await axios.delete(
+    `${process.env.SUPABASE_URL}/storage/v1/object/sounds/${path}`,
+    { headers: { apikey: process.env.SUPABASE_KEY, Authorization: 'Bearer ' + process.env.SUPABASE_KEY } }
+  ).catch(function(){});
+}
+
 // Ime + datum zadnjega naročila stranke — za prepoznavo vračajoče se stranke
 async function getLastCustomerByPhone(salonId, phone) {
   try {
@@ -738,7 +770,7 @@ module.exports = {
   getServices, getServiceById, getAvailableSlots,
   createBooking, createBookingIfFree, markSlotBooked,
   createOrderItems, getOrderItems, getOrderItemsBysalon,
-  getPublicRestaurants, uploadLogo,
+  getPublicRestaurants, uploadLogo, uploadSound, deleteSound,
   getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,

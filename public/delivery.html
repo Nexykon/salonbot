@@ -285,6 +285,7 @@ body {
 
 <!-- APP -->
 <div id="app" style="display:none">
+  <style>@keyframes ftpulse{0%,100%{opacity:.35}50%{opacity:1}}</style>
   <div id="new-order-flash" style="display:none;position:fixed;top:0;left:0;right:0;height:5px;background:#25D366;z-index:9998;box-shadow:0 0 16px 2px #25D366"></div>
 
   <div class="tabs">
@@ -483,25 +484,27 @@ body {
       <div class="settings-card" style="margin-top:16px">
         <div class="settings-card-title">🔔 Zvok obvestila <span style="font-weight:400;color:var(--muted);font-size:13px">(velja za to napravo)</span></div>
         <div class="s-row">
-          <label>Zvok ob novem naročilu</label>
+          <label>Vgrajen zvok</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select id="s-sound-choice" onchange="onSoundChoice()" style="max-width:220px">
+            <select id="s-sound-choice" onchange="onSoundChoice()" style="max-width:200px">
               <option value="chime">Zvonček</option>
               <option value="ding">Ding</option>
               <option value="triple">Trojni pisk</option>
               <option value="bell">Zvon</option>
               <option value="arcade">Arkadni</option>
-              <option value="custom">Lasten zvok (MP3)</option>
             </select>
-            <button type="button" onclick="beep()" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer">▶ Predvajaj</button>
+            <button type="button" onclick="onSoundChoice()" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer">▶ Predvajaj</button>
           </div>
         </div>
-        <div class="s-row" id="s-sound-custom-row" style="display:none">
-          <label>Naloži svoj MP3 <span style="color:var(--muted);font-weight:400">(do 1 MB)</span></label>
-          <input type="file" id="s-sound-file" accept="audio/mpeg,audio/mp3,audio/*" onchange="uploadSound()">
-          <div id="s-sound-custom-name" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+        <div class="s-row">
+          <label>Lastni zvoki</label>
+          <div id="custom-sounds-list"></div>
+          <div id="s-sound-file-row" style="margin-top:8px">
+            <input type="file" id="s-sound-file" accept="audio/*" onchange="uploadSound()">
+          </div>
+          <div id="s-sound-hint" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">Nastavitev zvoka je shranjena samo na tej napravi (npr. tablici v kuhinji). Zvok se predvaja, dokler je dashboard odprt.</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Izbira zvoka velja za to napravo (npr. tablico v kuhinji). Ob novem naročilu zvok <strong>zvoni v zanki</strong>, dokler naročila ne sprejmeš ali zavrneš. Lastni zvoki (do 3) so shranjeni na strežniku in jih lahko kadar koli odstraniš.</div>
       </div>
 
       <div class="settings-card" style="margin-top:16px">
@@ -826,7 +829,6 @@ function switchTab(tab) {
 function setFilter(f, btnId) {
   currentFilter = f;
   currentPage = 0;
-  seenPending = null;   // menjava filtra: ponastavi izhodišče, da ne piska za stara naročila
   ['f-today','f-pending','f-all'].forEach(id => document.getElementById(id).classList.toggle('active', id===btnId));
   const dr = document.getElementById('date-range-row');
   if (f === 'all') {
@@ -879,9 +881,9 @@ async function loadOrders() {
       document.getElementById('btn-next').disabled = resp.page >= resp.pages - 1;
     }
     lastOrders = orders;
-    notifyNewOrders(orders);
     renderOrders(filterOrders(orders));
     const n = orders.filter(o=>o.status==='pending').length;
+    setPending(n);   // alarm zvoni v zanki, dokler je kaj v čakanju
     const badge = document.getElementById('pending-badge');
     badge.textContent = n; badge.style.display = n > 0 ? '' : 'none';
     document.title = n > 0 ? `(${n}) Naročila — FlowTiq` : 'Naročila — FlowTiq';
@@ -1243,6 +1245,7 @@ async function loadSettingsData() {
     if (document.getElementById('s-review-delay')) document.getElementById('s-review-delay').value = d.review_delay_hours || 2;
     if (document.getElementById('s-review-msg')) document.getElementById('s-review-msg').value = d.review_message || '';
     if (document.getElementById('s-listed')) document.getElementById('s-listed').checked = d.listed_public === true;
+    customSounds = Array.isArray(d.custom_sounds) ? d.custom_sounds : [];
     initSoundSettings();
     setLogoPreview(d.logo_url || '', d.name || '');
     if (document.getElementById('s-company')) document.getElementById('s-company').value = d.company_name || '';
@@ -1815,7 +1818,8 @@ async function uploadLogo(){
 
 // ── Zvočno opozorilo ob novem naročilu ───────────────────
 let soundOn = (localStorage.getItem('ft_sound_off') !== '1');
-let seenPending = null;   // množica ID-jev naročil v čakanju (null = prvo nalaganje)
+let soundSel = localStorage.getItem('ft_sound_sel') || 'chime';   // vgrajen ključ ALI URL lastnega zvoka
+let customSounds = [];    // [{url,name}] iz nastavitev (strežnik)
 let _audioCtx = null;
 function ensureAudio(){
   try {
@@ -1824,8 +1828,7 @@ function ensureAudio(){
   } catch(_e) {}
 }
 document.addEventListener('click', ensureAudio);
-let soundChoice = localStorage.getItem('ft_sound_choice') || 'chime';
-let customSound = localStorage.getItem('ft_sound_custom') || '';
+function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function _tone(freq, start, dur, type){
   const o = _audioCtx.createOscillator(), g = _audioCtx.createGain();
   o.type = type || 'sine'; o.frequency.value = freq;
@@ -1843,75 +1846,128 @@ const SOUNDS = {
   bell:   { label: 'Zvon',         play: function(){ _tone(784,0,0.6); _tone(1568,0,0.6); } },
   arcade: { label: 'Arkadni',      play: function(){ _tone(523,0,0.1,'square'); _tone(659,0.1,0.1,'square'); _tone(880,0.2,0.18,'square'); } }
 };
-function beep(){
-  if (soundChoice === 'custom' && customSound) {
-    try { const a = new Audio(customSound); a.volume = 1; a.play().catch(function(){}); } catch(_e){}
-    return;
-  }
-  ensureAudio();
-  if (!_audioCtx) return;
-  (SOUNDS[soundChoice] || SOUNDS.chime).play();
+function isCustomSel(){ return /^(https?:|data:)/.test(soundSel); }
+function beepOnce(){
+  if (isCustomSel()) { try { const a = new Audio(soundSel); a.volume = 1; a.play().catch(function(){}); } catch(_e){} return; }
+  ensureAudio(); if (!_audioCtx) return;
+  (SOUNDS[soundSel] || SOUNDS.chime).play();
 }
+function beep(){ beepOnce(); }
+
+// ── Ponavljajoči alarm: zvoni, dokler je naročilo v čakanju ──
+let alarmPending = false, alarmTimer = null, alarmAudio = null;
+function applyAlarm(){
+  const el = document.getElementById('new-order-flash');
+  if (el) { el.style.display = alarmPending ? 'block' : 'none'; el.style.animation = alarmPending ? 'ftpulse 1s ease-in-out infinite' : 'none'; }
+  const wantSound = alarmPending && soundOn;
+  if (wantSound && isCustomSel()) {
+    if (alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+    if (!alarmAudio) { try { alarmAudio = new Audio(soundSel); alarmAudio.loop = true; alarmAudio.volume = 1; alarmAudio.play().catch(function(){}); } catch(_e){} }
+  } else if (wantSound) {
+    if (alarmAudio) { try { alarmAudio.pause(); } catch(_e){} alarmAudio = null; }
+    if (!alarmTimer) { beepOnce(); alarmTimer = setInterval(function(){ beepOnce(); }, 5000); }
+  } else {
+    if (alarmTimer) { clearInterval(alarmTimer); alarmTimer = null; }
+    if (alarmAudio) { try { alarmAudio.pause(); alarmAudio.currentTime = 0; } catch(_e){} alarmAudio = null; }
+  }
+}
+function setPending(n){ alarmPending = n > 0; applyAlarm(); }
+
 function refreshSoundBtn(){
   const b = document.getElementById('sound-toggle'); if (!b) return;
   b.textContent = soundOn ? '🔔 Zvok' : '🔕 Zvok';
   b.style.opacity = soundOn ? '1' : '.55';
 }
-function initSoundSettings(){
-  const sel = document.getElementById('s-sound-choice'); if (!sel) return;
-  sel.value = soundChoice;
-  const row = document.getElementById('s-sound-custom-row');
-  if (row) row.style.display = (soundChoice === 'custom') ? '' : 'none';
-  const nm = document.getElementById('s-sound-custom-name');
-  if (nm) nm.textContent = customSound ? 'Naložen lasten zvok ✓' : 'Ni naloženega zvoka';
-}
-function onSoundChoice(){
-  soundChoice = document.getElementById('s-sound-choice').value;
-  localStorage.setItem('ft_sound_choice', soundChoice);
-  const row = document.getElementById('s-sound-custom-row');
-  if (row) row.style.display = (soundChoice === 'custom') ? '' : 'none';
-  ensureAudio();
-  if (!(soundChoice === 'custom' && !customSound)) beep();
-}
-function uploadSound(){
-  const inp = document.getElementById('s-sound-file');
-  const f = inp && inp.files && inp.files[0];
-  if (!f) return;
-  if (f.size > 1024 * 1024) { showToast('Zvok je prevelik (največ 1 MB)', 'error'); inp.value = ''; return; }
-  const fr = new FileReader();
-  fr.onload = function(){
-    try {
-      customSound = fr.result;
-      localStorage.setItem('ft_sound_custom', customSound);
-      soundChoice = 'custom';
-      localStorage.setItem('ft_sound_choice', 'custom');
-      initSoundSettings();
-      beep();
-      showToast('Zvok naložen', 'success');
-    } catch(_e) { showToast('Ni dovolj prostora za shranjevanje zvoka na tej napravi', 'error'); }
-  };
-  fr.onerror = function(){ showToast('Napaka pri branju datoteke', 'error'); };
-  fr.readAsDataURL(f);
-  inp.value = '';
-}
 function toggleSound(){
   soundOn = !soundOn;
   localStorage.setItem('ft_sound_off', soundOn ? '0' : '1');
   refreshSoundBtn();
-  if (soundOn) beep();
+  applyAlarm();
+  if (soundOn && !alarmPending) beepOnce();
   try { showToast(soundOn ? 'Zvočno opozorilo vklopljeno' : 'Zvočno opozorilo izklopljeno', soundOn ? 'success' : 'info'); } catch(_e){}
 }
-function flashScreen(){
-  const el = document.getElementById('new-order-flash'); if (!el) return;
-  el.style.display = 'block';
-  setTimeout(function(){ el.style.display = 'none'; }, 1400);
+
+// ── Nastavitve zvoka ─────────────────────────────────────
+function initSoundSettings(){
+  const sel = document.getElementById('s-sound-choice');
+  if (sel && !isCustomSel()) sel.value = soundSel;
+  renderCustomSounds();
 }
-function notifyNewOrders(orders){
-  const pendingIds = orders.filter(function(o){ return o.status === 'pending'; }).map(function(o){ return o.id; });
-  if (seenPending === null) { seenPending = new Set(pendingIds); return; }   // prvo nalaganje: brez piska
-  const fresh = pendingIds.filter(function(id){ return !seenPending.has(id); });
-  pendingIds.forEach(function(id){ seenPending.add(id); });
-  if (fresh.length) { if (soundOn) beep(); flashScreen(); }
+function onSoundChoice(){
+  soundSel = document.getElementById('s-sound-choice').value;
+  localStorage.setItem('ft_sound_sel', soundSel);
+  ensureAudio(); beepOnce();
+  renderCustomSounds();
+  if (alarmPending) applyAlarm();
+}
+function selectSound(url){
+  soundSel = url;
+  localStorage.setItem('ft_sound_sel', soundSel);
+  beepOnce();
+  renderCustomSounds();
+  if (alarmPending) applyAlarm();
+}
+function previewUrl(url){ try { const a = new Audio(url); a.volume = 1; a.play().catch(function(){}); } catch(_e){} }
+function renderCustomSounds(){
+  const box = document.getElementById('custom-sounds-list');
+  const hint = document.getElementById('s-sound-hint');
+  const fileRow = document.getElementById('s-sound-file-row');
+  if (!box) return;
+  box.innerHTML = customSounds.map(function(s){
+    const active = soundSel === s.url;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border)">'
+      + '<span style="flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (active ? '✓ ' : '') + _esc(s.name) + '</span>'
+      + '<button type="button" onclick="previewUrl(\'' + s.url + '\')" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 10px;cursor:pointer">▶</button>'
+      + '<button type="button" onclick="selectSound(\'' + s.url + '\')" style="border:1px solid ' + (active ? '#25D366' : 'var(--border)') + ';background:' + (active ? 'rgba(37,211,102,.12)' : 'var(--surface)') + ';border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer">' + (active ? 'Izbran' : 'Izberi') + '</button>'
+      + '<button type="button" onclick="deleteCustomSound(\'' + s.url + '\')" title="Odstrani" style="border:1px solid rgba(220,38,38,.3);background:rgba(220,38,38,.06);color:#dc2626;border-radius:8px;padding:6px 10px;cursor:pointer">🗑</button>'
+      + '</div>';
+  }).join('');
+  if (fileRow) fileRow.style.display = customSounds.length >= 3 ? 'none' : '';
+  if (hint) hint.textContent = customSounds.length >= 3 ? 'Dosežena meja 3 zvokov — enega odstranite za novega.' : (customSounds.length + '/3 naloženih · do 15 MB');
+}
+async function deleteCustomSound(url){
+  if (!confirm('Odstraniti ta zvok?')) return;
+  try {
+    const r = await fetch('/api/settings/sound', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+      body: JSON.stringify({ url: url })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Napaka');
+    customSounds = d.custom_sounds || [];
+    if (soundSel === url) { soundSel = 'chime'; localStorage.setItem('ft_sound_sel', 'chime'); if (alarmPending) applyAlarm(); }
+    initSoundSettings();
+    showToast('Zvok odstranjen', 'info');
+  } catch(e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+async function uploadSound(){
+  const inp = document.getElementById('s-sound-file');
+  const f = inp && inp.files && inp.files[0];
+  if (!f) return;
+  if (f.size > 15 * 1024 * 1024) { showToast('Zvok je prevelik (največ 15 MB)', 'error'); inp.value = ''; return; }
+  showToast('Nalagam zvok…');
+  const fr = new FileReader();
+  fr.onload = async function(){
+    try {
+      const r = await fetch('/api/settings/sound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
+        body: JSON.stringify({ audio: fr.result, name: f.name })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Napaka pri nalaganju');
+      customSounds = d.custom_sounds || [];
+      const added = customSounds[customSounds.length - 1];
+      if (added) { soundSel = added.url; localStorage.setItem('ft_sound_sel', soundSel); }
+      initSoundSettings();
+      beepOnce();
+      showToast('Zvok naložen', 'success');
+    } catch(e) { showToast('Napaka: ' + e.message, 'error'); }
+    finally { inp.value = ''; }
+  };
+  fr.onerror = function(){ showToast('Napaka pri branju datoteke', 'error'); inp.value = ''; };
+  fr.readAsDataURL(f);
 }
 
 // Potekla seja: odjavi in vrni na prijavo (namesto tihih napak)

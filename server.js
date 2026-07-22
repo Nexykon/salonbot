@@ -19,7 +19,7 @@ const app = express();
 
 // ─── Raw body za Stripe webhook (mora biti pred express.json) ──
 app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json({ limit: '3mb' }));
+app.use(express.json({ limit: '22mb' }));
 
 // ─── Static files (dashboard) ─────────────────────────────
 // Preusmeritve po preimenovanju strani (stari zaznamki/emaili ostanejo veljavni)
@@ -1334,7 +1334,8 @@ app.get('/api/settings', async (req, res) => {
       review_delay_hours: salon.review_delay_hours || 2,
       logo_url: salon.logo_url || '',
       listed_public: salon.listed_public === true,
-      auto_confirm: salon.auto_confirm === true
+      auto_confirm: salon.auto_confirm === true,
+      custom_sounds: parseSounds(salon)
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1509,6 +1510,47 @@ app.post('/api/settings/logo', async (req, res) => {
     const url = await db.uploadLogo(salon.id, buffer, m[1], ext);
     await db.updateSalonSettings(salon.id, { logo_url: url });
     res.json({ success: true, logo_url: url });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+function parseSounds(salon) {
+  let list = salon.custom_sounds;
+  if (typeof list === 'string') { try { list = JSON.parse(list); } catch { list = []; } }
+  return Array.isArray(list) ? list : [];
+}
+
+// POST /api/settings/sound — naloži lasten zvok obvestila (do 3, do 15 MB)
+app.post('/api/settings/sound', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const list = parseSounds(salon);
+    if (list.length >= 3) return res.status(400).json({ error: 'Največ 3 lastni zvoki. Najprej enega odstranite.' });
+    const data = String(req.body.audio || '');
+    const m = data.match(/^data:(audio\/[\w.+-]+);base64,(.+)$/);
+    if (!m) return res.status(400).json({ error: 'Neveljavna zvočna datoteka.' });
+    const buffer = Buffer.from(m[2], 'base64');
+    if (buffer.length > 15 * 1024 * 1024) return res.status(400).json({ error: 'Zvok je prevelik (največ 15 MB).' });
+    const ext = (m[1].split('/')[1] || 'mp3').replace(/[^\w]/g, '').slice(0, 5) || 'mp3';
+    const url = await db.uploadSound(salon.id, buffer, m[1], ext);
+    const name = String(req.body.name || 'Zvok').replace(/\.[^.]+$/, '').slice(0, 40) || 'Zvok';
+    const next = [...list, { url, name }];
+    await db.updateSalonSettings(salon.id, { custom_sounds: JSON.stringify(next) });
+    res.json({ success: true, custom_sounds: next });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// DELETE /api/settings/sound — odstrani lasten zvok (tudi iz Storagea)
+app.delete('/api/settings/sound', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const url = String(req.body.url || '');
+    const list = parseSounds(salon);
+    const next = list.filter(s => s.url !== url);
+    await db.deleteSound(url);
+    await db.updateSalonSettings(salon.id, { custom_sounds: JSON.stringify(next) });
+    res.json({ success: true, custom_sounds: next });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
