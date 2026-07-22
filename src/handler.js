@@ -1060,9 +1060,16 @@ async function handleMessage(msgObj, salon) {
         await wa.send(phoneId, token, wa.textMsg(from, 'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕'));
         return;
       }
-      // Po ODDANEM naročilu preklic ni več mogoč (da ni zmede v gostilni).
-      await wa.send(phoneId, token, wa.textMsg(from,
-        'Naročilo je že oddano in ga ni več mogoče preklicati prek klepeta. Če je prišlo do napake, nas prosim pokličite.'));
+      // Nič v teku: ločimo "ni še ničesar naročenega" od "naročilo je že oddano"
+      const activeOrder = await db.getActiveBookingByPhone(salon.id, from).catch(() => null);
+      if (activeOrder) {
+        // Po ODDANEM naročilu preklic prek klepeta ni mogoč (da ni zmede v gostilni).
+        await wa.send(phoneId, token, wa.textMsg(from,
+          'Naročilo je že oddano in ga ni več mogoče preklicati prek klepeta. Če je prišlo do napake, nas prosim pokličite.'));
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from,
+          'Trenutno nimate naročila v teku — ni česa preklicati. Kadar želite kaj naročiti, kar napišite. 🍕'));
+      }
       return;
     }
     if (iId === 'cancel_yes' && sess.cancelBookingId) {
