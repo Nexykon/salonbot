@@ -185,6 +185,13 @@ async function handleMessage(msgObj, salon) {
     return;
   }
 
+  // ── Naročnina potekla + 3 dni odloga: bot na pavzo (stranka dobi vljudno obvestilo) ──
+  const SUB_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
+  if (!isAdmin && salon.valid_until && Date.now() > new Date(salon.valid_until).getTime() + SUB_GRACE_MS) {
+    await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'bot_offline')));
+    return;
+  }
+
   // ── ADMIN FLOW ──────────────────────────────────────────────
   if (isAdmin) {
     if (iId.startsWith('admin_confirm_')) {
@@ -998,7 +1005,6 @@ async function handleMessage(msgObj, salon) {
         return;
       }
       const isPickup = s.orderMode === 'prevzem';
-      const autoOk = salon.auto_confirm === true;
       const total = s.grandTotal || cartTotal(cart);
       const today = t.todayStr();
       const custName = s.customerName || from;
@@ -1009,7 +1015,7 @@ async function handleMessage(msgObj, salon) {
         salon_id:       salon.id,
         booking_date:   today,
         booking_time:   t.nowTimeHMS(),
-        status:         autoOk ? 'confirmed' : 'pending',
+        status:         'pending',
         notes:          `${isPickup ? 'PREVZEM | Osebni prevzem' : 'RAZVOZ | Naslov: ' + s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
         form_answers:   JSON.stringify({
           nacin:     isPickup ? 'Osebni prevzem 🏃' : 'Dostava 🚗',
@@ -1037,9 +1043,8 @@ async function handleMessage(msgObj, salon) {
       }
       session.clear(skey);
       // Po oddaji naročila NE ponujamo preklica (da ni zmede v gostilni po pripravi).
-      const okKey = autoOk ? 'autoconfirmed' : (isPickup ? 'submitted_pickup' : 'submitted_delivery');
       await wa.send(phoneId, token, wa.textMsg(from,
-        botMsg(salon, okKey, { ime: custName, ref: ref6 })
+        botMsg(salon, isPickup ? 'submitted_pickup' : 'submitted_delivery', { ime: custName, ref: ref6 })
       ));
       // Namenoma BREZ obvestila restavraciji — naročila spremljajo na dashboardu
       // (pri več sto naročilih na dan bi bil WhatsApp/email spam).

@@ -10,7 +10,6 @@ const DEFAULTS = {
   address_question:   '📍 Na kateri naslov dostavimo?\n_(ulica, hišna številka, kraj)_',
   submitted_delivery: '✅ Naročilo oddano, {ime}!\n\n🔑 Ref: *#{ref}*\n\n⏳ Prosimo, počakajte na *potrditveno sporočilo* — vaše naročilo je sprejeto šele, ko ga prejmete. Takrat vas obvestimo tudi o času dostave. 🍕',
   submitted_pickup:   '✅ Naročilo oddano, {ime}!\n\n🔑 Ref: *#{ref}*\n\n⏳ Prosimo, počakajte na *potrditveno sporočilo* — vaše naročilo je sprejeto šele, ko ga prejmete. Takrat vas obvestimo, kdaj bo pripravljeno za prevzem. 🏃',
-  autoconfirmed:      '✅ Naročilo potrjeno, {ime}!\n\n🔑 Ref: *#{ref}*\n\nŽe ga pripravljamo. Hvala za naročilo! 😊',
   accepted_delivery:  '🍕 Vaše naročilo je potrjeno!\n\n⏱️ Dostava v pribl. *{minute} minutah*\n\nHvala za naročilo! 😊',
   accepted_pickup:    '🏃 Vaše naročilo je potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *{minute} minutah*{naslov}\n\nHvala za naročilo! 😊',
   rejected:           '😔 Žal vašega naročila nismo mogli sprejeti. Pokličite nas za več informacij.',

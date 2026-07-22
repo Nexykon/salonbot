@@ -481,12 +481,27 @@ body {
       </div>
 
       <div class="settings-card" style="margin-top:16px">
-        <div class="settings-card-title">⚡ Samodejna potrditev <span style="font-weight:400;color:var(--muted);font-size:13px">(neobvezno)</span></div>
-        <div style="display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.55">
-          <input type="checkbox" id="s-auto-confirm" style="accent-color:#7c3aed;width:17px;height:17px;flex:0 0 auto;margin-top:3px">
-          <label for="s-auto-confirm" style="margin:0;cursor:pointer">Vsako naročilo se samodejno potrdi — brez ročnega klika „Sprejmi". Gost takoj dobi potrditveno sporočilo.</label>
+        <div class="settings-card-title">🔔 Zvok obvestila <span style="font-weight:400;color:var(--muted);font-size:13px">(velja za to napravo)</span></div>
+        <div class="s-row">
+          <label>Zvok ob novem naročilu</label>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select id="s-sound-choice" onchange="onSoundChoice()" style="max-width:220px">
+              <option value="chime">Zvonček</option>
+              <option value="ding">Ding</option>
+              <option value="triple">Trojni pisk</option>
+              <option value="bell">Zvon</option>
+              <option value="arcade">Arkadni</option>
+              <option value="custom">Lasten zvok (MP3)</option>
+            </select>
+            <button type="button" onclick="beep()" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer">▶ Predvajaj</button>
+          </div>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:8px">Vklopi le, če tako ali tako sprejmeš vsako naročilo. Če je izklopljeno, naročila potrjuješ ročno na zavihku Naročila.</div>
+        <div class="s-row" id="s-sound-custom-row" style="display:none">
+          <label>Naloži svoj MP3 <span style="color:var(--muted);font-weight:400">(do 1 MB)</span></label>
+          <input type="file" id="s-sound-file" accept="audio/mpeg,audio/mp3,audio/*" onchange="uploadSound()">
+          <div id="s-sound-custom-name" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Nastavitev zvoka je shranjena samo na tej napravi (npr. tablici v kuhinji). Zvok se predvaja, dokler je dashboard odprt.</div>
       </div>
 
       <div class="settings-card" style="margin-top:16px">
@@ -1228,7 +1243,7 @@ async function loadSettingsData() {
     if (document.getElementById('s-review-delay')) document.getElementById('s-review-delay').value = d.review_delay_hours || 2;
     if (document.getElementById('s-review-msg')) document.getElementById('s-review-msg').value = d.review_message || '';
     if (document.getElementById('s-listed')) document.getElementById('s-listed').checked = d.listed_public === true;
-    if (document.getElementById('s-auto-confirm')) document.getElementById('s-auto-confirm').checked = d.auto_confirm === true;
+    initSoundSettings();
     setLogoPreview(d.logo_url || '', d.name || '');
     if (document.getElementById('s-company')) document.getElementById('s-company').value = d.company_name || '';
     if (document.getElementById('s-vat')) document.getElementById('s-vat').value = d.vat_id || '';
@@ -1640,8 +1655,7 @@ async function saveSettings() {
         review_link:document.getElementById('s-review-link').value.trim(),
         review_delay_hours:parseInt(document.getElementById('s-review-delay').value)||2,
         review_message:document.getElementById('s-review-msg').value.trim(),
-        listed_public:!!document.getElementById('s-listed')?.checked,
-        auto_confirm:!!document.getElementById('s-auto-confirm')?.checked
+        listed_public:!!document.getElementById('s-listed')?.checked
       })
     });
     if (r.ok) {
@@ -1810,25 +1824,75 @@ function ensureAudio(){
   } catch(_e) {}
 }
 document.addEventListener('click', ensureAudio);
+let soundChoice = localStorage.getItem('ft_sound_choice') || 'chime';
+let customSound = localStorage.getItem('ft_sound_custom') || '';
+function _tone(freq, start, dur, type){
+  const o = _audioCtx.createOscillator(), g = _audioCtx.createGain();
+  o.type = type || 'sine'; o.frequency.value = freq;
+  const t = _audioCtx.currentTime + start;
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(_audioCtx.destination);
+  o.start(t); o.stop(t + dur + 0.03);
+}
+const SOUNDS = {
+  chime:  { label: 'Zvonček',      play: function(){ _tone(880,0,0.22); _tone(1175,0.28,0.22); } },
+  ding:   { label: 'Ding',         play: function(){ _tone(1319,0,0.5,'triangle'); } },
+  triple: { label: 'Trojni pisk',  play: function(){ _tone(1047,0,0.12); _tone(1047,0.16,0.12); _tone(1047,0.32,0.18); } },
+  bell:   { label: 'Zvon',         play: function(){ _tone(784,0,0.6); _tone(1568,0,0.6); } },
+  arcade: { label: 'Arkadni',      play: function(){ _tone(523,0,0.1,'square'); _tone(659,0.1,0.1,'square'); _tone(880,0.2,0.18,'square'); } }
+};
 function beep(){
+  if (soundChoice === 'custom' && customSound) {
+    try { const a = new Audio(customSound); a.volume = 1; a.play().catch(function(){}); } catch(_e){}
+    return;
+  }
   ensureAudio();
   if (!_audioCtx) return;
-  const now = _audioCtx.currentTime;
-  [0, 0.28].forEach(function(off, i){
-    const o = _audioCtx.createOscillator(), g = _audioCtx.createGain();
-    o.type = 'sine';
-    o.frequency.value = i === 0 ? 880 : 1175;
-    g.gain.setValueAtTime(0.0001, now + off);
-    g.gain.exponentialRampToValueAtTime(0.4, now + off + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + off + 0.22);
-    o.connect(g); g.connect(_audioCtx.destination);
-    o.start(now + off); o.stop(now + off + 0.24);
-  });
+  (SOUNDS[soundChoice] || SOUNDS.chime).play();
 }
 function refreshSoundBtn(){
   const b = document.getElementById('sound-toggle'); if (!b) return;
   b.textContent = soundOn ? '🔔 Zvok' : '🔕 Zvok';
   b.style.opacity = soundOn ? '1' : '.55';
+}
+function initSoundSettings(){
+  const sel = document.getElementById('s-sound-choice'); if (!sel) return;
+  sel.value = soundChoice;
+  const row = document.getElementById('s-sound-custom-row');
+  if (row) row.style.display = (soundChoice === 'custom') ? '' : 'none';
+  const nm = document.getElementById('s-sound-custom-name');
+  if (nm) nm.textContent = customSound ? 'Naložen lasten zvok ✓' : 'Ni naloženega zvoka';
+}
+function onSoundChoice(){
+  soundChoice = document.getElementById('s-sound-choice').value;
+  localStorage.setItem('ft_sound_choice', soundChoice);
+  const row = document.getElementById('s-sound-custom-row');
+  if (row) row.style.display = (soundChoice === 'custom') ? '' : 'none';
+  ensureAudio();
+  if (!(soundChoice === 'custom' && !customSound)) beep();
+}
+function uploadSound(){
+  const inp = document.getElementById('s-sound-file');
+  const f = inp && inp.files && inp.files[0];
+  if (!f) return;
+  if (f.size > 1024 * 1024) { showToast('Zvok je prevelik (največ 1 MB)', 'error'); inp.value = ''; return; }
+  const fr = new FileReader();
+  fr.onload = function(){
+    try {
+      customSound = fr.result;
+      localStorage.setItem('ft_sound_custom', customSound);
+      soundChoice = 'custom';
+      localStorage.setItem('ft_sound_choice', 'custom');
+      initSoundSettings();
+      beep();
+      showToast('Zvok naložen', 'success');
+    } catch(_e) { showToast('Ni dovolj prostora za shranjevanje zvoka na tej napravi', 'error'); }
+  };
+  fr.onerror = function(){ showToast('Napaka pri branju datoteke', 'error'); };
+  fr.readAsDataURL(f);
+  inp.value = '';
 }
 function toggleSound(){
   soundOn = !soundOn;

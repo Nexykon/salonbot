@@ -829,7 +829,7 @@ app.post('/api/admin/mark-paid/:id', async (req, res) => {
     // Podaljšaj veljavnost od maksimuma (obstoječi valid_until ali danes) za obračunsko obdobje
     const base = (salon.valid_until && new Date(salon.valid_until) > new Date()) ? new Date(salon.valid_until) : new Date();
     salon.billing_period === 'yearly' ? base.setFullYear(base.getFullYear() + 1) : base.setMonth(base.getMonth() + 1);
-    const updates = { billing_status: 'paid', paid_at: new Date().toISOString(), subscription_status: 'active', valid_until: base.toISOString(), renewal_reminded_at: null };
+    const updates = { billing_status: 'paid', paid_at: new Date().toISOString(), subscription_status: 'active', valid_until: base.toISOString(), renewal_reminded_at: null, grace_notified_at: null, paused_notified_at: null };
     if (req.body?.invoice_no) updates.invoice_no = String(req.body.invoice_no).trim();
     // Če je stranka zahtevala nadgradnjo/podaljšanje na drug paket — ga uveljavi in počisti zahtevo
     if (salon.renewal_requested_plan) {

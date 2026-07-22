@@ -259,6 +259,52 @@ async function sendRenewalReminders() {
   } catch (e) { console.error('[renewal-reminders] Error:', e.message); }
 }
 
+// ─── 6. POTEK NAROČNINE: obvestilo ob poteku (odlog) in ob pavzi (po 3 dneh) ──
+const SUB_GRACE_DAYS = 3;
+async function sendExpiryNotices() {
+  try {
+    const salons = await db.getAllSalons();
+    for (const salon of salons) {
+      if (salon.subscription_status === 'inactive' || !salon.valid_until || !salon.owner_email) continue;
+      const end = new Date(salon.valid_until);
+      const daysPast = Math.floor((Date.now() - end.getTime()) / 86400000);
+      if (daysPast < 0) continue; // še ni poteklo
+
+      // (a) Potekla, a še v 3-dnevnem odlogu — obvesti enkrat
+      if (daysPast < SUB_GRACE_DAYS && !salon.grace_notified_at) {
+        try {
+          await mail.sendEmail(salon.owner_email, `FlowTiq — naročnina je potekla (${SUB_GRACE_DAYS} dni odloga)`, [
+            `Pozdravljeni${salon.contact_person ? ' ' + salon.contact_person : ''},`, '',
+            `naročnina za "${salon.name}" je potekla ${end.toLocaleDateString('sl-SI')}.`,
+            `Bot še vedno deluje, imate pa ${SUB_GRACE_DAYS} dni časa za podaljšanje. Po tem se samodejno ustavi.`,
+            '',
+            'V nadzorni plošči kliknite "Zaprosi za podaljšanje" — pošljemo vam predračun.',
+            '', 'Ekipa FlowTiq'
+          ].join('\n'));
+          await db.updateSalonSettings(salon.id, { grace_notified_at: new Date().toISOString() });
+          console.log(`[expiry] Odlog obvestilo poslano ${salon.owner_email}`);
+        } catch (e) { console.error(`[expiry-grace] ${salon.id}:`, e.message); }
+      }
+
+      // (b) Odlog potekel — bot je zdaj na pavzi — obvesti enkrat
+      if (daysPast >= SUB_GRACE_DAYS && !salon.paused_notified_at) {
+        try {
+          await mail.sendEmail(salon.owner_email, `FlowTiq — bot je začasno ustavljen`, [
+            `Pozdravljeni${salon.contact_person ? ' ' + salon.contact_person : ''},`, '',
+            `ker naročnina za "${salon.name}" ni bila podaljšana, je bot začasno ustavljen in ne sprejema naročil.`,
+            'Stranke dobijo vljudno obvestilo, da trenutno ne sprejemate naročil.',
+            '',
+            'Za takojšnjo ponovno aktivacijo podaljšajte naročnino — v nadzorni plošči kliknite "Zaprosi za podaljšanje".',
+            '', 'Ekipa FlowTiq'
+          ].join('\n'));
+          await db.updateSalonSettings(salon.id, { paused_notified_at: new Date().toISOString() });
+          console.log(`[expiry] Pavza obvestilo poslano ${salon.owner_email}`);
+        } catch (e) { console.error(`[expiry-paused] ${salon.id}:`, e.message); }
+      }
+    }
+  } catch (e) { console.error('[expiry-notices] Error:', e.message); }
+}
+
 // ─── START ────────────────────────────────────────────────────────────────────
 function startScheduler() {
   const tz = 'Europe/Ljubljana';
@@ -276,6 +322,9 @@ function startScheduler() {
 
   // Vsak dan ob 08:15 — opomnik lastnikom za podaljšanje naročnine (do 7 dni pred potekom)
   cron.schedule('15 8 * * *', sendRenewalReminders, { timezone: tz });
+
+  // Vsak dan ob 08:20 — obvestila ob poteku naročnine (odlog / pavza)
+  cron.schedule('20 8 * * *', sendExpiryNotices, { timezone: tz });
 
   // Vsako uro — recenzije (2h po terminu)
   cron.schedule('0 * * * *', sendReviewRequests, { timezone: tz });
