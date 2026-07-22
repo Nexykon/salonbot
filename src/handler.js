@@ -857,7 +857,8 @@ async function handleMessage(msgObj, salon) {
         modeS === 'dostava' ? `Dostava na: ${cur.deliveryAddress}` : `Osebni prevzem${salon.pickup_address ? ` — ${salon.pickup_address}` : ''}`,
         `Ime: ${cur.customerName}`,
         '',
-        'Potrjujete naročilo? (da / ne)'
+        'Potrjujete naročilo? (da / ne)',
+        '_Če ime ali naslov ni pravilen, napišite npr. „ime Janez Novak"._'
       ].filter(l => l !== null).join('\n');
       session.set(skey, { ...cur, checkoutStage: 'confirm', step: 305, grandTotal: tot.grand, packFee: tot.packFee, delFee: tot.delFee });
       await wa.send(phoneId, token, wa.textMsg(from, lines));
@@ -1237,7 +1238,34 @@ async function handleMessage(msgObj, salon) {
           await wa.send(phoneId, token, wa.textMsg(from, 'V redu. Povejte, kaj želite spremeniti (artikle, način, ime ali naslov), ali napišite zaključi za ponoven zaključek.'));
           return;
         }
-        await wa.send(phoneId, token, wa.textMsg(from, 'Potrjujete naročilo? (da / ne)'));
+        // ── Popravek IMENA med potrditvijo (npr. "ime Zlata Ukota", "nisem Joc ampak Zlata Ukota") ──
+        const _corrName = (function(txt){
+          const m = txt.match(/(?:ime(?:\s+je|:)?|jaz\s+sem|se\s+pi[šs]em|pi[šs]em\s+se|kli[čc]em\s+se|moje\s+ime\s+je)\s+([A-Za-zŠŽČĆĐšžčćđ][A-Za-zŠŽČĆĐšžčćđ .'-]{1,50})/i)
+                 || txt.match(/nisem\b.*?\b(?:ampak|temve[čc]|marve[čc])\s+([A-Za-zŠŽČĆĐšžčćđ][A-Za-zŠŽČĆĐšžčćđ .'-]{1,50})/i);
+          if (m) { const nm = m[1].trim().replace(/[.,!?]+$/, ''); if (nm.split(/\s+/).length <= 4) return nm; }
+          return null;
+        })(msgText);
+        if (_corrName) {
+          session.set(skey, { ...session.get(skey), customerName: _corrName });
+          await wa.send(phoneId, token, wa.textMsg(from, `V redu, popravil sem ime na *${_corrName}*.`));
+          await sendCheckoutSummary();
+          return;
+        }
+        if (/(poprav|napa[čc]n|zamenja|spremeni|drug)\w*.*\b(ime|priimek)\b/i.test(msgText) || /\bime\b[^]{0,15}\b(ni|napa[čc])/i.test(msgText)) {
+          session.set(skey, { ...session.get(skey), checkoutStage: 'name', customerName: null });
+          await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, napišite pravo ime in priimek.'));
+          return;
+        }
+        // ── Popravek NASLOVA med potrditvijo (samo dostava) ──
+        if (session.get(skey).orderMode === 'dostava') {
+          const mA = msgText.match(/(?:naslov(?:\s+je|:)?|dostavi(?:te)?\s+na|na\s+naslov)\s+(.{3,})/i);
+          if (mA) {
+            session.set(skey, { ...session.get(skey), deliveryAddress: mA[1].trim().replace(/[.!?]+$/, '') });
+            await sendCheckoutSummary();
+            return;
+          }
+        }
+        await wa.send(phoneId, token, wa.textMsg(from, 'Potrjujete naročilo? (da / ne)\n_Za popravek napišite npr. „ime Janez Novak" ali „naslov Ulica 1"._'));
         return;
       }
     }
