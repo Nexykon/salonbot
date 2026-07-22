@@ -1333,7 +1333,8 @@ app.get('/api/settings', async (req, res) => {
       review_enabled: salon.review_enabled === true,
       review_delay_hours: salon.review_delay_hours || 2,
       logo_url: salon.logo_url || '',
-      listed_public: salon.listed_public === true
+      listed_public: salon.listed_public === true,
+      auto_confirm: salon.auto_confirm === true
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
