@@ -1173,6 +1173,25 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
+    // ── Naravno vprašanje po KATEGORIJI (npr. "kaj imate za malico", "malice") -> pokaži to kategorijo ──
+    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !sess.checkoutStage && !sess.pendingItem
+        && msgText.length < 50 && !findService(services, msgText)) {
+      const normC = x => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const nMsg = normC(msgText);
+      const cats = [...new Set(services.map(s => s.category || 'Ostalo'))].filter(c => c && normC(c) !== 'ostalo');
+      const hitCat = cats.find(c => {
+        const cn = normC(c);
+        const root = cn.length <= 5 ? cn : cn.slice(0, cn.length - 1);   // "malice"->"malic", "kosila"->"kosil"
+        return root.length >= 4 && nMsg.includes(root);
+      });
+      if (hitCat) {
+        const curC = session.get(skey);
+        const menuSalonC = { ...salon, greeting_message: hitCat + ':' };
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, menuSalonC, cartSummaryShort(curC.cart), hitCat));
+        return;
+      }
+    }
+
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
     if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !(sess.cart || []).length && !sess.checkoutStage && !sess.pendingItem
         && msgText.trim().length <= 15 && !findService(services, msgText)
