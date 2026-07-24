@@ -737,9 +737,8 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     };
 
     const salon = await db.createSalon(salonData);
-    if (preset.services && preset.services.length) {
-      await db.createServicesFromPreset(salon.id, preset.services).catch(() => {});
-    }
+    // Nove registracije dobijo PRAZEN meni — lastnik (ali admin) ga napolni sam.
+    // (Prej se je meni napolnil z demo artikli iz preseta.)
 
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
     const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
