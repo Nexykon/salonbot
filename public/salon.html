@@ -898,7 +898,8 @@
 const settingsParams = new URLSearchParams(window.location.search);
 const previewSalonId = settingsParams.get('salonId') || '';
 let ownerToken = sessionStorage.getItem('ft_owner_token') || '';
-let masterToken = settingsParams.get('master_token') || sessionStorage.getItem('ft_master_token') || '';
+// Master žeton uporabimo SAMO v admin pregledu (ko je v URL-ju salonId) — sicer zaostali master token kontaminira owner prijavo (400)
+let masterToken = previewSalonId ? (settingsParams.get('master_token') || sessionStorage.getItem('ft_master_token') || '') : '';
 let _adminOverride = false;   // admin pregled: samostojen fetch-override
 let salonPhone = '';
 let selectedDays = new Set();
@@ -2018,7 +2019,8 @@ function updateSettingsPreview(data){
     doLogin(masterToken);
     return;
   }
-  const stored=localStorage.getItem('ft_master_token')||localStorage.getItem('ft_owner_token')||sessionStorage.getItem('ft_master_token')||sessionStorage.getItem('ft_owner_token');
+  // Brez admin pregleda: uporabi SAMO owner token (zaostali master token ne sme kontaminirati)
+  const stored=localStorage.getItem('ft_owner_token')||sessionStorage.getItem('ft_owner_token');
   if (stored) {
     document.getElementById('auth-token').value = stored;
     doLogin(stored);

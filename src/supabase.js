@@ -367,6 +367,15 @@ async function getBookingsByPhone(salonId, phone, today) {
   return r.data;
 }
 
+// Vsa naročila/rezervacije salona (za agregacijo strank) — do 2000 zadnjih
+async function listBookings(salonId) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&order=booking_date.desc&limit=2000`,
+    { headers: HEADERS }
+  );
+  return r.data || [];
+}
+
 async function getSlotsByDate(salonId, date) {
   const r = await axios.get(
     `${BASE}/sb_available_slots?salon_id=eq.${salonId}&slot_date=eq.${date}&order=slot_time`,
@@ -772,7 +781,7 @@ module.exports = {
   createOrderItems, getOrderItems, getOrderItemsBysalon,
   getPublicRestaurants, uploadLogo, uploadSound, deleteSound,
   getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
-  getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone,
+  getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone, listBookings,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,
   addSlot, removeSlot, getPendingBookings,
