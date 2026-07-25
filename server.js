@@ -969,6 +969,7 @@ app.get('/salons', async (req, res) => {
       business_slug: s.business_slug || '',
       bot_phone_display: s.bot_phone_display || '',
       whatsapp_phone_number_id: s.whatsapp_phone_number_id || '',
+      has_wa_token: !!s.whatsapp_access_token,
       owner_name: s.owner_name,
       owner_email: s.owner_email,
       owner_password_configured: !!s.owner_password_hash,

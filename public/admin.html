@@ -1158,6 +1158,25 @@
 </div>
 
 <!-- BOT STUDIO MODAL -->
+<div id="wa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--surface,#fff);border-radius:16px;max-width:520px;width:100%;padding:24px;box-shadow:0 10px 40px rgba(0,0,0,.25)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="font-size:18px;font-weight:800">📱 WhatsApp povezava</div>
+      <button onclick="closeWaModal()" style="border:none;background:none;font-size:24px;cursor:pointer;color:var(--muted,#888);line-height:1">×</button>
+    </div>
+    <div id="wa-modal-salon" style="font-size:13px;color:var(--muted,#888);margin-bottom:18px"></div>
+    <label style="display:block;font-weight:700;font-size:13px;margin-bottom:5px">WhatsApp Phone Number ID</label>
+    <input id="wa-phone-id" type="text" placeholder="npr. 1134732076399946" style="width:100%;padding:11px 12px;border:1.5px solid var(--border,#e2e2e2);border-radius:10px;font-size:14px;margin-bottom:16px;box-sizing:border-box">
+    <label style="display:block;font-weight:700;font-size:13px;margin-bottom:5px">WhatsApp žeton <span style="font-weight:400;color:var(--muted,#888)">(System User token)</span></label>
+    <input id="wa-token" type="text" placeholder="EAA… (prazno = ne spreminjaj)" style="width:100%;padding:11px 12px;border:1.5px solid var(--border,#e2e2e2);border-radius:10px;font-size:14px;box-sizing:border-box">
+    <div id="wa-token-status" style="font-size:12px;color:var(--muted,#888);margin-top:7px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">
+      <button onclick="closeWaModal()" style="padding:10px 18px;border:1px solid var(--border,#e2e2e2);background:var(--surface,#fff);border-radius:10px;font-weight:700;cursor:pointer">Prekliči</button>
+      <button onclick="saveWaConnection()" style="padding:10px 22px;border:none;background:#0891b2;color:#fff;border-radius:10px;font-weight:700;cursor:pointer">💾 Shrani</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="bot-studio-modal">
   <div class="modal studio-modal">
     <div class="studio-shell">
@@ -2088,19 +2107,31 @@ async function priklopSalon(id) {
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
 
-// ── Uredi WhatsApp povezavo (Phone Number ID + žeton) tudi po priklopu ──
-async function editWaConnection(id) {
+// ── Uredi WhatsApp povezavo (Phone Number ID + žeton) prek modalnega okna ──
+let _waEditId = null;
+function editWaConnection(id) {
   const s = salonsData.find(x => x.id === id);
-  const wa = prompt('WhatsApp Phone Number ID (iz Meta → WhatsApp → API Setup):', s?.whatsapp_phone_number_id || '');
-  if (wa === null) return;
-  const tok = prompt('WhatsApp žeton (pusti PRAZNO = ne spreminjaj obstoječega):', '');
-  if (tok === null) return;
-  const body = { whatsapp_phone_number_id: wa.trim() };
-  if (tok.trim()) body.whatsapp_access_token = tok.trim();
+  if (!s) return;
+  _waEditId = id;
+  document.getElementById('wa-modal-salon').textContent = s.name || '';
+  document.getElementById('wa-phone-id').value = s.whatsapp_phone_number_id || '';
+  document.getElementById('wa-token').value = '';
+  document.getElementById('wa-token-status').textContent = s.has_wa_token
+    ? '✓ Žeton je že nastavljen — pusti prazno, če ga ne spreminjaš.'
+    : 'Žeton še ni nastavljen.';
+  document.getElementById('wa-modal').style.display = 'flex';
+}
+function closeWaModal() { document.getElementById('wa-modal').style.display = 'none'; _waEditId = null; }
+async function saveWaConnection() {
+  if (!_waEditId) return;
+  const wa = document.getElementById('wa-phone-id').value.trim();
+  const tok = document.getElementById('wa-token').value.trim();
+  const body = { whatsapp_phone_number_id: wa };
+  if (tok) body.whatsapp_access_token = tok;
   try {
-    const res = await apiFetch(`/api/admin/salons/${id}/settings`, { method: 'PATCH', body: JSON.stringify(body) });
+    const res = await apiFetch(`/api/admin/salons/${_waEditId}/settings`, { method: 'PATCH', body: JSON.stringify(body) });
     const d = await res.json().catch(() => ({}));
-    if (res.ok) { showToast('📱 WhatsApp povezava shranjena', 'success'); await refreshSalons(); }
+    if (res.ok) { showToast('📱 WhatsApp povezava shranjena', 'success'); closeWaModal(); await refreshSalons(); }
     else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
