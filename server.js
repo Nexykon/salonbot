@@ -1106,6 +1106,8 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'business_slug',
     'business_type',
     'bot_phone_display',
+    'whatsapp_phone_number_id',
+    'whatsapp_access_token',
     'greeting_message',
     'working_days',
     'working_hours_start',

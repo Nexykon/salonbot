@@ -1883,6 +1883,7 @@ function renderTable() {
         <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 PDF</button>
         <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">WA</button>
         <button class="btn-action" style="color:#7c3aed;border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.07)" onclick="openOwnerDashboard('${s.id}')">${isRestaurant(s) ? '🍽️ Meni' : '🖥️ Dashboard'}</button>
+        <button class="btn-action" style="color:#0891b2;border-color:rgba(8,145,178,.3);background:rgba(8,145,178,.07)" onclick="editWaConnection('${s.id}')" title="Uredi WhatsApp Phone Number ID + žeton">📱 WA</button>
         <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
         <button class="btn-action" style="color:#dc2626;border-color:rgba(220,38,38,.3);background:rgba(220,38,38,.06)" onclick="deleteSalon('${s.id}','${(s.name||'').replace(/'/g,'')}')">Briši</button>
       </div>
@@ -2083,6 +2084,23 @@ async function priklopSalon(id) {
     const res = await apiFetch(`/api/admin/activate/${id}`, { method: 'POST', body: JSON.stringify(body) });
     const d = await res.json();
     if (res.ok && d.success) { showToast('🔌 Priklopljeno in aktivirano!', 'success'); await refreshSalons(); }
+    else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
+  } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
+}
+
+// ── Uredi WhatsApp povezavo (Phone Number ID + žeton) tudi po priklopu ──
+async function editWaConnection(id) {
+  const s = salonsData.find(x => x.id === id);
+  const wa = prompt('WhatsApp Phone Number ID (iz Meta → WhatsApp → API Setup):', s?.whatsapp_phone_number_id || '');
+  if (wa === null) return;
+  const tok = prompt('WhatsApp žeton (pusti PRAZNO = ne spreminjaj obstoječega):', '');
+  if (tok === null) return;
+  const body = { whatsapp_phone_number_id: wa.trim() };
+  if (tok.trim()) body.whatsapp_access_token = tok.trim();
+  try {
+    const res = await apiFetch(`/api/admin/salons/${id}/settings`, { method: 'PATCH', body: JSON.stringify(body) });
+    const d = await res.json().catch(() => ({}));
+    if (res.ok) { showToast('📱 WhatsApp povezava shranjena', 'success'); await refreshSalons(); }
     else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
