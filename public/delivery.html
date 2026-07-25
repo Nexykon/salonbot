@@ -635,7 +635,8 @@ body {
         <div><label><span class="bm-num">8</span>Naročilo oddano — osebni prevzem</label><textarea id="bm-submitted_pickup" rows="3" oninput="bmInput('submitted_pickup')" onfocus="bmFocus('submitted_pickup')"></textarea></div>
         <div><label><span class="bm-num">9</span>Naročilo potrjeno — osebni prevzem</label><textarea id="bm-accepted_pickup" rows="3" oninput="bmInput('accepted_pickup')" onfocus="bmFocus('accepted_pickup')"></textarea></div>
         <div><label><span class="bm-num">10</span>Naročilo zavrnjeno</label><textarea id="bm-rejected" rows="2" oninput="bmInput('rejected')" onfocus="bmFocus('rejected')"></textarea></div>
-        <div><label><span class="bm-num">11</span>Bot izklopljen (rdeče stikalo)</label><textarea id="bm-bot_offline" rows="3" oninput="bmInput('bot_offline')" onfocus="bmFocus('bot_offline')"></textarea></div>
+        <div><label><span class="bm-num">11</span>Naročanje preklicano (stranka napiše „prekliči")</label><textarea id="bm-cancelled" rows="2" oninput="bmInput('cancelled')" onfocus="bmFocus('cancelled')"></textarea></div>
+        <div><label><span class="bm-num">12</span>Bot izklopljen (rdeče stikalo)</label><textarea id="bm-bot_offline" rows="3" oninput="bmInput('bot_offline')" onfocus="bmFocus('bot_offline')"></textarea></div>
       </div>
       <div class="bm-phone-wrap">
         <div class="phone-preview">
@@ -1271,7 +1272,7 @@ function feeValue(checkId, inputId) {
 }
 
 // ── Sporočila bota (urejevalnik s predogledom telefona) ──
-const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected','bot_offline'];
+const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected','cancelled','bot_offline'];
 const BM_GREET_DEFAULT = '👇 Izberite artikel iz menija:';
 const BM_TIME = '11:42';
 let bmDefaults = {};
@@ -1357,6 +1358,8 @@ function renderBmChat() {
     bmBubble('recv', '', 'accepted_pickup'),
     bmLabel('❌ Če naročilo zavrnete'),
     bmBubble('recv', '', 'rejected'),
+    bmLabel('🚫 Ko stranka napiše „prekliči"'),
+    bmBubble('recv', '', 'cancelled'),
     bmLabel('🔴 Ko je bot izklopljen'),
     bmBubble('recv', '', 'bot_offline')
   ].join('');

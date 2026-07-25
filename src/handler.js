@@ -1058,7 +1058,7 @@ async function handleMessage(msgObj, salon) {
       // Po oddaji naročila je seja počiščena (aiHistory prazen) -> pade v spodnjo vejo.
       if ((sess && sess.step >= 301 && sess.step <= 307) || sess.checkoutStage || (sess.cart && sess.cart.length) || (sess.aiHistory && sess.aiHistory.length)) {
         session.clear(skey);
-        await wa.send(phoneId, token, wa.textMsg(from, 'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕'));
+        await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'cancelled')));
         return;
       }
       // Nič v teku: ločimo "ni še ničesar naročenega" od "naročilo je že oddano"
@@ -1089,7 +1089,7 @@ async function handleMessage(msgObj, salon) {
     // ── Prekliči
     if (iId === 'delivery_cancel') {
       session.clear(skey);
-      await wa.send(phoneId, token, wa.textMsg(from, 'Naročilo preklicano. Dobrodošli nazaj! 🍕'));
+      await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'cancelled')));
       return;
     }
 

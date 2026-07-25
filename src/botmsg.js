@@ -13,6 +13,7 @@ const DEFAULTS = {
   accepted_delivery:  '🍕 Vaše naročilo je potrjeno!\n\n⏱️ Dostava v pribl. *{minute} minutah*\n\nHvala za naročilo! 😊',
   accepted_pickup:    '🏃 Vaše naročilo je potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *{minute} minutah*{naslov}\n\nHvala za naročilo! 😊',
   rejected:           '😔 Žal vašega naročila nismo mogli sprejeti. Pokličite nas za več informacij.',
+  cancelled:          'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕',
   bot_offline:        '⏸️ Trenutno žal ne sprejemamo naročil. Poskusite malo kasneje. Hvala za razumevanje! 🙏'
 };
 
