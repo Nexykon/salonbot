@@ -1340,7 +1340,8 @@ async function handleMessage(msgObj, salon) {
         });
         // Ob PRVEM stiku pošlji lepo dobrodošlico (ime, dostava/prevzem, delovni čas, preklic).
         const isFirstTurn = (sess.aiHistory || []).length === 0;
-        if (isFirstTurn && !sess.hintShown) {
+        const welcomeShown = isFirstTurn && !sess.hintShown;
+        if (welcomeShown) {
           const welcome = wa.deliveryWelcome(salon, sess.knownName);
           // Če je stranka že kaj naročila, obdrži AI odgovor + dobrodošlico spredaj;
           // sicer dobrodošlica nadomesti pozdrav AI (da se ne podvaja).
@@ -1357,6 +1358,7 @@ async function handleMessage(msgObj, salon) {
         session.set(skey, {
           ...sess, step: result.cart.length ? 301 : (sess.step || 300),
           hintShown: sess.hintShown || isFirstTurn,
+          areaShown: sess.areaShown || (welcomeShown && salon.allow_delivery !== false && !!salon.delivery_area),
           cart: result.cart, aiHistory: newHistory, pendingItem: null, opomba: mergedNote,
           orderMode: ord.mode || sess.orderMode || null,
           customerName: ord.name || sess.customerName || null,
