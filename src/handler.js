@@ -1054,8 +1054,9 @@ async function handleMessage(msgObj, salon) {
 
     // ── Stranka napiše "prekliči" ──
     if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]\w*|storno|cancel)\b/i.test(msgText))) {
-      // Med naročanjem (košarica/zaključek še v teku): prekliči sejo.
-      if ((sess && sess.step >= 301 && sess.step <= 307) || sess.checkoutStage || (sess.cart && sess.cart.length)) {
+      // Med aktivnim pogovorom/naročanjem (meni prikazan, košarica ali zaključek v teku): prekliči sejo.
+      // Po oddaji naročila je seja počiščena (aiHistory prazen) -> pade v spodnjo vejo.
+      if ((sess && sess.step >= 301 && sess.step <= 307) || sess.checkoutStage || (sess.cart && sess.cart.length) || (sess.aiHistory && sess.aiHistory.length)) {
         session.clear(skey);
         await wa.send(phoneId, token, wa.textMsg(from, 'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕'));
         return;
