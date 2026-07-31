@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0ea5a4">
+<title>FlowTiq — Voznik</title>
+<style>
+  :root{--green:#10b981;--blue:#2563eb;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f1f5f9;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);}
+  .wrap{max-width:640px;margin:0 auto;padding:16px;padding-bottom:40px;}
+  .grad{background:linear-gradient(120deg,var(--green),var(--blue));}
+  /* Login */
+  .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .card{background:#fff;border-radius:20px;box-shadow:0 12px 40px rgba(15,23,42,.12);padding:28px 24px;width:100%;max-width:400px;}
+  .logo{font-weight:800;font-size:26px;letter-spacing:-.5px;text-align:center;margin-bottom:2px;
+    background:linear-gradient(120deg,var(--green),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px;}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:14px 0 6px;}
+  input{width:100%;padding:14px;border:1.5px solid var(--line);border-radius:12px;font-size:16px;outline:none;transition:border .15s;}
+  input:focus{border-color:var(--blue);}
+  #pin{letter-spacing:8px;text-align:center;font-size:22px;font-weight:700;}
+  .btn{width:100%;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;margin-top:20px;}
+  .btn:active{transform:scale(.98);}
+  .btn.grad:disabled{opacity:.55;}
+  .err{background:#fef2f2;color:#b91c1c;border-radius:10px;padding:10px 12px;font-size:14px;margin-top:14px;display:none;}
+  /* Header */
+  .topbar{position:sticky;top:0;z-index:5;color:#fff;padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;}
+  .topbar .who{font-size:13px;opacity:.9;}
+  .topbar .loc{font-size:18px;font-weight:800;}
+  .logout{background:rgba(255,255,255,.2);border:none;color:#fff;font-size:13px;font-weight:600;padding:8px 12px;border-radius:10px;cursor:pointer;}
+  .search{position:sticky;top:0;z-index:4;background:var(--bg);padding:12px 0;}
+  .search input{background:#fff;}
+  .tabs{display:flex;gap:8px;margin:0 0 12px;}
+  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;background:#fff;border:1.5px solid var(--line);
+    font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;}
+  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  /* Orders */
+  .order{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(15,23,42,.05);border:1px solid var(--line);}
+  .order.done{opacity:.72;}
+  .row1{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .ref{font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);padding:3px 8px;border-radius:6px;}
+  .name{font-size:17px;font-weight:800;margin:6px 0 2px;}
+  .addr{font-size:15px;color:var(--ink);font-weight:600;}
+  .addr a{color:var(--blue);text-decoration:none;}
+  .meta{font-size:14px;color:var(--muted);margin-top:8px;line-height:1.5;white-space:pre-wrap;}
+  .total{font-weight:800;color:var(--green);font-size:16px;}
+  .phone{display:inline-block;margin-top:10px;color:var(--blue);font-weight:700;text-decoration:none;font-size:15px;}
+  .deliver{width:100%;margin-top:14px;background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;}
+  .deliver:active{transform:scale(.99);}
+  .badge{display:inline-flex;align-items:center;gap:5px;background:#ecfdf5;color:#047857;font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;margin-top:12px;}
+  .empty{text-align:center;color:var(--muted);padding:50px 20px;font-size:15px;}
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:20px;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<!-- PRIJAVA -->
+<div id="loginView" class="login">
+  <form class="card" id="loginForm" onsubmit="doLogin(event)">
+    <div class="logo">FlowTiq</div>
+    <div class="sub">Voznik — dostop do naročil</div>
+    <label for="lokal">Lokal</label>
+    <input id="lokal" placeholder="npr. picerija-mars" autocomplete="off" required>
+    <label for="pin">PIN koda</label>
+    <input id="pin" inputmode="numeric" maxlength="4" pattern="[0-9]*" placeholder="••••" required>
+    <button class="btn grad" id="loginBtn" type="submit">Prijava</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</div>
+
+<!-- NAROČILA -->
+<div id="appView" class="hidden">
+  <div class="topbar grad">
+    <div>
+      <div class="who" id="whoLabel">Voznik</div>
+      <div class="loc" id="locLabel">Lokal</div>
+    </div>
+    <button class="logout" onclick="logout()">Odjava</button>
+  </div>
+  <div class="wrap">
+    <div class="search">
+      <input id="searchBox" placeholder="🔍 Išči po imenu, naslovu, telefonu…" oninput="onSearch()">
+    </div>
+    <div class="tabs">
+      <div class="tab on" id="tabActive" onclick="setTab('active')">Za dostavo</div>
+      <div class="tab" id="tabDone" onclick="setTab('done')">Dostavljeno</div>
+    </div>
+    <div id="orders"></div>
+    <div class="foot">Osveženo: <span id="refreshedAt">—</span> · osveži se samodejno</div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('ft_driver_token') || '';
+let driverName = localStorage.getItem('ft_driver_name') || '';
+let salonName = localStorage.getItem('ft_driver_salon') || '';
+let allOrders = [];
+let tab = 'active';
+let pollTimer = null;
+
+// pre-fill lokal iz URL (?lokal=slug)
+const urlLokal = new URLSearchParams(location.search).get('lokal');
+if (urlLokal) document.getElementById('lokal').value = urlLokal;
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+async function doLogin(e){
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginErr');
+  err.style.display='none';
+  const lokal = document.getElementById('lokal').value.trim();
+  const pin = document.getElementById('pin').value.trim();
+  if(!/^\d{4}$/.test(pin)){ err.textContent='PIN mora imeti 4 številke.'; err.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Prijavljam…';
+  try{
+    const r = await fetch(API+'/api/driver/login',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({salon:lokal,pin})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Napaka pri prijavi');
+    token=d.token; driverName=d.driver_name||'Voznik'; salonName=d.salon_name||lokal;
+    localStorage.setItem('ft_driver_token',token);
+    localStorage.setItem('ft_driver_name',driverName);
+    localStorage.setItem('ft_driver_salon',salonName);
+    localStorage.setItem('ft_driver_lokal',lokal);
+    enterApp();
+  }catch(ex){ err.textContent=ex.message; err.style.display='block'; }
+  finally{ btn.disabled=false; btn.textContent='Prijava'; }
+}
+
+function logout(){
+  token=''; localStorage.removeItem('ft_driver_token');
+  if(pollTimer) clearInterval(pollTimer);
+  document.getElementById('appView').classList.add('hidden');
+  document.getElementById('loginView').classList.remove('hidden');
+  document.getElementById('pin').value='';
+}
+
+function enterApp(){
+  document.getElementById('loginView').classList.add('hidden');
+  document.getElementById('appView').classList.remove('hidden');
+  document.getElementById('whoLabel').textContent = '👤 '+driverName;
+  document.getElementById('locLabel').textContent = salonName;
+  loadOrders();
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(loadOrders, 25000);
+}
+
+async function loadOrders(){
+  if(!token) return;
+  const q = document.getElementById('searchBox').value.trim();
+  try{
+    const r = await fetch(API+'/api/driver/orders'+(q?('?search='+encodeURIComponent(q)):''),
+      {headers:{'Authorization':'Bearer '+token}});
+    if(r.status===401){ logout(); return; }
+    const d = await r.json();
+    allOrders = d.orders||[];
+    render();
+    document.getElementById('refreshedAt').textContent =
+      new Date().toLocaleTimeString('sl-SI',{hour:'2-digit',minute:'2-digit'});
+  }catch(ex){ /* tiho — ponovni poskus ob naslednjem ciklu */ }
+}
+
+let searchDebounce=null;
+function onSearch(){ clearTimeout(searchDebounce); searchDebounce=setTimeout(loadOrders,350); }
+
+function setTab(t){
+  tab=t;
+  document.getElementById('tabActive').classList.toggle('on',t==='active');
+  document.getElementById('tabDone').classList.toggle('on',t==='done');
+  render();
+}
+
+function mapsLink(addr){
+  return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(addr);
+}
+
+function render(){
+  const box = document.getElementById('orders');
+  const list = allOrders.filter(o => tab==='active' ? o.status!=='delivered' : o.status==='delivered');
+  if(!list.length){
+    box.innerHTML = '<div class="empty">'+(tab==='active'
+      ? '📭 Trenutno ni naročil za dostavo.' : 'Ni dostavljenih naročil.')+'</div>';
+    return;
+  }
+  box.innerHTML = list.map(o=>{
+    const done = o.status==='delivered';
+    const addr = o.address && o.address!=='Osebni prevzem'
+      ? '<div class="addr">📍 <a href="'+mapsLink(o.address)+'" target="_blank" rel="noopener">'+esc(o.address)+'</a></div>' : '';
+    const phone = o.phone ? '<a class="phone" href="tel:'+esc(o.phone)+'">📞 '+esc(o.phone)+'</a>' : '';
+    const items = o.items ? '<div class="meta">🍕 '+esc(o.items)+'</div>' : '';
+    const note = o.note ? '<div class="meta">📝 '+esc(o.note)+'</div>' : '';
+    const total = o.total ? '<span class="total">'+esc(o.total)+'</span>' : '';
+    const action = done
+      ? '<div class="badge">✅ Dostavil: '+esc(o.delivered_by||'—')+
+          (o.delivered_at?(' · '+new Date(o.delivered_at).toLocaleTimeString('sl-SI',{hour:'2-digit',minute:'2-digit'})):'')+'</div>'
+      : '<button class="deliver" onclick="confirmDeliver(\''+o.id+'\',this)">✅ Potrdi dostavo</button>';
+    return '<div class="order'+(done?' done':'')+'">'
+      + '<div class="row1"><div class="ref">#'+esc(o.ref)+'</div>'+total+'</div>'
+      + '<div class="name">'+esc(o.name||'Stranka')+'</div>'
+      + addr + items + note + phone + action + '</div>';
+  }).join('');
+}
+
+async function confirmDeliver(id, btn){
+  if(!confirm('Potrdi, da je naročilo dostavljeno?')) return;
+  btn.disabled=true; btn.textContent='Shranjujem…';
+  try{
+    const r = await fetch(API+'/api/driver/orders/'+id+'/delivered',
+      {method:'PATCH',headers:{'Authorization':'Bearer '+token}});
+    if(r.status===401){ logout(); return; }
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Napaka');
+    const o = allOrders.find(x=>x.id===id);
+    if(o){ o.status='delivered'; o.delivered_by=d.delivered_by; o.delivered_at=d.delivered_at; }
+    render();
+  }catch(ex){ alert(ex.message); btn.disabled=false; btn.textContent='✅ Potrdi dostavo'; }
+}
+
+// auto-login če je žeton shranjen
+if(token){ enterApp(); }
+</script>
+</body>
+</html>

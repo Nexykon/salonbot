@@ -28,6 +28,7 @@ app.get('/settings.html', (req, res) => { const qs = req.originalUrl.split('?')[
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/restavracije', (req, res) => res.sendFile(path.join(__dirname, 'public', 'restavracije.html')));
+app.get('/voznik', (req, res) => res.sendFile(path.join(__dirname, 'public', 'voznik.html')));
 
 function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
@@ -221,7 +222,7 @@ function adminAuth(req, res, next) {
 async function salonAuth(req, res) {
   const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
   const session = ownerAuth.getSession(bearer);
-  if (session) {
+  if (session && session.role !== 'driver') {
     const salon = await db.getSalonById(session.salonId);
     if (salon) return salon;
   }
@@ -249,6 +250,25 @@ async function settingsSalonAuth(req, res) {
     return null;
   }
   return salonAuth(req, res);
+}
+
+// Avtentikacija voznika (vloga 'driver', vezan na svojo picerijo)
+async function driverAuth(req, res) {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  if (!session || session.role !== 'driver' || !session.salonId) {
+    res.status(401).json({ error: 'Neveljavna prijava voznika' });
+    return null;
+  }
+  const salon = await db.getSalonById(session.salonId);
+  if (!salon) { res.status(404).json({ error: 'Lokal ni najden' }); return null; }
+  return { salon, driverName: session.driverName || 'Voznik' };
+}
+
+function parseDrivers(salon) {
+  let list = salon && salon.drivers;
+  if (typeof list === 'string') { try { list = JSON.parse(list); } catch { list = []; } }
+  return Array.isArray(list) ? list : [];
 }
 
 async function notifyBookingAdmin(salon, customerName, phone, date, time, ref6, sourceLabel, formAnswers = {}) {
@@ -1395,7 +1415,9 @@ app.get('/api/settings', async (req, res) => {
       logo_url: salon.logo_url || '',
       listed_public: salon.listed_public === true,
       auto_confirm: salon.auto_confirm === true,
-      custom_sounds: parseSounds(salon)
+      custom_sounds: parseSounds(salon),
+      drivers: parseDrivers(salon),
+      slug: salon.slug || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -1610,6 +1632,114 @@ app.delete('/api/settings/sound', async (req, res) => {
     await db.deleteSound(url);
     await db.updateSalonSettings(salon.id, { custom_sounds: JSON.stringify(next) });
     res.json({ success: true, custom_sounds: next });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ─── VOZNIKI (dostava) ────────────────────────────────────────────────
+// Lastnik: dodaj voznika (ime -> generira 4-mestni PIN)
+app.post('/api/settings/drivers', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const ime = String(req.body.ime || '').trim().slice(0, 40);
+    if (!ime) return res.status(400).json({ error: 'Vnesite ime voznika' });
+    const list = parseDrivers(salon);
+    if (list.length >= 20) return res.status(400).json({ error: 'Preveč voznikov (največ 20).' });
+    let pin;
+    do { pin = String(Math.floor(1000 + Math.random() * 9000)); } while (list.some(d => String(d.pin) === pin));
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const next = [...list, { id, ime, pin, aktiven: true }];
+    await db.updateSalonSettings(salon.id, { drivers: JSON.stringify(next) });
+    res.json({ success: true, drivers: next });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Lastnik: vklop/izklop voznika
+app.patch('/api/settings/drivers/:id', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const list = parseDrivers(salon).map(d => d.id === req.params.id ? { ...d, aktiven: req.body.aktiven !== false } : d);
+    await db.updateSalonSettings(salon.id, { drivers: JSON.stringify(list) });
+    res.json({ success: true, drivers: list });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Lastnik: odstrani voznika
+app.delete('/api/settings/drivers/:id', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    const list = parseDrivers(salon).filter(d => d.id !== req.params.id);
+    await db.updateSalonSettings(salon.id, { drivers: JSON.stringify(list) });
+    res.json({ success: true, drivers: list });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Voznik: prijava (lokal + PIN)
+app.post('/api/driver/login', async (req, res) => {
+  try {
+    const slug = String(req.body.salon || '').trim();
+    const pin = String(req.body.pin || '').trim();
+    if (!slug || !pin) return res.status(400).json({ error: 'Manjka lokal ali PIN' });
+    const salon = await db.resolveSalon(slug);
+    if (!salon || salon.subscription_status === 'inactive') return res.status(404).json({ error: 'Lokal ni najden' });
+    const d = parseDrivers(salon).find(x => x && x.aktiven !== false && String(x.pin) === pin);
+    if (!d) return res.status(401).json({ error: 'Napačen PIN' });
+    const token = ownerAuth.createSession(salon.id, 'driver', { driverName: d.ime, driverId: d.id });
+    res.json({ success: true, token, driver_name: d.ime, salon_name: salon.name });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+const _faParse = (fa) => { try { return typeof fa === 'object' && fa ? fa : JSON.parse(fa || '{}'); } catch { return {}; } };
+
+// Voznik: naročila za dostavo (branje + iskanje)
+app.get('/api/driver/orders', async (req, res) => {
+  const ctx = await driverAuth(req, res);
+  if (!ctx) return;
+  try {
+    const all = await db.listBookings(ctx.salon.id);
+    const q = String(req.query.search || '').toLowerCase().trim();
+    const rows = all.filter(b => {
+      const notes = String(b.notes || '');
+      const isDelivery = notes.startsWith('RAZVOZ') || /razvoz|dostava/i.test(notes);
+      return isDelivery && (b.status === 'confirmed' || b.status === 'delivered');
+    }).filter(b => {
+      if (!q) return true;
+      const fa = _faParse(b.form_answers);
+      return [b.customer_name, b.customer_phone, fa.naslov, (b.id || '').slice(-6)]
+        .some(v => String(v || '').toLowerCase().includes(q));
+    });
+    const out = rows.map(b => {
+      const fa = _faParse(b.form_answers);
+      return {
+        id: b.id,
+        ref: (b.id || '').slice(-6).toUpperCase(),
+        name: b.customer_name || '',
+        phone: b.customer_phone || '',
+        address: fa.naslov || '',
+        items: fa.narocilo || '',
+        total: fa.skupaj || '',
+        note: fa.opomba || '',
+        status: b.status,
+        delivered_by: b.delivered_by || null,
+        delivered_at: b.delivered_at || null,
+        created_at: b.created_at
+      };
+    }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    res.json({ orders: out, driver_name: ctx.driverName, salon_name: ctx.salon.name });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Voznik: potrdi dostavo
+app.patch('/api/driver/orders/:id/delivered', async (req, res) => {
+  const ctx = await driverAuth(req, res);
+  if (!ctx) return;
+  try {
+    const booking = await db.getBookingById(req.params.id);
+    if (!booking || booking.salon_id !== ctx.salon.id) return res.status(404).json({ error: 'Naročilo ni najdeno' });
+    const updated = await db.markDelivered(booking.id, ctx.driverName);
+    res.json({ success: true, id: booking.id, status: 'delivered', delivered_by: ctx.driverName, delivered_at: updated ? updated.delivered_at : null });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 

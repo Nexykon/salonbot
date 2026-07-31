@@ -509,6 +509,17 @@ body {
       </div>
 
       <div class="settings-card" style="margin-top:16px">
+        <div class="settings-card-title">🛵 Vozniki <span style="font-weight:400;color:var(--muted);font-size:13px">(dostop do naročil)</span></div>
+        <div style="font-size:12.5px;color:var(--muted);margin:2px 0 12px;line-height:1.55">Vsak voznik dobi svojo <strong>PIN kodo</strong>. Na strani <strong>flowtiq.si/voznik</strong> vpiše ime lokala <strong id="drv-slug">—</strong> in svoj PIN, nato vidi samo naročila za dostavo in lahko potrdi dostavo. Naročil ne more sprejemati ali brisati — vidi samo, kam mora dostaviti.</div>
+        <div id="drivers-list"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px">
+          <input type="text" id="drv-name" placeholder="Ime voznika (npr. Marko)" style="max-width:220px" onkeydown="if(event.key==='Enter'){event.preventDefault();addDriver();}">
+          <button type="button" onclick="addDriver()" style="border:none;background:#10b981;color:#fff;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer">+ Dodaj voznika</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Ko voznik potrdi dostavo, se pri naročilu zabeleži njegovo ime in čas — za evidenco in odgovornost.</div>
+      </div>
+
+      <div class="settings-card" style="margin-top:16px">
         <div class="settings-card-title">🌐 Objava na flowtiq.si <span style="font-weight:400;color:var(--muted);font-size:13px">(neobvezno)</span></div>
         <div style="display:flex;align-items:flex-start;gap:10px;margin:6px 0 14px;font-size:13.5px;line-height:1.55">
           <input type="checkbox" id="s-listed" style="accent-color:#7c3aed;width:17px;height:17px;flex:0 0 auto;margin-top:3px">
@@ -925,8 +936,8 @@ function renderOrders(orders) {
   document.getElementById('orders-list-pickup').innerHTML   = pickOrders.length ? renderCards(pickOrders) : emptyCol('Ni naročil za prevzem');
 }
 function renderCards(orders) {
-  const statusLabel = {pending:'V čakanju', confirmed:'Potrjeno', cancelled:'Zavrnjeno'};
-  const statusCls   = {pending:'status-pending', confirmed:'status-confirmed', cancelled:'status-cancelled'};
+  const statusLabel = {pending:'V čakanju', confirmed:'Potrjeno', cancelled:'Zavrnjeno', delivered:'Dostavljeno'};
+  const statusCls   = {pending:'status-pending', confirmed:'status-confirmed', cancelled:'status-cancelled', delivered:'status-confirmed'};
   // FIFO: pending naročila so že sortirana asc (najstarejše najprej) s strani strežnika
   let pendingIdx = 0;
   return orders.map(o => {
@@ -975,6 +986,7 @@ function renderCards(orders) {
         <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
         <!-- 3. CENA -->
         <div class="price-breakdown">${priceRows}</div>
+        ${o.status==='delivered' && o.delivered_by ? `<div style="font-size:12.5px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:6px 10px;margin-top:8px;color:#047857;font-weight:600;">🛵 Dostavil: ${o.delivered_by}${o.delivered_at?` · ${formatTime(o.delivered_at)}`:''}</div>` : ''}
         ${actions}
       </div>
     </div>`;
@@ -1250,6 +1262,9 @@ async function loadSettingsData() {
     if (document.getElementById('s-listed')) document.getElementById('s-listed').checked = d.listed_public === true;
     customSounds = Array.isArray(d.custom_sounds) ? d.custom_sounds : [];
     initSoundSettings();
+    drivers = Array.isArray(d.drivers) ? d.drivers : [];
+    if (d.slug && document.getElementById('drv-slug')) document.getElementById('drv-slug').textContent = '„'+d.slug+'"';
+    renderDrivers();
     setLogoPreview(d.logo_url || '', d.name || '');
     if (document.getElementById('s-company')) document.getElementById('s-company').value = d.company_name || '';
     if (document.getElementById('s-vat')) document.getElementById('s-vat').value = d.vat_id || '';
@@ -1996,6 +2011,69 @@ async function uploadSound(){
   };
   fr.onerror = function(){ showToast('Napaka pri branju datoteke', 'error'); inp.value = ''; onSoundFilePick(); };
   fr.readAsDataURL(f);
+}
+
+// ── Vozniki ──────────────────────────────────────────────
+let drivers = [];
+function esc2(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function renderDrivers(){
+  const box = document.getElementById('drivers-list');
+  if (!box) return;
+  if (!drivers.length){
+    box.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0">Ni dodanih voznikov.</div>';
+    return;
+  }
+  box.innerHTML = drivers.map(function(d){
+    const off = d.aktiven === false;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)'+(off?';opacity:.55':'')+'">'
+      + '<div style="flex:1;min-width:0"><div style="font-weight:700">'+esc2(d.ime)+(off?' <span style="font-weight:400;color:var(--muted);font-size:12px">(izklopljen)</span>':'')+'</div>'
+      + '<div style="font-size:13px;color:var(--muted)">PIN: <span style="font-family:monospace;font-weight:700;letter-spacing:2px;color:var(--text)">'+esc2(d.pin)+'</span></div></div>'
+      + '<button type="button" onclick="toggleDriver(\''+d.id+'\','+off+')" style="border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:12.5px;font-weight:700;cursor:pointer">'+(off?'Vklopi':'Izklopi')+'</button>'
+      + '<button type="button" onclick="deleteDriver(\''+d.id+'\',\''+esc2(d.ime)+'\')" style="border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:700;cursor:pointer">Odstrani</button>'
+      + '</div>';
+  }).join('');
+}
+async function addDriver(){
+  const inp = document.getElementById('drv-name');
+  const ime = (inp.value||'').trim();
+  if (!ime){ showToast('Vnesite ime voznika', 'error'); return; }
+  try {
+    const r = await fetch('/api/settings/drivers', {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
+      body: JSON.stringify({ ime })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Napaka');
+    drivers = d.drivers || [];
+    inp.value = '';
+    renderDrivers();
+    showToast('Voznik dodan — PIN je pripravljen', 'success');
+  } catch(e){ showToast('Napaka: '+e.message, 'error'); }
+}
+async function toggleDriver(id, turnOn){
+  try {
+    const r = await fetch('/api/settings/drivers/'+id, {
+      method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken},
+      body: JSON.stringify({ aktiven: !!turnOn })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Napaka');
+    drivers = d.drivers || [];
+    renderDrivers();
+  } catch(e){ showToast('Napaka: '+e.message, 'error'); }
+}
+async function deleteDriver(id, ime){
+  if (!confirm('Odstraniti voznika '+ime+'? Njegov PIN ne bo več veljal.')) return;
+  try {
+    const r = await fetch('/api/settings/drivers/'+id, {
+      method:'DELETE', headers:{'Content-Type':'application/json','Authorization':'Bearer '+ownerToken}
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error||'Napaka');
+    drivers = d.drivers || [];
+    renderDrivers();
+    showToast('Voznik odstranjen', 'info');
+  } catch(e){ showToast('Napaka: '+e.message, 'error'); }
 }
 
 // Potekla seja: odjavi in vrni na prijavo (namesto tihih napak)

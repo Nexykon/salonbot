@@ -304,6 +304,15 @@ async function getActiveBookingByPhone(salonId, phone) {
   return r.data[0] || null;
 }
 
+async function markDelivered(bookingId, driverName) {
+  const r = await axios.patch(
+    `${BASE}/sb_bookings?id=eq.${bookingId}`,
+    { status: 'delivered', delivered_at: new Date().toISOString(), delivered_by: driverName || null },
+    { headers: HEADERS }
+  );
+  return r.data[0];
+}
+
 async function updateBookingStatus(id, status) {
   const r = await axios.patch(
     `${BASE}/sb_bookings?id=eq.${id}`,
@@ -783,7 +792,7 @@ module.exports = {
   createBooking, createBookingIfFree, markSlotBooked,
   createOrderItems, getOrderItems, getOrderItemsBysalon,
   getPublicRestaurants, uploadLogo, uploadSound, deleteSound,
-  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, updateBookingNotes, getCustomerEmailByPhone,
+  getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, markDelivered, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone, listBookings,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
   updateServiceById, setServiceActive, updateService, deleteServiceById,
