@@ -306,18 +306,133 @@ const iikoAdapter = {
   },
 };
 
+// ─── LOYVERSE ─────────────────────────────────────────────────────────────────
+// API docs: https://developer.loyverse.com/docs/  (readthedocs: loyverse.readthedocs.io)
+// Auth: Bearer token (Loyverse Back Office → Settings → Access tokens)
+// account = store_id (Loyverse Store ID)
+// OPOMBA: Loyverse API nima koncepta "odprtega naročila/tickета" — createOrder
+// ustvari RAČUN (receipt = zaključena prodaja) z opombo. Za kuhinjo je to viden
+// zapis prodaje; če lokal želi le odprt bon, to Loyverse API (zaenkrat) ne omogoča.
+
+const LoyverseAdapter = {
+  name: 'Loyverse',
+
+  _base: 'https://api.loyverse.com/v1.0',
+
+  _headers(token) {
+    return {
+      Authorization:  `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+  },
+
+  async getMenu(token, account) {
+    try {
+      // Kategorije (id → ime)
+      const catRes = await axios.get(`${this._base}/categories?limit=250`, { headers: this._headers(token), timeout: 10000 });
+      const catMap = {};
+      for (const c of (catRes.data.categories || [])) catMap[c.id] = c.category_name || c.name || 'Ostalo';
+
+      // Artikli (vsaka varianta = ena postavka menija)
+      const itemsRes = await axios.get(`${this._base}/items?limit=250`, { headers: this._headers(token), timeout: 12000 });
+      const items = itemsRes.data.items || [];
+
+      const menu = [];
+      for (const it of items) {
+        const variants = it.variants || [];
+        for (const v of variants) {
+          // Cena: če obstaja cena za ta store, jo uporabi, sicer default_price
+          let price = v.default_price;
+          const st = (v.stores || []).find(s => s.store_id === account);
+          if (st && st.price != null) price = st.price;
+          menu.push({
+            id:          v.variant_id,
+            name:        it.item_name + (variants.length > 1 && v.option1_value ? ` (${v.option1_value})` : ''),
+            price:       Number(price || 0),
+            category:    catMap[it.category_id] || 'Ostalo',
+            description: it.description || '',
+            photo:       (it.image_url) || null,
+          });
+        }
+      }
+      return menu;
+    } catch (e) {
+      const msg = e.response?.data?.errors?.[0]?.details || e.response?.data?.message || e.message;
+      throw new Error(`Loyverse menu error: ${msg}`);
+    }
+  },
+
+  async _firstPaymentTypeId(token) {
+    const r = await axios.get(`${this._base}/payment_types?limit=1`, { headers: this._headers(token), timeout: 8000 });
+    return r.data.payment_types?.[0]?.id || null;
+  },
+
+  async createOrder(token, account, cart, options = {}) {
+    try {
+      const storeId = account;
+      if (!storeId) throw new Error('Manjka Store ID (polje Račun).');
+
+      const lineItems = cart.map(item => ({
+        variant_id: item.id,
+        quantity:   item.qty,
+        price:      item.price != null ? Number(item.price) : undefined,
+      }));
+
+      const total = cart.reduce((s, it) => s + (Number(it.price || 0) * it.qty), 0);
+      const paymentTypeId = options.payment_type_id || await this._firstPaymentTypeId(token);
+      if (!paymentTypeId) throw new Error('Ni najden noben način plačila (payment type) v Loyverse.');
+
+      const body = {
+        store_id:   storeId,
+        line_items: lineItems,
+        payments:   [{ payment_type_id: paymentTypeId, money_amount: total }],
+        ...(options.comment ? { note: options.comment } : {}),
+      };
+
+      const r = await axios.post(`${this._base}/receipts`, body, { headers: this._headers(token), timeout: 12000 });
+      const receiptNo = r.data.receipt_number || r.data.receipt?.receipt_number || '?';
+      return {
+        success: true,
+        orderId: receiptNo,
+        message: 'Naročilo zabeleženo v Loyverse (račun ' + receiptNo + ')',
+      };
+    } catch (e) {
+      const msg = e.response?.data?.errors?.[0]?.details || e.response?.data?.message || e.message;
+      return { success: false, orderId: null, message: `Loyverse napaka: ${msg}` };
+    }
+  },
+
+  async testConnection(token, account) {
+    try {
+      const r = await axios.get(`${this._base}/stores?limit=250`, { headers: this._headers(token), timeout: 8000 });
+      const stores = r.data.stores || [];
+      if (!stores.length) return { ok: false, msg: 'Ni najdenih trgovin (preveri token).' };
+      if (account) {
+        const match = stores.find(s => s.id === account);
+        if (!match) return { ok: false, msg: `Store ID "${account}" ne obstaja. Razpoložljivi: ` + stores.map(s => `${s.name} = ${s.id}`).join(', ') };
+        return { ok: true, msg: `Loyverse — ${match.name} ✅` };
+      }
+      return { ok: true, msg: `Loyverse — povezava OK. Store ID-ji: ` + stores.map(s => `${s.name} = ${s.id}`).join(', ') };
+    } catch (e) {
+      const msg = e.response?.data?.errors?.[0]?.details || e.response?.data?.message || e.message;
+      return { ok: false, msg };
+    }
+  },
+};
+
 // ─── FACTORY ──────────────────────────────────────────────────────────────────
 
 const ADAPTERS = {
-  poster: PosterAdapter,
-  square: SquareAdapter,
-  iiko:   iikoAdapter,
+  poster:   PosterAdapter,
+  square:   SquareAdapter,
+  iiko:     iikoAdapter,
+  loyverse: LoyverseAdapter,
 };
 
 function getAdapter(posType) {
   const a = ADAPTERS[posType];
-  if (!a) throw new Error(`Neznan POS tip: ${posType}. Veljavni: poster, square, iiko`);
+  if (!a) throw new Error(`Neznan POS tip: ${posType}. Veljavni: poster, square, iiko, loyverse`);
   return a;
 }
 
-module.exports = { getAdapter, ADAPTERS, PosterAdapter, SquareAdapter, iikoAdapter };
+module.exports = { getAdapter, ADAPTERS, PosterAdapter, SquareAdapter, iikoAdapter, LoyverseAdapter };
