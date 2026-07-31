@@ -1007,6 +1007,13 @@ async function handleMessage(msgObj, salon) {
         return;
       }
       const isPickup = s.orderMode === 'prevzem';
+      // ── Način plačila (SAMO dostava) — vprašaj enkrat pred oddajo ──
+      if (!isPickup && !s.payment) {
+        session.set(skey, { ...s, awaitingPayment: true });
+        await wa.send(phoneId, token, wa.textMsg(from,
+          'Še zadnje — kako boste plačali ob dostavi? Napišite *gotovina* ali *kartica*. 💶💳'));
+        return;
+      }
       const total = s.grandTotal || cartTotal(cart);
       const today = t.todayStr();
       const custName = s.customerName || from;
@@ -1018,11 +1025,12 @@ async function handleMessage(msgObj, salon) {
         booking_date:   today,
         booking_time:   t.nowTimeHMS(),
         status:         'pending',
-        notes:          `${isPickup ? 'PREVZEM | Osebni prevzem' : 'RAZVOZ | Naslov: ' + s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${opomba ? ' | Opomba: ' + opomba : ''}`,
+        notes:          `${isPickup ? 'PREVZEM | Osebni prevzem' : 'RAZVOZ | Naslov: ' + s.deliveryAddress} | Skupaj: ${s.grandTotal || total} €${s.payment ? ' | Plačilo: ' + s.payment : ''}${opomba ? ' | Opomba: ' + opomba : ''}`,
         form_answers:   JSON.stringify({
           nacin:     isPickup ? 'Osebni prevzem 🏃' : 'Dostava 🚗',
           ime:       custName,
           naslov:    isPickup ? 'Osebni prevzem' : s.deliveryAddress,
+          placilo:   s.payment || null,
           narocilo:  fmtCart(cart),
           opomba:    opomba,
           artikli:   cartTotal(cart) + ' €',
@@ -1091,6 +1099,22 @@ async function handleMessage(msgObj, salon) {
     if (iId === 'delivery_cancel') {
       session.clear(skey);
       await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'cancelled')));
+      return;
+    }
+
+    // ── Odgovor na vprašanje o načinu plačila (samo dostava) ──
+    if (sess.awaitingPayment && msgText && !iId) {
+      const low = msgText.toLowerCase();
+      let pay = null;
+      if (/gotovin|gotov|cash|kesh|kes\b/i.test(low)) pay = 'Gotovina 💶';
+      else if (/kartic|karto|card|kredit|banко|plač.*kart|na kartic/i.test(low)) pay = 'Kartica 💳';
+      if (!pay) {
+        await wa.send(phoneId, token, wa.textMsg(from,
+          'Prosim, napišite *gotovina* ali *kartica* za način plačila. 💶💳'));
+        return;
+      }
+      session.set(skey, { ...sess, payment: pay, awaitingPayment: false });
+      await finalizeOrder();
       return;
     }
 

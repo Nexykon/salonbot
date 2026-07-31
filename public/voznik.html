@@ -211,6 +211,7 @@ function render(){
       ? '<div class="addr">📍 <a href="'+mapsLink(o.address)+'" target="_blank" rel="noopener">'+esc(o.address)+'</a></div>' : '';
     const phone = o.phone ? '<a class="phone" href="tel:'+esc(o.phone)+'">📞 '+esc(o.phone)+'</a>' : '';
     const items = o.items ? '<div class="meta">🍕 '+esc(o.items)+'</div>' : '';
+    const pay = o.payment ? '<div class="meta" style="font-weight:700;color:var(--ink)">💳 Plačilo: '+esc(o.payment)+'</div>' : '';
     const note = o.note ? '<div class="meta">📝 '+esc(o.note)+'</div>' : '';
     const total = o.total ? '<span class="total">'+esc(o.total)+'</span>' : '';
     const action = done
@@ -220,7 +221,7 @@ function render(){
     return '<div class="order'+(done?' done':'')+'">'
       + '<div class="row1"><div class="ref">#'+esc(o.ref)+'</div>'+total+'</div>'
       + '<div class="name">'+esc(o.name||'Stranka')+'</div>'
-      + addr + items + note + phone + action + '</div>';
+      + addr + items + pay + note + phone + action + '</div>';
   }).join('');
 }
 

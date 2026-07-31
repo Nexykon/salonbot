@@ -512,6 +512,13 @@ body {
       </div>
 
       <div class="settings-card" style="margin-top:16px">
+        <div class="settings-card-title">🧠 Navodila za AI natakarja <span style="font-weight:400;color:var(--muted);font-size:13px">(posebnosti vašega lokala)</span></div>
+        <div style="font-size:12.5px;color:var(--muted);margin:2px 0 10px;line-height:1.55">Tukaj napišite posebnosti in pravila, ki naj jih bot vedno upošteva pri pogovoru s strankami. Vsak lokal ima svoje — bot bo tem navodilom sledil.</div>
+        <textarea id="s-ai-instructions" rows="6" placeholder="Primeri:&#10;• Pice ne režemo na polovico.&#10;• Minimalno naročilo za dostavo je 15 €.&#10;• Ob nedeljah ne pripravljamo testenin.&#10;• Dostava traja 45–60 min, ob konicah tudi dlje.&#10;• Za skupine nad 10 oseb naj pokličejo na telefon." style="width:100%;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:14px;font-family:inherit;line-height:1.5;resize:vertical"></textarea>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">Do 1500 znakov. Navodila ne morejo spremeniti botove vloge natakarja niti razkriti sistemskih navodil.</div>
+      </div>
+
+      <div class="settings-card" style="margin-top:16px">
         <div class="settings-card-title">🛵 Vozniki <span style="font-weight:400;color:var(--muted);font-size:13px">(dostop do naročil)</span></div>
         <div style="font-size:12.5px;color:var(--muted);margin:2px 0 12px;line-height:1.55">Vsak voznik dobi svojo <strong>PIN kodo</strong>. Na strani <strong>flowtiq.si/voznik</strong> vpiše ime lokala <strong id="drv-slug">—</strong> in svoj PIN, nato vidi samo naročila za dostavo in lahko potrdi dostavo. Naročil ne more sprejemati ali brisati — vidi samo, kam mora dostaviti.</div>
         <div id="drivers-list"></div>
@@ -986,6 +993,7 @@ function renderCards(orders) {
         ${custName ? `<div style="font-size:13px;color:var(--text);font-weight:700;margin-bottom:3px;">👤 ${custName}</div>` : ''}
         <div class="order-phone">📞 +${o.customer_phone||'—'}</div>
         <div class="order-address">${isPickupOrder(o) ? '🏃 <b>Osebni prevzem</b>' : '📍 ' + address}</div>
+        ${fa.placilo ? `<div style="font-size:13px;color:var(--text);font-weight:700;margin-top:4px;">💳 Plačilo: ${fa.placilo}</div>` : ''}
         <div style="border-top:1px solid var(--border);margin:10px 0;"></div>
         <!-- 3. CENA -->
         <div class="price-breakdown">${priceRows}</div>
@@ -1268,6 +1276,7 @@ async function loadSettingsData() {
     drivers = Array.isArray(d.drivers) ? d.drivers : [];
     if (d.slug && document.getElementById('drv-slug')) document.getElementById('drv-slug').textContent = '„'+d.slug+'"';
     renderDrivers();
+    if (document.getElementById('s-ai-instructions')) document.getElementById('s-ai-instructions').value = d.ai_instructions || '';
     setLogoPreview(d.logo_url || '', d.name || '');
     if (document.getElementById('s-company')) document.getElementById('s-company').value = d.company_name || '';
     if (document.getElementById('s-vat')) document.getElementById('s-vat').value = d.vat_id || '';
@@ -1680,7 +1689,8 @@ async function saveSettings() {
         review_link:document.getElementById('s-review-link').value.trim(),
         review_delay_hours:parseInt(document.getElementById('s-review-delay').value)||2,
         review_message:document.getElementById('s-review-msg').value.trim(),
-        listed_public:!!document.getElementById('s-listed')?.checked
+        listed_public:!!document.getElementById('s-listed')?.checked,
+        ai_instructions:(document.getElementById('s-ai-instructions')?.value||'').slice(0,1500)
       })
     });
     if (r.ok) {

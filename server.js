@@ -1417,6 +1417,7 @@ app.get('/api/settings', async (req, res) => {
       auto_confirm: salon.auto_confirm === true,
       custom_sounds: parseSounds(salon),
       drivers: parseDrivers(salon),
+      ai_instructions: salon.ai_instructions || '',
       slug: salon.slug || ''
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -1434,7 +1435,7 @@ app.patch('/api/settings', async (req, res) => {
       'packaging_price', 'delivery_fee',
       'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message',
-      'review_enabled', 'review_delay_hours', 'listed_public',
+      'review_enabled', 'review_delay_hours', 'listed_public', 'ai_instructions',
       'company_name', 'vat_id', 'address', 'contact_person'];
     const updates = {};
     for (const key of allowed) {
@@ -1720,6 +1721,7 @@ app.get('/api/driver/orders', async (req, res) => {
         address: fa.naslov || '',
         items: fa.narocilo || '',
         total: fa.skupaj || '',
+        payment: fa.placilo || '',
         note: fa.opomba || '',
         status: b.status,
         delivered_by: b.delivered_by || null,
