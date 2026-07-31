@@ -2,10 +2,11 @@
 const axios = require('axios');
 
 const PLAN = {
-  starter: { label: 'Osnovni',    price: 49.99 },
-  pro:     { label: 'Pro',        price: 79.99 },
-  ai:      { label: 'AI natakar', price: 159.99 },
-  premium: { label: 'Premium',    price: 299 }
+  starter:  { label: 'Osnovni',    price: 49.99 },
+  pro:      { label: 'Pro',        price: 79.99 },
+  ai_start: { label: 'AI Start',   price: 89 },
+  ai:       { label: 'AI natakar', price: 159.99 },
+  premium:  { label: 'Premium',    price: 299 }
 };
 
 const ISSUER = {
@@ -19,7 +20,7 @@ const ISSUER = {
 function eur(n) { return Number(n || 0).toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
 
 function computeProforma(salon, plan) {
-  const p = PLAN[plan] || PLAN.starter;
+  const p = PLAN[plan] || PLAN.ai;
   const yearly = salon.billing_period === 'yearly';
   const amount = yearly ? p.price * 12 : p.price;
   const no = 'PR-' + new Date().getFullYear() + '-' + String(salon.id).replace(/[^0-9a-f]/gi, '').slice(-6).toUpperCase();

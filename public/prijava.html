@@ -101,6 +101,13 @@
       <label>Dejavnost</label>
       <select id="business_type"></select>
 
+      <label style="margin-top:14px">Način plačila <span class="req">*</span></label>
+      <div class="period" id="paymethod">
+        <label class="sel"><input type="radio" name="payment_method" value="card" checked> 💳 Kartica (takoj)</label>
+        <label><input type="radio" name="payment_method" value="proforma"> 🧾 Predračun (nakazilo)</label>
+      </div>
+      <div class="hint" id="payHint">Po plačilu s kartico vas priklopimo — običajno isti dan.</div>
+
       <!-- honeypot proti botom -->
       <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off">
 
@@ -123,10 +130,9 @@
 <script>
   const YEARLY_MULT = 12; // letno = 12x mesečno (brez popusta)
   const PLANS = [
-    { id:'starter', name:'Osnovni',    m:49.99,  desc:'WhatsApp rezervacije 24/7',        free:true  },
-    { id:'pro',     name:'Pro',        m:79.99,  desc:'Vse iz Osnovni + POS integracija', free:true  },
-    { id:'ai',      name:'AI natakar', m:159.99, desc:'AI naročanje za restavracije',     free:false },
-    { id:'premium', name:'Premium',    m:299,    desc:'Vse + 10.000 naročil / mesec',     free:false }
+    { id:'ai_start', name:'AI Start',   m:89,     desc:'AI naročanje + POS · do 500 naročil / mes',   free:false },
+    { id:'ai',       name:'AI natakar', m:159.99, desc:'AI naročanje + POS · do 1.500 naročil / mes',  free:false },
+    { id:'premium',  name:'Premium',    m:299,    desc:'Vse + do 10.000 naročil / mes',               free:false }
   ];
   const eur = (n) => n.toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
   function billingPeriod(){ const el=document.querySelector('input[name=billing_period]:checked'); return el?el.value:'monthly'; }
@@ -136,7 +142,7 @@
       : `${eur(p.m)}<span style="color:#6b7280;font-weight:400"> / mes</span>`;
   }
   const params = new URLSearchParams(location.search);
-  let selectedPlan = PLANS.some(p=>p.id===params.get('plan')) ? params.get('plan') : 'starter';
+  let selectedPlan = PLANS.some(p=>p.id===params.get('plan')) ? params.get('plan') : 'ai';
 
   function renderPlans(){
     document.getElementById('plans').innerHTML = PLANS.map(p => `
@@ -144,7 +150,7 @@
         <div class="pn">${p.name}</div>
         <div class="pp">${priceHtml(p)}</div>
         <div class="pd">${p.desc}</div>
-        <span class="badge ${p.free?'free':''}">${p.free?'30 dni brezplačno':'brez brezplačnega testa'}</span>
+        <span class="badge">plačilo pred aktivacijo</span>
       </div>`).join('');
     document.querySelectorAll('.plan').forEach(el=>el.onclick=()=>{
       selectedPlan = el.dataset.id; renderPlans();
@@ -158,6 +164,17 @@
     l.classList.add('sel');
     const radio = l.querySelector('input'); if(radio) radio.checked = true;
     renderPlans();
+  });
+
+  // način plačila toggle
+  document.querySelectorAll('#paymethod label').forEach(l=>l.onclick=()=>{
+    document.querySelectorAll('#paymethod label').forEach(x=>x.classList.remove('sel'));
+    l.classList.add('sel');
+    const radio = l.querySelector('input'); if(radio) radio.checked = true;
+    const m = document.querySelector('input[name=payment_method]:checked')?.value;
+    document.getElementById('payHint').textContent = m === 'proforma'
+      ? 'Na email prejmete predračun; po nakazilu vas priklopimo.'
+      : 'Po plačilu s kartico vas priklopimo — običajno isti dan.';
   });
 
   // business types
@@ -177,6 +194,7 @@
     const payload = {
       plan: selectedPlan,
       billing_period: document.querySelector('input[name=billing_period]:checked').value,
+      payment_method: (document.querySelector('input[name=payment_method]:checked')||{}).value || 'card',
       company_name: document.getElementById('company_name').value.trim(),
       vat_id: document.getElementById('vat_id').value.trim(),
       address: document.getElementById('address').value.trim(),
@@ -203,6 +221,8 @@
       });
       const data = await r.json();
       if(!r.ok || !data.success){ throw new Error(data.error || 'Napaka pri registraciji.'); }
+      // Kartično plačilo → preusmeri na Stripe Checkout
+      if(data.checkout_url){ btn.textContent='Preusmerjam na plačilo…'; window.location.href = data.checkout_url; return; }
       document.getElementById('formCard').style.display='none';
       document.getElementById('successBox').style.display='block';
       document.getElementById('successMsg').textContent = data.message || 'Hvala za registracijo!';

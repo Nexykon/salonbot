@@ -8,6 +8,7 @@ const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } =
 const t = require('./time');
 const { botMsg } = require('./botmsg');
 const { askOrderAI, computeTotals, aiConfigured, findService } = require('./ai-order');
+const { planLimit } = require('./presets');
 
 function fmtDate(dateStr) {
   if (!dateStr) return '?';
@@ -680,7 +681,7 @@ async function handleMessage(msgObj, salon) {
       }
       // AI paket: po izbiri z menija VEDNO deterministično vprašaj po količini.
       // (Prej je klic AI ob "2 pici" -> izbira izgubil količino in dodal 1.)
-      if (['ai', 'premium'].includes(salon.subscription_plan)) {
+      if (['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)) {
         const pending = { id: svc.id, name: svc.name, price: svc.price || 0 };
         session.set(skey, { ...sess, step: 306, pendingItem: pending });
         await wa.send(phoneId, token, wa.textMsg(from,
@@ -725,7 +726,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     if (sess.step === 306 && sess.pendingItem && msgText) {
-      const isAiPlan = ['ai', 'premium'].includes(salon.subscription_plan);
+      const isAiPlan = ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan);
       const qtyParsed = parseSloQty(msgText);
       // Posebnost (npr. "brez gob") prepustimo AI; sicer, če je podana količina
       // (tudi z dodatnimi besedami, npr. "dve kot sem prej napisal"), dodaj determinsitično.
@@ -782,7 +783,7 @@ async function handleMessage(msgObj, salon) {
         `💵 *SKUPAJ: ${grandTotal} €*`,
       ].join('\n');
       const modeLabel = mode === 'prevzem' ? '🏃 Osebni prevzem' : '🚗 Dostava';
-      if (['ai', 'premium'].includes(salon.subscription_plan)) {
+      if (['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)) {
         // AI paket: opomba je bila zbrana že med pogovorom ("brez gob") — ne sprašuj znova
         const aiNote = sessNow.opomba ? `\n📝 Opomba: ${sessNow.opomba}` : '';
         session.set(skey, { ...sess, ...sessNow, step: 303, orderMode: mode, grandTotal, packFee, delFee, opomba: sessNow.opomba || '' });
@@ -1095,12 +1096,12 @@ async function handleMessage(msgObj, salon) {
 
     // ── "zaključi" gre direktno v zaključek (brez AI ovinka) ──
     if (msgText && !iId && /^\s*zaklju[čc]i?\b/i.test(msgText) && (sess.cart || []).length) {
-      if (['ai', 'premium'].includes(salon.subscription_plan)) { await startAiCheckout(); } else { await startCheckout(); }
+      if (['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)) { await startAiCheckout(); } else { await startCheckout(); }
       return;
     }
 
     // ── AI paket: odgovor s količino USKLADI zadnje dodani artikel (ne prišteje znova) ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !sess.pendingItem && !sess.checkoutStage
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && !sess.pendingItem && !sess.checkoutStage
         && sess.lastAdded && sess.lastAdded.length === 1 && (sess.cart || []).length) {
       const qp = parseSloQty(msgText);
       if (qp && qp.clean) {
@@ -1121,7 +1122,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: "ne / to je vse" na 'Želite še kaj?' = začni zaključek (deterministično) ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && (sess.cart || []).length
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && (sess.cart || []).length
         && !sess.checkoutStage && !sess.pendingItem
         && /^\s*(ne|ne,?\s*hvala|nič več|nic vec|to je vse|to bo vse|dovolj|nič drugega|nic drugega|nak)\s*[.!]?\s*$/i.test(msgText)) {
       await startAiCheckout();
@@ -1129,7 +1130,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: "en tiramisu" z artiklom v košarici = POPRAVEK količine; "še en" = dodatek ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !sess.pendingItem && !sess.checkoutStage) {
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && !sess.pendingItem && !sess.checkoutStage) {
       const qp2 = parseSloQty(msgText);
       if (qp2 && !qp2.clean) {
         const leftoverTxt = (' ' + msgText.toLowerCase() + ' ')
@@ -1160,7 +1161,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: zahteva za meni = interaktivni seznam; če omeni kategorijo (npr. "meni samo pic") -> samo ta kategorija ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !sess.checkoutStage && msgText.length < 60
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && !sess.checkoutStage && msgText.length < 60
         && /(^|\s)(meni|menij|jedilnik|ponudb\w*|cenik)\b/i.test(msgText)
         && !/(ime|priimek)/i.test(msgText)) {
       const curM = session.get(skey);
@@ -1175,7 +1176,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── Naravno vprašanje po KATEGORIJI (npr. "kaj imate za malico", "malice") -> pokaži to kategorijo ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !sess.checkoutStage && !sess.pendingItem
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && !sess.checkoutStage && !sess.pendingItem
         && msgText.length < 50 && !findService(services, msgText)) {
       const normC = x => String(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       const nMsg = normC(msgText);
@@ -1194,7 +1195,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: pritrdilen odgovor PRED košarico = pokaži meni (deterministično, brez AI ugibanja) ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && !(sess.cart || []).length && !sess.checkoutStage && !sess.pendingItem
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && !(sess.cart || []).length && !sess.checkoutStage && !sess.pendingItem
         && msgText.trim().length <= 15 && !findService(services, msgText)
         && /^\s*(da|ja|jaa|seveda|lahko|prosim|ok|okej|velja|zelim|želim|hočem|hocem|bi|itak)\b/i.test(msgText.trim())) {
       const cancelHint = sess.hintShown ? '' : '\n_Naročilo lahko kadar koli prekličete tako, da napišete *prekliči*._';
@@ -1210,7 +1211,7 @@ async function handleMessage(msgObj, salon) {
     // ── Zaključek (enolastniški tekoči trak): ko je checkout aktiven, vodi SAMO ta ──
     //    determinističen trak. AI se med zaključkom NE kliče -> ni dvojnih povzetkov ──
     //    ne podvojenih vprašanj. Vsak korak vedno odgovori (return). ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && sess.checkoutStage && (sess.cart || []).length) {
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && sess.checkoutStage && (sess.cart || []).length) {
       const stage = sess.checkoutStage;
       const canDel = salon.allow_delivery !== false;
       const canPick = salon.allow_pickup !== false;
@@ -1298,7 +1299,7 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI paket: pritrdilen odgovor ob popolnih podatkih VEDNO odda naročilo ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan)
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)
         && /^\s*(da|ja|jaa|aha|mhm|yes|lahko|potrjujem|potrdim|potrdi|seveda|ok|okej|velja|dajmo|oddaj|oddajte|naroči|naročam|pošlji)\b/i.test(msgText)
         && (sess.cart || []).length && sess.orderMode && sess.customerName
         && (sess.orderMode !== 'dostava' || sess.deliveryAddress)) {
@@ -1309,13 +1310,13 @@ async function handleMessage(msgObj, salon) {
     }
 
     // ── AI natakar (paket AI): prosto besedilo razume in upravlja košarico ──
-    if (msgText && !iId && ['ai', 'premium'].includes(salon.subscription_plan) && aiConfigured()) {
-      // Fair-use: meja na lokal (ai_monthly_limit, npr. Enterprise 10000) ali privzeta iz env
+    if (msgText && !iId && ['ai_start', 'ai', 'premium'].includes(salon.subscription_plan) && aiConfigured()) {
+      // Fair-use: meja na lokal (ai_monthly_limit override) ali privzeta glede na paket
       const fuMonth = t.todayStr().slice(0, 7);
       if (sess.aiAllowed === undefined || sess.aiAllowedMonth !== fuMonth) {
         const fuLimit = (parseInt(salon.ai_monthly_limit) > 0)
           ? parseInt(salon.ai_monthly_limit)
-          : (parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500);
+          : planLimit(salon.subscription_plan);
         const cnt = await db.getMonthlyOrderCount(salon.id).catch(() => 0);
         sess.aiAllowed = cnt < fuLimit;
         if (!sess.aiAllowed) notifyFairUse(salon, cnt, fuLimit).catch(e => console.error('[fair-use]', e.message));

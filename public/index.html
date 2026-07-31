@@ -782,7 +782,7 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
       <li><a href="#faq">Vprašanja</a></li>
     </ul>
     <div class="nav-actions">
-      <button onclick="location.href='/prijava.html'" class="btn-wa">Začni brezplačno</button>
+      <button onclick="location.href='/prijava.html'" class="btn-wa">Registracija</button>
       <a href="/salon.html" class="btn-login">Prijava</a>
     </div>
   </div>
@@ -798,12 +798,12 @@ footer img.footer-logo { height: 80px; object-fit: contain; }
         <p class="hero-sub">Stranka napiše na vaš WhatsApp — FlowTiq ji odgovori v sekundi. Za <strong>picerije in restavracije</strong> sprejema naročila brez provizij tržnic, za <strong>salone in studie</strong> rezervira termine. Vi mirno delate naprej.</p>
         <div class="hero-cta">
           <button onclick="location.href='/prijava.html'" class="btn-primary">
-            Začni brezplačno →
+            Začni zdaj →
           </button>
           <a href="#how" class="btn-secondary">Kako to deluje →</a>
         </div>
         <div class="hero-proof">
-          <span class="proof-item"><span class="proof-dot"></span>Brezplačno 30 dni</span>
+          <span class="proof-item"><span class="proof-dot"></span>Postavitev v 1–2 dneh</span>
           <span class="proof-sep">·</span>
           <span class="proof-item">⚡ Odziv &lt; 2 s</span>
           <span class="proof-sep">·</span>
@@ -1007,7 +1007,7 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
       <div class="feature-card">
         <div class="feature-icon purple">🛵</div>
         <h3>WhatsApp meni za dostavo</h3>
-        <p>Picerije in restavracije dobijo digitalni meni na WhatsAppu. Stranka izbere artikle in količine, dostavo ali osebni prevzem — brez klicanja. Naročilo lahko gre celo neposredno v vašo POS blagajno (paket Pro).</p>
+        <p>Picerije in restavracije dobijo digitalni meni na WhatsAppu. Stranka izbere artikle in količine, dostavo ali osebni prevzem — brez klicanja. Naročilo lahko gre celo neposredno v vašo POS blagajno.</p>
       </div>
     </div>
   </div>
@@ -1114,52 +1114,39 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
 <!-- NO-RISK -->
 <section class="norisk" id="cena">
   <div class="container" style="text-align:center">
-    <div class="section-label">Brez velikega začetnega stroška</div>
-    <h2 class="section-title">Začnete brez tveganja.<br>Preizkusite, nato se odločite.</h2>
-    <p class="section-sub" style="margin:0 auto 56px;color:rgba(255,255,255,.7)">30 dni brezplačno · Brez vezave · Odpoved kadarkoli</p>
+    <div class="section-label">Jasna cena, brez presenečenj</div>
+    <h2 class="section-title">Izberite paket.<br>Brez vezave.</h2>
+    <p class="section-sub" style="margin:0 auto 56px;color:rgba(255,255,255,.7)">Brez vezave · Odpoved kadarkoli · Postavitev v 1–2 dneh</p>
 
     <div class="pricing-grid">
       <div class="price-card">
-        <h3>Osnovni</h3>
-        <div class="plan-for">Za salone, frizerje, studie in lokale, ki želijo rezervacije in naročila na avtopilotu.</div>
-        <div class="plan-price">49,99 € <span>/ mesec</span></div>
-        <div class="plan-trial">Prvi mesec brezplačno</div>
+        <span class="plan-badge" style="background:#34d399;color:#064e3b">AI START</span>
+        <h3>AI Start</h3>
+        <div class="plan-for">Za manjše lokale in tiste, ki šele začenjajo z WhatsApp naročili.</div>
+        <div class="plan-price">89 € <span>/ mesec</span></div>
+        <div class="plan-trial" style="color:#fbbf24">Plačilo pred aktivacijo</div>
         <ul>
-          <li>WhatsApp bot za rezervacije ali naročila 24/7</li>
-          <li>Dostava in osebni prevzem</li>
-          <li>Nadzorna plošča z naročili in statistiko</li>
-          <li>Samodejna obvestila in potrditve strankam</li>
-          <li>Neomejeno število rezervacij in naročil</li>
-          <li>Postavitev in podpora vključeni</li>
-          <li class="li-off">POS integracija (Poster, Square, iiko)</li>
+          <li>WhatsApp bot za naročila in rezervacije 24/7</li>
+          <li>Dostava in osebni prevzem · nadzorna plošča s statistiko</li>
+          <li>POS integracija (Poster, Square, iiko)</li>
+          <li>AI natakar razume prosto besedilo strank</li>
+          <li>Do <strong>500 naročil</strong> na mesec</li>
         </ul>
-        <button onclick="location.href='/prijava.html?plan=starter'" class="btn-primary">Začni brezplačno →</button>
+        <button onclick="location.href='/prijava.html?plan=ai_start'" class="btn-primary">Registracija →</button>
       </div>
       <div class="price-card featured">
-        <span class="plan-badge">NAJBOLJ PRILJUBLJEN</span>
-        <h3>Pro</h3>
-        <div class="plan-for">Vse iz Osnovnega + naročila gredo neposredno v vašo blagajno in kuhinjo.</div>
-        <div class="plan-price">79,99 € <span>/ mesec</span></div>
-        <div class="plan-trial">Prvi mesec brezplačno</div>
-        <ul>
-          <li>Vse iz paketa Osnovni</li>
-          <li>POS integracija (Poster, Square, iiko)</li>
-          <li>Naročila samodejno v kuhinjo — brez pretipkavanja</li>
-          <li>Prednostna podpora</li>
-        </ul>
-        <button onclick="location.href='/prijava.html?plan=pro'" class="btn-primary">Začni brezplačno →</button>
-      </div>
-      <div class="price-card">
-        <span class="plan-badge" style="background:#a78bfa;color:#2e1065">🤖 AI</span>
-        <h3>AI</h3>
+        <span class="plan-badge" style="background:#a78bfa;color:#2e1065">🤖 AI · NAJBOLJ PRILJUBLJEN</span>
+        <h3>AI natakar</h3>
         <div class="plan-for">Za lokale, ki želijo vrhunsko izkušnjo — AI natakar se s stranko pogovarja kot človek.</div>
         <div class="plan-price">159,99 € <span>/ mesec</span></div>
-        <div class="plan-trial" style="color:#fbbf24">Brez brezplačnega testa · plačilo pred aktivacijo</div>
+        <div class="plan-trial" style="color:#fbbf24">Plačilo pred aktivacijo</div>
         <ul>
-          <li>Vse iz paketa Pro (vključno s POS)</li>
+          <li>WhatsApp bot za naročila in rezervacije 24/7</li>
+          <li>Dostava in osebni prevzem · nadzorna plošča s statistiko</li>
+          <li>POS integracija (Poster, Square, iiko) — brez pretipkavanja</li>
           <li>AI natakar: stranka napiše "eno capriccioso in dve koli" — in je v košarici</li>
           <li>Zapomni si stranke: "enako kot zadnjič" preprosto deluje</li>
-          <li>Odgovarja na vprašanja o ponudbi kot pravi natakar</li>
+          <li>Do <strong>1.500 naročil</strong> na mesec</li>
         </ul>
         <button onclick="location.href='/prijava.html?plan=ai'" class="btn-primary">Registracija →</button>
       </div>
@@ -1168,7 +1155,7 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
         <h3>Premium</h3>
         <div class="plan-for">Za večje lokale in verige z velikim obsegom naročil.</div>
         <div class="plan-price">299 € <span>/ mesec</span></div>
-        <div class="plan-trial" style="color:#fbbf24">Brez brezplačnega testa · plačilo pred aktivacijo</div>
+        <div class="plan-trial" style="color:#fbbf24">Plačilo pred aktivacijo</div>
         <ul>
           <li>Vse iz paketa AI natakar</li>
           <li>Vključenih 10.000 naročil na mesec</li>
@@ -1180,9 +1167,9 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
 
     <div class="norisk-grid">
       <div class="norisk-card">
-        <div class="icon">🎁</div>
-        <h3>30 dni brezplačno</h3>
-        <p>Cel mesec preizkušate brez plačila. Šele potem se odločite.</p>
+        <div class="icon">💶</div>
+        <h3>Jasna mesečna cena</h3>
+        <p>Ena fiksna cena na mesec. Brez provizij na naročilo in brez skritih stroškov.</p>
       </div>
 
       <div class="norisk-card">
@@ -1197,7 +1184,7 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
       </div>
     </div>
     <div class="norisk-cta">
-      <button onclick="location.href='/prijava.html'" class="btn-primary">Začni 30 dni brezplačno →</button>
+      <button onclick="location.href='/prijava.html'" class="btn-primary">Registracija →</button>
       <p class="norisk-note">Odgovorimo v nekaj urah · Brez skritih stroškov</p>
     </div>
   </div>
@@ -1236,7 +1223,7 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
           Kaj če si premislim?
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a">Odpoveste kadarkoli, brez kazni in brez pogodbe za leta. Prvih 30 dni je tako ali tako brezplačnih.</div>
+        <div class="faq-a">Odpoveste kadarkoli, brez kazni in brez pogodbe za leta. Plačujete mesečno, brez vezave.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
@@ -1247,17 +1234,17 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
-          Koliko to stane po brezplačnem mesecu?
+          Koliko to stane?
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a">Po brezplačnem mesecu je cena <strong>49,99 € / mesec</strong> (Osnovni), <strong>79,99 € / mesec</strong> (Pro s POS integracijo), <strong>159,99 € / mesec</strong> (AI natakar + vse iz Pro) ali <strong>299 € / mesec</strong> (Premium – za večje lokale in verige). Brez vezave, odpoved kadarkoli.</div>
+        <div class="faq-a">Trije paketi, vsi z AI natakarjem in POS integracijo: <strong>AI Start</strong> — 89 € / mesec (do 500 naročil), <strong>AI natakar</strong> — 159,99 € / mesec (do 1.500 naročil) in <strong>Premium</strong> — 299 € / mesec (do 10.000 naročil, za večje lokale in verige). Brez vezave, odpoved kadarkoli.</div>
       </div>
       <div class="faq-item">
         <button class="faq-q" onclick="toggleFaq(this)">
           Kaj je POS integracija?
           <span class="faq-icon">+</span>
         </button>
-        <div class="faq-a">V paketu Pro se naročila iz WhatsAppa samodejno pošljejo v vašo blagajno oz. kuhinjski sistem (Poster POS, Square ali iiko). Nič več pretipkavanja naročil — potrjeno naročilo se samo pojavi v kuhinji.</div>
+        <div class="faq-a">Naročila iz WhatsAppa se samodejno pošljejo v vašo blagajno oz. kuhinjski sistem (Poster POS, Square ali iiko). Nič več pretipkavanja naročil — potrjeno naročilo se samo pojavi v kuhinji. Vključeno v paket AI natakar.</div>
       </div>
     </div>
   </div>
@@ -1269,9 +1256,9 @@ fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
     <h2>Vaš telefon zvoni manj.<br>Naročila pa rastejo.</h2>
     <p>Izpolnite obrazec in v kratkem vam bomo pokazali, kako bi FlowTiq deloval pri vas — brez obveznosti.</p>
     <button onclick="location.href='/prijava.html'" class="btn-primary-white">
-      Začni brezplačno →
+      Registracija →
     </button>
-    <p class="cta-final-note">30 dni brezplačno · Odpoved kadarkoli</p>
+    <p class="cta-final-note">Brez vezave · Odpoved kadarkoli</p>
   </div>
 </section>
 

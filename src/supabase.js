@@ -74,9 +74,12 @@ async function createServicesFromPreset(salonId, services) {
 }
 
 async function updateSalonStripe(salonId, stripeCustomerId, stripeSubId, status, plan) {
+  const body = { stripe_customer_id: stripeCustomerId, stripe_subscription_id: stripeSubId, subscription_status: status, subscription_plan: plan };
+  // Ob uspešnem plačilu s kartico označi predračun kot plačan, da admin lahko priklopi bota
+  if (status === 'active') body.billing_status = 'paid';
   const r = await axios.patch(
     `${BASE}/sb_salons?id=eq.${salonId}`,
-    { stripe_customer_id: stripeCustomerId, stripe_subscription_id: stripeSubId, subscription_status: status, subscription_plan: plan },
+    body,
     { headers: HEADERS }
   );
   return r.data[0];

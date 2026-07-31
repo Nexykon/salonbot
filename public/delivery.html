@@ -532,8 +532,8 @@ body {
       <div id="pos-locked" style="display:none">
         <div class="settings-card" style="text-align:center;padding:44px 24px">
           <div style="font-size:42px;margin-bottom:12px">🔒</div>
-          <div style="font-weight:800;font-size:16px;margin-bottom:8px">POS integracija je na voljo v Pro paketu</div>
-          <div style="color:var(--muted);font-size:13px;line-height:1.7">Povežite <b>Poster POS</b>, <b>Square</b> ali <b>iiko</b> — potrjena naročila iz WhatsApp bota gredo neposredno v vašo blagajno in kuhinjo, brez ročnega pretipkavanja.<br><br>Za nadgradnjo na Pro paket nam pišite na <b>info@flowtiq.si</b>.</div>
+          <div style="font-weight:800;font-size:16px;margin-bottom:8px">POS integracija je vključena v paketu AI natakar</div>
+          <div style="color:var(--muted);font-size:13px;line-height:1.7">Povežite <b>Poster POS</b>, <b>Square</b> ali <b>iiko</b> — potrjena naročila iz WhatsApp bota gredo neposredno v vašo blagajno in kuhinjo, brez ročnega pretipkavanja.<br><br>Za nadgradnjo nam pišite na <b>info@flowtiq.si</b>.</div>
         </div>
       </div>
       <div id="pos-form" style="display:none">
@@ -1223,7 +1223,7 @@ async function loadSettingsData() {
     const d = await r.json();
     document.getElementById('s-name').value = d.name||'';
     document.getElementById('s-botnum').value = d.bot_phone_display||'';
-    currentPlan = d.subscription_plan || 'starter';
+    currentPlan = d.subscription_plan || 'ai';
     if (ownerToken && !masterToken) initLocationSwitcher(() => ownerToken, (t) => { ownerToken = t; localStorage.setItem('ft_delivery_token', t); });
     renderBotMessages(d);
     renderBilling(d);
@@ -1479,8 +1479,8 @@ async function initLocationSwitcher(tokenGetter, tokenSetter) {
 function renderBilling(d) {
   const el = document.getElementById('billing-info');
   if (!el) return;
-  const PLAN_LABELS = { starter:'Osnovni (49,99 €/mes)', pro:'Pro (79,99 €/mes)', ai:'AI natakar (159,99 €/mes)', premium:'Premium (299 €/mes)' };
-  const planLabel = PLAN_LABELS[d.subscription_plan] || 'Osnovni';
+  const PLAN_LABELS = { starter:'Osnovni (49,99 €/mes)', pro:'Pro (79,99 €/mes)', ai_start:'AI Start (89 €/mes)', ai:'AI natakar (159,99 €/mes)', premium:'Premium (299 €/mes)' };
+  const planLabel = PLAN_LABELS[d.subscription_plan] || 'AI natakar (159,99 €/mes)';
   const isAi = d.subscription_plan === 'ai' || d.subscription_plan === 'premium';
   let statusHtml, note = '';
   if (d.signup_status === 'pending') {
@@ -1495,7 +1495,7 @@ function renderBilling(d) {
     statusHtml = '✅ Aktivno';
     note = 'Vaš bot je aktiven.';
   } else if (d.subscription_status === 'trial') {
-    statusHtml = '🎁 Brezplačni preizkus (30 dni)';
+    statusHtml = '🎁 Preizkusno obdobje';
   } else {
     statusHtml = '⛔ Neaktivno';
     note = 'Za ponovno aktivacijo nas kontaktirajte.';
@@ -1518,10 +1518,9 @@ function renderBilling(d) {
 }
 
 const OWNER_PLANS = [
-  { id: 'starter', name: 'Osnovni',    price: '49,99 €' },
-  { id: 'pro',     name: 'Pro (POS)',  price: '79,99 €' },
-  { id: 'ai',      name: 'AI natakar', price: '159,99 €' },
-  { id: 'premium', name: 'Premium',    price: '299 €' }
+  { id: 'ai_start', name: 'AI Start',   price: '89 €' },
+  { id: 'ai',       name: 'AI natakar', price: '159,99 €' },
+  { id: 'premium',  name: 'Premium',    price: '299 €' }
 ];
 function renderPlanCards(currentPlan) {
   const el = document.getElementById('plan-cards');
@@ -1573,8 +1572,8 @@ async function billingPortal() {
   } catch (e) { showToast('Napaka', 'error'); }
 }
 
-// ── POS terminal (samo Pro paket) ──────────────────────
-let currentPlan = 'starter';
+// ── POS terminal (vključen v paketu AI natakar / Premium) ──
+let currentPlan = 'ai';
 function renderPosTab(d) {
   const pro = currentPlan === 'pro' || currentPlan === 'ai' || currentPlan === 'premium';
   document.getElementById('pos-locked').style.display = pro ? 'none' : 'block';

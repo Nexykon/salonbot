@@ -188,6 +188,18 @@ const BUSINESS_TYPES = {
   }
 };
 
+// ─── Mesečne meje naročil po paketu (fair-use) ───────────────
+// Enoten vir resnice; per-lokal override (ai_monthly_limit) ima prednost.
+const PLAN_LIMITS = {
+  ai_start: 500,
+  ai:       1500,
+  premium:  10000
+};
+
+function planLimit(plan) {
+  return PLAN_LIMITS[plan] || (parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500);
+}
+
 function normalizeBusinessType(type) {
   return BUSINESS_TYPES[type] ? type : 'custom';
 }
@@ -213,4 +225,4 @@ function slugify(value) {
     .substring(0, 48) || 'podjetje';
 }
 
-module.exports = { BUSINESS_TYPES, getPreset, listBusinessTypes, normalizeBusinessType, slugify };
+module.exports = { BUSINESS_TYPES, PLAN_LIMITS, planLimit, getPreset, listBusinessTypes, normalizeBusinessType, slugify };

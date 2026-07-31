@@ -11,7 +11,7 @@ const wa = require('./src/whatsapp');
 const mail = require('./src/email');
 const { startScheduler } = require('./src/scheduler');
 const ownerAuth = require('./src/auth');
-const { getPreset, listBusinessTypes, normalizeBusinessType, slugify } = require('./src/presets');
+const { getPreset, listBusinessTypes, normalizeBusinessType, slugify, planLimit } = require('./src/presets');
 const t = require('./src/time');
 const { botMsg, DEFAULTS: BOT_MSG_DEFAULTS, KEYS: BOT_MSG_KEYS } = require('./src/botmsg');
 
@@ -175,14 +175,29 @@ function stripePlanPrices() {
   return {
     starter: process.env.STRIPE_PRICE_STARTER || '',
     pro: process.env.STRIPE_PRICE_PRO || '',
-    ai: process.env.STRIPE_PRICE_AI || ''
+    ai_start: process.env.STRIPE_PRICE_AISTART || '',
+    ai: process.env.STRIPE_PRICE_AI || '',
+    premium: process.env.STRIPE_PRICE_PREMIUM || '',
+    // letne cene (mesečna × 12)
+    ai_start_year: process.env.STRIPE_PRICE_AISTART_YEAR || '',
+    ai_year: process.env.STRIPE_PRICE_AI_YEAR || '',
+    premium_year: process.env.STRIPE_PRICE_PREMIUM_YEAR || ''
   };
 }
-function planFromPriceId(priceId) {
+// Izbere pravi Stripe price ID glede na paket in obdobje (mesečno/letno),
+// z upoštevanjem morebitne cene po meri (custom_price_id) za AI/Premium.
+function stripePriceId(plan, period, customPriceId) {
+  if ((plan === 'ai' || plan === 'premium') && customPriceId) return customPriceId;
   const prices = stripePlanPrices();
-  if (priceId && priceId === prices.ai) return 'ai';
-  if (priceId && priceId === prices.pro) return 'pro';
-  if (priceId && priceId === prices.starter) return 'starter';
+  if (period === 'yearly' && prices[plan + '_year']) return prices[plan + '_year'];
+  return prices[plan] || '';
+}
+function planFromPriceId(priceId) {
+  if (!priceId) return null;
+  const prices = stripePlanPrices();
+  for (const [key, pid] of Object.entries(prices)) {
+    if (pid && pid === priceId) return key.replace(/_year$/, '');
+  }
   return null;
 }
 
@@ -495,7 +510,7 @@ app.post('/stripe/webhook', async (req, res) => {
       case 'checkout.session.completed': {
         const cs = event.data.object;
         const salonId = cs.metadata?.salon_id;
-        const csPlan = ['pro', 'ai', 'premium'].includes(cs.metadata?.plan) ? cs.metadata.plan : 'starter';
+        const csPlan = ['starter', 'pro', 'ai_start', 'ai', 'premium'].includes(cs.metadata?.plan) ? cs.metadata.plan : 'ai';
         if (salonId && cs.mode === 'subscription' && cs.subscription) {
           await db.updateSalonStripe(salonId, cs.customer, cs.subscription, 'active', csPlan);
           console.log('Checkout completed — salon', salonId, 'plan', csPlan);
@@ -618,7 +633,7 @@ app.post('/onboard', async (req, res) => {
       booking_mode: defaultBookingMode(type),
       form_fields: defaultFormFields({ business_type: type }),
       subscription_status: 'trial',
-      subscription_plan: plan || 'starter',
+      subscription_plan: plan || 'ai',
       working_days: '1,2,3,4,5,6',
       working_hours_start: '08:00',
       working_hours_end: '19:00'
@@ -661,12 +676,15 @@ app.post('/onboard', async (req, res) => {
 
 // ─── Katalog paketov (cene + ali vsebuje AI) ───────────────────
 const PLAN_CATALOG = {
-  starter: { label: 'Osnovni',    price: 49.99,  ai: false },
-  pro:     { label: 'Pro',        price: 79.99,  ai: false },
-  ai:      { label: 'AI natakar', price: 159.99, ai: true  },
-  premium: { label: 'Premium',    price: 299,    ai: true  }
+  // Opuščena paketa (ohranjena za prikaz obstoječih zapisov)
+  starter:  { label: 'Osnovni',     price: 49.99,  ai: false, limit: 0     },
+  pro:      { label: 'Pro',         price: 79.99,  ai: false, limit: 0     },
+  // Aktivni paketi
+  ai_start: { label: 'AI Start',    price: 89,     ai: true,  limit: 500   },
+  ai:       { label: 'AI natakar',  price: 159.99, ai: true,  limit: 1500  },
+  premium:  { label: 'Premium',     price: 299,    ai: true,  limit: 10000 }
 };
-function planInfo(plan) { return PLAN_CATALOG[plan] || PLAN_CATALOG.starter; }
+function planInfo(plan) { return PLAN_CATALOG[plan] || PLAN_CATALOG.ai; }
 
 // ─── Javna samopostrežna registracija ──────────────────────────
 // Ustvari salon v statusu "čaka na priklop" (bot ugasnjen). AI paketi nimajo
@@ -682,7 +700,8 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     const vat     = String(b.vat_id || '').trim();
     const address = String(b.address || '').trim();
     const phone   = cleanPhone(b.phone);
-    const plan    = PLAN_CATALOG[b.plan] ? b.plan : 'starter';
+    const plan    = PLAN_CATALOG[b.plan] ? b.plan : 'ai';
+    const payMethod = b.payment_method === 'proforma' ? 'proforma' : 'card';
     const type    = normalizeBusinessType(b.business_type || 'custom');
 
     if (!name || !email || !contact) {
@@ -702,7 +721,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     while (await db.getSalonBySlug(slug)) slug = `${slugBase}-${n++}`;
 
     const info = planInfo(plan);
-    const bookingMode = plan === 'ai' ? 'delivery' : defaultBookingMode(type);
+    const bookingMode = ['ai_start', 'ai', 'premium'].includes(plan) ? 'delivery' : defaultBookingMode(type);
 
     const salonData = {
       name,
@@ -767,16 +786,46 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
       ].join('\n'));
     } catch (e) { console.warn('Owner notify email failed:', e.message); }
 
-    console.log('New self-signup:', salon.id, name, info.label, custEmail ? '(cust email sent)' : '(cust email failed)');
+    console.log('New self-signup:', salon.id, name, info.label, custEmail ? '(cust email sent)' : '(cust email failed)', '·', payMethod);
+
+    // ── Kartično plačilo: ustvari Stripe Checkout in vrni URL za preusmeritev ──
+    let checkoutUrl = null;
+    if (payMethod === 'card') {
+      const stripe = stripeClient();
+      const priceId = stripePriceId(plan, salonData.billing_period, null);
+      if (stripe && priceId) {
+        try {
+          const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+          const returnPage = bookingMode === 'delivery' ? 'delivery.html' : 'salon.html';
+          const cs = await stripe.checkout.sessions.create({
+            mode: 'subscription',
+            line_items: [{ price: priceId, quantity: 1 }],
+            customer_email: email || undefined,
+            subscription_data: { metadata: { salon_id: salon.id, plan } },
+            metadata: { salon_id: salon.id, plan },
+            allow_promotion_codes: true,
+            success_url: `${baseUrl}/${returnPage}?billing=success`,
+            cancel_url: `${baseUrl}/prijava.html?billing=cancel`
+          });
+          checkoutUrl = cs.url;
+        } catch (e) {
+          console.warn('Signup Stripe checkout failed, fallback na predračun:', e.message);
+        }
+      }
+    }
+
     res.json({
       success: true,
       salon_id: salon.id,
       ai: info.ai,
       email_sent: custEmail,
+      checkout_url: checkoutUrl,
       login_url: bookingMode === 'delivery' ? '/delivery.html' : '/salon.html',
-      message: info.ai
-        ? 'Registracija uspešna! Za aktivacijo prejmete predračun — po plačilu vas priklopimo in pošljemo račun.'
-        : 'Registracija uspešna! Kontaktirali vas bomo za priklop (aktivacijo). Preverite email za dostop do nadzorne plošče.'
+      message: checkoutUrl
+        ? 'Preusmerjamo vas na varno plačilo s kartico…'
+        : (info.ai
+          ? 'Registracija uspešna! Za aktivacijo prejmete predračun — po plačilu vas priklopimo in pošljemo račun.'
+          : 'Registracija uspešna! Kontaktirali vas bomo za priklop (aktivacijo). Preverite email za dostop do nadzorne plošče.')
     });
   } catch (err) {
     console.error('Signup error:', err.message);
@@ -1060,7 +1109,7 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { id } = req.params;
   const { plan, billing_period } = req.body;
-  if (!['starter', 'pro', 'ai', 'premium'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
+  if (!['starter', 'pro', 'ai_start', 'ai', 'premium'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
   try {
     const axios = require('axios');
     const BASE = process.env.SUPABASE_URL + '/rest/v1';
@@ -1302,7 +1351,7 @@ app.get('/api/settings', async (req, res) => {
       notify_email: salon.notify_email !== false,
       packaging_price: parseFloat(salon.packaging_price || 0),
       delivery_fee: parseFloat(salon.delivery_fee || 0),
-      subscription_plan: salon.subscription_plan || 'starter',
+      subscription_plan: salon.subscription_plan || 'ai',
       subscription_status: salon.subscription_status || 'trial',
       signup_status: salon.signup_status || 'active',
       billing_status: salon.billing_status || 'none',
@@ -1396,8 +1445,8 @@ app.patch('/api/settings', async (req, res) => {
       updates.bot_messages = cleanBm;
     }
     const POS_KEYS = ['pos_type', 'pos_token', 'pos_account', 'pos_spot_id'];
-    if (POS_KEYS.some(k => updates[k] !== undefined) && !['pro', 'ai', 'premium'].includes(salon.subscription_plan || 'starter')) {
-      return res.status(403).json({ error: 'POS integracija je na voljo v Pro paketu.' });
+    if (POS_KEYS.some(k => updates[k] !== undefined) && !['pro', 'ai_start', 'ai', 'premium'].includes(salon.subscription_plan || 'ai')) {
+      return res.status(403).json({ error: 'POS integracija je vključena v paketih AI.' });
     }
     if (updates.pos_spot_id !== undefined) updates.pos_spot_id = parseInt(updates.pos_spot_id) || 1;
     await db.updateSalonSettings(salon.id, updates);
@@ -1405,12 +1454,12 @@ app.patch('/api/settings', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/settings/pos-test — preveri POS povezavo (lastnik, samo Pro)
+// POST /api/settings/pos-test — preveri POS povezavo (lastnik; POS vključen v AI/Premium)
 app.post('/api/settings/pos-test', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  if (!['pro', 'ai', 'premium'].includes(salon.subscription_plan || 'starter')) {
-    return res.status(403).json({ ok: false, msg: 'POS integracija je na voljo v Pro paketu.' });
+  if (!['pro', 'ai_start', 'ai', 'premium'].includes(salon.subscription_plan || 'ai')) {
+    return res.status(403).json({ ok: false, msg: 'POS integracija je vključena v paketih AI.' });
   }
   try {
     const posType    = req.body.pos_type || salon.pos_type;
@@ -1426,15 +1475,16 @@ app.post('/api/settings/pos-test', async (req, res) => {
 });
 
 // ─── BILLING (Stripe) ─────────────────────────────────────
-// POST /api/billing/checkout { plan: 'starter'|'pro' } — ustvari Stripe Checkout
+// POST /api/billing/checkout { plan: 'ai'|'premium' } — ustvari Stripe Checkout
 app.post('/api/billing/checkout', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   const stripe = stripeClient();
   if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
-  const plan = ['pro', 'ai', 'premium'].includes(req.body.plan) ? req.body.plan : 'starter';
-  const priceId = (plan === 'ai' && salon.custom_price_id) ? salon.custom_price_id : stripePlanPrices()[plan];
-  if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" še ni nastavljena (env STRIPE_PRICE_${plan.toUpperCase()}).` });
+  const plan = ['pro', 'ai_start', 'ai', 'premium'].includes(req.body.plan) ? req.body.plan : 'ai';
+  const period = (req.body.billing_period === 'yearly' || salon.billing_period === 'yearly') ? 'yearly' : 'monthly';
+  const priceId = stripePriceId(plan, period, salon.custom_price_id);
+  if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" (${period === 'yearly' ? 'letno' : 'mesečno'}) še ni nastavljena.` });
   try {
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
     const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
@@ -1444,8 +1494,6 @@ app.post('/api/billing/checkout', async (req, res) => {
       // Obstoječega Stripe kupca ponovno uporabi, sicer predizpolni email
       ...(salon.stripe_customer_id ? { customer: salon.stripe_customer_id } : { customer_email: salon.owner_email || undefined }),
       subscription_data: {
-        // 30 dni brezplačno samo ob prvi naročnini
-        ...(salon.stripe_subscription_id ? {} : { trial_period_days: 30 }),
         metadata: { salon_id: salon.id, plan }
       },
       metadata: { salon_id: salon.id, plan },
@@ -1665,7 +1713,7 @@ app.get('/api/admin/usage', async (req, res) => {
     const defLimit = parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500;
     await Promise.all(salons.map(async (s) => {
       usage[s.id] = await db.getMonthlyOrderCount(s.id).catch(() => 0);
-      limits[s.id] = (parseInt(s.ai_monthly_limit) > 0) ? parseInt(s.ai_monthly_limit) : defLimit;
+      limits[s.id] = (parseInt(s.ai_monthly_limit) > 0) ? parseInt(s.ai_monthly_limit) : planLimit(s.subscription_plan);
     }));
     res.json({ usage, limits, month: t.todayStr().slice(0, 7), limit: defLimit });
   } catch (err) { res.status(500).json({ error: err.message }); }
@@ -2437,8 +2485,8 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         <p style="color:#475569">Hvala za zanimanje za <strong>FlowTiq</strong>! Prijava je bila uspesno poslana.</p>
         <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na email <strong>${email}</strong>${phone ? ` ali telefon <strong>${phone}</strong>` : ''}.</p>
         <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0">
-          <p style="margin:0;color:#166534;font-weight:600">Vasa ugodnost:</p>
-          <p style="margin:6px 0 0;color:#166534">Prvih 50 strank dobi <strong>30 dni brezplacno</strong>, nato samo <strong>49,99 € / mesec</strong>!</p>
+          <p style="margin:0;color:#166534;font-weight:600">Nasi paketi:</p>
+          <p style="margin:6px 0 0;color:#166534">AI Start <strong>89 € / mes</strong> (do 500 narocil) · AI natakar <strong>159,99 € / mes</strong> (do 1.500) · Premium <strong>299 € / mes</strong> (do 10.000). Brez vezave.</p>
         </div>
         <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTiq</p>
       </div>`;
@@ -2596,13 +2644,13 @@ const CAT_TEMPLATE = {
 };
 
 const EMAIL_SUBJECTS = {
-  'promo_frizerji':       '{} — 1 mesec brezplačno za vaš salon ✂️',
-  'promo_nohtarnice':     '{} — 1 mesec brezplačno za vašo nohtarnico 💅',
-  'promo_masaze':         '{} — 1 mesec brezplačno za vaš masažni salon 💆',
-  'promo_pasji_strizci':  '{} — 1 mesec brezplačno za vaš pasji salon 🐾',
-  'promo_picerije':       '{} — 1 mesec brezplačno za vašo restavracijo',
-  'promo_tattoo':         '{} — 1 mesec brezplačno za vaš tattoo studio 🎨',
-  'promo_kozmeticarke':   '{} — 1 mesec brezplačno za vaš kozmetični salon ✨',
+  'promo_frizerji':       '{} — WhatsApp asistent za rezervacije v vašem salonu ✂️',
+  'promo_nohtarnice':     '{} — WhatsApp asistent za rezervacije v vaši nohtarnici 💅',
+  'promo_masaze':         '{} — WhatsApp asistent za rezervacije v vašem masažnem salonu 💆',
+  'promo_pasji_strizci':  '{} — WhatsApp asistent za termine v vašem pasjem salonu 🐾',
+  'promo_picerije':       '{} — WhatsApp naročanje za vašo restavracijo 🍕',
+  'promo_tattoo':         '{} — WhatsApp asistent za termine v vašem tattoo studiu 🎨',
+  'promo_kozmeticarke':   '{} — WhatsApp asistent za rezervacije v vašem kozmetičnem salonu ✨',
   '07_fotografski_studii':'{} — termini za fotografiranje na avtopilotu?',
   '10_osebni_trenerji':   '{} — treningi rezervirani, vi trenirate',
   '12_splosno':           '{} — WhatsApp pomočnik za vaše podjetje?',
