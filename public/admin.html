@@ -1056,7 +1056,7 @@
         <label>Paket *</label>
         <select id="f-plan">
           <option value="ai_start">FlowTiq AI Start — €89/mes (500 naročil)</option>
-          <option value="ai" selected>FlowTiq AI natakar — €159,99/mes (1.500)</option>
+          <option value="ai" selected>FlowTiq AI Pro — €159,99/mes (1.500)</option>
           <option value="premium">FlowTiq Premium — €299/mes (10.000)</option>
         </select>
       </div>
@@ -1826,7 +1826,7 @@ function renderStats() {
   document.getElementById('stat-revenue').textContent = revenue > 0 ? `€${revenue}` : '€0';
 }
 
-const PLAN_SHORT = { starter:'Osnovni', pro:'Pro (POS)', ai_start:'AI Start', ai:'AI natakar', premium:'Premium' };
+const PLAN_SHORT = { starter:'Osnovni', pro:'Pro (POS)', ai_start:'AI Start', ai:'AI Pro', premium:'Premium' };
 function salonInitials(name){ return ((name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('')||'?').toUpperCase(); }
 let salonFilter = 'all';
 let salonPage = 0;
@@ -1883,7 +1883,7 @@ function renderTable() {
             ${s.subscription_plan==='starter'?'<option value="starter" selected>Osnovni · 49,99 €/mes (opuščen)</option>':''}
             ${s.subscription_plan==='pro'?'<option value="pro" selected>Pro · 79,99 €/mes (opuščen)</option>':''}
             <option value="ai_start" ${s.subscription_plan==='ai_start'?'selected':''}>AI Start · 89 €/mes (500)</option>
-            <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI natakar · 159,99 €/mes (1.500)</option>
+            <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI Pro · 159,99 €/mes (1.500)</option>
             <option value="premium" ${s.subscription_plan==='premium'?'selected':''}>Premium · 299 €/mes (10.000)</option>
           </select>
           <select class="plan-select" onchange="changePeriod('${s.id}', this.value)" title="Obdobje plačila">
@@ -1901,7 +1901,7 @@ function renderTable() {
         ${s.billing_status === 'awaiting' ? `<button class="btn-action" style="color:#059669;border-color:rgba(5,150,105,.3);background:rgba(5,150,105,.08)" onclick="markPaidSalon('${s.id}')">Označi plačano</button>` : ''}
         <button class="btn-action btn-msg" onclick="sendProformaEmail('${s.id}')">📧 Predračun</button>
         <button class="btn-action btn-msg" onclick="openProforma('${s.id}')">🧾 PDF</button>
-        <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')">WA</button>
+        <button class="btn-action btn-msg" onclick="sendWelcome('${s.id}')" title="Pošlji pozdravno sporočilo na WhatsApp">👋 Pozdrav</button>
         <button class="btn-action" style="color:#7c3aed;border-color:rgba(124,58,237,.3);background:rgba(124,58,237,.07)" onclick="openOwnerDashboard('${s.id}')">${isRestaurant(s) ? '🍽️ Meni' : '🖥️ Dashboard'}</button>
         <button class="btn-action" style="color:#0891b2;border-color:rgba(8,145,178,.3);background:rgba(8,145,178,.07)" onclick="editWaConnection('${s.id}')" title="Uredi WhatsApp Phone Number ID + žeton">📱 WA</button>
         <button class="btn-action btn-msg" onclick="openManageSalon('${s.id}')">Uredi</button>
@@ -2171,7 +2171,7 @@ async function sendProformaEmail(id) {
     else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
-const PROFORMA_PLANNAME = { starter: 'Osnovni', pro: 'Pro', ai_start: 'AI Start', ai: 'AI natakar', premium: 'Premium' };
+const PROFORMA_PLANNAME = { starter: 'Osnovni', pro: 'Pro', ai_start: 'AI Start', ai: 'AI Pro', premium: 'Premium' };
 function openProforma(id) {
   const s = salonsData.find(x => x.id === id);
   if (!s) { showToast('Salon ni najden', 'error'); return; }
@@ -2267,10 +2267,10 @@ async function deactivateSalon(id) {
 async function sendWelcome(id) {
   const salon = salonsData.find(s => s.id === id);
   if (!salon) return;
-  if (!confirm(`Pošlji dobrodošlico na +${salon.admin_phone}?`)) return;
+  if (!confirm(`Pošlji pozdravni email na ${salon.owner_email}?`)) return;
   try {
     const res = await apiFetch(`/api/salons/${id}/welcome`, { method: 'POST' });
-    if (res.ok) showToast('💬 Dobrodošlica poslana!', 'success');
+    if (res.ok) showToast('📧 Pozdravni email poslan!', 'success');
     else showToast('Napaka pri pošiljanju', 'error');
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }

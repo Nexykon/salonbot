@@ -5,7 +5,7 @@ const PLAN = {
   starter:  { label: 'Osnovni',    price: 49.99 },
   pro:      { label: 'Pro',        price: 79.99 },
   ai_start: { label: 'AI Start',   price: 89 },
-  ai:       { label: 'AI natakar', price: 159.99 },
+  ai:       { label: 'AI Pro',     price: 159.99 },
   premium:  { label: 'Premium',    price: 299 }
 };
 

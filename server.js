@@ -681,7 +681,7 @@ const PLAN_CATALOG = {
   pro:      { label: 'Pro',         price: 79.99,  ai: false, limit: 0     },
   // Aktivni paketi
   ai_start: { label: 'AI Start',    price: 89,     ai: true,  limit: 500   },
-  ai:       { label: 'AI natakar',  price: 159.99, ai: true,  limit: 1500  },
+  ai:       { label: 'AI Pro',      price: 159.99, ai: true,  limit: 1500  },
   premium:  { label: 'Premium',     price: 299,    ai: true,  limit: 10000 }
 };
 function planInfo(plan) { return PLAN_CATALOG[plan] || PLAN_CATALOG.ai; }
@@ -1068,7 +1068,7 @@ app.patch('/api/salons/:id/status', async (req, res) => {
   }
 });
 
-// ─── Send welcome WA message to salon admin ───────────────────
+// ─── Send welcome EMAIL to salon owner ────────────────────────
 app.post('/api/salons/:id/welcome', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { id } = req.params;
@@ -1076,27 +1076,36 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
     const salon = (await db.getAllSalons()).find(s => s.id === id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
 
-    const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
-    const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
-    const to = salon.admin_phone;
-    if (!to) return res.status(400).json({ error: 'Salon nima nastavljene admin_phone številke.' });
+    const to = salon.owner_email;
+    if (!to) return res.status(400).json({ error: 'Salon nima nastavljenega emaila (owner_email).' });
 
-    const salonName = salon.name || 'Salon';
-    const msg = wa.textMsg(to,
-      `👋 Pozdravljeni!\n\n` +
-      `Vaš SalonBot za *${salonName}* je aktiviran in pripravljen na delo! 🎉\n\n` +
-      `📱 Stranke vas bodo kontaktirale prek WhatsApp bota.\n` +
-      `✅ Ko stranka rezervira termin, boste takoj obveščeni.\n` +
-      `💬 Za upravljanje bot-a enostavno pišite tukaj:\n\n` +
-      `• Pošljite *#termini* za prikaz rezervacij danes\n` +
-      `• Pošljite *#jutri* za prikaz rezervacij jutri\n` +
-      `• Pošljite *#storitve* za seznam storitev\n` +
-      `• Pošljite *#nauci [info]* da bot naučite o salonu\n\n` +
-      `Srečno! 💇 — Ekipa SalonBot`
-    );
+    const salonName = salon.name || 'vaše podjetje';
+    const contact = salon.contact_person || salon.owner_name || '';
+    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const loginUrl = `${baseUrl}/${(salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html'}`;
 
-    await wa.send(phoneId, token, msg);
-    console.log(`Welcome message sent to ${to} for salon ${salonName}`);
+    const html = `
+      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#f6f9f8;padding:0">
+        <div style="background:linear-gradient(135deg,#0e7a5f,#0aa06e);padding:28px 24px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#fff">FlowTiq</div>
+        </div>
+        <div style="padding:28px 24px;color:#1e293b;line-height:1.7">
+          <h2 style="margin:0 0 8px;color:#0e7a5f">Dobrodošli v FlowTiq! 🎉</h2>
+          <p style="margin:0 0 14px">Pozdravljeni${contact ? ' ' + contact : ''},</p>
+          <p style="margin:0 0 14px">vaš FlowTiq asistent za <strong>${salonName}</strong> je aktiviran in pripravljen na delo.</p>
+          <p style="margin:0 0 14px">Od zdaj vaše stranke naročajo in rezervirajo kar prek WhatsAppa — 24/7, brez klicanja in čakanja. Ob vsakem novem naročilu oz. rezervaciji boste takoj obveščeni, vse skupaj pa pregledno spremljate na svoji nadzorni plošči.</p>
+          <div style="text-align:center;margin:24px 0">
+            <a href="${loginUrl}" style="display:inline-block;background:#0aa06e;color:#fff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:10px">Odpri nadzorno ploščo →</a>
+          </div>
+          <p style="margin:0 0 14px">Če potrebujete pomoč ali kakšno spremembo, nam kar odgovorite na ta email — z veseljem pomagamo. 🙌</p>
+          <p style="margin:0">Želimo vam obilo naročil in zadovoljnih strank! 🚀</p>
+        </div>
+        <div style="padding:16px 24px;text-align:center;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0">— Ekipa FlowTiq · <a href="https://flowtiq.si" style="color:#0e7a5f;text-decoration:none">flowtiq.si</a></div>
+      </div>`;
+
+    const ok = await mail.sendEmail(to, `Dobrodošli v FlowTiq — ${salonName} je aktiviran 🎉`, html);
+    if (!ok) return res.status(500).json({ error: 'Email ni bil poslan (preveri RESEND_API_KEY / EMAIL_FROM).' });
+    console.log(`Welcome email sent to ${to} for salon ${salonName}`);
     res.json({ success: true });
   } catch (err) {
     console.error('Welcome error:', err.message);
@@ -2486,7 +2495,7 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na email <strong>${email}</strong>${phone ? ` ali telefon <strong>${phone}</strong>` : ''}.</p>
         <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0">
           <p style="margin:0;color:#166534;font-weight:600">Nasi paketi:</p>
-          <p style="margin:6px 0 0;color:#166534">AI Start <strong>89 € / mes</strong> (do 500 narocil) · AI natakar <strong>159,99 € / mes</strong> (do 1.500) · Premium <strong>299 € / mes</strong> (do 10.000). Brez vezave.</p>
+          <p style="margin:6px 0 0;color:#166534">AI Start <strong>89 € / mes</strong> (do 500 narocil) · AI Pro <strong>159,99 € / mes</strong> (do 1.500) · Premium <strong>299 € / mes</strong> (do 10.000). Brez vezave.</p>
         </div>
         <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTiq</p>
       </div>`;
