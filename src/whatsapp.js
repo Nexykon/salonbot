@@ -287,6 +287,27 @@ function groupByCategory(services) {
 // Tako podpira poljubno velike menije (100+ jedi).
 const CATS_PER_PAGE = 9;
 const ITEMS_PER_PAGE = 9;
+// Opis vrstice v WhatsApp seznamu (meja 72 znakov). Cena je VEDNO spredaj,
+// sestavine se skrajšajo na celo besedo z "…", da ni odrezanih besed.
+function menuRowDesc(s) {
+  const LIMIT = 72;
+  const price = s.price ? (s.price + ' €') : '';
+  let desc = (s.description || '').toString().trim();
+  if (!desc) return price.substring(0, LIMIT);
+  if (!price) return desc.length > LIMIT ? trimWords(desc, LIMIT) : desc;
+  const sep = ' · ';
+  const avail = LIMIT - price.length - sep.length;
+  if (desc.length > avail) desc = trimWords(desc, avail);
+  return (price + sep + desc).substring(0, LIMIT);
+}
+function trimWords(text, max) {
+  if (text.length <= max) return text;
+  let cut = text.slice(0, Math.max(0, max - 1)); // prostor za "…"
+  const sp = cut.lastIndexOf(' ');
+  if (sp > 8) cut = cut.slice(0, sp);
+  return cut.replace(/[ ,;.:]+$/, '') + '…';
+}
+
 function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page) {
   page = Math.max(0, parseInt(page) || 0);
   let items = services || [];
@@ -330,7 +351,7 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
     sec.rows.push({
       id: 'menu_' + s.id,
       title: (s.name).substring(0, 24),
-      description: ((s.description ? s.description + ' · ' : '') + (s.price ? s.price + ' €' : '')).substring(0, 72)
+      description: menuRowDesc(s)
     });
   }
   if (hasMore && sections.length) {
