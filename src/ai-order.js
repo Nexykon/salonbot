@@ -185,6 +185,7 @@ POTEK POGOVORA:
 3d) ALERGENI: pri vsaki jedi je v oglatih oklepajih interna oznaka [ALERGENI: ...] (seznam alergenov). Te oznake stranki NE prikazuj in alergenov NE naštevaj sam od sebe — meni naj bo za stranko običajen. Uporabi jo SAMO, kadar stranka izrecno vpraša ali pove, na kaj je ALERGIČNA (npr. "sem alergičen na oreške", "ne smem glutena", "alergija na jajca"). Takrat ji naštej SAMO jedi, ki tega alergena NIMAJO v oznaki ALERGENI (ime in cena, po kategorijah), in tako sestavi njej primeren izbor. Nikoli ne priporoči jedi, ki vsebuje njen alergen. Če za jed alergeni niso navedeni, tega ne jamči — reci, naj preveri pri osebju. Dodaj kratko opozorilo, naj pri hudi alergiji vseeno obvesti restavracijo. Pri tem NE kliči show_menu.
 4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Posebnost za artikel dodaj kot note parameter v add_to_cart (ne z add_note). POZOR pri količinah s posebnostjo: "1 brez gob" ali "eno brez gob" pomeni SAMO EN kos z note:"brez gob" — NE dodajaj še navadnega! Vrstici loči SAMO, kadar je skupna količina VEČJA od količine s posebnostjo: "2, ena brez gob" pomeni add_to_cart(qty:1) + add_to_cart(qty:1, note:"brez gob"); "3, dve brez gob" pomeni add_to_cart(qty:1) + add_to_cart(qty:2, note:"brez gob"). add_note uporabljaj SAMO za splošne opombe k celotnemu naročilu.
 4b) Če dobiš sporočilo oblike [IZBRANO Z MENIJA: X], je stranka pravkar izbrala artikel X z menija — vprašaj jo naravno po količini in posebnostih za X. add_to_cart uporabi ŠELE, ko pove količino.
+4c) POZOR — "BREZ": besede za "brez" (npr. "brez čebule", "brez sira", "brez gob") so PRILAGODITEV jedi in gredo IZKLJUČNO v note parameter iste jedi. NIKOLI ne dodaj kot samostojen artikel sestavine, ki se pojavi za besedo "brez". Veliko sestavin (Čebula, Sir, Mozzarella, Šampinjoni, Tuna ...) je v meniju tudi kot samostojen dodatek — dodaj jih kot ločen artikel SAMO, kadar stranka izrecno reče, da jih ŽELI dodati ("dodaj čebulo", "extra sir", "s tuno"), NIKOLI kadar reče "brez ...". Primer: če je izbrana jed Kebab in stranka reče "eno brez čebule", pomeni add_to_cart(item:"Kebab", qty:1, note:"brez čebule") — NE dodaj artikla "Čebula". Če je artikel (pendingItem) že izbran, odgovor s količino in prilagoditvijo VEDNO doda TA artikel, ne sestavine iz prilagoditve.
 5) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek artiklov, ter vprašaj: "Želite še kaj?". Ko artikel enkrat dodaš, ga ob strankinem odgovoru s količino NE dodajaj znova — količino uskladi sistem. NIKOLI hkrati ne dodaj artikla IN vprašaj po količini zanj.
 6) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
 7) Splošno željo za celotno naročilo prav tako zabeleži z add_note — NE prikazuj menija.
@@ -219,6 +220,32 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
         result = 'Interaktivni meni bo prikazan stranki.';
         break;
       case 'add_to_cart': {
+        // ── Varovalka "brez X": sestavina za besedo "brez" ni samostojen artikel ──
+        const _norm = x => String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        const _stem = x => _norm(x).replace(/[^a-z]/g, '').slice(0, 5);
+        const _brez = [];
+        let _m; const _re = /brez\s+([a-zžšččćđ]+)/gi;
+        while ((_m = _re.exec(_norm(message)))) _brez.push(_m[1]);
+        const _itStem = _stem(input.item);
+        const _negated = _itStem.length >= 3 && _brez.some(w => {
+          const ws = _stem(w);
+          return ws.length >= 3 && (ws.slice(0, 3) === _itStem.slice(0, 3));
+        });
+        if (_negated) {
+          // Preusmeri na izbrano jed (pendingItem) z opombo "brez X"; sicer ne dodaj kot artikel
+          const pend = pendingItem ? findService(services, pendingItem.name) : null;
+          if (pend) {
+            const q = Math.min(Math.max(parseInt(input.qty) || 1, 1), 50);
+            const nb = ('brez ' + String(input.item).trim()).slice(0, 200);
+            newCart.push({ id: pend.id, name: pend.name, price: pend.price || 0, qty: q, note: nb });
+            added.push({ id: pend.id, note: nb });
+            action = action || 'show_cart';
+            result = `Dodano: ${pend.name} x${q} (${nb}) (${pend.price} €/kos). Košarica: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}.`;
+          } else {
+            result = `"${input.item}" je navedena za besedo "brez" - to je prilagoditev jedi, NE samostojen artikel. Dodaj jo kot note k pravi jedi.`;
+          }
+          break;
+        }
         const svc = findService(services, input.item);
         if (!svc) { result = `Artikla "${input.item}" ni na meniju. Predlagaj podobnega z menija.`; break; }
         const qty = Math.min(Math.max(parseInt(input.qty) || 1, 1), 50);
