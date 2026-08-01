@@ -52,12 +52,14 @@ function computeTotals(salon, cart, mode) {
   const packUnit = parseFloat(salon.packaging_price || 0);
   const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
   const packFee = chargePack ? +(packUnit * kosov).toFixed(2) : 0;
-  const delFee = mode === 'dostava' ? parseFloat(salon.delivery_fee || 0) : 0;
+  const delUnit = parseFloat(salon.delivery_fee || 0);
+  const delPerItem = salon.delivery_per_item === true;
+  const delFee = mode === 'dostava' ? (delPerItem ? +(delUnit * kosov).toFixed(2) : delUnit) : 0;
   const itemsTotal = cart.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
   const grand = (itemsTotal + packFee + delFee).toFixed(2);
   const parts = [`Artikli: ${itemsTotal.toFixed(2)} €`];
   if (packFee > 0) parts.push(`Embalaža: ${kosov} × ${packUnit.toFixed(2)} € = ${packFee.toFixed(2)} €`);
-  if (delFee > 0) parts.push(`Dostava: ${delFee.toFixed(2)} €`);
+  if (delFee > 0) parts.push(delPerItem ? `Dostava: ${kosov} × ${delUnit.toFixed(2)} € = ${delFee.toFixed(2)} €` : `Dostava: ${delFee.toFixed(2)} €`);
   parts.push(`SKUPAJ: ${grand} €`);
   return { itemsTotal, packFee, delFee, grand, text: parts.join(' · ') + '.' };
 }
@@ -132,10 +134,16 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
   const TAG_LABELS = { brez_laktoze: 'brez laktoze', vegetarijansko: 'vegetarijansko', vegansko: 'vegansko', brez_glutena: 'brez glutena', pikantno: 'pikantno' };
   const menuText = services.map(s => {
     const tg = (Array.isArray(s.tags) && s.tags.length) ? ' [' + s.tags.map(t => TAG_LABELS[t] || t).join(', ') + ']' : '';
-    return `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €${tg}`;
+    const ds = (s.description || '').toString().trim();
+    const dsc = ds ? ` — ${ds}` : '';
+    return `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €${tg}${dsc}`;
   }).join('\n');
   const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area}` : '';
   const hoursLine = (salon.working_hours_start && salon.working_hours_end) ? `\nODPIRALNI ČAS: ${salon.working_hours_start}–${salon.working_hours_end} (če stranka vpraša za delovni/odpiralni čas, ji ga povej)` : '';
+  const _minOrd = parseFloat(salon.min_order || 0);
+  const minLine = _minOrd > 0 ? `\nMINIMALNO NAROČILO ZA DOSTAVO: ${_minOrd.toFixed(2)} € (velja za artikle brez dostave/embalaže). Če stranka vpraša ali če je pod tem zneskom pri dostavi, jo prijazno opozori.` : '';
+  const _delU = parseFloat(salon.delivery_fee || 0);
+  const feeLine = _delU > 0 ? `\nSTROŠEK DOSTAVE: ${_delU.toFixed(2)} €${salon.delivery_per_item ? ' na artikel' : ' na naročilo'} (doda se ob zaključku).` : '';
   // Zavedanje datuma/ure (slovenski čas)
   const _now = new Date();
   let _danes;
@@ -172,6 +180,7 @@ POTEK POGOVORA:
 3) Ko stranka pritrdi (ali sama vpraša po ponudbi), pokliči show_menu.
 3b) NIKOLI ne izpisuj menija ali seznama jedi v besedilu — ponudba se stranki prikaže IZKLJUČNO prek show_menu. Če stranka prosi za PRIPOROČILO ("kaj mi priporočaš?"), priporoči 1 do 2 artikla (ime in ceno) in vprašaj, ali ju dodaš v košarico — pri tem NE kliči show_menu in NE izpisuj drugih jedi.
 3c) Če stranka vpraša za PREHRANSKO OMEJITEV (npr. "brez laktoze", "vegetarijansko", "vegansko", "brez glutena", "kaj je pikantno"), v besedilu naštej SAMO artikle, ki imajo ustrezno oznako v oglatih oklepajih [...] na meniju (ime in ceno), in vprašaj, ali katerega dodaš. Če takega artikla ni, to prijazno povej. Pri tem NE kliči show_menu.
+3d) ALERGENI: za vsako jed so v opisu (za pomišljajem) navedene sestavine in oznaka "Alergeni: ...". Če stranka pove, na kaj je ALERGIČNA (npr. "sem alergičen na oreške", "ne smem glutena", "alergija na jajca"), ji naštej SAMO jedi, ki tega alergena NIMAJO navedenega v opisu (ime in cena, po kategorijah), in tako sestavi njej primeren izbor. Nikoli ne priporoči jedi, ki vsebuje njen alergen. Če za jed alergeni niso navedeni, tega ne jamči — reci, naj preveri pri osebju. Dodaj kratko opozorilo, da naj pri hudi alergiji vseeno obvesti restavracijo. Pri tem NE kliči show_menu.
 4) Ko stranka pove ali izbere artikel, jo vprašaj po KOLIČINI in po morebitnih POSEBNOSTIH za ta artikel (npr. "brez gob", "extra sir", alergije). Količino vprašaj NARAVNO glede na vrsto artikla — "Koliko pic Margerita želite?", "Koliko Coca-Col?", "Koliko burgerjev?" — nikoli "koliko kosov". Posebnost za artikel dodaj kot note parameter v add_to_cart (ne z add_note). POZOR pri količinah s posebnostjo: "1 brez gob" ali "eno brez gob" pomeni SAMO EN kos z note:"brez gob" — NE dodajaj še navadnega! Vrstici loči SAMO, kadar je skupna količina VEČJA od količine s posebnostjo: "2, ena brez gob" pomeni add_to_cart(qty:1) + add_to_cart(qty:1, note:"brez gob"); "3, dve brez gob" pomeni add_to_cart(qty:1) + add_to_cart(qty:2, note:"brez gob"). add_note uporabljaj SAMO za splošne opombe k celotnemu naročilu.
 4b) Če dobiš sporočilo oblike [IZBRANO Z MENIJA: X], je stranka pravkar izbrala artikel X z menija — vprašaj jo naravno po količini in posebnostih za X. add_to_cart uporabi ŠELE, ko pove količino.
 5) Po vsakem dodajanju kratko potrdi, kaj je v košarici in skupni znesek artiklov, ter vprašaj: "Želite še kaj?". Ko artikel enkrat dodaš, ga ob strankinem odgovoru s količino NE dodajaj znova — količino uskladi sistem. NIKOLI hkrati ne dodaj artikla IN vprašaj po količini zanj.
@@ -185,7 +194,7 @@ ZANESLJIVOST (ZELO POMEMBNO):
 - Nikoli si ne izmišljuj cen ali zneskov; če te stranka med naročanjem vpraša za ceno, povej znesek artiklov iz rezultatov orodij.
 MENI:
 ${menuText}
-TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine + hoursLine
+TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine + hoursLine + minLine + feeLine
     + `\nNAČINI PREVZEMA: ${[salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean).join(' ali ')}${salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : ''}`
     + `\nOPOMBA STRANKE: ${note || '—'}`
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`

@@ -458,9 +458,20 @@ body {
             <input type="checkbox" id="s-del-on" onchange="toggleFee('s-delivery', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
             🚗 Zaračunaj dostavo (€ na naročilo)
           </label>
-          <input type="number" id="s-delivery" min="0" step="0.10" inputmode="decimal" placeholder="npr. 2.00 €" disabled>
+          <input type="number" id="s-delivery" min="0" step="0.05" inputmode="decimal" placeholder="npr. 2.00 €" disabled>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Embalaža se zaračuna za vsak kos (3 pice = 3× embalaža), dostava enkrat na naročilo. Bot zneska prikaže stranki ločeno.</div>
+        <div class="s-row">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <input type="checkbox" id="s-del-per-item" style="accent-color:#7c3aed;width:17px;height:17px">
+            Dostavo zaračunaj na vsak artikel (ne enkratno)
+          </label>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">Primer Botana: 0,55 € na artikel. Če je izklopljeno, se dostava zaračuna enkrat na naročilo.</div>
+        </div>
+        <div class="s-row">
+          <label>Minimalno naročilo za dostavo (€)</label>
+          <input type="number" id="s-min-order" min="0" step="0.50" inputmode="decimal" placeholder="npr. 13.00 € (0 = brez minimuma)">
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Embalaža se zaračuna za vsak kos. Dostava je lahko enkratna ali na artikel. Bot zneske prikaže stranki ločeno in pri dostavi upošteva minimalno naročilo.</div>
       </div>
 
       <div class="settings-card" style="margin-top:16px">
@@ -1259,6 +1270,8 @@ async function loadSettingsData() {
     document.getElementById('s-del-on').checked = del > 0;
     document.getElementById('s-delivery').value = del > 0 ? del : '';
     document.getElementById('s-delivery').disabled = !(del > 0);
+    if (document.getElementById('s-del-per-item')) document.getElementById('s-del-per-item').checked = d.delivery_per_item === true;
+    if (document.getElementById('s-min-order')) document.getElementById('s-min-order').value = parseFloat(d.min_order||0) > 0 ? parseFloat(d.min_order) : '';
     document.getElementById('s-allow-del').checked  = d.allow_delivery !== false;
     document.getElementById('s-allow-pick').checked = d.allow_pickup !== false;
     document.getElementById('s-pick-pack').checked  = d.pickup_packaging !== false;
@@ -1678,6 +1691,8 @@ async function saveSettings() {
         bot_phone_display:document.getElementById('s-botnum').value,
         packaging_price:feeValue('s-pack-on','s-packaging'),
         delivery_fee:feeValue('s-del-on','s-delivery'),
+        delivery_per_item:!!document.getElementById('s-del-per-item')?.checked,
+        min_order:(function(){var v=parseFloat(String(document.getElementById('s-min-order')?.value||'').replace(',','.'));return isNaN(v)||v<0?0:v;})(),
         allow_delivery:document.getElementById('s-allow-del').checked,
         allow_pickup:document.getElementById('s-allow-pick').checked,
         pickup_packaging:document.getElementById('s-pick-pack').checked,

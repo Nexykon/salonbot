@@ -977,7 +977,8 @@ async function handleMessage(msgObj, salon) {
       const pUnit = parseFloat(salon.packaging_price || 0);
       const kosovS = cart.reduce((sm, i) => sm + (i.qty || 1), 0);
       const pFee = sessF.packFee !== undefined ? parseFloat(sessF.packFee) : +(pUnit * kosovS).toFixed(2);
-      const dFee = sessF.delFee  !== undefined ? parseFloat(sessF.delFee)  : parseFloat(salon.delivery_fee || 0);
+      const dUnit = parseFloat(salon.delivery_fee || 0);
+      const dFee = sessF.delFee  !== undefined ? parseFloat(sessF.delFee)  : (salon.delivery_per_item === true ? +(dUnit * kosovS).toFixed(2) : dUnit);
       const iTotal = parseFloat(cartTotal(cart));
       const gTotal = (iTotal + pFee + dFee).toFixed(2);
       const breakdownTxt = [
@@ -1007,6 +1008,17 @@ async function handleMessage(msgObj, salon) {
         return;
       }
       const isPickup = s.orderMode === 'prevzem';
+      // ── Minimalno naročilo (SAMO dostava) ──
+      const minOrder = parseFloat(salon.min_order || 0);
+      if (!isPickup && minOrder > 0) {
+        const itemsSum = parseFloat(cartTotal(cart));
+        if (itemsSum < minOrder) {
+          const manjka = (minOrder - itemsSum).toFixed(2);
+          await wa.send(phoneId, token, wa.textMsg(from,
+            `Minimalno naročilo za dostavo je ${minOrder.toFixed(2)} €. Trenutno imate za ${itemsSum.toFixed(2)} € artiklov - dodajte še za ${manjka} €, pa zaključimo. Lahko pa izberete osebni prevzem.`));
+          return;
+        }
+      }
       // ── Način plačila (SAMO dostava) — vprašaj enkrat pred oddajo ──
       if (!isPickup && !s.payment) {
         session.set(skey, { ...s, awaitingPayment: true });
