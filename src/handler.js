@@ -2305,6 +2305,16 @@ async function handleMessage(msgObj, salon) {
   }
 
 
+  // ── Povpraševanje brez cenika in fiksnega termina (npr. tattoo) — samo vprašanja ──
+  if (bookingMode === 'inquiry' && salon.inquiry_simple === true && formFields.length && !sess.step && !iId) {
+    if (salon.greeting_message) await wa.send(phoneId, token, wa.textMsg(from, salon.greeting_message));
+    const first = formFields[0];
+    const opt = first.required ? '' : ' (opcijsko - napiši 0 za preskok)';
+    session.set(skey, { step: 10, fieldIndex: 0, formAnswers: {} });
+    await wa.send(phoneId, token, wa.textMsg(from, `${first.label}${opt}`));
+    return;
+  }
+
   // ── Default: show service list ──
   session.clear(skey);
   await wa.send(phoneId, token, wa.serviceList(from, services, salon));
