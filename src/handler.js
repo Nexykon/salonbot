@@ -534,22 +534,29 @@ async function handleMessage(msgObj, salon) {
   if (salon.booking_mode === 'sales') {
     const sess = session.get(skey);
 
-    // Step 201: got salon name → ask business type
-    if (sess.step === 201 && msgText) {
-      session.set(skey, { ...sess, step: 202, salonName: msgText.trim() });
+    const SALES_TYPES = {
+      stype_restavracija: 'Restavracija / picerija 🍕', stype_gostilna: 'Gostilna 🍽️',
+      stype_kavarna: 'Kavarna / bar ☕', stype_frizerstvo: 'Frizerstvo ✂️',
+      stype_kozmetika: 'Kozmetika 💆', stype_nohti: 'Nohti 💅',
+      stype_tattoo: 'Tattoo / Piercing 🎨', stype_masaze: 'Masaže 🧘', stype_drugo: 'Drugo'
+    };
+
+    // Step 201: izbrana dejavnost (iz menija) → vprašaj za naziv
+    if (sess.step === 201) {
+      if (iId && SALES_TYPES[iId]) {
+        session.set(skey, { ...sess, step: 202, salonType: SALES_TYPES[iId] });
+        await wa.send(phoneId, token, wa.textMsg(from, 'Super! Kako se imenuje vaš lokal oz. salon?'));
+        return;
+      }
+      // Ni izbral iz menija — znova pokaži seznam dejavnosti
+      await wa.send(phoneId, token, wa.textMsg(from, 'Prosim, izberite dejavnost iz spodnjega menija.'));
       await wa.send(phoneId, token, wa.salesTypeList(from));
       return;
     }
 
-    // Step 202: got business type (button) → ask email
-    if (sess.step === 202) {
-      const typeMap = {
-        stype_frizerstvo: 'Frizerstvo ✂️', stype_kozmetika: 'Kozmetika 💆',
-        stype_nohti: 'Nohti 💅', stype_tattoo: 'Tattoo / Piercing 🎨',
-        stype_masaze: 'Masaže 🧘', stype_drugo: 'Drugo'
-      };
-      const sType = typeMap[iId] || msgText.trim() || 'Ni navedeno';
-      session.set(skey, { ...sess, step: 203, salonType: sType });
+    // Step 202: got naziv → ask email
+    if (sess.step === 202 && msgText) {
+      session.set(skey, { ...sess, step: 203, salonName: msgText.trim() });
       await wa.send(phoneId, token, wa.textMsg(from, '📧 Na kateri email vam pošljemo dostop in račun?'));
       return;
     }
@@ -605,11 +612,12 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
-    // Default / new session: welcome + ask salon name
+    // Default / new session: welcome + izbira dejavnosti
     session.set(skey, { step: 201 });
     await wa.send(phoneId, token, wa.textMsg(from,
-      `👋 Pozdravljeni! Sem *FlowTiq* — WhatsApp rezervacijski bot za salone.\n\nVaše stranke rezervirajo termine 24/7 brez klicev in SMS-ov. Vi pa vse upravljate prek preprostega admin panela.\n\n🚀 Začnemo z nastavitvijo? Kako se imenuje vaš salon?`
+      `👋 Pozdravljeni! Sem *FlowTiq* — WhatsApp bot za naročila in rezervacije.\n\n🍕 Za *restavracije in picerije* sprejemam naročila za dostavo in prevzem (AI natakar).\n💇 Za *salone in storitve* pa rezervacije terminov.\n\nVse 24/7, brez klicev in SMS-ov — vi vodite vse prek preprostega admin panela.\n\n🚀 Katero dejavnost želite priklopiti?`
     ));
+    await wa.send(phoneId, token, wa.salesTypeList(from));
     return;
   }
   // ══════════════════════════════════════════════════════

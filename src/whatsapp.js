@@ -228,20 +228,30 @@ function salesTypeList(to) {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'list',
-      body: { text: 'Kakšna je vaša dejavnost?' },
+      body: { text: 'Katero dejavnost želite priklopiti?' },
       action: {
-        button: 'Izberi vrsto',
-        sections: [{
-          title: 'Vrsta salona',
-          rows: [
-            { id: 'stype_frizerstvo', title: 'Frizerstvo ✂️' },
-            { id: 'stype_kozmetika', title: 'Kozmetika 💆' },
-            { id: 'stype_nohti', title: 'Nohti 💅' },
-            { id: 'stype_tattoo', title: 'Tattoo / Piercing 🎨' },
-            { id: 'stype_masaze', title: 'Masaže 🧘' },
-            { id: 'stype_drugo', title: 'Drugo' }
-          ]
-        }]
+        button: 'Izberi dejavnost',
+        sections: [
+          {
+            title: 'Gostinstvo',
+            rows: [
+              { id: 'stype_restavracija', title: 'Restavracija / picerija 🍕' },
+              { id: 'stype_gostilna', title: 'Gostilna 🍽️' },
+              { id: 'stype_kavarna', title: 'Kavarna / bar ☕' }
+            ]
+          },
+          {
+            title: 'Saloni in storitve',
+            rows: [
+              { id: 'stype_frizerstvo', title: 'Frizerstvo ✂️' },
+              { id: 'stype_kozmetika', title: 'Kozmetika 💆' },
+              { id: 'stype_nohti', title: 'Nohti 💅' },
+              { id: 'stype_tattoo', title: 'Tattoo / Piercing 🎨' },
+              { id: 'stype_masaze', title: 'Masaže 🧘' },
+              { id: 'stype_drugo', title: 'Drugo' }
+            ]
+          }
+        ]
       }
     }
   };
@@ -253,7 +263,7 @@ function salesConfirmButtons(to, salonName, salonType, email) {
     interactive: {
       type: 'button',
       body: {
-        text: `🎉 Odlično! Tukaj je povzetek naročila:\n\n🏪 Salon: ${salonName}\n📋 Vrsta: ${salonType}\n📧 Email: ${email}\n\n💰 *FlowTiq naročnina: od 89 €/mesec*\n✅ Vključuje: WhatsApp bot + AI natakar + POS + admin panel + email obvestila\n🛠️ Nastavitev v 24h po plačilu\n\nPotrjujete naročilo?`
+        text: `🎉 Odlično! Tukaj je povzetek:\n\n🏪 Naziv: ${salonName}\n📋 Dejavnost: ${salonType}\n📧 Email: ${email}\n\n💰 *FlowTiq naročnina: od 89 €/mesec*\n✅ Vključuje: WhatsApp bot + AI natakar / rezervacije + POS + admin panel + email obvestila\n🛠️ Nastavitev v 24h po plačilu\n\nPotrjujete?`
       },
       action: {
         buttons: [
