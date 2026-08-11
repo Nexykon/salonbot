@@ -353,6 +353,43 @@ strong { font-weight: 700; }
   padding: 7px 14px; font-size: 14.5px; color: var(--muted);
 }
 
+/* ── Lebdeči WhatsApp gumb ──
+   Glavna storitev teče na WhatsAppu, zato je dosegljiv z vsake strani.
+   Vstavi ga flowtiq-nav.js; brez JS ostanejo povezave v nogi in na kontaktu. */
+.wa-fab {
+  position: fixed; z-index: 60;
+  right: 22px; bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  display: inline-flex; align-items: center; gap: 11px;
+  height: 60px; padding: 0 20px 0 17px;
+  background: var(--green); color: #fff;
+  border: 2px solid var(--ink); border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: var(--sans); font-size: 15.5px; font-weight: 600;
+  text-decoration: none; white-space: nowrap;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  /* animira se samo opacity — če bi animirali transform, bi zapis z
+     animation-fill-mode: both povozil premik ob hoverju */
+  animation: wa-vstop .4s ease .5s both;
+}
+@keyframes wa-vstop { from { opacity: 0; } to { opacity: 1; } }
+.wa-fab:hover {
+  background: var(--green-dark); color: #fff;
+  box-shadow: 1px 1px 0 var(--ink); transform: translate(3px, 3px);
+}
+.wa-fab svg { width: 30px; height: 30px; flex: 0 0 auto; }
+
+/* na ozkih zaslonih samo ikona, da ne pokriva vsebine */
+@media (max-width: 640px) {
+  .wa-fab {
+    right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    width: 58px; height: 58px; padding: 0; justify-content: center; gap: 0;
+  }
+  .wa-fab span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wa-fab { animation: none; transition: none; opacity: 1; }
+}
+
 /* ── Ticker ── */
 .ticker { background: var(--ink); color: var(--cream); border-bottom: 2px solid var(--ink); overflow: hidden; padding: 13px 0; }
 .ticker-track { display: flex; width: max-content; animation: ft-ticker 42s linear infinite; }
@@ -481,6 +518,19 @@ strong { font-weight: 700; }
 .foot-links { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; font-size: 14.5px; }
 .foot-links a { color: var(--ink); }
 .foot-links a:hover { color: var(--green-dark); }
+/* Kdo stoji za izdelkom, podpora, podatki podjetja */
+.foot-info {
+  max-width: 1180px; margin: 0 auto; padding: 26px 24px 28px;
+  border-top: 2px solid var(--ink);
+  display: grid; grid-template-columns: 1.7fr 1fr 1fr; gap: 36px;
+}
+.foot-info p { font-size: 14.5px; color: var(--muted); line-height: 1.6; margin-top: 14px; max-width: 46ch; }
+.foot-info .stack-sm { margin-top: 14px; font-size: 14.5px; }
+.foot-info a { color: var(--ink); font-weight: 600; }
+.foot-info a:hover { color: var(--green-dark); }
+.foot-info .fine { font-size: 13px; color: var(--muted-2); line-height: 1.55; }
+.foot-info .davcna { font-family: var(--mono); font-size: 12.5px; }
+
 .foot-bottom {
   max-width: 1180px; margin: 0 auto; padding: 18px 24px 40px;
   border-top: 2px solid var(--ink); display: flex; flex-wrap: wrap;
@@ -519,7 +569,7 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
 /* ── Odzivnost ── */
 /* Na velikih zaslonih pustimo vsebini več prostora (1180 → 1400 px). */
 @media (min-width: 1300px) {
-  .wrap, .head-inner, .foot-grid, .foot-bottom { max-width: 1400px; }
+  .wrap, .head-inner, .foot-grid, .foot-info, .foot-bottom { max-width: 1400px; }
 }
 @media (max-width: 1000px) {
   .head-inner { flex-wrap: wrap; gap: 12px 18px; }
@@ -533,6 +583,7 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
   .cta { padding: 40px 28px; }
   .cta--split { grid-template-columns: 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; gap: 30px; }
+  .foot-info { grid-template-columns: 1fr 1fr; gap: 28px; }
 }
 @media (max-width: 640px) {
   .sec { padding: 48px 0; }
@@ -541,6 +592,7 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
   .cols-5, .cols-4, .cols-3, .cols-2, .grid-3-20, .grid-even, .grid-even-end, .grid-even-20 { grid-template-columns: 1fr; }
   .grid-even, .grid-even-end { gap: 28px; }
   .foot-grid { grid-template-columns: 1fr; }
+  .foot-info { grid-template-columns: 1fr; gap: 24px; }
   .cta { padding: 32px 22px; box-shadow: 6px 6px 0 var(--green); }
   .faq summary { font-size: 17px; padding: 16px 18px; }
   .faq-body { padding: 0 18px 18px; }

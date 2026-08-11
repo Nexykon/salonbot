@@ -1,0 +1,57 @@
+/* ──────────────────────────────────────────────────────────────
+   FlowTiq — pravne strani (pogoji uporabe, zasebnost, piškotki).
+   Nalaga se poleg flowtiq-site.css in doda samo tipografijo
+   za dolgo tekoče besedilo.
+   ────────────────────────────────────────────────────────────── */
+
+.pravno-datum {
+  font-size: 12.5px; letter-spacing: .04em; color: var(--muted-2);
+  text-transform: uppercase; margin-top: 14px;
+}
+
+.pravno { font-size: 16.5px; line-height: 1.75; color: var(--ink-2); }
+.pravno h2 {
+  font-size: clamp(22px, 2.4vw, 28px); color: var(--ink);
+  margin: 44px 0 14px; padding-top: 26px; border-top: 2px solid var(--ink);
+}
+.pravno h2:first-of-type { margin-top: 34px; }
+.pravno h3 { font-size: 18.5px; color: var(--ink); margin: 28px 0 10px; }
+.pravno p { margin-bottom: 14px; }
+.pravno ul, .pravno ol { margin: 0 0 16px 24px; }
+.pravno li { margin-bottom: 8px; }
+.pravno a { color: var(--green-dark); border-bottom: 2px solid rgba(22, 163, 74, .3); }
+.pravno a:hover { color: var(--ink); border-bottom-color: var(--ink); }
+.pravno strong { color: var(--ink); }
+.pravno code {
+  font-family: var(--mono); font-size: 13.5px;
+  background: var(--surface2, var(--cream-2)); border: 1.5px solid var(--line);
+  border-radius: 7px; padding: 2px 7px; color: var(--ink); white-space: nowrap;
+}
+
+/* Povzetek na vrhu strani */
+.pravno-povzetek { margin-bottom: 8px; }
+.pravno-povzetek p { margin: 12px 0 0; font-size: 16.5px; line-height: 1.65; color: var(--ink-2); }
+
+/* Poudarjena opomba sredi besedila */
+.pravno-opomba {
+  background: var(--cream-2); font-size: 15.5px; line-height: 1.6; margin: 20px 0;
+}
+
+/* Tabela piškotkov */
+.pravno-tabela { margin: 18px 0 8px; }
+.pisk-3 { display: grid; grid-template-columns: 1.1fr 1.9fr .8fr; }
+@media (max-width: 700px) { .pisk-3 { min-width: 560px; } }
+
+/* Povezave na sorodne pravne strani */
+.pravno-nav {
+  display: flex; flex-wrap: wrap; gap: 12px 26px;
+  margin-top: 52px; padding-top: 26px; border-top: 2px solid var(--ink);
+  font-size: 15px;
+}
+.pravno-nav a { color: var(--ink); font-weight: 600; border-bottom: 2px solid var(--green); }
+.pravno-nav a:hover { color: var(--green-dark); }
+
+@media (max-width: 640px) {
+  .pravno { font-size: 16px; }
+  .pravno h2 { margin: 34px 0 12px; padding-top: 22px; }
+}

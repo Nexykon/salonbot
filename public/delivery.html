@@ -2413,7 +2413,7 @@ function sessionExpired(){
     history.replaceState({},'','/delivery.html');
     const banner=document.createElement('div');
     banner.textContent='ADMIN PREGLED — urejate meni tega lokala';
-    banner.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#7c3aed;color:#fff;text-align:center;font-weight:700;font-size:12px;padding:6px 8px';
+    banner.style.cssText='position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#B4442E;color:#fff;text-align:center;font-weight:700;font-size:12px;padding:6px 8px';
     (document.body?document.body:document.documentElement).appendChild(banner);
     fetch('/api/settings')
       .then(r=>r.ok?r.json():null)
