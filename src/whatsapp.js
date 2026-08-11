@@ -235,20 +235,20 @@ function salesTypeList(to) {
           {
             title: 'Gostinstvo',
             rows: [
-              { id: 'stype_restavracija', title: 'Restavracija / picerija 🍕' },
-              { id: 'stype_gostilna', title: 'Gostilna 🍽️' },
-              { id: 'stype_kavarna', title: 'Kavarna / bar ☕' }
+              { id: 'stype_restavracija', title: '🍕 Restavracija', description: 'Picerija, dostava, prevzem (AI natakar)' },
+              { id: 'stype_gostilna', title: '🍽️ Gostilna', description: 'Naročila in rezervacije' },
+              { id: 'stype_kavarna', title: '☕ Kavarna / bar', description: 'Naročila in rezervacije' }
             ]
           },
           {
             title: 'Saloni in storitve',
             rows: [
-              { id: 'stype_frizerstvo', title: 'Frizerstvo ✂️' },
-              { id: 'stype_kozmetika', title: 'Kozmetika 💆' },
-              { id: 'stype_nohti', title: 'Nohti 💅' },
-              { id: 'stype_tattoo', title: 'Tattoo / Piercing 🎨' },
-              { id: 'stype_masaze', title: 'Masaže 🧘' },
-              { id: 'stype_drugo', title: 'Drugo' }
+              { id: 'stype_frizerstvo', title: '✂️ Frizerstvo', description: 'Rezervacije terminov' },
+              { id: 'stype_kozmetika', title: '💆 Kozmetika', description: 'Rezervacije terminov' },
+              { id: 'stype_nohti', title: '💅 Nohti', description: 'Rezervacije terminov' },
+              { id: 'stype_tattoo', title: '🎨 Tattoo / Piercing', description: 'Povpraševanja in termini' },
+              { id: 'stype_masaze', title: '🧘 Masaže', description: 'Rezervacije terminov' },
+              { id: 'stype_drugo', title: 'Drugo', description: 'Nekaj drugega' }
             ]
           }
         ]
