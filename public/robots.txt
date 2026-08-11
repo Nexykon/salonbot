@@ -1,0 +1,31 @@
+# FlowTiq — https://flowtiq.si
+# Javne strani so proste za indeksiranje. Nadzorne plošče in prijavni
+# zasloni ne sodijo v iskalnik: nimajo vsebine za obiskovalca, del pa
+# jih odpira seje z žetoni v naslovu.
+
+User-agent: *
+Allow: /
+
+# Nadzorne plošče in prijave
+Disallow: /admin.html
+Disallow: /salon.html
+Disallow: /delivery.html
+Disallow: /voznik.html
+Disallow: /voznik
+Disallow: /leads.html
+Disallow: /book.html
+Disallow: /setup.html
+Disallow: /prijava.html
+Disallow: /dashboard.html
+Disallow: /settings.html
+
+# API in interne poti
+Disallow: /api/
+Disallow: /onboard
+Disallow: /salons
+
+# Naslovi z žetoni (setup povezave, preklop lokala)
+Disallow: /*?token=
+Disallow: /*?reset=
+
+Sitemap: https://flowtiq.si/sitemap.xml

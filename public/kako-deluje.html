@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kako FlowTiq deluje — razloženo brez računalniških besed</title>
+<meta name="description" content="Od prvega sporočila do potrjenega termina. Kaj naredimo mi, kaj ostane pri tebi in kaj se zgodi, ko bot česa ne ve.">
+<link rel="canonical" href="https://flowtiq.si/kako-deluje.html">
+<meta property="og:url" content="https://flowtiq.si/kako-deluje.html">
+<meta property="og:title" content="Kako FlowTiq deluje">
+<meta property="og:description" content="Razloženo tako, kot bi razložili sosedu. Brez izrazov kot integracija, API in workflow.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="sl_SI">
+<meta property="og:image" content="https://flowtiq.si/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FlowTiq — naročila in termini na avtopilotu">
+<meta property="og:site_name" content="FlowTiq">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FBF8F1">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flowtiq-site.css">
+<script src="/flowtiq-nav.js" defer></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXH2YX58RX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZXH2YX58RX');</script>
+<style>
+  .korak { border:2px solid var(--ink); border-radius:18px; background:#fff; padding:20px 22px; margin-bottom:12px; }
+  .korak-head { display:flex; align-items:center; gap:12px; }
+  .korak-n { width:28px; height:28px; flex:0 0 auto; border:2px solid var(--ink); border-radius:18px; background:var(--tan); display:grid; place-items:center; font-weight:800; font-size:14px; }
+  .delitev-head { display:grid; grid-template-columns:1fr 1fr; background:var(--ink); color:var(--on-ink); font-family:var(--mono); font-size:11.5px; letter-spacing:.08em; text-transform:uppercase; }
+  .delitev-head > * { padding:13px 22px; }
+  .delitev-head > * + * { border-left:1.5px solid var(--ink-line); color:var(--mint); }
+  .delitev-row { display:grid; grid-template-columns:1fr 1fr; border-bottom:1.5px solid var(--line); }
+  .delitev-row:last-child { border-bottom:0; }
+  .delitev-row > * { padding:18px 22px; font-size:15.5px; }
+  .delitev-row > *:first-child { border-right:1.5px solid var(--line); color:var(--ink-2); }
+  .delitev-row > *:last-child { background:var(--cream); }
+</style>
+</head>
+<body>
+
+<header class="site-head">
+  <div class="head-inner">
+    <a class="head-logo" href="/"><img src="/ft-logo.png" width="188" height="55" alt="FlowTiq"></a>
+    <nav class="head-nav">
+      <a href="/panoge.html">Za koga</a>
+      <a href="/kako-deluje.html" aria-current="page">Kako deluje</a>
+      <a href="/funkcije.html">Kaj zna</a>
+      <a href="/cenik.html">Cena</a>
+      <a href="/zgodbe.html">Primeri</a>
+      <a href="/vprasanja.html">Vprašanja</a>
+    </nav>
+    <div class="head-actions">
+      <a class="btn btn--ghost btn--sm" href="/salon.html">Prijava</a>
+      <a class="btn btn--primary btn--sm" href="/kontakt.html">Odpri račun</a>
+    </div>
+  </div>
+</header>
+
+<section class="sec sec--grad sec--tight">
+  <div class="wrap grid-11">
+    <div>
+      <div class="pill">Kako deluje</div>
+      <h1 class="h-1 measure-20" style="margin-top:20px">Razloženo tako, kot bi razložili sosedu.</h1>
+    </div>
+    <p class="lead">Brez besed kot „integracija“, „API“ in „workflow“. Na tej strani piše točno to, kaj se zgodi, ko ti stranka napiše — in kje si vmes ti.</p>
+  </div>
+</section>
+
+<section class="sec" style="padding:64px 0">
+  <div class="wrap">
+    <div class="pill">01 · Kaj je FlowTiq, v enem stavku</div>
+    <h2 class="h-3 measure-26" style="margin-top:22px">Zaposlen, ki sedi na tvoji WhatsApp številki in nikoli ne gre domov.</h2>
+    <div class="grid-3-20" style="margin-top:36px">
+      <div class="card card--pad">
+        <h3 style="font-size:20px">Kaj ni</h3>
+        <div class="stack" style="margin-top:14px;gap:10px;font-size:15.5px;color:var(--muted);line-height:1.5">
+          <div>Ni nova aplikacija, ki bi jo morale naložiti tvoje stranke.</div>
+          <div>Ni program, ki bi se ga moral učiti.</div>
+          <div>Ni menu s številkami („pritisnite 1 za…“).</div>
+        </div>
+      </div>
+      <div class="card card--pad">
+        <h3 style="font-size:20px">Kaj je</h3>
+        <div class="stack" style="margin-top:14px;gap:10px;font-size:15.5px;color:var(--muted);line-height:1.5">
+          <div>Pogovor na WhatsAppu, ki ga vodi pomočnik namesto tebe.</div>
+          <div>Koledar in seznam naročil, ki se polni sam.</div>
+          <div>Ena stran, kjer vse vidiš in po potrebi popraviš.</div>
+        </div>
+      </div>
+      <div class="card card--pad card--ink">
+        <h3 style="font-size:20px">Kaj to pomeni zate</h3>
+        <div class="stack" style="margin-top:14px;gap:10px;font-size:15.5px;color:var(--on-ink-2);line-height:1.5">
+          <div>Med delom ne dvigaš telefona.</div>
+          <div>Po zaprtju ti nihče ne uide.</div>
+          <div>Zvečer ni več seznama „poklicati nazaj“.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--cream" style="padding:64px 0">
+  <div class="wrap">
+    <div class="pill">02 · Celoten pogovor, korak za korakom</div>
+    <h2 class="h-3 measure-24" style="margin-top:22px">Poglejmo eno rezervacijo od blizu.</h2>
+
+    <div class="grid-095" style="margin-top:36px">
+      <div class="chat sticky-90">
+        <div class="chat-head">
+          <div class="chat-avatar" style="width:32px;height:32px;font-size:14px">S</div>
+          <div><div class="chat-name">Salon Vita</div><div class="chat-sub">na spletu</div></div>
+        </div>
+        <div class="chat-body" style="background:var(--chat-bg)">
+          <div class="bubble bubble--out" style="animation-delay:.1s">živjo, bi se naročila na barvanje kdaj v tem tednu</div>
+          <div class="bubble bubble--in" style="animation-delay:.5s">Živjo! Barvanje traja pri nas 2 uri. Prosto imamo: <strong>sreda 9:00</strong>, <strong>četrtek 14:00</strong> ali <strong>petek 16:30</strong>.</div>
+          <div class="bubble bubble--out" style="animation-delay:.9s">četrtek pri Ani, če se da</div>
+          <div class="bubble bubble--in" style="animation-delay:1.3s">Ana je četrtek ob 14:00 prosta. Zabeležim <strong>barvanje, četrtek 14:00–16:00</strong>. Kako ti je ime?</div>
+          <div class="bubble bubble--out" style="animation-delay:1.7s">Maja Novak</div>
+          <div class="bubble bubble--in" style="animation-delay:2.1s">Hvala, Maja. Termin je potrjen. Opomnik ti pošljem v sredo zvečer. Do četrtka!</div>
+        </div>
+      </div>
+      <div>
+        <div class="korak">
+          <div class="korak-head"><div class="korak-n">1</div><h3 style="font-size:19px">Sporočilo pride na tvojo številko</h3></div>
+          <p class="body" style="margin-top:11px">Ista številka, ki jo že imaš na vizitki in na Googlu. Stranki se nič ne spremeni — ne rabi nobene aplikacije, ne rabi se registrirati.</p>
+        </div>
+        <div class="korak">
+          <div class="korak-head"><div class="korak-n">2</div><h3 style="font-size:19px">FlowTiq prebere, kaj stranka hoče</h3></div>
+          <p class="body" style="margin-top:11px">Tudi če napiše po domače, z napakami ali kot glasovno sporočilo. Ne potrebuje ključnih besed in ne ponuja izbire s številkami.</p>
+        </div>
+        <div class="korak">
+          <div class="korak-head"><div class="korak-n">3</div><h3 style="font-size:19px">Pogleda tvoja pravila in tvoj koledar</h3></div>
+          <p class="body" style="margin-top:11px">Ve, da barvanje traja dve uri, da Ana ne dela v sredo popoldne in da sta v salonu dva stola. Ponudi samo termine, ki jih res zmoreš.</p>
+        </div>
+        <div class="korak">
+          <div class="korak-head"><div class="korak-n">4</div><h3 style="font-size:19px">Zbere, kar rabiš</h3></div>
+          <p class="body" style="margin-top:11px">Ime, storitev, uro, po potrebi izvajalca ali naslov dostave. Nič več in nič manj — dolgih obrazcev stranke ne izpolnjujejo.</p>
+        </div>
+        <div class="korak">
+          <div class="korak-head"><div class="korak-n">5</div><h3 style="font-size:19px">Zapiše in potrdi</h3></div>
+          <p class="body" style="margin-top:11px">Termin je v koledarju, naročilo v kuhinji ali blagajni. Ti dobiš obvestilo, a ti ni treba nič ukreniti.</p>
+        </div>
+        <div class="korak">
+          <div class="korak-head"><div class="korak-n">6</div><h3 style="font-size:19px">Poskrbi še za naprej</h3></div>
+          <p class="body" style="margin-top:11px">Opomnik dan prej, prošnja za oceno po obisku, povabilo nazaj po dveh mesecih. To je del, ki ga na roke nihče ne dela.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" style="padding:64px 0">
+  <div class="wrap">
+    <div class="pill">03 · Kdo naredi kaj</div>
+    <h2 class="h-3 measure-22" style="margin-top:22px">Tvoj del je manjši, kot si misliš.</h2>
+    <div class="card card--clip" style="margin-top:36px">
+      <div class="delitev-head"><div>Ti</div><div>FlowTiq</div></div>
+      <div class="delitev-row"><div>Enkrat na začetku poveš delovni čas, storitve in cene.</div><div>Vse to si zapomni in po tem odgovarja.</div></div>
+      <div class="delitev-row"><div>Delaš svoje delo.</div><div>Sprejema sporočila, klepeta s strankami, zapisuje termine.</div></div>
+      <div class="delitev-row"><div>Zjutraj pogledaš, kdo pride.</div><div>Ti pripravi dnevni pregled — na WhatsApp ali na nadzorno ploščo.</div></div>
+      <div class="delitev-row"><div>Če se kaj zaplete, prevzameš pogovor.</div><div>Ti pošlje obvestilo in se umakne.</div></div>
+      <div class="delitev-row"><div>Ko greš na dopust, napišeš „od 15. do 22. zaprto“.</div><div>Neha ponujati te termine in strankam pove, kdaj si nazaj.</div></div>
+      <div class="delitev-row"><div>Nič drugega.</div><div>Opomniki, ocene in vabila nazaj tečejo sami.</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--ink" style="padding:64px 0">
+  <div class="wrap">
+    <div class="pill pill--onink">04 · Vprašanje, ki ga vsi postavijo</div>
+    <div class="grid-even" style="margin-top:22px;align-items:start">
+      <h2 class="h-3 measure-20">Kaj pa, če bot česa ne ve?</h2>
+      <div class="stack-lg">
+        <p class="lead" style="font-size:18px">Takrat ne ugiba. To je najpomembnejše pravilo, po katerem je narejen.</p>
+        <div style="border:2px solid var(--on-ink);border-radius:18px;padding:20px 22px">
+          <div class="mono" style="font-size:11.5px;letter-spacing:.06em;color:var(--mint)">TAKO ODGOVORI</div>
+          <p style="font-size:16.5px;margin-top:10px;line-height:1.5;color:var(--on-ink)">„Tega na žalost ne vem zagotovo. Vprašanje sem poslal lastnici in oglasila se ti bo takoj, ko bo lahko.“</p>
+        </div>
+        <div class="arrow-list" style="font-size:16px;color:var(--on-ink-2)">
+          <div class="arrow-item"><span class="a" style="color:var(--mint)">→</span><span>Ti takoj dobiš obvestilo z celim pogovorom.</span></div>
+          <div class="arrow-item"><span class="a" style="color:var(--mint)">→</span><span>Pogovor lahko kadarkoli prevzameš — stranka niti ne opazi menjave.</span></div>
+          <div class="arrow-item"><span class="a" style="color:var(--mint)">→</span><span>Ko enkrat odgovoriš, si odgovor zapomni za naslednjič.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--cream" style="padding:64px 0">
+  <div class="wrap">
+    <div class="pill">05 · Postavitev</div>
+    <h2 class="h-3 measure-22" style="margin-top:22px">Od odločitve do prvega naročila: dva dneva.</h2>
+    <div class="card card--clip" style="margin-top:36px">
+      <div class="split cols-4 split-pad split-last-tan" style="border:0;border-radius:0">
+        <div>
+          <div class="mono" style="font-size:11.5px;color:var(--muted-2);letter-spacing:.06em">DAN 0 · 15 MINUT</div>
+          <h3 style="font-size:19px;margin-top:12px">Kratek pogovor</h3>
+          <p class="step-p" style="font-size:14.5px">Po telefonu ali WhatsAppu. Povprašamo o delovnem času, storitvah in cenah.</p>
+        </div>
+        <div>
+          <div class="mono" style="font-size:11.5px;color:var(--muted-2);letter-spacing:.06em">DAN 1 · MI DELAMO</div>
+          <h3 style="font-size:19px;margin-top:12px">Nastavimo pomočnika</h3>
+          <p class="step-p" style="font-size:14.5px">Vpišemo tvoje storitve, čase in pravila. Povežemo tvojo WhatsApp številko.</p>
+        </div>
+        <div>
+          <div class="mono" style="font-size:11.5px;color:var(--muted-2);letter-spacing:.06em">DAN 2 · 10 MINUT</div>
+          <h3 style="font-size:19px;margin-top:12px">Skupaj preizkusiva</h3>
+          <p class="step-p" style="font-size:14.5px">Napišeš mu kot stranka. Kar ti ni prav, popravimo takoj.</p>
+        </div>
+        <div>
+          <div class="mono" style="font-size:11.5px;color:var(--green-dark);letter-spacing:.06em">DAN 2 · VKLOP</div>
+          <h3 style="font-size:19px;margin-top:12px">Deluje</h3>
+          <p class="step-p" style="font-size:14.5px">Prvo naročilo pride ponavadi še isti dan. Prvi mesec te spremljamo.</p>
+        </div>
+      </div>
+      <div class="split-foot" style="padding:16px 24px;font-size:15px">Nič ne namestiš, nič ne podpisuješ za tri leta, nič ne plačaš za postavitev.</div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" style="padding:64px 0">
+  <div class="wrap row-between">
+    <div>
+      <h2 class="h-4 measure-24">Še vedno ni jasno? Pokažemo ti na tvojem primeru.</h2>
+      <p class="lead-sm measure-50" style="margin-top:14px">Napišeš nam, kaj delaš. Mi ti pošljemo pogovor, kot bi ga imela tvoja stranka — da vidiš, preden se odločiš.</p>
+    </div>
+    <a class="btn btn--primary" href="/kontakt.html" style="font-size:17.5px">Odpri račun</a>
+  </div>
+</section>
+
+<footer class="site-foot">
+  <div class="foot-grid">
+    <div>
+      <img src="/ft-logo.png" width="188" height="55" alt="FlowTiq">
+      <p style="font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:30ch"><strong>Flow</strong> je neprekinjen tok strank. <strong>Tiq</strong> je odziv v sekundi. Skupaj: pomočnik, ki ti polni koledar, medtem ko delaš.</p>
+    </div>
+    <div>
+      <div class="foot-label">Izdelek</div>
+      <div class="foot-links">
+        <a href="/kako-deluje.html">Kako deluje</a>
+        <a href="/funkcije.html">Kaj zna</a>
+        <a href="/cenik.html">Cena</a>
+        <a href="/vprasanja.html">Vprašanja</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Za koga</div>
+      <div class="foot-links">
+        <a href="/panoga/restavracije.html">Restavracije in picerije</a>
+        <a href="/panoga/frizerski-saloni.html">Frizerski saloni</a>
+        <a href="/panoga/zobozdravniki.html">Ambulante</a>
+        <a href="/panoge.html">Vse obrti →</a>
+        <a href="/imenik.html">Imenik lokalov</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Podjetje</div>
+      <div class="foot-links">
+        <a href="/o-nas.html">O nas</a>
+        <a href="/zgodbe.html">Primeri iz prakse</a>
+        <a href="/nasveti.html">Nasveti</a>
+        <a href="/varnost.html">Varnost in zasebnost</a>
+        <a href="/kontakt.html">Kontakt</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 FlowTiq · WhatsApp pomočnik za slovenske obrtnike in gostince</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a></div>
+  </div>
+</footer>
+</body>
+</html>

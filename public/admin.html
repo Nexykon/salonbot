@@ -12,25 +12,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FlowTiq Admin</title>
-<link rel="stylesheet" href="/flowtiq-theme.css">
+<meta name="theme-color" content="#FBF8F1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    --bg: #f8f7ff;
+    /* FlowTiq paleta — imena spremenljivk ostajajo, ker se nanje
+       zanaša 47 mest v markupu in JS predlogah. */
+    --bg: #FBF8F1;
     --bg2: #ffffff;
-    --bg3: #f0eeff;
-    --border: #e8e7f0;
-    --accent: #7c3aed;
-    --accent2: #6d28d9;
-    --accent-glow: rgba(124,58,237,0.10);
-    --green: #059669;
-    --yellow: #d97706;
-    --red: #dc2626;
-    --text: #111118;
-    --text2: #6b6b80;
-    --text3: #a0a0b0;
+    --bg3: #F4EDE4;
+    --border: #E4DCCB;
+    --accent: #16A34A;
+    --accent2: #0E7A38;
+    --accent-glow: rgba(22,163,74,0.10);
+    --green: #0E7A38;
+    --yellow: #D97706;
+    --red: #B4442E;
+    --text: #101E2B;
+    --text2: #5A6875;
+    --text3: #93A0AC;
+    /* novo */
+    --ink: #101E2B;
+    --tan: #EDE4D6;
+    --mint: #7FD69C;
+    --green-tint: #E8F5EC;
+    --rust-bg: #FBEEEB;
+    --r: 18px;
+    --sans: "Fira Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+    --mono: "Fira Mono", ui-monospace, Menlo, monospace;
   }
   body { background: var(--bg); color: var(--text); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; min-height: 100vh; }
 
@@ -889,6 +901,256 @@
     .btn-add { padding: 8px 14px; font-size: 13px; }
     .badge { font-size: 11px; padding: 3px 8px; }
   }
+
+  /* ═══════════════════════════════════════════════════════════════
+     FlowTiq design — isti jezik kot javne strani in salon.html.
+     Ta blok je namenoma ZADNJI: prepiše ostanke stare temne teme
+     ("MODERN FLOWTIQ REFRESH" zgoraj) brez !important, samo po
+     vrstnem redu. Imena razredov in spremenljivk so nespremenjena —
+     nanje se zanaša 47 mest v markupu in JS predlogah.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* — podlaga — */
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before { content: none; }
+  h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; }
+  :focus-visible { outline: 3px solid rgba(22,163,74,.45); outline-offset: 2px; }
+
+  /* — prijava — */
+  #login-screen { background: linear-gradient(var(--bg), var(--bg3)); }
+  .login-box img { height: 34px !important; width: auto; margin: 0 auto 6px; display: block; }
+  .login-box {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r);
+    box-shadow: 7px 7px 0 var(--ink); padding: 36px 32px; max-width: 400px; width: 100%;
+  }
+  .login-box h1 { font-size: 26px; }
+  .login-box p { color: var(--text2); }
+  .login-box input {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r);
+    padding: 13px 14px; font-family: inherit;
+  }
+  .login-box input:focus { border-color: var(--ink); }
+  .login-error { color: var(--red); font-weight: 600; }
+
+  /* — glava — */
+  header {
+    background: var(--bg); border-bottom: 2px solid var(--ink);
+    backdrop-filter: none; height: auto; padding: 12px 24px;
+  }
+  header img { height: 38px !important; width: auto; }
+  .header-title { font-weight: 800; letter-spacing: -0.01em; }
+  .header-title span { color: var(--accent); }
+  .header-user { color: var(--text2); }
+  .preview-select, .btn-logout {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: 12px;
+    color: var(--text); font-family: inherit; font-weight: 600; backdrop-filter: none;
+    padding: 8px 13px;
+  }
+  .preview-select:hover, .btn-logout:hover { background: var(--tan); color: var(--text); }
+
+  main { max-width: 1400px; }
+
+  /* — kartice s številkami — */
+  .stat-card {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r);
+    box-shadow: none;
+  }
+  .stat-card::before { content: none; }
+  .stat-card:hover { transform: none; box-shadow: 4px 4px 0 var(--ink); }
+  .stat-value { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; }
+  .stat-value.green, .stat-value.accent { color: var(--accent2); }
+  .stat-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text2);
+  }
+  .section-title { font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+
+  /* — tabele — */
+  .table-wrap {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r);
+    box-shadow: none;
+    /* overflow-x: auto, ne hidden — sicer ubije vodoravno drsenje tabele
+       na telefonu, ki ga nastavi @media pravilo zgoraj. */
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  thead { background: var(--bg3); }
+  th {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text2); border-bottom: 2px solid var(--ink);
+  }
+  td { border-top-color: var(--border); color: var(--text); }
+  tr:hover td { background: var(--tan); }
+  .salon-name { font-weight: 700; }
+  .salon-owner { color: var(--text2); }
+
+  /* — značke — */
+  .badge {
+    border: 1.5px solid var(--ink); border-radius: 999px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase; padding: 4px 10px;
+  }
+  .badge.active   { background: var(--green-tint); color: var(--accent2); }
+  .badge.trial    { background: #FDF3E2; color: #92400E; }
+  .badge.inactive { background: var(--rust-bg); color: #8A3421; }
+
+  /* — gumbi — */
+  .btn-primary, .btn-add, .btn-save {
+    background: var(--accent); color: #fff;
+    border: 2px solid var(--ink); border-radius: var(--r);
+    box-shadow: 4px 4px 0 var(--ink); font-family: inherit; font-weight: 600;
+    transition: transform .12s, box-shadow .12s, background .15s;
+  }
+  .btn-primary:hover, .btn-add:hover, .btn-save:hover {
+    background: var(--accent2); box-shadow: 1px 1px 0 var(--ink); transform: translate(3px, 3px);
+  }
+  .btn-primary:disabled, .btn-save:disabled {
+    opacity: .55; transform: none; box-shadow: 4px 4px 0 var(--ink);
+  }
+  .btn-action, .btn-soft, .btn-cancel, .plan-select {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: 12px;
+    color: var(--text); font-family: inherit; font-weight: 600; backdrop-filter: none;
+  }
+  .btn-action:hover, .btn-soft:hover, .btn-cancel:hover { background: var(--tan); color: var(--text); }
+  .btn-activate   { color: var(--accent2); }
+  .btn-activate:hover { background: var(--green-tint); color: var(--accent2); }
+  .btn-deactivate, .btn-danger-soft { color: var(--red); }
+  .btn-deactivate:hover, .btn-danger-soft:hover { background: var(--rust-bg); color: var(--red); }
+  .btn-msg:hover { background: var(--tan); }
+  .icon-btn {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: 11px; color: var(--text);
+  }
+  .icon-btn:hover { background: var(--tan); }
+  .plan-select.pro, .plan-select.starter { background: var(--bg2); color: var(--text); }
+  .plan-select.pro:hover, .plan-select.starter:hover { background: var(--tan); }
+
+  /* — modalna okna — */
+  .modal-overlay { background: rgba(16,30,43,.45); backdrop-filter: blur(4px); }
+  .modal {
+    background: var(--bg); border: 2px solid var(--ink); border-radius: 24px;
+    box-shadow: 10px 10px 0 rgba(16,30,43,.28);
+  }
+  .modal-header { border-bottom: 2px solid var(--ink); background: var(--bg2); }
+  .modal-title { font-weight: 800; letter-spacing: -0.01em; }
+  .modal-close {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: 12px;
+    color: var(--text); width: 36px; height: 36px; display: grid; place-items: center;
+  }
+  .modal-close:hover { background: var(--tan); color: var(--text); }
+  .modal-footer, .studio-footer { border-top: 2px solid var(--ink); background: var(--bg2); }
+  .studio-footer-note { color: var(--text2); }
+
+  /* — obrazci — */
+  .form-group label { color: var(--text2); font-weight: 600; }
+  .form-group input, .form-group select, .form-group textarea, .service-row input {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r);
+    color: var(--text); font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus,
+  .form-group textarea:focus, .service-row input:focus {
+    border-color: var(--ink); outline: 3px solid rgba(22,163,74,.35); outline-offset: 1px;
+  }
+  .form-group select option { background: #fff; color: var(--text); }
+  .form-hint { color: var(--text2); }
+
+  /* — studio (urejevalnik lokala) — */
+  .studio-section {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r);
+    box-shadow: none; overflow: hidden;
+  }
+  .studio-section-head { background: var(--bg3); border-bottom: 2px solid var(--ink); }
+  .studio-section-title { font-weight: 800; color: var(--text); }
+  .studio-section-desc, .studio-subtitle { color: var(--text2); }
+  .studio-kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text2);
+  }
+  .master-only-badge {
+    background: var(--rust-bg); color: #8A3421; border: 1.5px solid var(--ink);
+    border-radius: 999px; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px;
+  }
+  .service-grid-head {
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text2);
+  }
+  .config-step { border-bottom-color: var(--border); }
+
+  /* — koledar — */
+  .cal-wrap { background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r); box-shadow: none; }
+  .cal-nav-btn {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: 13px;
+    color: var(--text); flex: 0 0 auto;
+  }
+  .cal-nav-btn:hover { background: var(--accent); border-color: var(--ink); color: #fff; }
+  .cal-month-title { font-weight: 800; letter-spacing: -0.01em; color: var(--text); }
+  .cal-legend { color: var(--text2); }
+  .cal-leg-dot { border: 1.5px solid var(--ink); }
+  .cal-grid { border: 2px solid var(--ink); border-radius: var(--r); overflow: hidden; }
+  .cal-header-cell {
+    background: var(--bg3); border-bottom: 2px solid var(--ink);
+    font-family: var(--mono); font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text2);
+  }
+  .cal-cell { background: var(--bg2); border-color: var(--border); }
+  .cal-cell:hover { background: var(--tan); }
+  .cal-cell.selected { background: var(--green-tint); box-shadow: inset 0 0 0 2px var(--accent); }
+  .cal-cell.other-month { background: var(--bg3); }
+  .cal-cell.today .cal-day-num { background: var(--accent); color: #fff; }
+  .cal-day-num { font-family: var(--mono); color: var(--text); }
+  .cal-event.confirmed { background: var(--green-tint); color: var(--accent2); border-left: 3px solid var(--accent); }
+  .cal-event.pending   { background: #FDF3E2; color: #92400E; border-left: 3px solid var(--yellow); }
+  .cal-event.cancelled { background: var(--rust-bg); color: #8A3421; border-left: 3px solid var(--red); }
+  .cal-more { color: var(--text2); }
+
+  /* — podrobnosti dneva — */
+  .day-detail { background: var(--bg2); border: 2px solid var(--ink); border-radius: var(--r); box-shadow: none; }
+  .day-detail-title { font-weight: 800; color: var(--text); }
+  .day-booking-item { border-bottom-color: var(--border); }
+  .day-booking-time { font-family: var(--mono); color: var(--accent2); font-weight: 700; }
+  .day-booking-name { font-weight: 700; color: var(--text); }
+  .day-booking-meta, .day-booking-meta span { color: var(--text2); }
+  .day-booking-ref { font-family: var(--mono); color: var(--text3); }
+  .btn-day-confirm, .btn-day-cancel, .btn-day-add {
+    background: var(--bg2); border: 2px solid var(--ink); border-radius: 12px;
+    font-family: inherit; font-weight: 600; color: var(--text);
+  }
+  .btn-day-confirm { color: var(--accent2); }
+  .btn-day-confirm:hover { background: var(--green-tint); }
+  .btn-day-cancel { color: var(--red); }
+  .btn-day-cancel:hover { background: var(--rust-bg); }
+  .btn-day-add:hover { background: var(--tan); }
+  .btn-close-detail { background: var(--bg2); border: 2px solid var(--ink); border-radius: 11px; color: var(--text); }
+
+  /* — obvestila — */
+  #toast {
+    border: 2px solid var(--ink); border-radius: 14px;
+    box-shadow: 4px 4px 0 rgba(16,30,43,.25); font-weight: 600;
+  }
+  #toast.success { background: var(--accent); color: #fff; }
+  #toast.error   { background: var(--red); color: #fff; }
+  #toast.info    { background: var(--ink); color: #fff; }
+
+  /* — prazna stanja in napake — */
+  .empty-state p { color: var(--text2); }
+  .empty-state small { color: var(--text3); }
+  .loading-row td { color: var(--text2); }
+  .error-type { font-weight: 700; color: var(--red); }
+  .error-msg { color: var(--text); }
+  .error-time, .error-phone { font-family: var(--mono); color: var(--text2); }
+
+  @media (max-width: 768px) {
+    header { padding: 10px 14px; }
+    header img { height: 30px !important; }
+    main { padding-left: 14px; padding-right: 14px; }
+    .modal { border-radius: 20px; box-shadow: none; }
+  }
+  /* logotip je povezava na domačo stran — inline-flex, da ne doda prostora pod sliko */
+  .ft-logo-link { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -897,7 +1159,7 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <img src="/logo.png" alt="FlowTiq" style="height:200px;object-fit:contain">
+      <a class="ft-logo-link" href="/" title="FlowTiq — domača stran"><img src="/ft-logo.png" alt="FlowTiq" width="188" height="55" style="object-fit:contain"></a>
     </div>
     <p>Vstopite z master emailom in geslom.</p>
     <div id="master-login-form">
@@ -931,7 +1193,7 @@
 <div id="app">
   <header>
     <div class="header-left">
-      <img src="/logo.png" alt="FlowTiq" style="height:100px;object-fit:contain;display:block">
+      <a class="ft-logo-link" href="/" title="FlowTiq — domača stran"><img src="/ft-logo.png" alt="FlowTiq" width="188" height="55" style="object-fit:contain;display:block"></a>
     </div>
     <div class="header-right">
       <span class="header-user" id="header-user"></span>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;600;700;800&family=Fira+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    font-family: "Fira Sans", sans-serif; color: #101E2B;
+    background: linear-gradient(#FBF8F1, #F4EDE4);
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 58px 64px;
+  }
+  .vrh { display: flex; align-items: center; justify-content: space-between; }
+  .logo { height: 54px; }
+  .znacka {
+    display: inline-flex; align-items: center; gap: 10px;
+    border: 3px solid #101E2B; border-radius: 999px; padding: 9px 20px; background: #fff;
+    font-family: "Fira Mono", monospace; font-size: 17px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .znacka i { width: 12px; height: 12px; border-radius: 50%; background: #16A34A; }
+  h1 {
+    font-size: 78px; font-weight: 800; line-height: 1.04; letter-spacing: -0.03em;
+    max-width: 20ch;
+  }
+  mark {
+    background: #16A34A; color: #fff; padding: 2px 14px 8px;
+    border-radius: 14px; display: inline-block; transform: rotate(-1.2deg);
+  }
+  .dno { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; }
+  .pas { display: flex; border: 3px solid #101E2B; border-radius: 20px; background: #fff; overflow: hidden; }
+  .pas > div { padding: 14px 26px; }
+  .pas > div + div { border-left: 3px solid #101E2B; }
+  .pas b { display: block; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+  .pas span { font-size: 15px; color: #5A6875; }
+  .url { font-family: "Fira Mono", monospace; font-size: 22px; font-weight: 600; color: #0E7A38; }
+</style>
+</head>
+<body>
+  <div class="vrh">
+    <img class="logo" src="LOGO_SRC" alt="FlowTiq">
+    <div class="znacka"><i></i> Deluje na WhatsAppu</div>
+  </div>
+
+  <h1>Naročila in termini<br><mark>na avtopilotu</mark></h1>
+
+  <div class="dno">
+    <div class="pas">
+      <div><b>24 ur</b><span>na dan odgovarja</span></div>
+      <div><b>2 dneva</b><span>do prvega naročila</span></div>
+      <div><b>0 €</b><span>provizije</span></div>
+    </div>
+    <div class="url">flowtiq.si</div>
+  </div>
+</body>
+</html>

@@ -1,6 +1,11 @@
 node_modules/
 .env
+.env.local
+.env.*.local
 *.log
+
+# lokalni arhiv stare naslovnice — prava zgodovina je v gitu
+_arhiv/
 
 .npm-cache/
 *.ps1

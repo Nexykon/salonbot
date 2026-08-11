@@ -1,9 +1,30 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowTiq — WhatsApp pomočnik za naročila in termine</title>
+<meta name="description" content="Pomočnik na WhatsAppu za restavracije, salone, servise in ambulante. Sprejema naročila in rezervacije 24 ur na dan. Brez provizij, brez nove aplikacije.">
+<link rel="canonical" href="https://flowtiq.si/">
+<meta property="og:title" content="FlowTiq — WhatsApp pomočnik za naročila in rezervacije">
+<meta property="og:description" content="Stranka napiše na WhatsApp, FlowTiq odgovori v sekundi, pogleda tvoj koledar in potrdi naročilo. Brez provizij, brez nove aplikacije.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://flowtiq.si/">
+<meta property="og:locale" content="sl_SI">
+<meta property="og:image" content="https://flowtiq.si/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FlowTiq — naročila in termini na avtopilotu">
+<meta property="og:site_name" content="FlowTiq">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FBF8F1">
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="apple-touch-icon" href="/logo.png">
-<!-- Google tag (gtag.js) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flowtiq-site.css">
+<script src="/flowtiq-nav.js" defer></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXH2YX58RX"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -11,1467 +32,841 @@
   gtag('js', new Date());
   gtag('config', 'G-ZXH2YX58RX');
 </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FlowTiq — WhatsApp pomočnik za salone in picerije</title>
-<meta name="description" content="WhatsApp bot za frizerske salone in picerije. Sprejema rezervacije in naročila 24/7 — brez telefona, brez zamujenih strank.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-/* ── Reset & base ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #0c1f17;
-  background: #fff;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* ── Tokens ── */
-:root {
-  --green: #42A842;
-  --green-dark: #338A33;
-  --green-light: #EAF7EA;
-  --blue: #2563eb;
-  --blue-dark: #1d4ed8;
-  --blue-light: #eff6ff;
-  --ink: #0c1f17;
-  --ink-soft: #4a5568;
-  --ink-faint: #94a3b8;
-  --border: #e2e8f0;
-  --bg: #f8fafc;
-  --white: #ffffff;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.10);
-  --shadow-lg: 0 12px 40px rgba(0,0,0,.12);
-  --radius: 16px;
-  --display: 'Bricolage Grotesque', sans-serif;
-}
-
-/* ── Nav ── */
-html, body { overflow-x: clip; }
-.nav {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-}
-.nav-inner {
-  max-width: 1120px; margin: 0 auto;
-  padding: 0 24px;
-  height: 80px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.nav-logo img { height: 96px; display: block; object-fit: contain; }
-.nav-links {
-  display: flex; gap: 32px;
-  list-style: none;
-}
-.nav-links a {
-  text-decoration: none; color: var(--ink);
-  font-weight: 600; font-size: 15.5px;
-  transition: color .15s;
-}
-.nav-links a:hover { color: var(--green); }
-.nav-actions { display: flex; gap: 10px; align-items: center; }
-.btn-wa {
-  border: none; cursor: pointer;
-  background: var(--ink); color: #fff;
-  padding: 11px 22px; border-radius: 100px;
-  font-weight: 700; font-size: 15px;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
-  transition: transform .15s, background .15s;
-}
-.btn-wa:hover { background: #1a2e22; transform: translateY(-1px); }
-.btn-login {
-  background: transparent; color: var(--ink);
-  border: 2px solid var(--ink);
-  padding: 9px 22px; border-radius: 100px;
-  font-weight: 700; font-size: 15px;
-  text-decoration: none; display: inline-flex; align-items: center;
-  transition: transform .15s, background .15s, color .15s;
-}
-.btn-login:hover { background: var(--ink); color: #fff; transform: translateY(-1px); }
-
-/* ── Hero ── */
-.hero {
-  background: linear-gradient(135deg, #f0fdf9 0%, #f0f7ff 50%, #fdf4ff 100%);
-  padding: 100px 24px 80px;
-  text-align: center;
-  overflow: hidden;
-}
-.hero-badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: #fff; border: 1px solid var(--border);
-  padding: 8px 18px; border-radius: 100px;
-  font-size: 14px; font-weight: 600; color: var(--ink-soft);
-  margin-bottom: 36px;
-  box-shadow: var(--shadow-sm);
-}
-.hero-badge span { width: 8px; height: 8px; background: var(--green); border-radius: 50%; display: inline-block; }
-.hero h1 {
-  font-family: var(--display);
-  font-size: clamp(48px, 7vw, 80px);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.03em;
-  margin-bottom: 24px;
-  color: var(--ink);
-}
-.hero h1 em { font-style: normal; color: var(--green); }
-.hero-sub {
-  font-size: clamp(17px, 2vw, 20px);
-  color: var(--ink-soft);
-  max-width: 600px; margin: 0 auto 40px;
-  line-height: 1.6;
-}
-.hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 72px; }
-.btn-primary {
-  background: var(--green); color: #fff;
-  padding: 16px 30px; border-radius: 100px;
-  font-weight: 700; font-size: 17px;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
-  transition: transform .15s, background .15s;
-  box-shadow: 0 4px 20px rgba(6,193,103,.35);
-}
-.btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); }
-.btn-secondary {
-  background: #fff; color: var(--ink);
-  padding: 16px 30px; border-radius: 100px;
-  font-weight: 700; font-size: 17px;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
-  border: 1.5px solid var(--border);
-  transition: transform .15s, box-shadow .15s;
-  box-shadow: var(--shadow-sm);
-}
-.btn-secondary:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-
-/* Hero cards row */
-.hero-cards {
-  display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
-}
-.hero-card {
-  background: #fff; border-radius: var(--radius);
-  padding: 22px 26px;
-  box-shadow: var(--shadow-md);
-  text-align: left;
-  border: 1px solid var(--border);
-  min-width: 180px;
-}
-.hero-card .label { font-size: 13px; color: var(--ink-faint); font-weight: 500; margin-top: 8px; }
-.hero-card .value { font-family: var(--display); font-size: 28px; font-weight: 800; color: var(--ink); }
-.hero-card .icon { font-size: 28px; }
-
-/* ── Phone mockup ── */
-.phone-wrap {
-  width: 260px;
-  height: 564px;
-  background: #1a1a1a;
-  border-radius: 40px;
-  padding: 8px;
-  flex-shrink: 0;
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.07) inset;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-/* Side buttons */
-.phone-wrap::before {
-  content: '';
-  position: absolute;
-  left: -3px; top: 110px;
-  width: 3px; height: 32px;
-  background: #2a2a2a;
-  border-radius: 2px 0 0 2px;
-  box-shadow: 0 40px 0 #2a2a2a, 0 80px 0 #2a2a2a;
-}
-.phone-wrap::after {
-  content: '';
-  position: absolute;
-  right: -3px; top: 130px;
-  width: 3px; height: 52px;
-  background: #2a2a2a;
-  border-radius: 0 2px 2px 0;
-}
-.phone-screen {
-  background: #f0f2f5;
-  border-radius: 33px;
-  overflow: hidden;
-  font-size: 13px;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-/* Status bar */
-.phone-status-bar {
-  background: #075e54;
-  padding: 10px 18px 4px;
-  display: flex; justify-content: space-between; align-items: center;
-}
-.phone-time { color: #fff; font-size: 12px; font-weight: 700; }
-.phone-icons { display: flex; gap: 5px; align-items: center; }
-.phone-icons svg { opacity: .9; }
-/* Notch */
-.phone-notch {
-  position: absolute;
-  top: 16px; left: 50%; transform: translateX(-50%);
-  width: 90px; height: 26px;
-  background: #1a1a1a;
-  border-radius: 0 0 16px 16px;
-  z-index: 10;
-}
-.phone-header {
-  background: #075e54;
-  color: #fff;
-  padding: 8px 14px 12px;
-  display: flex; align-items: center; gap: 10px;
-}
-.phone-avatar {
-  width: 36px; height: 36px; border-radius: 50%;
-  background: var(--green); display: flex; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 15px; color: #fff; flex-shrink: 0;
-}
-.phone-name { font-weight: 700; font-size: 14px; line-height: 1.2; }
-.phone-subtitle { font-size: 11px; opacity: .8; display: flex; align-items: center; gap: 4px; }
-.phone-msgs {
-  padding: 10px 10px 12px;
-  display: flex; flex-direction: column; gap: 7px;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  background: #e5ddd5;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23e5ddd5' width='200' height='200'/%3E%3C/svg%3E");
-}
-.msg {
-  padding: 8px 12px; border-radius: 12px;
-  max-width: 82%; line-height: 1.45; font-size: 14px;
-  opacity: 0;
-  transform: translateY(8px);
-  animation: msgIn .35s ease forwards;
-}
-.msg-in  { background: #fff; align-self: flex-start; border-top-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-.msg-out { background: #dcf8c6; align-self: flex-end; border-top-right-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
-.msg-sys {
-  background: rgba(0,0,0,.12); align-self: center;
-  font-size: 11px; color: #555; padding: 3px 10px; border-radius: 8px;
-  opacity: 0; animation: msgIn .35s ease forwards;
-}
-.msg-time { font-size: 10px; color: #999; text-align: right; margin-top: 2px; }
-/* Typing indicator */
-.typing {
-  background: #fff; padding: 10px 14px; border-radius: 12px; border-top-left-radius: 4px;
-  align-self: flex-start; display: flex; gap: 5px; align-items: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,.12);
-  opacity: 0; animation: msgIn .35s ease forwards;
-}
-.typing span {
-  width: 7px; height: 7px; background: #aaa; border-radius: 50%;
-  animation: bounce .9s infinite ease-in-out;
-}
-.typing span:nth-child(2) { animation-delay: .15s; }
-.typing span:nth-child(3) { animation-delay: .3s; }
-@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
-@keyframes msgIn { to { opacity:1; transform:translateY(0); } }
-
-/* Hero layout */
-.hero-layout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 60px;
-  flex-wrap: wrap;
-}
-.hero-text { max-width: 560px; text-align: left; }
-.hero-text .hero-badge { justify-content: flex-start; }
-.hero-text .hero-cta { justify-content: flex-start; }
-
-/* Phone with stat cards */
-.phone-scene {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  width: 260px;
-  flex-shrink: 0;
-}
-.stat-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  width: 260px;
-}
-.float-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 11px 12px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.float-card .fc-icon { font-size: 18px; flex-shrink: 0; }
-.float-card .fc-val { font-family: var(--display); font-weight: 800; font-size: 15px; color: var(--ink); line-height: 1.1; }
-.float-card .fc-label { font-size: 10.5px; color: var(--ink-soft); line-height: 1.3; }
-
-/* ── Marquee ── */
-.marquee-wrap {
-  background: var(--ink);
-  padding: 18px 0;
-  overflow: hidden;
-}
-.marquee-track {
-  display: flex; gap: 48px;
-  animation: marquee 28s linear infinite;
-  width: max-content;
-}
-.marquee-item {
-  color: rgba(255,255,255,.7);
-  font-size: 15px; font-weight: 600;
-  white-space: nowrap;
-  display: flex; align-items: center; gap: 10px;
-}
-.marquee-item::after { content: '·'; color: var(--green); }
-@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-
-/* ── Section base ── */
-section { padding: 100px 24px; }
-.container { max-width: 1120px; margin: 0 auto; }
-.section-label {
-  font-size: 12px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--blue);
-  margin-bottom: 14px;
-}
-.section-title {
-  font-family: var(--display);
-  font-size: clamp(32px, 4vw, 52px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  margin-bottom: 16px;
-}
-.section-sub {
-  font-size: 18px; color: var(--ink-soft);
-  max-width: 560px; line-height: 1.6;
-  margin: 0 auto 56px; text-align: center;
-}
-
-/* ── Pain section ── */
-.pain { background: var(--bg); }
-.pain-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-  margin-top: 56px;
-}
-.pain-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 28px;
-}
-.pain-icon { font-size: 32px; margin-bottom: 16px; }
-.pain-card h3 { font-family: var(--display); font-weight: 700; font-size: 18px; margin-bottom: 8px; }
-.pain-card p { color: var(--ink-soft); font-size: 15px; line-height: 1.6; }
-
-/* ── Features ── */
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  margin-top: 56px;
-}
-.feature-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 32px;
-  transition: transform .2s, box-shadow .2s;
-}
-.feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
-.feature-icon {
-  width: 52px; height: 52px;
-  border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-.feature-icon.green { background: var(--green-light); }
-.feature-icon.blue { background: var(--blue-light); }
-.feature-icon.purple { background: #f5f3ff; }
-.feature-card h3 { font-family: var(--display); font-weight: 700; font-size: 19px; margin-bottom: 10px; }
-.feature-card p { color: var(--ink-soft); font-size: 15px; line-height: 1.6; }
-
-/* ── How it works ── */
-.how { background: linear-gradient(135deg, #f0fdf9 0%, #eff6ff 100%); }
-.steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 32px;
-  margin-top: 56px;
-  position: relative;
-}
-.step {
-  background: #fff;
-  border-radius: var(--radius);
-  padding: 36px 32px;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border);
-  position: relative;
-}
-.step-num {
-  width: 48px; height: 48px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--green), var(--blue));
-  color: #fff;
-  font-family: var(--display);
-  font-weight: 800; font-size: 22px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 20px;
-}
-.step h3 { font-family: var(--display); font-weight: 700; font-size: 20px; margin-bottom: 10px; }
-.step p { color: var(--ink-soft); font-size: 15px; line-height: 1.6; }
-
-/* ── Calculator ── */
-.calc-box {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 48px;
-  max-width: 700px;
-  margin: 56px auto 0;
-  box-shadow: var(--shadow-md);
-}
-.calc-label { font-weight: 700; font-size: 18px; margin-bottom: 24px; }
-.slider-wrap { margin-bottom: 32px; }
-.slider-labels { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-faint); margin-top: 8px; }
-input[type=range] {
-  width: 100%; height: 6px;
-  -webkit-appearance: none;
-  background: linear-gradient(to right, var(--green) 0%, var(--green) var(--pct, 30%), var(--border) var(--pct, 30%), var(--border) 100%);
-  border-radius: 3px; cursor: pointer; outline: none;
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 22px; height: 22px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 2px 8px rgba(6,193,103,.4);
-  border: 3px solid #fff;
-}
-.slider-val {
-  font-family: var(--display);
-  font-size: 32px; font-weight: 800;
-  color: var(--green);
-  display: inline-block;
-  margin-bottom: 4px;
-}
-.calc-result {
-  display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;
-}
-.calc-result-box {
-  flex: 1; min-width: 160px;
-  background: var(--bg);
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-}
-.calc-result-box .num {
-  font-family: var(--display);
-  font-size: 36px; font-weight: 800;
-  margin-bottom: 4px;
-}
-.calc-result-box .num.green { color: var(--green); }
-.calc-result-box .num.blue { color: var(--blue); }
-.calc-result-box .desc { font-size: 14px; color: var(--ink-soft); }
-.calc-arrow {
-  display: flex; align-items: center; justify-content: center;
-  font-size: 24px; color: var(--green); font-weight: 800;
-  padding: 0 8px;
-}
-
-/* ── No-risk ── */
-.norisk { background: var(--ink); color: #fff; }
-.norisk .section-label { color: var(--green); }
-.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 340px)); gap: 22px; justify-content: center; margin-bottom: 56px; }
-.price-card { background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 20px; padding: 34px 30px; text-align: left; position: relative; }
-.price-card.featured { border-color: var(--green); background: rgba(6,193,103,.09); }
-.price-card .plan-badge { position: absolute; top: -13px; right: 22px; background: var(--green); color: #06281a; font-size: 12px; font-weight: 800; padding: 5px 14px; border-radius: 100px; letter-spacing: .03em; }
-.price-card h3 { color: #fff; font-size: 21px; font-weight: 800; margin-bottom: 6px; }
-.price-card .plan-for { color: rgba(255,255,255,.65); font-size: 13.5px; margin-bottom: 18px; min-height: 20px; }
-.price-card .plan-price { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: -0.02em; }
-.price-card .plan-price span { font-size: 15px; font-weight: 600; color: rgba(255,255,255,.6); }
-.price-card .plan-trial { color: var(--green); font-size: 13px; font-weight: 700; margin: 4px 0 20px; }
-.price-card ul { list-style: none; margin: 0 0 26px; padding: 0; }
-.price-card li { color: rgba(255,255,255,.85); font-size: 14.5px; padding: 7px 0 7px 26px; position: relative; }
-.price-card li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 800; }
-.price-card li.li-off { color: rgba(255,255,255,.38); }
-.price-card li.li-off::before { content: '—'; color: rgba(255,255,255,.3); }
-.price-card .btn-primary { width: 100%; text-align: center; }
-@media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
-.norisk .section-title { color: #fff; }
-.norisk .section-sub { color: rgba(255,255,255,.7); }
-.norisk-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
-  margin-bottom: 56px;
-}
-.norisk-card {
-  background: rgba(255,255,255,.07);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: var(--radius);
-  padding: 28px;
-}
-.norisk-card .icon { font-size: 28px; margin-bottom: 14px; }
-.norisk-card h3 { font-weight: 700; font-size: 17px; margin-bottom: 6px; }
-.norisk-card p { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.6; }
-.norisk-cta { text-align: center; }
-.norisk-note { margin-top: 16px; font-size: 14px; color: rgba(255,255,255,.5); }
-
-/* ── FAQ ── */
-.faq-list { max-width: 720px; margin: 56px auto 0; }
-.faq-item {
-  border-bottom: 1px solid var(--border);
-}
-.faq-q {
-  width: 100%; background: none; border: none; text-align: left;
-  padding: 22px 0;
-  font-family: var(--display); font-weight: 700; font-size: 17px;
-  color: var(--ink); cursor: pointer;
-  display: flex; justify-content: space-between; align-items: center;
-  gap: 16px;
-}
-.faq-q:hover { color: var(--green); }
-.faq-icon {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--bg); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; color: var(--green); transition: transform .2s;
-}
-.faq-item.open .faq-icon { transform: rotate(45deg); }
-.faq-a {
-  max-height: 0; overflow: hidden; transition: max-height .3s ease;
-  font-size: 15.5px; color: var(--ink-soft); line-height: 1.7;
-  padding: 0;
-}
-.faq-item.open .faq-a { max-height: 300px; padding-bottom: 20px; }
-
-/* ── Final CTA ── */
-.cta-final {
-  background: linear-gradient(135deg, var(--green) 0%, var(--blue) 100%);
-  text-align: center; padding: 120px 24px;
-}
-.cta-final h2 {
-  font-family: var(--display);
-  font-size: clamp(36px, 5vw, 60px);
-  font-weight: 800; color: #fff;
-  line-height: 1.1; letter-spacing: -0.025em;
-  margin-bottom: 16px;
-}
-.cta-final p { font-size: 18px; color: rgba(255,255,255,.85); margin-bottom: 40px; }
-.btn-primary-white {
-  background: #fff; color: var(--ink);
-  padding: 18px 36px; border-radius: 100px;
-  font-weight: 700; font-size: 18px;
-  text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
-  transition: transform .15s, box-shadow .15s;
-  box-shadow: 0 8px 30px rgba(0,0,0,.2);
-}
-.btn-primary-white:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.25); }
-.cta-final-note { margin-top: 20px; font-size: 14px; color: rgba(255,255,255,.6); }
-
-/* ── Footer ── */
-footer {
-  background: #0a1810;
-  color: rgba(255,255,255,.7);
-  padding: 56px 24px 36px;
-}
-.footer-inner {
-  max-width: 1120px; margin: 0 auto;
-  display: flex; justify-content: space-between; align-items: center;
-  flex-wrap: wrap; gap: 24px;
-  padding-bottom: 32px;
-  border-bottom: 1px solid rgba(255,255,255,.1);
-}
-footer img.footer-logo { height: 80px; object-fit: contain; }
-.footer-links {
-  display: flex; gap: 24px; list-style: none;
-}
-.footer-links a { color: rgba(255,255,255,.5); text-decoration: none; font-size: 14px; }
-.footer-links a:hover { color: #fff; }
-.footer-copy {
-  max-width: 1120px; margin: 24px auto 0;
-  font-size: 13px; color: rgba(255,255,255,.35);
-}
-
-/* ── Responsive ── */
-@media (max-width: 768px) {
-  .nav-links { display: none; }
-  /* Nav: manjši logo in gumba, da se ne prekrivajo */
-  .nav-inner { height: 62px; padding: 0 14px; gap: 8px; }
-  .nav-logo img { height: 46px; }
-  .nav-actions { display: flex; gap: 8px; flex-shrink: 0; }
-  .nav-actions .btn-wa { padding: 9px 13px; font-size: 13px; white-space: nowrap; }
-  .nav-actions .btn-login { padding: 9px 12px; font-size: 13px; white-space: nowrap; }
-
-  .hero { padding: 56px 16px 48px; }
-  .hero-layout { flex-direction: column; text-align: center; gap: 40px; }
-  .hero-text { text-align: center; }
-  .hero-text .hero-badge, .hero-text .hero-cta { justify-content: center; }
-  .hero-badge { font-size: 12.5px; padding: 7px 12px; }
-  .hero-sub { font-size: 16px; }
-  .hero-cta { margin-bottom: 40px; }
-  .hero-cta .btn-primary, .hero-cta .btn-secondary { width: 100%; justify-content: center; text-align: center; box-sizing: border-box; }
-  .hero-proof { justify-content: center; }
-
-  /* Telefon v hero: pomanjšan, da ne sili čez rob */
-  .phone-scene, .stat-cards { width: 240px; }
-  .phone-wrap { width: 240px; height: 520px; }
-
-  section { padding: 64px 16px; }
-  .calc-box { padding: 28px 18px; }
-  .calc-result { gap: 12px; flex-direction: column; }
-  .calc-arrow { display: none; }
-  .footer-inner { flex-direction: column; text-align: center; }
-  footer img.footer-logo { height: 56px; }
-  .footer-links { justify-content: center; }
-
-  /* Cenik in kartice */
-  .pricing-grid { grid-template-columns: 1fr; }
-  .price-card { padding: 28px 22px; }
-  .price-card .plan-price { font-size: 34px; }
-  .norisk-cta .btn-primary { width: 100%; box-sizing: border-box; }
-
-  /* FAQ: daljša vprašanja brez prekrivanja ikone */
-  .faq-q { font-size: 15px; gap: 12px; text-align: left; }
-
-  /* Modal: nikoli čez zaslon */
-  .modal-box { padding: 26px 18px; max-height: 92vh; overflow-y: auto; }
-}
-
-/* Zelo ozki zasloni */
-@media (max-width: 420px) {
-  .nav-logo img { height: 40px; }
-  .nav-actions .btn-wa { padding: 8px 10px; font-size: 12px; }
-  .nav-actions .btn-login { padding: 8px 9px; font-size: 12px; }
-  .phone-scene, .stat-cards { width: 220px; }
-  .phone-wrap { width: 220px; height: 480px; }
-  h1 { font-size: 32px !important; }
-  .stat-cards { grid-template-columns: 1fr 1fr; }
-}
-
-/* ── Brand section ── */
-.brand-section { background: #fff; padding: 80px 24px; }
-.brand-inner {
-  display: flex; align-items: center; gap: 72px; flex-wrap: wrap;
-}
-.brand-logo-wrap {
-  position: relative; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-}
-.brand-logo { width: 300px; height: 300px; object-fit: contain; position: relative; z-index: 1; }
-.brand-glow {
-  position: absolute; inset: -20px;
-  background: radial-gradient(circle, rgba(66,168,66,.15) 0%, transparent 70%);
-  border-radius: 50%;
-}
-.brand-content { flex: 1; min-width: 300px; }
-.brand-title {
-  font-family: var(--display);
-  font-size: clamp(26px, 3.5vw, 40px);
-  font-weight: 800; line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin-bottom: 18px; color: var(--ink);
-}
-.brand-desc {
-  font-size: 17px; color: var(--ink-soft); line-height: 1.7;
-  margin-bottom: 36px; max-width: 520px;
-}
-.brand-desc strong { color: var(--ink); font-weight: 700; }
-.brand-stats {
-  display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
-}
-.bstat { display: flex; flex-direction: column; gap: 2px; }
-.bstat-num {
-  font-family: var(--display); font-size: 26px; font-weight: 800;
-  background: linear-gradient(135deg, var(--green), var(--blue));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-.bstat-label { font-size: 13px; color: var(--ink-faint); font-weight: 500; }
-.bstat-div { width: 1px; height: 40px; background: var(--border); }
-@media (max-width: 768px) {
-  .brand-inner { flex-direction: column; text-align: center; gap: 36px; }
-  .brand-logo { width: 220px; height: 220px; }
-  .brand-stats { justify-content: center; }
-}
-
-/* ── Hero proof strip ── */
-.hero-proof {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  margin-top: 20px;
-}
-.proof-item { font-size: 14px; color: var(--ink-soft); font-weight: 500; display: flex; align-items: center; gap: 6px; }
-.proof-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; display: inline-block; }
-.proof-sep { color: var(--border); font-size: 16px; }
-
-/* ── Contact Modal ── */
-.modal-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55);
-  z-index: 1000; align-items: center; justify-content: center; padding: 16px;
-}
-.modal-overlay.open { display: flex; }
-.modal-box {
-  background: #fff; border-radius: 20px; padding: 36px 32px; max-width: 480px;
-  width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,.18); position: relative;
-  animation: modalIn .22s ease;
-}
-@keyframes modalIn { from { transform: scale(.94); opacity:0; } to { transform: scale(1); opacity:1; } }
-.modal-close {
-  position: absolute; top: 16px; right: 20px; font-size: 22px; color: #94a3b8;
-  cursor: pointer; border: none; background: none; line-height: 1;
-}
-.modal-close:hover { color: #1e293b; }
-.modal-title { font-size: 1.35rem; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
-.modal-sub { font-size: .9rem; color: #64748b; margin-bottom: 24px; }
-.modal-field { margin-bottom: 14px; }
-.modal-field label { display: block; font-size: .82rem; font-weight: 600; color: #475569; margin-bottom: 5px; }
-.modal-field input, .modal-field select {
-  width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px;
-  font-size: .95rem; color: #1e293b; outline: none; box-sizing: border-box;
-  transition: border-color .15s;
-}
-.modal-field input:focus, .modal-field select:focus { border-color: var(--green); }
-.modal-submit {
-  width: 100%; padding: 14px; background: var(--green); color: #fff; font-size: 1rem;
-  font-weight: 700; border: none; border-radius: 12px; cursor: pointer; margin-top: 6px;
-  transition: background .15s, transform .12s;
-}
-.modal-submit:hover { background: var(--green-dark); transform: translateY(-1px); }
-.modal-submit:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
-.modal-success { text-align: center; padding: 20px 0; }
-.modal-success .s-icon { font-size: 3rem; margin-bottom: 12px; }
-.modal-success h3 { font-size: 1.2rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
-.modal-success p { color: #64748b; font-size: .9rem; }
-.modal-or { display: flex; align-items: center; gap: 12px; margin: 18px 0 14px; }
-.modal-or span { color: #94a3b8; font-size: .82rem; white-space: nowrap; }
-.modal-or::before, .modal-or::after { content:''; flex:1; height:1px; background:#e2e8f0; }
-.btn-wa-modal {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 12px; border: 2px solid #25D366; border-radius: 12px;
-  color: #128C7E; font-weight: 700; font-size: .95rem; text-decoration: none;
-  transition: background .15s;
-}
-.btn-wa-modal:hover { background: #f0fdf9; }
-</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://flowtiq.si/#organizacija",
+      "name": "FlowTiq",
+      "url": "https://flowtiq.si/",
+      "logo": "https://flowtiq.si/ft-logo.png",
+      "image": "https://flowtiq.si/og-image.png",
+      "description": "WhatsApp pomočnik, ki za obrtnike in gostince sprejema naročila in rezervacije 24 ur na dan.",
+      "email": "info@flowtiq.si",
+      "telephone": "+386 40 599 185",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Slovenija"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "prodaja in podpora",
+        "email": "info@flowtiq.si",
+        "telephone": "+386 40 599 185",
+        "availableLanguage": [
+          "sl",
+          "en"
+        ]
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://flowtiq.si/#stran",
+      "url": "https://flowtiq.si/",
+      "name": "FlowTiq",
+      "inLanguage": "sl-SI",
+      "publisher": {
+        "@id": "https://flowtiq.si/#organizacija"
+      }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "FlowTiq",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "WhatsApp",
+      "inLanguage": "sl-SI",
+      "url": "https://flowtiq.si/",
+      "publisher": {
+        "@id": "https://flowtiq.si/#organizacija"
+      },
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "AI Start",
+          "price": "89",
+          "priceCurrency": "EUR",
+          "url": "https://flowtiq.si/cenik.html",
+          "description": "Do 500 naročil na mesec. Naročila in rezervacije 24/7, koledar, opomniki."
+        },
+        {
+          "@type": "Offer",
+          "name": "AI Pro",
+          "price": "159.99",
+          "priceCurrency": "EUR",
+          "url": "https://flowtiq.si/cenik.html",
+          "description": "Do 1.500 naročil na mesec. Prosto besedilo, glasovna sporočila, vabila nazaj, ocene."
+        },
+        {
+          "@type": "Offer",
+          "name": "Premium",
+          "price": "299",
+          "priceCurrency": "EUR",
+          "url": "https://flowtiq.si/cenik.html",
+          "description": "Do 10.000 naročil na mesec, več lokacij, prednostna podpora."
+        }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-inner">
-    <a href="#" class="nav-logo"><img src="/logo.png" alt="FlowTiq"></a>
-    <ul class="nav-links">
-      <li><a href="#features">Kaj dobite</a></li>
-      <li><a href="#how">Kako deluje</a></li>
-      <li><a href="#cena">Cena</a></li>
-      <li><a href="#faq">Vprašanja</a></li>
-    </ul>
-    <div class="nav-actions">
-      <button onclick="location.href='/prijava.html'" class="btn-wa">Registracija</button>
-      <a href="/salon.html" class="btn-login">Prijava</a>
+<header class="site-head">
+  <div class="head-inner">
+    <a class="head-logo" href="/"><img src="/ft-logo.png" width="188" height="55" alt="FlowTiq"></a>
+    <nav class="head-nav">
+      <a href="/panoge.html">Za koga</a>
+      <a href="/kako-deluje.html">Kako deluje</a>
+      <a href="/funkcije.html">Kaj zna</a>
+      <a href="/cenik.html">Cena</a>
+      <a href="/zgodbe.html">Primeri</a>
+      <a href="/vprasanja.html">Vprašanja</a>
+    </nav>
+    <div class="head-actions">
+      <a class="btn btn--ghost btn--sm" href="/salon.html">Prijava</a>
+      <a class="btn btn--primary btn--sm" href="/kontakt.html">Odpri račun</a>
     </div>
   </div>
-</nav>
+</header>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="container">
-    <div class="hero-layout">
-      <div class="hero-text">
-        <div class="hero-badge"><span></span> ✂️ Saloni · 🍕 Picerije · 10+ obrti na avtopilotu</div>
-        <h1>Naj se stranke<br><em>naročajo same.</em></h1>
-        <p class="hero-sub">Stranka napiše na vaš WhatsApp — FlowTiq ji odgovori v sekundi. Za <strong>picerije in restavracije</strong> sprejema naročila brez provizij tržnic, za <strong>salone in studie</strong> rezervira termine. Vi mirno delate naprej.</p>
-        <div class="hero-cta">
-          <button onclick="location.href='/prijava.html'" class="btn-primary">
-            Začni zdaj →
-          </button>
-          <a href="#how" class="btn-secondary">Kako to deluje →</a>
-        </div>
-        <div class="hero-proof">
-          <span class="proof-item"><span class="proof-dot"></span>Postavitev v 1–2 dneh</span>
-          <span class="proof-sep">·</span>
-          <span class="proof-item">⚡ Odziv &lt; 2 s</span>
-          <span class="proof-sep">·</span>
-          <span class="proof-item">📉 do −30 % praznih terminov</span>
-        </div>
+<!-- ── Hero ── -->
+<section class="sec sec--grad sec--flush">
+  <div class="wrap grid-hero" style="padding-top:64px">
+    <div style="padding-bottom:64px">
+      <div class="pill pill--mono">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="#16A34A" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.966 1.164-.198.198-.396.223-.693.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.347-.352.52-.527.174-.174.231-.298.347-.497.116-.198.058-.372-.014-.521-.072-.148-.669-1.611-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Deluje na WhatsAppu, ki ga že imaš
       </div>
-      <div class="phone-scene">
-        <div class="phone-wrap">
-          <div class="phone-notch"></div>
-          <div class="phone-screen">
-            <div class="phone-status-bar">
-              <span class="phone-time">9:41</span>
-              <div class="phone-icons">
-                <svg width="14" height="10" fill="white" viewBox="0 0 14 10"><rect x="0" y="4" width="3" height="6" rx="1"/><rect x="4" y="2" width="3" height="8" rx="1"/><rect x="8" y="0" width="3" height="10" rx="1"/></svg>
-                <svg width="14" height="10" fill="white" viewBox="0 0 20 14"><rect x="1" y="1" width="16" height="12" rx="2" stroke="white" stroke-width="1.5" fill="none"/><rect x="17" y="4" width="2" height="6" rx="1" fill="white"/><rect x="2.5" y="2.5" width="11" height="9" rx="1" fill="white"/></svg>
-              </div>
+      <h1 class="h-hero" style="margin-top:22px">Tvoj <span class="mark">AI pomočnik</span><br>za naročila, termine<br>in vse vmes.</h1>
+      <p class="lead-lg measure-44" style="margin-top:26px">Dela na WhatsAppu, 24 ur na dan. Stranka napiše, kot bi pisala tebi — FlowTiq razume, pogleda tvoj koledar in potrdi naročilo v sekundi, brez tvojega telefona.</p>
+      <div class="row" style="margin-top:30px">
+        <a class="btn btn--primary" href="/kontakt.html">Odpri račun — postavimo v 2 dneh</a>
+        <a class="btn btn--ghost" href="/kako-deluje.html">Poglej, kako deluje</a>
+      </div>
+      <div class="stat-strip" style="margin-top:38px">
+        <div><div class="stat-v">24 ur</div><div class="stat-l">na dan odgovarja</div></div>
+        <div><div class="stat-v">2 dneva</div><div class="stat-l">do prvega naročila</div></div>
+        <div><div class="stat-v">0 €</div><div class="stat-l">provizije od naročila</div></div>
+      </div>
+    </div>
+
+    <div style="position:relative;padding-bottom:64px">
+      <div class="hero-deco" aria-hidden="true"></div>
+      <div class="chat chat--phone chat--float" style="position:relative">
+        <div class="chat-screen">
+          <div class="chat-head">
+            <div class="chat-avatar" id="chat-crka">P</div>
+            <div style="flex:1 1 auto">
+              <div class="chat-name" id="chat-ime">Picerija Vrtnica</div>
+              <div class="chat-sub">na spletu · odgovori v sekundi</div>
             </div>
-            <div class="phone-header">
-              <div class="phone-avatar">V</div>
-              <div>
-                <div class="phone-name">Studio Vita</div>
-                <div class="phone-subtitle">⚡ takoj odgovori</div>
-              </div>
-            </div>
-            <div class="phone-msgs" id="chatMsgs"></div>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff" opacity=".95" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.966 1.164-.198.198-.396.223-.693.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.347-.352.52-.527.174-.174.231-.298.347-.497.116-.198.058-.372-.014-.521-.072-.148-.669-1.611-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          </div>
+          <div class="chat-body" id="chat-body" style="min-height:300px">
+            <div class="bubble bubble--out d1">a lahko dobim eno capriccioso in dve koli za dostavo</div>
+            <div class="bubble bubble--in d2">Seveda. Dodal sem <strong>1× Capricciosa</strong> in <strong>2× Coca-Cola</strong> — skupaj 14,60 €. Na kateri naslov dostavimo?</div>
+            <div class="bubble bubble--out d4">Trubarjeva 12</div>
+            <div class="bubble bubble--in d5">Naročilo je potrjeno in že v kuhinji. Dostava ob <strong>19:25</strong>. Hvala!</div>
+            <div class="typing d7"><span style="animation-delay:2.9s"></span><span style="animation-delay:3.05s"></span><span style="animation-delay:3.2s"></span></div>
+            <div class="chat-live d8"><i></i>ODGOVOR V 1,4 s</div>
           </div>
         </div>
-
+      </div>
+      <div class="card card--pad" style="position:relative;margin-top:18px;padding:12px 14px;font-size:13.5px;line-height:1.45;color:var(--ink-2)">
+        <strong>Nič se ti ne spremeni.</strong> Ista številka, ista aplikacija, isti pogovori. Samo odgovarja nekdo drug.
       </div>
     </div>
   </div>
 </section>
 
-<!-- MARQUEE -->
-<div class="marquee-wrap">
-  <div class="marquee-track" id="marquee">
-    <span class="marquee-item">💇 Frizerski saloni</span>
-    <span class="marquee-item">Kozmetika & nohti</span>
-    <span class="marquee-item">🍕 Restavracije & picerije</span>
-    <span class="marquee-item">Masaže & wellness</span>
-    <span class="marquee-item">🦷 Zobozdravniki</span>
-    <span class="marquee-item">🔧 Avtoservisi</span>
-    <span class="marquee-item">🐾 Veterina</span>
-    <span class="marquee-item">Fotografi</span>
-    <span class="marquee-item">Osebni trenerji</span>
-    <span class="marquee-item">💇 Frizerski saloni</span>
-    <span class="marquee-item">Kozmetika & nohti</span>
-    <span class="marquee-item">🍕 Restavracije & picerije</span>
-    <span class="marquee-item">Masaže & wellness</span>
-    <span class="marquee-item">🦷 Zobozdravniki</span>
-    <span class="marquee-item">🔧 Avtoservisi</span>
-    <span class="marquee-item">🐾 Veterina</span>
-    <span class="marquee-item">Fotografi</span>
-    <span class="marquee-item">Osebni trenerji</span>
+<!-- ── Ticker ── -->
+<div class="ticker">
+  <div class="ticker-track">
+    <div><span>Picerije</span><span class="sl">/</span><span>Restavracije</span><span class="sl">/</span><span>Frizerski saloni</span><span class="sl">/</span><span>Kozmetika in nohti</span><span class="sl">/</span><span>Tattoo studii</span><span class="sl">/</span><span>Masaže</span><span class="sl">/</span><span>Zobozdravniki</span><span class="sl">/</span><span>Avtoservisi</span><span class="sl">/</span><span>Veterina</span><span class="sl">/</span><span>Fotografi</span><span class="sl">/</span><span>Trenerji</span><span class="sl">/</span><span>Apartmaji</span><span class="sl">/</span><span>Inštrukcije</span><span class="sl">/</span></div>
+    <div aria-hidden="true"><span>Picerije</span><span class="sl">/</span><span>Restavracije</span><span class="sl">/</span><span>Frizerski saloni</span><span class="sl">/</span><span>Kozmetika in nohti</span><span class="sl">/</span><span>Tattoo studii</span><span class="sl">/</span><span>Masaže</span><span class="sl">/</span><span>Zobozdravniki</span><span class="sl">/</span><span>Avtoservisi</span><span class="sl">/</span><span>Veterina</span><span class="sl">/</span><span>Fotografi</span><span class="sl">/</span><span>Trenerji</span><span class="sl">/</span><span>Apartmaji</span><span class="sl">/</span><span>Inštrukcije</span><span class="sl">/</span></div>
   </div>
 </div>
 
+<!-- ── Lokali, ki že uporabljajo ── -->
+<section class="sec sec--cream" id="stranke" style="padding:40px 0">
+  <div class="wrap grid-085">
+    <div>
+      <div class="pill" style="background:var(--green-tint)">Že sprejemajo naročila prek WhatsAppa</div>
+      <h2 class="h-5 measure-20" style="margin-top:14px">Prvi lokali so že na avtopilotu.</h2>
+      <a class="link-strong" href="/imenik.html" style="display:inline-block;margin-top:14px;font-size:16px">Poglejte vse lokale →</a>
+    </div>
+    <div class="row" id="lokali-strip" style="align-items:stretch">
+      <div class="card" data-lokal="Botana" style="padding:16px 20px;display:flex;align-items:center;gap:16px;min-width:260px">
+        <img src="https://wtlucrpfxbhfkpgimjfh.supabase.co/storage/v1/object/public/logos/fe184def-3f3d-4721-8889-6f7ce89b3766-1785581101435.png"
+             alt="Botana" loading="lazy" style="width:124px;height:42px;object-fit:contain;flex:0 0 auto">
+        <div>
+          <div style="font-weight:800;font-size:18px">Botana</div>
+          <div style="font-size:13px;color:var(--muted-2)">Naročanje prek WhatsAppa je vzpostavljeno</div>
+        </div>
+      </div>
+      <div class="card card--dashed" style="padding:16px 20px;display:flex;flex-direction:column;justify-content:center;min-width:200px">
+        <div style="font-size:14.5px;font-weight:600;color:var(--muted)">Tu je prostor za tvoj lokal.</div>
+        <a href="/kontakt.html" style="font-size:14px;margin-top:5px">Odpri račun →</a>
+      </div>
+    </div>
+  </div>
+</section>
 
-<!-- BRAND -->
-<!-- LOKALI, KI ŽE UPORABLJAJO FLOWTIQ -->
+<!-- ── 01 Potek ── -->
+<section class="sec" id="potek">
+  <div class="wrap">
+    <div class="pill">01 · Kaj se zgodi, ko stranka napiše</div>
+    <h2 class="h-2 measure-24" style="margin-top:22px">Od sporočila do potrjenega termina — brez tebe.</h2>
+    <p class="lead measure-58" style="margin-top:16px;font-size:18px">Celoten pogovor se zgodi v manj kot dveh minutah. Ti izveš takrat, ko je vse že zmenjeno.</p>
+
+    <div class="card card--clip" style="margin-top:44px">
+      <div class="split cols-5 split-last-tan" style="border:0;border-radius:0">
+        <div style="padding:20px 18px 22px">
+          <div class="step-head"><div class="step-n">1</div><div class="step-time">0 s</div></div>
+          <h3 class="step-t">Stranka piše na tvojo številko</h3>
+          <p class="step-p">Kot vedno. Nobene nove aplikacije, nobene registracije zanjo.</p>
+        </div>
+        <div style="padding:20px 18px 22px">
+          <div class="step-head"><div class="step-n">2</div><div class="step-time">1,4 s</div></div>
+          <h3 class="step-t">FlowTiq razume, kaj hoče</h3>
+          <p class="step-p">Tudi če napiše po domače, s tipkarsko napako ali v narekovanju.</p>
+        </div>
+        <div style="padding:20px 18px 22px">
+          <div class="step-head"><div class="step-n">3</div><div class="step-time">3 s</div></div>
+          <h3 class="step-t">Pogleda tvoj koledar ali kuhinjo</h3>
+          <p class="step-p">Ponudi samo tisto, kar res zmoreš. Dvojnih rezervacij ni.</p>
+        </div>
+        <div style="padding:20px 18px 22px">
+          <div class="step-head"><div class="step-n">4</div><div class="step-time">~90 s</div></div>
+          <h3 class="step-t">Potrdi in zapiše</h3>
+          <p class="step-p">Termin v koledarju, naročilo v kuhinji ali blagajni. Brez pretipkavanja.</p>
+        </div>
+        <div style="padding:20px 18px 22px">
+          <div class="step-head"><div class="step-n step-n--green">5</div><div class="step-time">dan prej</div></div>
+          <h3 class="step-t">Opomni, da stranka pride</h3>
+          <p class="step-p">In po obisku prijazno vpraša za oceno. Krog je sklenjen.</p>
+        </div>
+      </div>
+      <div class="split-foot" style="display:flex;flex-wrap:wrap;gap:8px 22px">
+        <span class="mono" style="font-weight:600;letter-spacing:.06em;color:var(--mint)">TVOJ DEL</span>
+        <span>Nič. Ko pogledaš telefon, je termin že v koledarju.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 02 Koliko te stane tišina ── -->
+<section class="sec sec--cream" id="izguba">
+  <div class="wrap">
+    <div class="pill pill--red">02 · Koliko te stane tišina</div>
+    <div class="grid-even-end" style="margin-top:22px">
+      <h2 class="h-2 measure-22">Vsak neodgovorjen klic je nekdo, ki je naročil pri sosedu.</h2>
+      <p class="lead" style="font-size:18px">Ne izgubljaš strank zato, ker si slab. Izgubljaš jih, ker imaš dve roki in eno uro. Spodaj je mesec dni tvojih dohodnih sporočil in klicev.</p>
+    </div>
+
+    <div class="split" style="margin-top:40px;grid-template-columns:1.5fr 1fr">
+      <div style="padding:26px 26px 30px">
+        <div class="mono-label">100 povpraševanj v mesecu</div>
+        <div id="dots" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:18px;max-width:470px"></div>
+        <div class="row" style="margin-top:22px;gap:24px;font-size:14px">
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:16px;height:16px;background:var(--green);border:1.5px solid var(--ink);border-radius:5px"></span><span><strong>73</strong> jih ujameš</span></div>
+          <div style="display:flex;align-items:center;gap:9px"><span style="width:16px;height:16px;background:var(--cream-2);border:1.5px dashed var(--rust);border-radius:5px"></span><span><strong>27</strong> ostane brez odgovora</span></div>
+        </div>
+        <p class="fine measure-58" style="margin-top:18px">Zvonjenje med delom, sporočila po zaprtju, dve stranki hkrati. Nihče ne odgovori na vse — in ravno teh 27 gre h konkurenci.</p>
+      </div>
+      <div style="padding:26px;display:flex;flex-direction:column;justify-content:center;background:var(--cream)">
+        <div class="mono-label">Kaj to pomeni v denarju</div>
+        <div class="stack" style="margin-top:16px;gap:10px">
+          <div style="display:flex;justify-content:space-between;font-size:15px;padding-bottom:10px;border-bottom:1.5px dashed var(--line-2)"><span>Zamujena povpraševanja</span><strong>27</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:15px;padding-bottom:10px;border-bottom:1.5px dashed var(--line-2)"><span>Povprečni račun</span><strong>35 €</strong></div>
+          <div style="display:flex;justify-content:space-between;font-size:15px;padding-bottom:10px;border-bottom:2px solid var(--ink)"><span>Od tega bi jih prišlo</span><strong>≈ 70 %</strong></div>
+        </div>
+        <div style="margin-top:18px;background:var(--rust);color:#fff;border:2px solid var(--ink);border-radius:18px;padding:16px 18px">
+          <div class="mono" style="font-size:12.5px;letter-spacing:.04em;text-transform:uppercase">Izgubljeno na mesec</div>
+          <div style="font-weight:800;font-size:42px;line-height:1;margin-top:6px">≈ 660 €</div>
+        </div>
+        <p class="fine" style="font-size:12px;margin-top:14px">Okviren izračun za manjši lokal ali salon. Vstavi svoje številke in dobiš svojo — a smer je vedno enaka.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 03 Isti dan, dvakrat ── -->
+<section class="sec" id="dan">
+  <div class="wrap">
+    <div class="pill">03 · Isti dan, dvakrat</div>
+    <h2 class="h-2 measure-26" style="margin-top:22px">En navaden torek — z FlowTiq in brez njega.</h2>
+
+    <div class="grid-even-20" style="margin-top:40px;gap:22px">
+      <div class="card card--clip">
+        <div style="background:var(--tan);border-bottom:2px solid var(--ink);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <strong style="font-size:18px">Brez FlowTiq</strong>
+          <span class="mono" style="font-size:11.5px;color:var(--rust);font-weight:600">4 IZGUBLJENE STRANKE</span>
+        </div>
+        <div style="padding:6px 0">
+          <div class="day-row"><div class="day-h">08:20</div><div><div class="day-t">Sporočilo: „A je danes kaj prostega?“</div><div class="day-bad">Prebereš ob 11h. Prepozno.</div></div></div>
+          <div class="day-row"><div class="day-h">10:05</div><div><div class="day-t">Telefon zvoni med barvanjem</div><div class="day-bad">Ne moreš dvigniti.</div></div></div>
+          <div class="day-row"><div class="day-h">12:40</div><div><div class="day-t">Dva klica hkrati med kosilom</div><div class="day-bad">Eden pade v prazno.</div></div></div>
+          <div class="day-row"><div class="day-h">14:55</div><div><div class="day-t">Stranka ne pride na termin</div><div class="day-bad">Ura in pol praznega stola.</div></div></div>
+          <div class="day-row"><div class="day-h">16:30</div><div><div class="day-t">Kličeš nazaj tri zamujene številke</div><div class="day-bad">Dva sta že naročena drugje.</div></div></div>
+          <div class="day-row"><div class="day-h">19:10</div><div><div class="day-t">Sporočilo o naročilu za jutri</div><div class="day-bad">Odgovoriš zjutraj.</div></div></div>
+          <div class="day-row"><div class="day-h">22:40</div><div><div class="day-t">„Imate jutri termin?“</div><div class="day-bad">Stranka gre spat brez odgovora.</div></div></div>
+        </div>
+        <div style="padding:16px 18px;background:var(--cream-2);border-top:2px solid var(--ink);font-size:14.5px">Zvečer: 40 minut telefoniranja, dva prazna termina, ena slaba ocena.</div>
+      </div>
+
+      <div class="card card--clip card--shadow">
+        <div style="background:var(--green);color:#fff;border-bottom:2px solid var(--ink);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <strong style="font-size:18px">Z FlowTiq</strong>
+          <span class="mono" style="font-size:11.5px;font-weight:600">0 IZGUBLJENIH STRANK</span>
+        </div>
+        <div style="padding:6px 0">
+          <div class="day-row"><div class="day-h">08:20</div><div><div class="day-t">Sporočilo: „A je danes kaj prostega?“</div><div class="day-good">FlowTiq ponudi 3 termine. Zabeleženo.</div></div></div>
+          <div class="day-row"><div class="day-h">10:05</div><div><div class="day-t">Stranka piše med tvojim delom</div><div class="day-good">Odgovor v 1,4 s. Ti ne veš niti, da se je zgodilo.</div></div></div>
+          <div class="day-row"><div class="day-h">12:40</div><div><div class="day-t">Pet naročil hkrati med kosilom</div><div class="day-good">Vsa sprejeta, razvrščena po kuhinji.</div></div></div>
+          <div class="day-row"><div class="day-h">14:55</div><div><div class="day-t">Stranka je bila opomnjena dan prej</div><div class="day-good">Pride točno. Stol ni prazen.</div></div></div>
+          <div class="day-row"><div class="day-h">16:30</div><div><div class="day-t">Nič za klicati nazaj</div><div class="day-good">Vse je že zmenjeno.</div></div></div>
+          <div class="day-row"><div class="day-h">19:10</div><div><div class="day-t">Naročilo za jutri</div><div class="day-good">Potrjeno in v koledarju.</div></div></div>
+          <div class="day-row"><div class="day-h">22:40</div><div><div class="day-t">„Imate jutri termin?“</div><div class="day-good">Termin rezerviran ob 22:41.</div></div></div>
+        </div>
+        <div style="padding:16px 18px;background:var(--cream-2);border-top:2px solid var(--ink);font-size:14.5px">Zvečer: 0 minut telefoniranja, polni termini, dve novi oceni.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <style>
-@keyframes ft-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-#uporabljajo-list.ft-scroll { justify-content: flex-start; width: max-content; gap: 0; animation: ft-marquee 30s linear infinite; }
-#uporabljajo-list.ft-scroll > a { margin-right: 14px; }
-#uporabljajo-wrap:hover #uporabljajo-list.ft-scroll { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) { #uporabljajo-list.ft-scroll { animation: none; } }
+  .day-row { display:grid; grid-template-columns:62px 1fr; gap:14px; padding:13px 18px; border-bottom:1.5px dashed var(--line); align-items:start; }
+  .day-row:last-child { border-bottom:0; }
+  .day-h { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--muted-2); padding-top:1px; }
+  .day-t { font-size:15px; line-height:1.4; }
+  .day-bad { font-size:13px; color:var(--rust); margin-top:3px; }
+  .day-good { font-size:13px; color:var(--green-dark); margin-top:3px; }
+  .fn-row { display:grid; grid-template-columns:54px 1.1fr 1.4fr; gap:20px; padding:20px 22px; border-bottom:1.5px solid var(--ink-line); align-items:start; }
+  .fn-row:last-child { border-bottom:0; }
+  .fn-row:hover { background:var(--ink-hover); }
+  .fn-n { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--mint); padding-top:3px; }
+  .fn-t { font-size:21px; line-height:1.1; }
+  .fn-o { font-size:15.5px; color:var(--on-ink-2); line-height:1.55; }
+  .fn-rez { font-family:var(--mono); font-size:11.5px; color:var(--mint); margin-top:9px; letter-spacing:.05em; }
+  .pan-card { display:block; background:#fff; padding:22px 20px 20px; color:var(--ink); }
+  .pan-card:hover { background:var(--tan); color:var(--ink); }
+  .pan-top { display:flex; align-items:center; justify-content:space-between; }
+  .pan-mono { width:38px; height:38px; border:2px solid var(--ink); border-radius:18px; background:var(--cream-2); display:grid; place-items:center; font-weight:800; font-size:15px; }
+  .pan-arrow { font-family:var(--mono); font-size:16px; color:var(--green); }
+  .pan-t { font-size:19px; margin-top:15px; line-height:1.12; }
+  .pan-p { font-size:14px; color:var(--muted); margin-top:8px; line-height:1.5; }
+  .bar { display:flex; border:2px solid var(--ink); border-radius:18px; overflow:hidden; height:52px; }
+  .bar > div { display:flex; align-items:center; padding:0 14px; font-weight:600; font-size:15px; }
+  .slot { flex:1 1 0; height:46px; border:2px solid var(--ink); border-radius:5px; background:var(--green); }
+  .slot--empty { background:var(--cream-2); border:2px dashed var(--rust); }
+  .flow-pipe { height:26px; width:2px; background:var(--ink); margin-left:26px; }
+  .plan { border:2px solid var(--ink); border-radius:18px; background:#fff; display:flex; flex-direction:column; }
+  .plan--pro { background:var(--ink); color:var(--on-ink); }
+  .plan-body { padding:20px 24px; display:flex; flex-direction:column; gap:10px; font-size:14.5px; line-height:1.45; }
+  .plan--pro .plan-body { color:#DDE4EA; }
+  .plan--pro .plan-body strong { color:#fff; }
+  .plan-price { display:flex; align-items:baseline; gap:6px; margin-top:14px; }
+  .plan-price b { font-weight:800; font-size:44px; }
+  .plan-price span { color:var(--muted-2); font-size:15px; }
+  .plan--pro .plan-price span { color:var(--on-ink-4); }
+  .plan-cta { margin:auto 24px 24px; text-align:center; border:2px solid var(--ink); border-radius:18px; padding:13px; font-weight:600; color:var(--ink); }
+  .plan-cta--pro { background:var(--green); color:#fff; border-color:var(--on-ink); }
+  .plan-cta--pro:hover { background:var(--green-dark); color:#fff; }
+  @media (max-width:760px) {
+    .fn-row { grid-template-columns:40px 1fr; }
+    .fn-row > div:last-child { grid-column:2; }
+  }
 </style>
-<section id="uporabljajo" style="display:none;padding:54px 0;background:linear-gradient(135deg,#e3f6ea 0%,#e8eefb 100%)">
-  <div class="container">
-    <p style="text-align:center;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#3f6b52;margin:0 0 26px">Že sprejemajo naročila prek WhatsAppa</p>
-    <div id="uporabljajo-wrap" style="overflow:hidden">
-      <div id="uporabljajo-list" style="display:flex;flex-wrap:nowrap;justify-content:center;align-items:stretch;gap:14px"></div>
+
+<!-- ── 04 Kaj vse zna ── -->
+<section class="sec sec--ink" id="zna">
+  <div class="wrap">
+    <div class="pill pill--onink">04 · Kaj vse zna</div>
+    <div class="grid-even-end" style="margin-top:22px">
+      <h2 class="h-2 measure-20">Sedem opravil, ki jih zdaj delaš na roke.</h2>
+      <p class="lead" style="font-size:18px">Vsako od njih ti vsak dan požre nekaj minut in nekaj potrpljenja. FlowTiq jih prevzame vse.</p>
     </div>
-    <p style="text-align:center;margin:28px 0 0"><a href="/restavracije" style="color:#047840;font-weight:700;text-decoration:none;font-size:14.5px">Poglejte vse lokale →</a></p>
+
+    <div style="margin-top:40px;border:2px solid var(--on-ink);border-radius:18px;overflow:hidden">
+      <div class="fn-row"><div class="fn-n">01</div><h3 class="fn-t">Sprejema naročila in rezervacije</h3><div><p class="fn-o">Ves dan in vso noč. Stranka napiše na WhatsApp, FlowTiq jo pripelje do potrjenega termina ali naročila — brez tebe.</p><div class="fn-rez">0 zamujenih povpraševanj</div></div></div>
+      <div class="fn-row"><div class="fn-n">02</div><h3 class="fn-t">Pošilja opomnike</h3><div><p class="fn-o">Dan prej vljudno spomni stranko in jo prosi za potrditev. Če odpove, se termin takoj ponudi naslednjemu.</p><div class="fn-rez">do 30 % manj praznih terminov</div></div></div>
+      <div class="fn-row"><div class="fn-n">03</div><h3 class="fn-t">Vodi tvoj koledar</h3><div><p class="fn-o">Ve, kdaj si prost, koliko traja katera storitev in koliko naročil zmore kuhinja. Dvojnih rezervacij ni več.</p><div class="fn-rez">brez Excela in listkov</div></div></div>
+      <div class="fn-row"><div class="fn-n">04</div><h3 class="fn-t">Razume, kako ljudje pišejo</h3><div><p class="fn-o">„eno capriccioso in dve koli“, „bi na barvanje kdaj popoldne“, tipkarske napake, narekovanje. Ne rabi menija s številkami.</p><div class="fn-rez">brez izbiranja 1, 2, 3</div></div></div>
+      <div class="fn-row"><div class="fn-n">05</div><h3 class="fn-t">Vabi stranke nazaj</h3><div><p class="fn-o">Tistim, ki jih ni bilo osem tednov, pošlje osebno povabilo. Koledar polniš iz strank, ki jih že imaš.</p><div class="fn-rez">novi termini brez oglasov</div></div></div>
+      <div class="fn-row"><div class="fn-n">06</div><h3 class="fn-t">Zbira Google ocene</h3><div><p class="fn-o">Dve uri po obisku prijazno vpraša za oceno. Več zvezdic pomeni več novih strank, ki te najdejo.</p><div class="fn-rez">več zvezdic, več strank</div></div></div>
+      <div class="fn-row"><div class="fn-n">07</div><h3 class="fn-t">Vse zbere na eno stran</h3><div><p class="fn-o">Naročila, termini, statistika in nastavitve na eni nadzorni plošči. Spremembe lahko narediš tudi kar prek WhatsAppa.</p><div class="fn-rez">en zaslon namesto štirih</div></div></div>
+    </div>
+    <div style="margin-top:26px"><a href="/funkcije.html" style="color:var(--mint);font-weight:600;font-size:16.5px;border-bottom:2px solid var(--mint)">Vse podrobnosti o zmožnostih →</a></div>
   </div>
 </section>
-<script>
-fetch('/api/public/restaurants').then(r=>r.ok?r.json():[]).then(list=>{
-  if(!Array.isArray(list)||!list.length)return;
-  const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const ini=n=>(String(n||'').replace(/[^\p{L}\p{N}]/gu,'').charAt(0)||'?').toUpperCase();
-  document.getElementById('uporabljajo-list').innerHTML=list.slice(0,10).map(r=>
-    '<a href="/restavracije" style="display:flex;align-items:center;gap:12px;text-decoration:none;color:#0c1f17;background:#fff;border:1px solid rgba(12,31,23,.06);border-radius:14px;padding:13px 20px;box-shadow:0 1px 3px rgba(12,31,23,.05)">'+
-    (r.logo_url
-      ? '<img src="'+esc(r.logo_url)+'" alt="'+esc(r.name)+'" style="height:46px;width:auto;max-width:130px;border-radius:11px;object-fit:contain;flex:0 0 auto">'
-      : '<span style="width:40px;height:40px;border-radius:11px;background:rgba(6,193,103,.1);color:#047840;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex:0 0 auto">'+ini(r.name)+'</span>')+
-    '<span style="font-weight:700;font-size:15px;white-space:nowrap">'+esc(r.name)+'</span></a>').join('');
-  document.getElementById('uporabljajo').style.display='';
-  // Kartice mirujejo, dokler gredo v širino; ko je preozko, se vrtijo v neskončni zanki
-  const setupMarquee=()=>{
-    const wrap=document.getElementById('uporabljajo-wrap');
-    const track=document.getElementById('uporabljajo-list');
-    if(!wrap||!track||track.classList.contains('ft-scroll'))return;
-    if(track.scrollWidth > wrap.clientWidth + 4){
-      track.innerHTML += track.innerHTML;
-      track.style.animationDuration = Math.max(20, Math.round(track.scrollWidth/60)) + 's';
-      track.classList.add('ft-scroll');
-    }
-  };
-  requestAnimationFrame(setupMarquee);
-  window.addEventListener('resize', setupMarquee);
-}).catch(()=>{});
-</script>
 
-<section class="brand-section">
-  <div class="container">
-    <div class="brand-inner">
-      <div class="brand-logo-wrap">
-        <img src="/logo.png" alt="FlowTiq" class="brand-logo">
-        <div class="brand-glow"></div>
+<!-- ── 05 Panoge ── -->
+<section class="sec" id="panoge">
+  <div class="wrap">
+    <div class="pill">05 · Za koga je narejen</div>
+    <div class="grid-even-end" style="margin-top:22px">
+      <h2 class="h-2 measure-22">Dvanajst obrti. Vsaka s svojimi pravili.</h2>
+      <p class="lead" style="font-size:18px">Frizerka rabi 40-minutna okna, picerija zmore 8 pic na 15 minut, veterinar mora nujen primer prepoznati takoj. FlowTiq to razlikuje. Izberi svojo obrt in poglej točne primere.</p>
+    </div>
+
+    <div class="hair cols-3" style="margin-top:40px">
+      <a class="pan-card" href="/panoga/restavracije.html"><div class="pan-top"><div class="pan-mono">RE</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Restavracije in picerije</h3><p class="pan-p">Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.</p></a>
+      <a class="pan-card" href="/panoga/frizerski-saloni.html"><div class="pan-top"><div class="pan-mono">FR</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Frizerski saloni</h3><p class="pan-p">Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.</p></a>
+      <a class="pan-card" href="/panoga/kozmetika.html"><div class="pan-top"><div class="pan-mono">KO</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Kozmetika in nohti</h3><p class="pan-p">Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.</p></a>
+      <a class="pan-card" href="/panoga/tattoo.html"><div class="pan-top"><div class="pan-mono">TA</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Tattoo in piercing</h3><p class="pan-p">Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.</p></a>
+      <a class="pan-card" href="/panoga/wellness.html"><div class="pan-top"><div class="pan-mono">WE</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Masaže in wellness</h3><p class="pan-p">Termini, paketi in darilni boni — brez motenja med masažo.</p></a>
+      <a class="pan-card" href="/panoga/zobozdravniki.html"><div class="pan-top"><div class="pan-mono">ZD</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Zobozdravniki in ambulante</h3><p class="pan-p">Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.</p></a>
+      <a class="pan-card" href="/panoga/avtoservisi.html"><div class="pan-top"><div class="pan-mono">AV</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Avtoservisi in vulkanizerji</h3><p class="pan-p">Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.</p></a>
+      <a class="pan-card" href="/panoga/veterina.html"><div class="pan-top"><div class="pan-mono">VE</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Veterinarske ambulante</h3><p class="pan-p">Termini po živali, opomniki na cepljenja in obvladana nujnost.</p></a>
+      <a class="pan-card" href="/panoga/fotografi.html"><div class="pan-top"><div class="pan-mono">FO</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Fotografi</h3><p class="pan-p">Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.</p></a>
+      <a class="pan-card" href="/panoga/trenerji.html"><div class="pan-top"><div class="pan-mono">TR</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Osebni trenerji in fitnes</h3><p class="pan-p">Termini, skupinske vadbe, čakalna lista in paketi treningov.</p></a>
+      <a class="pan-card" href="/panoga/hoteli.html"><div class="pan-top"><div class="pan-mono">HO</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Hoteli in apartmaji</h3><p class="pan-p">Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.</p></a>
+      <a class="pan-card" href="/panoga/sole.html"><div class="pan-top"><div class="pan-mono">ŠO</div><span class="pan-arrow">→</span></div><h3 class="pan-t">Šole in inštrukcije</h3><p class="pan-p">Prijave na termine in tečaje, obveščanje staršev, evidenca obiskov.</p></a>
+    </div>
+    <p style="font-size:15px;color:var(--muted-2);margin-top:20px">Tvoje obrti ni na seznamu? <a class="uline" href="/kontakt.html">Napiši nam</a> — če se stranke naročajo ali naročajo, FlowTiq to zna.</p>
+  </div>
+</section>
+
+<!-- ── 06 Provizije ── -->
+<section class="sec sec--cream" id="provizije">
+  <div class="wrap">
+    <div class="pill pill--red">06 · Samo za gostinstvo</div>
+    <h2 class="h-2 measure-26" style="margin-top:22px">Dostavne tržnice vzamejo skoraj tretjino. FlowTiq vzame fiksno.</h2>
+    <p class="lead measure-62" style="margin-top:16px;font-size:18px">Primer: 100 dostav po 20 € v enem mesecu. Isti gostje, isto delo, ista hrana — razlika je samo v tem, kdo pobere delež.</p>
+
+    <div class="card" style="margin-top:40px;padding:30px 28px">
+      <div class="stack" style="gap:26px">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:14px;flex-wrap:wrap">
+            <strong style="font-size:19px">Prek dostavne tržnice</strong>
+            <span class="mono" style="font-size:13px;color:var(--muted-2)">2.000 € prometa</span>
+          </div>
+          <div class="bar">
+            <div style="width:72%;background:var(--tan);border-right:2px solid var(--ink)">Ostane tebi — 1.440 €</div>
+            <div style="width:28%;background:var(--rust);color:#fff">−560 € provizije</div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:14px;flex-wrap:wrap">
+            <strong style="font-size:19px">Prek FlowTiq (direktno na WhatsApp)</strong>
+            <span class="mono" style="font-size:13px;color:var(--muted-2)">2.000 € prometa</span>
+          </div>
+          <div class="bar">
+            <div style="width:95.5%;background:var(--bubble);border-right:2px solid var(--ink)">Ostane tebi — 1.911 €</div>
+            <div style="width:4.5%;background:var(--green);padding:0"></div>
+          </div>
+          <div style="font-size:13.5px;color:var(--muted-2);margin-top:8px">Tanka zelena črta na desni je celotna naročnina: 89 € na mesec, ne glede na to, koliko naročiš.</div>
+        </div>
       </div>
-      <div class="brand-content">
-        <div class="section-label">Kdo smo</div>
-        <h2 class="brand-title">FlowTiq — tekoče poslovanje,<br>brez motenj.</h2>
-        <p class="brand-desc">Ime ni naključno. <strong>Flow</strong> pomeni neprekinjen tok strank in naročil. <strong>Tiq</strong> — hiter, natančen odziv v sekundi. Skupaj: WhatsApp pomočnik, ki salonom, tattoo studiom, fotografom in restavracijam polni termine in sprejema naročila — medtem ko vi delate to, kar znate.</p>
-        <div class="brand-stats">
-          <div class="bstat"><span class="bstat-num">24/7</span><span class="bstat-label">na voljo</span></div>
-          <div class="bstat-div"></div>
-          <div class="bstat"><span class="bstat-num">&lt; 2 s</span><span class="bstat-label">odziv</span></div>
-          <div class="bstat-div"></div>
-          <div class="bstat"><span class="bstat-num">do −30 %</span><span class="bstat-label">prazni termini</span></div>
+      <div class="row" style="margin-top:28px;border-top:2px solid var(--ink);padding-top:22px;gap:28px;align-items:center">
+        <div>
+          <div class="mono-label">Razlika v tvojem žepu</div>
+          <div class="big-num big-num--green">+471 € / mesec</div>
+        </div>
+        <p class="fine" style="flex:1 1 260px;font-size:13.5px">Izračun z ~28 % provizijo, ki je običajna na dostavnih platformah. Tvoja stopnja je lahko drugačna — vpiši svojo in številka ostane na isti strani.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 07 Prazni termini ── -->
+<section class="sec" id="neprihodi">
+  <div class="wrap">
+    <div class="pill">07 · Prazni termini</div>
+    <div class="grid-09" style="margin-top:22px">
+      <div>
+        <h2 class="h-2 measure-20">Ljudje ne izdajo. Samo pozabijo.</h2>
+        <p class="lead" style="margin-top:16px;font-size:18px">Eno sporočilo dan prej reši večino praznih terminov. FlowTiq ga pošlje vsaki stranki, vsak dan, ne da bi ti kaj naredil. Če odpove, se termin takoj ponudi naslednjemu.</p>
+        <div class="card card--clip" style="margin-top:26px">
+          <div class="chat-tag" style="font-size:13px;letter-spacing:.05em">SPOROČILO, KI GA POŠLJE</div>
+          <div style="padding:14px">
+            <div style="background:#fff;border:1.5px solid var(--ink);border-radius:16px 16px 16px 6px;padding:11px 13px;font-size:14.5px;line-height:1.45">Živjo, Maja! Spomnim te: <strong>jutri ob 15:00</strong>, striženje pri Ani. Če ti ustreza, odgovori <strong>DA</strong>. Če ne moreš, napiši <strong>NE</strong> in ti poiščem drug termin.</div>
+            <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+              <div style="background:var(--bubble);border:1.5px solid var(--ink);border-radius:16px 16px 6px 16px;padding:8px 14px;font-size:14.5px;font-weight:600">DA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card--clip">
+        <div style="padding:24px 26px;border-bottom:2px solid var(--ink)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <strong style="font-size:18px">Brez opomnikov</strong>
+            <span class="mono" style="font-size:12.5px;color:var(--rust);font-weight:600">3 od 10 terminov prazna</span>
+          </div>
+          <div style="display:flex;gap:7px;margin-top:16px">
+            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="slot slot--empty"></div><div class="slot slot--empty"></div><div class="slot slot--empty"></div>
+          </div>
+        </div>
+        <div style="padding:24px 26px;background:var(--cream)">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <strong style="font-size:18px">Z opomnikom dan prej</strong>
+            <span class="mono" style="font-size:12.5px;color:var(--green-dark);font-weight:600">1 od 10 in ta se zapolni</span>
+          </div>
+          <div style="display:flex;gap:7px;margin-top:16px">
+            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
+            <div class="slot slot--empty"></div>
+          </div>
+          <div class="row" style="margin-top:18px;padding-top:18px;border-top:2px solid var(--ink);gap:22px;align-items:baseline">
+            <div>
+              <div class="big-num big-num--sm big-num--green">do −30 %</div>
+              <div style="font-size:13px;color:var(--muted-2)">manj praznih terminov</div>
+            </div>
+            <div>
+              <div class="big-num big-num--sm">+2 uri</div>
+              <div style="font-size:13px;color:var(--muted-2)">plačanega dela na teden</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- PAIN SECTION -->
-<section class="pain">
-  <div class="container">
-    <div class="section-label">Vam to zveni znano?</div>
-    <h2 class="section-title">Vsak dan izgubljate stranke<br>— pa sploh ne veste, koliko.</h2>
-    <p class="section-sub">To popravimo.</p>
-    <div class="pain-grid">
-      <div class="pain-card">
-        <div class="pain-icon">📵</div>
-        <h3>Telefon zvoni med delom</h3>
-        <p>Roke imate polne, stranka pa čaka. Klic zamudite — in z njim posel.</p>
+<!-- ── 08 Blagajna ── -->
+<section class="sec sec--cream" id="blagajna">
+  <div class="wrap grid-even" style="align-items:center">
+    <div>
+      <div class="pill pill--white" style="color:var(--blue)">08 · Poveže se s tvojim sistemom</div>
+      <h2 class="h-4 measure-22" style="margin-top:18px">Naročilo gre naravnost v blagajno.</h2>
+      <p class="lead-sm" style="margin-top:14px">Potrjeno naročilo se samo pojavi v tvoji blagajni ali na kuhinjskem zaslonu. Nihče ne pretipkava, nihče se ne zmoti pri naslovu.</p>
+      <div class="row" style="margin-top:20px;gap:8px">
+        <div class="card" style="padding:8px 14px;font-weight:600;font-size:14.5px">Poster POS</div>
+        <div class="card" style="padding:8px 14px;font-weight:600;font-size:14.5px">Square</div>
+        <div class="card" style="padding:8px 14px;font-weight:600;font-size:14.5px">iiko</div>
+        <div class="card" style="padding:8px 14px;font-weight:600;font-size:14.5px">Loyverse</div>
+        <div class="card" style="padding:8px 14px;font-weight:600;font-size:14.5px">Google koledar</div>
       </div>
-      <div class="pain-card">
-        <div class="pain-icon">🌙</div>
-        <h3>Sporočila ob 22h</h3>
-        <p>„Ali imate jutri termin?" — odgovorite zjutraj, stranka je šla drugam.</p>
-      </div>
-      <div class="pain-card">
-        <div class="pain-icon">🙈</div>
-        <h3>Stranke ne pridejo</h3>
-        <p>Pozabijo na termin. Vaš čas je prazen, dohodek pa tudi.</p>
-      </div>
-      <div class="pain-card">
-        <div class="pain-icon">😶</div>
-        <h3>Stranke ne pridejo nazaj</h3>
-        <p>Po enem obisku izginejo. Nimate časa, da bi jih vabili nazaj.</p>
-      </div>
-      <div class="pain-card">
-        <div class="pain-icon">📞</div>
-        <h3>Telefon zvoni med kosilom</h3>
-        <p>Kuhinja na polno, stranka pa čaka na naročilo po telefonu. En klic zamudite — in stranka naroči pri konkurenci.</p>
+      <p style="font-size:14px;color:var(--muted-2);margin-top:16px">Imaš drug sistem ali nobenega? FlowTiq vseeno deluje — naročila in termine vidiš na svoji nadzorni plošči.</p>
+    </div>
+    <div class="card" style="padding:26px">
+      <div class="card" style="border-radius:18px;padding:14px 16px;background:var(--bubble)"><strong style="font-size:15.5px">WhatsApp stranke</strong><div style="font-size:13.5px;color:var(--muted);margin-top:3px">„eno capriccioso, Trubarjeva 12“</div></div>
+      <div class="flow-pipe"></div>
+      <div class="card card--ink" style="padding:14px 16px"><strong style="font-size:15.5px">FlowTiq</strong><div style="font-size:13.5px;color:var(--on-ink-3);margin-top:3px">Prevede pogovor v naročilo: artikli, količine, naslov, čas</div></div>
+      <div class="flow-pipe"></div>
+      <div class="grid-even-20" style="gap:12px">
+        <div class="card card--tan" style="padding:14px 16px"><strong style="font-size:15px">Tvoja blagajna</strong><div style="font-size:13px;color:var(--muted);margin-top:3px">Naročilo natisnjeno v kuhinji</div></div>
+        <div class="card card--tan" style="padding:14px 16px"><strong style="font-size:15px">Nadzorna plošča</strong><div style="font-size:13px;color:var(--muted);margin-top:3px">Pregled, statistika, nastavitve</div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
-<section id="features">
-  <div class="container">
-    <div class="section-label">Kaj točno dobite</div>
-    <h2 class="section-title">En pomočnik.<br>Cel krog stranke.</h2>
-    <p class="section-sub">Od prvega sporočila do ponovnega obiska — FlowTiq poskrbi za vse vmes. Vi ne naredite ničesar.</p>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon green">💬</div>
-        <h3>Sprejema rezervacije 24/7</h3>
-        <p>Stranke pišejo na vaš WhatsApp kot vedno. Bot odgovori v sekundi in jih pelje do termina — tudi ponoči, ob nedeljah, na dopustu.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon blue">⏰</div>
-        <h3>Pošilja opomnike</h3>
-        <p>Dan prej samodejno opomni stranko. Rezultat: do 30 % manj praznih terminov, ker stranke ne pozabijo.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon green">🗓️</div>
-        <h3>Lasten koledar</h3>
-        <p>Vsi termini na enem mestu. Bot vedno ve, kdaj ste prosti — dvojnih rezervacij ni več. Brez Excela, brez Google koledarja.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon blue">⭐</div>
-        <h3>Zbira ocene</h3>
-        <p>Dve uri po terminu stranko prijazno prosi za Google oceno. Več zvezdic = več novih strank, ki vas najdejo.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon purple">🔁</div>
-        <h3>Vabi stranke nazaj</h3>
-        <p>Tistim, ki jih 8 tednov ni bilo, pošlje osebno povabilo. Polni vam koledar iz strank, ki jih že imate.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon green">📊</div>
-        <h3>Vse na enem zaslonu</h3>
-        <p>Pregled rezervacij, statistike in nastavitve v eni nadzorni plošči. Termine dodate ali prekličete tudi kar prek WhatsAppa.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon purple">🛵</div>
-        <h3>WhatsApp meni za dostavo</h3>
-        <p>Picerije in restavracije dobijo digitalni meni na WhatsAppu. Stranka izbere artikle in količine, dostavo ali osebni prevzem — brez klicanja. Naročilo lahko gre celo neposredno v vašo POS blagajno (<b>Poster POS, Square, iiko, Loyverse</b>).</p>
-      </div>
+<!-- ── 09 Cena ── -->
+<section class="sec" id="cena">
+  <div class="wrap">
+    <div class="pill">09 · Cena</div>
+    <div class="grid-even-end" style="margin-top:22px">
+      <h2 class="h-2 measure-20">Ena številka na mesec. Brez vezave.</h2>
+      <p class="lead" style="font-size:18px">Nič provizij od naročila, nič stroškov postavitve, nič pogodbe za tri leta. Nehaš, kadar hočeš.</p>
     </div>
-  </div>
-</section>
 
-<!-- AI NATAKAR SHOWCASE -->
-<section style="background:linear-gradient(160deg,#e3f6ea 0%,#e8eefb 100%)">
-  <div class="container" style="text-align:center">
-    <div class="section-label" style="text-transform:none;letter-spacing:0;font-size:15px"><span style="color:var(--green)">Flow</span><span style="color:var(--blue)">Tiqov</span> <span style="color:var(--ink-soft)">AI natakar</span></div>
-    <h2 class="section-title">Naročanje kot pogovor.<br>AI razume vsako željo.</h2>
-    <p class="section-sub">Brez listanja menija. Stranka napiše, kar želi — AI natakar sestavi naročilo kot pravi človek in odgovarja na vprašanja o ponudbi.</p>
-    <div style="max-width:390px;margin:40px auto 0;border-radius:22px;overflow:hidden;box-shadow:0 20px 55px rgba(12,31,23,.15);border:1px solid rgba(12,31,23,.06)">
-      <div style="background:#075E54;color:#fff;padding:12px 15px;display:flex;align-items:center;gap:11px;text-align:left">
-        <div style="width:38px;height:38px;border-radius:50%;background:var(--green);display:grid;place-items:center;font-weight:800;font-size:16px;flex-shrink:0">P</div>
-        <div><div style="font-weight:700;font-size:15px;line-height:1.2">Pizzeria Roma</div><div style="font-size:11.5px;opacity:.85">na spletu · odgovori v sekundi</div></div>
-      </div>
-      <div style="background:#ECE5DD;padding:16px 13px;text-align:left">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><div style="background:#DCF8C6;color:#111;padding:8px 12px;border-radius:14px 14px 3px 14px;font-size:14px;max-width:80%;box-shadow:0 1px 1px rgba(0,0,0,.08)">eno capriccioso in dve koli prosim</div></div>
-        <div style="display:flex;justify-content:flex-start;margin-bottom:10px"><div style="background:#fff;color:#111;padding:8px 12px;border-radius:14px 14px 14px 3px;font-size:14px;max-width:86%;box-shadow:0 1px 1px rgba(0,0,0,.08)">Odlično! Dodal sem <b>1× Capricciosa</b> in <b>2× Coca-Cola</b>. Želite še kaj ali zaključimo?</div></div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:10px"><div style="background:#DCF8C6;color:#111;padding:8px 12px;border-radius:14px 14px 3px 14px;font-size:14px;max-width:80%;box-shadow:0 1px 1px rgba(0,0,0,.08)">a imate kaj brez laktoze?</div></div>
-        <div style="display:flex;justify-content:flex-start"><div style="background:#fff;color:#111;padding:8px 12px;border-radius:14px 14px 14px 3px;font-size:14px;max-width:86%;box-shadow:0 1px 1px rgba(0,0,0,.08)">Da — brez laktoze imamo Marinaro in solato Cezar. Naj katero dodam?</div></div>
-      </div>
-    </div>
-    <p style="margin-top:24px;font-size:14px;color:var(--ink-soft)">Na voljo v paketih <b>AI Start</b>, <b>AI Pro</b> in <b>Premium</b>.</p>
-
-    <div style="margin-top:34px">
-      <div style="font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);margin-bottom:14px">🖥️ Poveže se z vašo blagajno</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">
-        <span style="background:#fff;border:1px solid rgba(12,31,23,.1);border-radius:999px;padding:9px 18px;font-weight:700;font-size:14px;color:var(--ink);box-shadow:0 2px 8px rgba(12,31,23,.05)">Poster POS</span>
-        <span style="background:#fff;border:1px solid rgba(12,31,23,.1);border-radius:999px;padding:9px 18px;font-weight:700;font-size:14px;color:var(--ink);box-shadow:0 2px 8px rgba(12,31,23,.05)">Square</span>
-        <span style="background:#fff;border:1px solid rgba(12,31,23,.1);border-radius:999px;padding:9px 18px;font-weight:700;font-size:14px;color:var(--ink);box-shadow:0 2px 8px rgba(12,31,23,.05)">iiko</span>
-        <span style="background:#fff;border:1px solid rgba(12,31,23,.1);border-radius:999px;padding:9px 18px;font-weight:700;font-size:14px;color:var(--ink);box-shadow:0 2px 8px rgba(12,31,23,.05)">Loyverse</span>
-      </div>
-      <p style="margin-top:14px;font-size:13px;color:var(--ink-soft)">Nimate teh? Bot vseeno deluje — naročila vidite na nadzorni plošči.</p>
-    </div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS -->
-<section class="how" id="how">
-  <div class="container">
-    <div class="section-label">Kako začnete</div>
-    <h2 class="section-title">V uporabi že jutri.<br>Brez učenja.</h2>
-    <p class="section-sub">Brez programiranja, brez novih aplikacij, brez tehničnega znanja. Res.</p>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">1</div>
-        <h3>Vi nam poveste osnove</h3>
-        <p>Delovni čas, storitve in cene. To je vse, kar potrebujemo od vas — povejte nam kar prek WhatsAppa.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">2</div>
-        <h3>Mi nastavimo vse</h3>
-        <p>V 1–2 dneh povežemo vašo WhatsApp številko in nastavimo pomočnika po vaši meri. Vam ni treba ničesar namestiti.</p>
-      </div>
-      <div class="step">
-        <div class="step-num">3</div>
-        <h3>FlowTiq prevzame</h3>
-        <p>Od tega trenutka bot sprejema rezervacije in naročila za dostavo, pošilja opomnike ter vabi stranke nazaj. Vi delate naprej.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CALCULATOR -->
-<section>
-  <div class="container" style="text-align:center">
-    <div class="section-label">Koliko časa prihranite?</div>
-    <h2 class="section-title">Premaknite drsnik<br>in poglejte sami.</h2>
-    <div class="calc-box">
-      <div class="calc-label">Koliko strank na dan vas pokliče ali piše?</div>
-      <div class="slider-wrap">
-        <div><span class="slider-val" id="sliderVal">12</span> strank</div>
-        <input type="range" min="1" max="40" value="12" id="calcSlider" oninput="updateCalc(this.value)">
-        <div class="slider-labels"><span>1</span><span>20</span><span>40</span></div>
-      </div>
-      <div class="calc-result">
-        <div class="calc-result-box">
-          <div class="num" id="daily">36 min</div>
-          <div class="desc">na telefonu vsak dan</div>
+    <div class="grid-3-20" style="margin-top:40px;align-items:start">
+      <div class="plan">
+        <div style="padding:24px 24px 0">
+          <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">AI START</div>
+          <h3 style="font-size:26px;margin-top:10px">Za začetek</h3>
+          <div class="plan-price"><b>89 €</b><span>/ mesec</span></div>
+          <p class="body-sm" style="margin-top:10px">Manjši lokali in obrtniki, ki šele začenjajo.</p>
         </div>
-        <div class="calc-arrow">→</div>
-        <div class="calc-result-box">
-          <div class="num green" id="monthly">≈ 16 ur</div>
-          <div class="desc">na mesec, ki jih dobite nazaj</div>
+        <div class="plan-body">
+          <div>Naročila in rezervacije 24 ur na dan</div>
+          <div>Koledar, opomniki in nadzorna plošča</div>
+          <div>Povezava z blagajno</div>
+          <div>Do <strong>500 naročil</strong> na mesec</div>
+        </div>
+        <a class="plan-cta btn--ghost" href="/kontakt.html">Odpri račun</a>
+      </div>
+
+      <div class="plan plan--pro card--shadow-green">
+        <div style="padding:24px 24px 0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--mint)">AI PRO</div>
+            <div style="background:var(--green);color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;letter-spacing:.04em">NAJPOGOSTEJŠA IZBIRA</div>
+          </div>
+          <h3 style="font-size:26px;margin-top:10px">Za polno delovanje</h3>
+          <div class="plan-price"><b>159,99 €</b><span>/ mesec</span></div>
+          <p style="font-size:14.5px;color:var(--on-ink-3);margin-top:10px;line-height:1.5">Ko hočeš, da se stranka pogovarja kot s človekom.</p>
+        </div>
+        <div class="plan-body">
+          <div>Vse iz paketa Start</div>
+          <div>Razume prosto besedilo: „eno capriccioso in dve koli“</div>
+          <div>Zapomni si stranke — „enako kot zadnjič“ deluje</div>
+          <div>Vabila nazaj in zbiranje ocen</div>
+          <div>Do <strong>1.500 naročil</strong> na mesec</div>
+        </div>
+        <a class="plan-cta plan-cta--pro" href="/kontakt.html">Odpri račun</a>
+      </div>
+
+      <div class="plan">
+        <div style="padding:24px 24px 0">
+          <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">PREMIUM</div>
+          <h3 style="font-size:26px;margin-top:10px">Za verige</h3>
+          <div class="plan-price"><b>299 €</b><span>/ mesec</span></div>
+          <p class="body-sm" style="margin-top:10px">Več lokacij in velik obseg naročil.</p>
+        </div>
+        <div class="plan-body">
+          <div>Vse iz paketa Pro</div>
+          <div>Do <strong>10.000 naročil</strong> na mesec</div>
+          <div>Prednostna podpora in prilagoditve</div>
+          <div>Več lokacij pod eno nadzorno ploščo</div>
+        </div>
+        <a class="plan-cta btn--ghost" href="/kontakt.html">Odpri račun</a>
+      </div>
+    </div>
+    <div style="margin-top:22px;font-size:15px;color:var(--muted-2)">Brez vezave · odpoved kadarkoli · postavitev v 1–2 dneh · <a class="uline" href="/cenik.html">podrobnosti in primerjava paketov</a></div>
+  </div>
+</section>
+
+<!-- ── 10 FAQ ── -->
+<section class="sec sec--cream" id="faq">
+  <div class="wrap">
+    <div class="pill">10 · Kar ljudje najprej vprašajo</div>
+    <h2 class="h-2 measure-22" style="margin-top:22px">Brez zapletov. Res.</h2>
+    <div class="faq" style="margin-top:34px">
+      <details>
+        <summary><span>Se moram česa naučiti?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Ne. Stranke pišejo na isti WhatsApp kot doslej. Ti dobiš preprosto nadzorno ploščo, ki jo razumeš v petih minutah — in tudi to ni obvezno, ker lahko vse urejaš prek WhatsAppa.</div>
+      </details>
+      <details>
+        <summary><span>Moram namestiti kakšno aplikacijo?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Ne. Nič za naložiti, nič za povezovati. Uporablja se WhatsApp, ki ga stranke že imajo na telefonu.</div>
+      </details>
+      <details>
+        <summary><span>Kaj če bo bot napisal kaj narobe?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Nastavimo ga po tvoji obrti — tvoje storitve, tvoje cene, tvoja pravila. Kadar česa ne ve, ne ugiba: pove, da bo preveril, in obvesti tebe.</div>
+      </details>
+      <details>
+        <summary><span>Kaj pa stranke, ki raje pokličejo?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Nič se ne spremeni. Telefon dela naprej. FlowTiq prevzame samo tiste, ki pišejo — teh je vsako leto več.</div>
+      </details>
+      <details>
+        <summary><span>Koliko traja postavitev?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">En do dva dneva. Ti nam poveš delovni čas, storitve in cene; ostalo naredimo mi. Lahko nam tudi samo pošlješ fotografijo cenika.</div>
+      </details>
+    </div>
+    <div style="margin-top:22px"><a class="link-strong" href="/vprasanja.html" style="font-size:16.5px">Vseh 20 vprašanj in odgovorov →</a></div>
+  </div>
+</section>
+
+<!-- ── Zaključni CTA ── -->
+<section class="sec sec--flush" style="border-bottom:2px solid var(--ink)">
+  <div class="wrap cta-wrap">
+    <div class="cta cta--split">
+      <div>
+        <h2 style="font-size:clamp(34px,4.4vw,56px);max-width:22ch">Tvoj telefon bo zvonil manj. Naročila bodo rasla bolj.</h2>
+        <p class="measure-50" style="font-size:18.5px;margin-top:20px">Odpri račun, povej nam delovni čas, storitve in cene — v dveh dneh FlowTiq sprejme prvo naročilo namesto tebe.</p>
+        <div class="row" style="margin-top:30px">
+          <a class="btn btn--onink" href="/kontakt.html" style="font-size:17.5px">Odpri račun</a>
+          <a class="btn btn--onink-ghost" href="/zgodbe.html" style="font-size:17.5px">Poglej primere iz prakse</a>
         </div>
       </div>
-      <p style="margin-top:20px;font-size:13px;color:var(--ink-faint)">* Okviren izračun: ~3 minute na pogovor, 26 delovnih dni na mesec.</p>
-    </div>
-  </div>
-</section>
-
-<!-- PROTI-PROVIZIJA -->
-<section style="background:var(--ink);color:#fff">
-  <div class="container" style="text-align:center">
-    <div class="section-label" style="color:var(--green)">Za picerije in restavracije</div>
-    <h2 class="section-title" style="color:#fff">Tržnice vzamejo <span style="color:#ff7a7a">25–30 %</span>.<br>Z FlowTiq maržo obdržite vi.</h2>
-    <p class="section-sub" style="color:rgba(255,255,255,.72);margin:0 auto 44px">Stranke naročajo direktno na vaš WhatsApp — brez provizije od vsakega naročila. Vi plačate fiksno, ostalo je vaše.</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:760px;margin:0 auto">
-      <div class="norisk-card" style="border-color:rgba(255,122,122,.35)">
-        <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:10px">Prek dostavne platforme</div>
-        <div style="font-size:36px;font-weight:800;color:#ff7a7a">−550 €</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:8px">provizije na mesec*</div>
-      </div>
-      <div class="norisk-card" style="border-color:rgba(66,168,66,.45)">
-        <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:10px">Z FlowTiq (direktna naročila)</div>
-        <div style="font-size:36px;font-weight:800;color:var(--green)">od 89 €</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.55);margin-top:8px">fiksno na mesec · naročila obdržite</div>
-      </div>
-    </div>
-    <p style="margin-top:26px;font-size:13px;color:rgba(255,255,255,.45)">* Primer: 100 dostav × 20 € × ~28 % provizije. Vaše številke so lahko drugačne.</p>
-  </div>
-</section>
-
-<!-- NO-RISK -->
-<section class="norisk" id="cena">
-  <div class="container" style="text-align:center">
-    <div class="section-label">Jasna cena, brez presenečenj</div>
-    <h2 class="section-title">Izberite paket.<br>Brez vezave.</h2>
-    <p class="section-sub" style="margin:0 auto 56px;color:rgba(255,255,255,.7)">Brez vezave · Odpoved kadarkoli · Postavitev v 1–2 dneh</p>
-
-    <div class="pricing-grid">
-      <div class="price-card">
-        <span class="plan-badge" style="background:#34d399;color:#064e3b">AI START</span>
-        <h3>AI Start</h3>
-        <div class="plan-for">Za manjše lokale in tiste, ki šele začenjajo z WhatsApp naročili.</div>
-        <div class="plan-price">89 € <span>/ mesec</span></div>
-        <div class="plan-trial" style="color:#fbbf24">Plačilo pred aktivacijo</div>
-        <ul>
-          <li>WhatsApp bot za naročila in rezervacije 24/7</li>
-          <li>Dostava in osebni prevzem · nadzorna plošča s statistiko</li>
-          <li>POS integracija (Poster, Square, iiko, Loyverse)</li>
-          <li>AI natakar razume prosto besedilo strank</li>
-          <li>Do <strong>500 naročil</strong> na mesec</li>
-        </ul>
-        <button onclick="location.href='/prijava.html?plan=ai_start'" class="btn-primary">Registracija →</button>
-      </div>
-      <div class="price-card featured">
-        <span class="plan-badge" style="background:#a78bfa;color:#2e1065">🤖 AI · NAJBOLJ PRILJUBLJEN</span>
-        <h3>AI Pro</h3>
-        <div class="plan-for">Za lokale, ki želijo vrhunsko izkušnjo — AI natakar se s stranko pogovarja kot človek.</div>
-        <div class="plan-price">159,99 € <span>/ mesec</span></div>
-        <div class="plan-trial" style="color:#fbbf24">Plačilo pred aktivacijo</div>
-        <ul>
-          <li>WhatsApp bot za naročila in rezervacije 24/7</li>
-          <li>Dostava in osebni prevzem · nadzorna plošča s statistiko</li>
-          <li>POS integracija (Poster, Square, iiko, Loyverse) — brez pretipkavanja</li>
-          <li>AI natakar: stranka napiše "eno capriccioso in dve koli" — in je v košarici</li>
-          <li>Zapomni si stranke: "enako kot zadnjič" preprosto deluje</li>
-          <li>Do <strong>1.500 naročil</strong> na mesec</li>
-        </ul>
-        <button onclick="location.href='/prijava.html?plan=ai'" class="btn-primary">Registracija →</button>
-      </div>
-      <div class="price-card">
-        <span class="plan-badge" style="background:#fbbf24;color:#78350f">PREMIUM</span>
-        <h3>Premium</h3>
-        <div class="plan-for">Za večje lokale in verige z velikim obsegom naročil.</div>
-        <div class="plan-price">299 € <span>/ mesec</span></div>
-        <div class="plan-trial" style="color:#fbbf24">Plačilo pred aktivacijo</div>
-        <ul>
-          <li>Vse iz paketa AI Pro</li>
-          <li>Vključenih 10.000 naročil na mesec</li>
-          <li>Prednostna podpora in prilagoditve</li>
-        </ul>
-        <button onclick="location.href='/prijava.html?plan=premium'" class="btn-primary">Registracija →</button>
-      </div>
-    </div>
-
-    <div class="norisk-grid">
-      <div class="norisk-card">
-        <div class="icon">💶</div>
-        <h3>Jasna mesečna cena</h3>
-        <p>Ena fiksna cena na mesec. Brez provizij na naročilo in brez skritih stroškov.</p>
-      </div>
-
-      <div class="norisk-card">
-        <div class="icon">🛠️</div>
-        <h3>Postavitev v 1–2 dneh</h3>
-        <p>Mi naredimo vso nastavitev. Vi samo poveste osnove o svoji obrti.</p>
-      </div>
-      <div class="norisk-card">
-        <div class="icon">🚪</div>
-        <h3>Odpoved kadarkoli</h3>
-        <p>Brez vezave, brez pogodbe za leta. Nehate, kadar želite.</p>
-      </div>
-    </div>
-    <div class="norisk-cta">
-      <button onclick="location.href='/prijava.html'" class="btn-primary">Registracija →</button>
-      <p class="norisk-note">Odgovorimo v nekaj urah · Brez skritih stroškov</p>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section id="faq">
-  <div class="container" style="text-align:center">
-    <div class="section-label">Pogosta vprašanja</div>
-    <h2 class="section-title">Brez zapletov.</h2>
-    <p class="section-sub" style="margin:0 auto">Tukaj so odgovori, ki jih najpogosteje slišimo.</p>
-    <div class="faq-list">
-      <div class="faq-item open">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Se moram učiti nekaj novega?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Ne. Stranke pišejo na WhatsApp, ki ga že imate in poznate. Vi dobite preprosto nadzorno ploščo, ki jo razumete v petih minutah.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Moram nameščati kakšno aplikacijo?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Ne. Nič za naložiti, nič za povezovati. Uporabljamo WhatsApp, ki ga stranke že imajo na telefonu.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Bo bot res znal odgovoriti strankam?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Da. Stranko vodi korak za korakom — od izbire storitve do potrjenega termina. Vse nastavimo po vaši obrti, da odgovarja pravilno.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Kaj če si premislim?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Odpoveste kadarkoli, brez kazni in brez pogodbe za leta. Plačujete mesečno, brez vezave.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Kdo vse nastavi?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Mi. V 1–2 dneh povežemo vašo številko in nastavimo pomočnika. Vi nam samo poveste delovni čas, storitve in cene.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Koliko to stane?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Trije paketi, vsi z AI natakarjem in POS integracijo: <strong>AI Start</strong> — 89 € / mesec (do 500 naročil), <strong>AI Pro</strong> — 159,99 € / mesec (do 1.500 naročil) in <strong>Premium</strong> — 299 € / mesec (do 10.000 naročil, za večje lokale in verige). Brez vezave, odpoved kadarkoli.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Kaj je POS integracija?
-          <span class="faq-icon">+</span>
-        </button>
-        <div class="faq-a">Naročila iz WhatsAppa se samodejno pošljejo v vašo blagajno oz. kuhinjski sistem. Nič več pretipkavanja — potrjeno naročilo se samo pojavi v kuhinji. Trenutno podpiramo <strong>Poster POS</strong>, <strong>Square</strong>, <strong>iiko</strong> in <strong>Loyverse</strong>. Če uporabljate drug sistem, bot vseeno deluje — naročila pregledujete na FlowTiq nadzorni plošči. Vključeno v vse pakete.</div>
+      <div style="border:2px solid var(--on-ink);border-radius:18px;padding:24px">
+        <div class="mono-label">Kaj rabimo od tebe</div>
+        <div class="stack" style="margin-top:16px;gap:14px;font-size:16px">
+          <div style="display:flex;gap:12px"><span class="mono" style="color:var(--mint)">01</span><span>Delovni čas</span></div>
+          <div style="display:flex;gap:12px"><span class="mono" style="color:var(--mint)">02</span><span>Seznam storitev ali meni s cenami</span></div>
+          <div style="display:flex;gap:12px"><span class="mono" style="color:var(--mint)">03</span><span>Telefonsko številko za WhatsApp</span></div>
+        </div>
+        <div style="border-top:1.5px solid var(--ink-line);margin-top:20px;padding-top:16px;font-size:14.5px;color:var(--on-ink-3)">To je vse. Ostalo naredimo mi — tudi če nam pošlješ fotografijo cenika z mize.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- FINAL CTA -->
-<section class="cta-final">
-  <div class="container">
-    <h2>Vaš telefon zvoni manj.<br>Naročila pa rastejo.</h2>
-    <p>Izpolnite obrazec in v kratkem vam bomo pokazali, kako bi FlowTiq deloval pri vas — brez obveznosti.</p>
-    <button onclick="location.href='/prijava.html'" class="btn-primary-white">
-      Registracija →
-    </button>
-    <p class="cta-final-note">Brez vezave · Odpoved kadarkoli</p>
+<footer class="site-foot">
+  <div class="foot-grid">
+    <div>
+      <img src="/ft-logo.png" width="188" height="55" alt="FlowTiq">
+      <p style="font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:30ch"><strong>Flow</strong> je neprekinjen tok strank. <strong>Tiq</strong> je odziv v sekundi. Skupaj: pomočnik, ki ti polni koledar, medtem ko delaš.</p>
+    </div>
+    <div>
+      <div class="foot-label">Izdelek</div>
+      <div class="foot-links">
+        <a href="/kako-deluje.html">Kako deluje</a>
+        <a href="/funkcije.html">Kaj zna</a>
+        <a href="/cenik.html">Cena</a>
+        <a href="/vprasanja.html">Vprašanja</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Za koga</div>
+      <div class="foot-links">
+        <a href="/panoga/restavracije.html">Restavracije in picerije</a>
+        <a href="/panoga/frizerski-saloni.html">Frizerski saloni</a>
+        <a href="/panoga/zobozdravniki.html">Ambulante</a>
+        <a href="/panoge.html">Vse obrti →</a>
+        <a href="/imenik.html">Imenik lokalov</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Podjetje</div>
+      <div class="foot-links">
+        <a href="/o-nas.html">O nas</a>
+        <a href="/zgodbe.html">Primeri iz prakse</a>
+        <a href="/nasveti.html">Nasveti</a>
+        <a href="/varnost.html">Varnost in zasebnost</a>
+        <a href="/kontakt.html">Kontakt</a>
+      </div>
+    </div>
   </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-inner">
-    <img src="/logo.png" alt="FlowTiq" class="footer-logo">
-    <ul class="footer-links">
-      <li><a href="#features">Funkcije</a></li>
-      <li><a href="#how">Kako deluje</a></li>
-      <li><a href="#cena">Cena</a></li>
-      <li><a href="#faq">Vprašanja</a></li>
-    </ul>
-    <ul class="footer-links">
-      <li><a href="/terms.html">Pogoji uporabe</a></li>
-      <li><a href="/privacy.html">Zasebnost</a></li>
-      <li><a href="/cookies.html">Piškotki</a></li>
-    </ul>
+  <div class="foot-bottom">
+    <div>© 2026 FlowTiq · WhatsApp pomočnik za slovenske obrtnike in gostince</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a></div>
   </div>
-  <div class="footer-copy">© 2026 FlowTiq · Vaš WhatsApp pomočnik</div>
 </footer>
 
 <script>
-// ── Chat animation ──
-(function() {
-  var msgs = [
-    { type: 'sys', text: 'danes' },
-    { type: 'in',  text: 'Živjo! 👋 Sem pomočnik studia Vita.', time: '11:40' },
-    { type: 'out', text: '📅 Rezerviraj termin', time: '11:40' },
-    { type: 'in',  text: 'Super! Katero storitev?', time: '11:41' },
-    { type: 'in',  text: '• Striženje — 20 €\n• Barvanje — 45 €\n• Pričeska — 35 €', time: '' },
-    { type: 'out', text: 'Striženje', time: '11:41' },
-    { type: 'in',  text: 'Kdaj vam ustreza? 🗓️', time: '11:42' },
-    { type: 'in',  text: '• Pet 13.6. ob 16:00\n• Sob 14.6. ob 11:00', time: '' },
-    { type: 'out', text: 'Pet 13.6. ob 16:00', time: '11:42' },
-    { type: 'in',  text: '✅ Rezervirano! Opomnik pošljem dan prej.', time: '11:42' }
+/* Pikice 73 / 27 — okras k številkam, ki so že napisane v legendi. */
+(function () {
+  var box = document.getElementById('dots');
+  if (!box) return;
+  var html = '';
+  for (var i = 0; i < 100; i++) {
+    html += i < 73
+      ? '<div style="width:18px;height:18px;background:#16A34A;border:1.5px solid #101E2B;border-radius:5px"></div>'
+      : '<div style="width:18px;height:18px;background:#F4EDE4;border:1.5px dashed #B4442E;border-radius:5px"></div>';
+  }
+  box.innerHTML = html;
+})();
+
+/* Lokali, ki že uporabljajo FlowTiq — bere isti javni seznam kot /restavracije. */
+(function () {
+  var strip = document.getElementById('lokali-strip');
+  if (!strip) return;
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var ini = function (n) { return (String(n || '').replace(/[^\p{L}\p{N}]/gu, '').charAt(0) || '?').toUpperCase(); };
+  // Lokali, ki so že v HTML-ju (npr. Botana), se ne podvajajo.
+  var ze = Array.prototype.slice.call(strip.querySelectorAll('[data-lokal]'))
+    .map(function (n) { return (n.getAttribute('data-lokal') || '').trim().toLowerCase(); });
+
+  fetch('/api/public/restaurants').then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
+    if (!Array.isArray(list) || !list.length) return;
+    list = list.filter(function (l) { return ze.indexOf(String(l.name || '').trim().toLowerCase()) === -1; });
+    if (!list.length) return;
+    var cards = list.slice(0, 3).map(function (l) {
+      var badge = l.logo_url
+        ? '<img src="' + esc(l.logo_url) + '" alt="' + esc(l.name) + '" style="width:124px;height:42px;object-fit:contain;flex:0 0 auto">'
+        : '<span style="width:44px;height:44px;flex:0 0 auto;border:2px solid #101E2B;border-radius:18px;background:#F4EDE4;display:grid;place-items:center;font-weight:800">' + ini(l.name) + '</span>';
+      return '<a class="card" href="/imenik.html" style="padding:16px 20px;display:flex;align-items:center;gap:16px;min-width:260px;color:#101E2B">'
+        + badge
+        + '<div><div style="font-weight:800;font-size:18px">' + esc(l.name) + '</div>'
+        + '<div style="font-size:13px;color:#5A6875">Naročanje prek WhatsAppa je vzpostavljeno</div></div></a>';
+    }).join('');
+    strip.insertAdjacentHTML('afterbegin', cards);
+  }).catch(function () { /* tiho — ostane samo dashed kartica */ });
+})();
+
+/* Pogovor v heroju — trije primeri, ki se ponavljajo v zanki.
+   Statični HTML ostane za obiskovalce brez JS; tu ga prevzamemo in ciklamo. */
+(function () {
+  var telo = document.getElementById('chat-body');
+  var imeEl = document.getElementById('chat-ime');
+  var crkaEl = document.getElementById('chat-crka');
+  if (!telo || !imeEl || !crkaEl) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  var SCENARIJI = [
+    {
+      ime: 'Picerija Vrtnica', crka: 'P', odziv: 'ODGOVOR V 1,4 s',
+      p: [
+        { k: 'g', t: 'a lahko dobim eno capriccioso in dve koli za dostavo' },
+        { k: 'b', t: 'Seveda. Dodal sem <strong>1× Capricciosa</strong> in <strong>2× Coca-Cola</strong> — skupaj 14,60 €. Na kateri naslov dostavimo?' },
+        { k: 'g', t: 'Trubarjeva 12' },
+        { k: 'b', t: 'Naročilo je potrjeno in že v kuhinji. Dostava ob <strong>19:25</strong>. Hvala!' }
+      ]
+    },
+    {
+      ime: 'Salon Vita', crka: 'S', odziv: 'TERMIN ZABELEŽEN',
+      p: [
+        { k: 'g', t: 'živjo, bi se naročila na barvanje kdaj v tem tednu' },
+        { k: 'b', t: 'Živjo! Barvanje traja 2 uri. Prosto imamo: <strong>sreda 9:00</strong>, <strong>četrtek 14:00</strong> ali <strong>petek 16:30</strong>.' },
+        { k: 'g', t: 'četrtek pri Ani, če se da' },
+        { k: 'b', t: 'Zabeleženo — <strong>četrtek 14:00</strong>, barvanje pri Ani. Opomnik ti pošljem dan prej.' }
+      ]
+    },
+    {
+      ime: 'Avtoservis Kovač', crka: 'A', odziv: 'GUME PRIPRAVLJENE',
+      p: [
+        { k: 'g', t: 'rabim menjavo gum, golf, LJ 12-34A' },
+        { k: 'b', t: 'Zabeležil. Menjava traja 30 min. Prosto: <strong>sreda 8:30</strong>, sreda 13:00 ali četrtek 9:00.' },
+        { k: 'g', t: 'sreda 8:30' },
+        { k: 'b', t: 'Potrjeno, sreda 8:30. Gume imaš pri nas v hrambi — pripravimo jih.' }
+      ]
+    }
   ];
 
-  var container = document.getElementById('chatMsgs');
+  function dodajBalonček(m) {
+    var d = document.createElement('div');
+    d.className = 'bubble ' + (m.k === 'g' ? 'bubble--out' : 'bubble--in');
+    d.innerHTML = m.t;
+    telo.appendChild(d);
+  }
+
+  function dodajTipkanje() {
+    var d = document.createElement('div');
+    d.className = 'typing';
+    d.innerHTML = '<span></span><span style="animation-delay:.15s"></span><span style="animation-delay:.3s"></span>';
+    telo.appendChild(d);
+    return d;
+  }
+
+  function dodajOdziv(sc) {
+    var d = document.createElement('div');
+    d.className = 'chat-live';
+    d.innerHTML = '<i></i>' + sc.odziv;
+    telo.appendChild(d);
+  }
+
   var i = 0;
 
-  function showNext() {
-    if (i >= msgs.length) {
-      setTimeout(function() {
-        container.innerHTML = '';
-        i = 0;
-        setTimeout(showNext, 600);
-      }, 4200);
-      return;
-    }
-    var m = msgs[i++];
-    if (m.type === 'in') {
-      var t = document.createElement('div');
-      t.className = 'typing';
-      t.innerHTML = '<span></span><span></span><span></span>';
-      container.appendChild(t);
-      container.scrollTop = container.scrollHeight;
-      setTimeout(function() {
-        if (t.parentNode) t.remove();
-        addMsg(m);
-        setTimeout(showNext, m.text.length > 40 ? 1300 : 850);
-      }, 850);
-    } else {
-      addMsg(m);
-      setTimeout(showNext, m.type === 'sys' ? 400 : 650);
-    }
-  }
+  function predvajaj() {
+    var sc = SCENARIJI[i];
+    imeEl.textContent = sc.ime;
+    crkaEl.textContent = sc.crka;
+    telo.style.opacity = '';
+    telo.innerHTML = '';
 
-  function addMsg(m) {
-    var el = document.createElement('div');
-    if (m.type === 'sys') {
-      el.className = 'msg-sys';
-      el.textContent = m.text.toUpperCase();
-    } else {
-      el.className = 'msg msg-' + m.type;
-      el.innerHTML = m.text.replace(/\n/g, '<br>');
-      if (m.time) {
-        var t2 = document.createElement('div');
-        t2.className = 'msg-time';
-        t2.textContent = m.time;
-        el.appendChild(t2);
+    var korak = 0;
+    function naprej() {
+      if (korak >= sc.p.length) {
+        dodajOdziv(sc);
+        setTimeout(zakljuci, 3400);
+        return;
+      }
+      var m = sc.p[korak++];
+      if (m.k === 'b') {
+        var t = dodajTipkanje();
+        setTimeout(function () {
+          t.remove();
+          dodajBalonček(m);
+          setTimeout(naprej, 850);
+        }, 900);
+      } else {
+        dodajBalonček(m);
+        setTimeout(naprej, 800);
       }
     }
-    container.appendChild(el);
-    container.scrollTop = container.scrollHeight;
+
+    function zakljuci() {
+      telo.style.transition = 'opacity .45s';
+      telo.style.opacity = '0';
+      setTimeout(function () {
+        i = (i + 1) % SCENARIJI.length;
+        predvajaj();
+      }, 500);
+    }
+
+    setTimeout(naprej, 250);
   }
 
-  setTimeout(showNext, 900);
-})();
-
-// ── Calculator ──
-function updateCalc(v) {
-  v = parseInt(v);
-  var pct = ((v - 1) / 39 * 100).toFixed(1);
-  document.getElementById('calcSlider').style.setProperty('--pct', pct + '%');
-  document.getElementById('sliderVal').textContent = v;
-  document.getElementById('daily').textContent = (v * 3) + ' min';
-  document.getElementById('monthly').textContent = '\u2248 ' + Math.round(v * 3 * 26 / 60) + ' ur';
-}
-updateCalc(12);
-
-// ── FAQ accordion ──
-function toggleFaq(btn) {
-  var item = btn.closest('.faq-item');
-  var isOpen = item.classList.contains('open');
-  document.querySelectorAll('.faq-item.open').forEach(function(el) { el.classList.remove('open'); });
-  if (!isOpen) item.classList.add('open');
-}
-document.querySelector('.faq-item') && document.querySelector('.faq-item').classList.add('open');
-
-// ── Cookie banner ──
-(function() {
-  if (localStorage.getItem('ft_ok')) return;
-  var b = document.createElement('div');
-  b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0c1f17;color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:9999;font-size:14px;flex-wrap:wrap';
-  b.innerHTML = '<span>Uporabljamo nujne piškotke za delovanje storitve.</span><button style="background:#06c167;color:#fff;border:none;padding:9px 18px;border-radius:100px;font-weight:700;cursor:pointer;font-size:14px" onclick="localStorage.setItem(\'ft_ok\',1);this.closest(\'div\').remove()">Sprejmi</button>';
-  setTimeout(function() { document.body.appendChild(b); }, 2500);
+  predvajaj();
 })();
 </script>
-
-<!-- Contact Modal -->
-<div class="modal-overlay" id="contactModal" onclick="if(event.target===this)closeModal()">
-  <div class="modal-box">
-    <button class="modal-close" onclick="closeModal()">×</button>
-    <div id="modal-form-wrap">
-      <div class="modal-title">🚀 Začnimo skupaj</div>
-      <div class="modal-sub">Izpolnite obrazec in v kratkem vam bomo odgovorili.</div>
-      <div class="modal-field">
-        <label>Ime in priimek *</label>
-        <input type="text" id="cf-name" placeholder="Jana Novak">
-      </div>
-      <div class="modal-field">
-        <label>Email *</label>
-        <input type="email" id="cf-email" placeholder="jana@salon.si">
-      </div>
-      <div class="modal-field">
-        <label>Telefonska številka</label>
-        <input type="tel" id="cf-phone" placeholder="+386 40 123 456">
-      </div>
-      <div class="modal-field">
-        <label>Vrsta posla *</label>
-        <select id="cf-type">
-          <option value="">— Izberite —</option>
-          <option value="Frizerski salon">Frizerski salon</option>
-          <option value="Kozmetika & nohti">Kozmetika & nohti</option>
-          <option value="Tattoo & piercing">Tattoo & piercing</option>
-          <option value="Masaže & wellness">Masaže & wellness</option>
-          <option value="Picerija / restavracija">Picerija / restavracija</option>
-          <option value="Fotograf">Fotograf</option>
-          <option value="Osebni trener">Osebni trener</option>
-          <option value="Drugo">Drugo</option>
-        </select>
-      </div>
-      <button class="modal-submit" id="cf-submit" onclick="submitContact()">Pošlji prijavo →</button>
-      <div class="modal-or"><span>ali</span></div>
-      <a href="https://wa.me/38640599185?text=Pozdravljeni%2C%20zanima%20me%20FlowTiq%20za%20moje%20podjetje." target="_blank" class="btn-wa-modal">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Kontaktiraj nas
-      </a>
-    </div>
-    <div class="modal-success" id="modal-success" style="display:none">
-      <div class="s-icon">✅</div>
-      <h3>Prijava poslana!</h3>
-      <p>Hvala! Kontaktirali vas bomo v pár urah.<br>Preverite email za potrditev.</p>
-    </div>
-  </div>
-</div>
-
-<script>
-function openModal() {
-  document.getElementById('contactModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-function closeModal() {
-  document.getElementById('contactModal').classList.remove('open');
-  document.body.style.overflow = '';
-}
-async function submitContact() {
-  const name = document.getElementById('cf-name').value.trim();
-  const email = document.getElementById('cf-email').value.trim();
-  const phone = document.getElementById('cf-phone').value.trim();
-  const type = document.getElementById('cf-type').value;
-  if (!name || !email || !type) { alert('Prosim izpolnite vsa obvezna polja.'); return; }
-  const btn = document.getElementById('cf-submit');
-  btn.disabled = true; btn.textContent = 'Pošiljam...';
-  try {
-    const r = await fetch('/api/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, phone, business_type: type })
-    });
-    if (!r.ok) throw new Error('Napaka');
-    document.getElementById('modal-form-wrap').style.display = 'none';
-    document.getElementById('modal-success').style.display = 'block';
-    setTimeout(closeModal, 4000);
-  } catch(e) {
-    btn.disabled = false; btn.textContent = 'Pošlji prijavo →';
-    alert('Prišlo je do napake. Prosim pišite nam na WhatsApp.');
-  }
-}
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
-</script>
-
 </body>
 </html>

@@ -12,23 +12,35 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>FlowTiq — Dostava</title>
+<meta name="theme-color" content="#FBF8F1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f8f7ff;
+  /* FlowTiq paleta — imena spremenljivk ostajajo, ker se nanje
+     zanaša 124 mest v markupu in JS predlogah. */
+  --bg: #FBF8F1;
   --surface: #ffffff;
-  --surface2: #f0eeff;
-  --border: #e8e7f0;
-  --purple: #25D366;
-  --purple-light: #1aab50;
-  --cyan: #06b6d4;
-  --text: #111118;
-  --muted: #6b6b80;
-  --green: #059669;
-  --red: #dc2626;
-  --yellow: #d97706;
-  --radius: 16px;
+  --surface2: #F4EDE4;
+  --border: #E4DCCB;
+  --purple: #16A34A;
+  --purple-light: #0E7A38;
+  --cyan: #1D6FD0;
+  --text: #101E2B;
+  --muted: #5A6875;
+  --green: #0E7A38;
+  --red: #B4442E;
+  --yellow: #D97706;
+  --radius: 18px;
+  /* novo */
+  --ink: #101E2B;
+  --tan: #EDE4D6;
+  --dash: #C9C0AE;
+  --green-tint: #E8F5EC;
+  --rust-bg: #FBEEEB;
+  --sans: "Fira Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+  --mono: "Fira Mono", ui-monospace, Menlo, monospace;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -246,13 +258,263 @@ body {
   .brand { font-size: 1rem; }
   .main { padding: 16px 14px 80px; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   FlowTiq design — isti jezik kot javne strani, salon in voznik.
+   Blok je namenoma ZADNJI, da prepiše prejšnja pravila po vrstnem
+   redu, brez !important. Imena razredov in spremenljivk ostajajo —
+   nanje se zanaša 124 mest v markupu in JS predlogah.
+   WhatsApp predogled (.wa-*, .phone-*) pušča pri miru: to je
+   posnetek pravega WhatsAppa, ne del našega designa.
+   ═══════════════════════════════════════════════════════════════ */
+
+body {
+  background: var(--bg);
+  background-image: none;
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; }
+:focus-visible { outline: 3px solid rgba(22,163,74,.45); outline-offset: 2px; }
+
+/* — glava — */
+.header {
+  background: var(--bg); border-bottom: 2px solid var(--ink);
+  backdrop-filter: none; padding: 12px 24px;
+}
+.header img { height: 38px !important; width: auto; }
+.brand {
+  background: none; color: var(--ink);
+  -webkit-text-fill-color: var(--ink); font-weight: 800; letter-spacing: -0.01em;
+}
+.brand-sub { color: var(--muted); -webkit-text-fill-color: var(--muted); }
+.pending-badge {
+  background: var(--red); color: #fff; border: 1.5px solid var(--ink);
+  font-family: var(--mono); font-size: 11px; letter-spacing: .04em; padding: 3px 10px;
+}
+.logout-btn {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 12px;
+  color: var(--text); font-family: inherit; font-weight: 600;
+}
+.logout-btn:hover { background: var(--tan); border-color: var(--ink); color: var(--text); }
+
+/* — prijava (enako kot salon.html) — */
+.login-wrap { background: linear-gradient(var(--bg), var(--surface2)); }
+.login-box {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius);
+  box-shadow: 7px 7px 0 var(--ink); padding: 34px 30px;
+}
+.login-box h2 { font-size: 1.55rem; }
+.login-box > p { color: var(--muted); }
+.login-box img { height: 34px !important; width: auto; margin: 0 auto 8px; display: block; }
+.form-group label { color: var(--muted); font-weight: 600; }
+.form-group input {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.form-group input:focus { border-color: var(--ink); outline: 3px solid rgba(22,163,74,.35); outline-offset: 1px; }
+.btn { border: 2px solid var(--ink); border-radius: var(--radius); font-weight: 600; }
+.btn-primary {
+  background: var(--purple); color: #fff; box-shadow: 4px 4px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s, background .15s;
+}
+.btn-primary:hover { background: var(--purple-light); opacity: 1; transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--ink); }
+.btn-primary:disabled { opacity: .55; transform: none; box-shadow: 4px 4px 0 var(--ink); }
+.login-error {
+  background: var(--rust-bg); border: 2px solid var(--red); border-radius: 14px;
+  color: #8A3421; font-weight: 500;
+}
+
+/* — zavihki — */
+.tabs { background: var(--bg); border-bottom: 2px solid var(--ink); backdrop-filter: none; }
+.tab { color: var(--muted); font-weight: 600; border-bottom: 3px solid transparent; }
+.tab:hover { background: var(--tan); }
+.tab.active { color: var(--purple-light); border-bottom-color: var(--purple); background: var(--green-tint); }
+
+/* — glave razdelkov — */
+.section-title { font-weight: 800; letter-spacing: -0.01em; }
+.refresh-btn {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 12px;
+  color: var(--text); font-family: inherit; font-weight: 600;
+}
+.refresh-btn:hover { background: var(--tan); border-color: var(--ink); color: var(--text); }
+
+/* — filtri in strani — */
+.filter-chip {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 999px;
+  color: var(--text); font-weight: 600;
+}
+.filter-chip:hover { background: var(--tan); }
+.filter-chip.active { background: var(--purple); border-color: var(--ink); color: #fff; }
+.date-input {
+  border: 2px solid var(--ink); border-radius: 12px; background: var(--surface); color: var(--text);
+}
+.date-input:focus { border-color: var(--ink); }
+.date-search-btn {
+  background: var(--purple); color: #fff; border: 2px solid var(--ink); border-radius: 12px; font-weight: 600;
+}
+.date-search-btn:hover { background: var(--purple-light); }
+.orders-count { font-family: var(--mono); font-size: 11.5px; letter-spacing: .04em; color: var(--muted); }
+.page-btn {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 12px;
+  color: var(--text); font-weight: 600;
+}
+.page-btn:hover:not(:disabled) { background: var(--tan); border-color: var(--ink); color: var(--text); }
+.page-info { font-family: var(--mono); color: var(--muted); }
+
+/* — kartice naročil — */
+.order-card {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius);
+  box-shadow: none;
+}
+.order-card.pending {
+  border: 2px solid var(--ink); border-left: 6px solid var(--yellow);
+  background: #FFFCF5; box-shadow: 4px 4px 0 rgba(217,119,6,.35);
+  animation: none;
+}
+.order-card.confirmed { border: 2px solid var(--ink); border-left: 6px solid var(--purple); opacity: .85; }
+.order-card.cancelled { border: 2px solid var(--ink); border-left: 6px solid var(--red); opacity: .55; }
+.orders-col-head {
+  background: var(--surface2); border: 2px solid var(--ink); border-radius: 14px;
+  font-family: var(--mono); font-size: 11px; letter-spacing: .06em; color: var(--muted);
+}
+.order-ref {
+  background: var(--surface2); border: 1.5px solid var(--ink); border-radius: 999px;
+  font-family: var(--mono); color: var(--text); padding: 3px 9px;
+}
+.order-status {
+  border: 1.5px solid var(--ink); border-radius: 999px;
+  font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+  letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px;
+}
+.status-pending   { background: #FDF3E2; color: #92400E; }
+.status-confirmed { background: var(--green-tint); color: var(--purple-light); }
+.status-cancelled { background: var(--rust-bg); color: #8A3421; }
+.order-time { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.order-total { color: var(--purple-light); font-weight: 800; }
+.price-row.price-total { border-top: 1.5px dashed var(--border); color: var(--text); }
+.btn-accept {
+  background: var(--purple); color: #fff; border: 2px solid var(--ink); border-radius: 14px;
+  font-weight: 600; box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s, background .15s;
+}
+.btn-accept:hover { background: var(--purple-light); opacity: 1; box-shadow: 1px 1px 0 var(--ink); transform: translate(2px, 2px); }
+.btn-reject {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 14px;
+  color: var(--red); font-weight: 600;
+}
+.btn-reject:hover { background: var(--rust-bg); border-color: var(--ink); }
+
+.empty-state { color: var(--muted); border: 2px dashed var(--dash); border-radius: var(--radius); }
+
+/* — meni — */
+.menu-item {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius); box-shadow: none;
+}
+.menu-item-name { font-weight: 700; }
+.menu-item-desc { color: var(--muted); }
+.menu-item-price { color: var(--purple-light); font-weight: 800; }
+.btn-add {
+  background: var(--surface); border: 2px dashed var(--dash); border-radius: var(--radius);
+  color: var(--text); font-weight: 600;
+}
+.btn-add:hover { background: var(--tan); }
+
+/* — nastavitve — */
+.settings-card {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--radius); box-shadow: none;
+}
+.settings-card-title {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; color: var(--muted);
+}
+.s-row label { color: var(--muted); font-weight: 600; }
+.s-row select, .s-row input, .s-row textarea {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 14px; color: var(--text);
+}
+.s-row input:focus, .s-row textarea:focus, .s-row select:focus {
+  border-color: var(--ink); outline: 3px solid rgba(22,163,74,.35); outline-offset: 1px;
+}
+.btn-save {
+  background: var(--purple); color: #fff; border: 2px solid var(--ink); border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink); font-weight: 600;
+  transition: transform .12s, box-shadow .12s, background .15s;
+}
+.btn-save:hover { background: var(--purple-light); box-shadow: 1px 1px 0 var(--ink); transform: translate(3px, 3px); }
+
+/* — modalna okna — */
+.modal-overlay { background: rgba(16,30,43,.45); }
+.modal-sheet {
+  background: var(--bg); border: 2px solid var(--ink); border-bottom: 0;
+  border-radius: 24px 24px 0 0; box-shadow: none;
+}
+.modal-title { font-weight: 800; letter-spacing: -0.01em; }
+.modal-sub { color: var(--muted); }
+.time-chip {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 14px;
+  color: var(--text); font-weight: 600;
+}
+.time-chip:hover { background: var(--tan); border-color: var(--ink); color: var(--text); }
+.time-chip.selected { background: var(--purple); border-color: var(--ink); color: #fff; }
+.custom-row input {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 14px; color: var(--text);
+}
+.custom-row input:focus { border-color: var(--ink); }
+.custom-row span { color: var(--muted); }
+.btn-modal-ok {
+  background: var(--purple); color: #fff; border: 2px solid var(--ink); border-radius: 14px; font-weight: 600;
+}
+.btn-modal-ok:hover { background: var(--purple-light); }
+.btn-modal-cancel {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 14px;
+  color: var(--text); font-weight: 600;
+}
+.btn-modal-cancel:hover { background: var(--tan); }
+
+/* — urejevalnik botovih sporočil — */
+.bm-sheet {
+  background: var(--bg); border: 2px solid var(--ink); border-radius: 24px;
+  box-shadow: 10px 10px 0 rgba(16,30,43,.28);
+}
+.bm-fields label { color: var(--muted); font-weight: 600; }
+.bm-fields textarea {
+  background: var(--surface); border: 2px solid var(--ink); border-radius: 12px; color: var(--text);
+}
+.bm-fields textarea:focus { border-color: var(--ink); outline: 3px solid rgba(22,163,74,.35); outline-offset: 1px; }
+.bm-fields label .bm-num { background: var(--purple); border-radius: 7px; }
+.bm-pencil { background: var(--purple); box-shadow: 0 2px 6px rgba(22,163,74,.45); }
+.wa-bubble-recv.bm-editable { border: 1.5px dashed rgba(22,163,74,.45); }
+.wa-bubble-recv.bm-active { border-color: var(--purple); background: var(--green-tint); box-shadow: 0 0 0 3px rgba(22,163,74,.18); }
+.wa-bubble-recv.bm-active::after { border-right-color: var(--green-tint); }
+.wa-bubble-recv.bm-editable:hover { background: #F2FAF4; }
+.wa-bubble-recv.bm-editable:hover::after { border-right-color: #F2FAF4; }
+.bm-fields::-webkit-scrollbar-thumb, .wa-chat::-webkit-scrollbar-thumb { background: rgba(22,163,74,.35); }
+@keyframes bmFlash { 0% { background: #CDEBD8; transform: scale(1.02); } 100% { background: var(--green-tint); transform: scale(1); } }
+.phone-preview { box-shadow: 0 0 0 1px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.6), inset 0 -1px 0 rgba(0,0,0,.12), 0 20px 44px rgba(16,30,43,.16); }
+
+/* — obvestila — */
+.toast {
+  background: var(--ink); color: #fff; border: 2px solid var(--ink); border-radius: 14px;
+  box-shadow: 4px 4px 0 rgba(16,30,43,.25); font-weight: 600;
+}
+.toast.success { background: var(--purple); border-color: var(--ink); color: #fff; }
+.toast.error { background: var(--red); border-color: var(--ink); color: #fff; }
+
+@media (max-width: 600px) {
+  .header { padding: 10px 14px; }
+  .header img { height: 30px !important; }
+  .modal-sheet { border-radius: 20px 20px 0 0; }
+}
+  /* logotip je povezava na domačo stran — inline-flex, da ne doda prostora pod sliko */
+  .ft-logo-link { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
 
 <!-- HEADER -->
 <div class="header">
-  <img src="/logo.png" alt="FlowTiq" style="height:80px;object-fit:contain;display:block">
+  <a class="ft-logo-link" href="/" title="FlowTiq — domača stran"><img src="/ft-logo.png" alt="FlowTiq" width="188" height="55" style="object-fit:contain;display:block"></a>
   <div id="salon-name" style="font-size:12px;color:var(--muted);font-weight:600"></div>
   <select id="loc-switcher" style="display:none;margin-left:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:7px 10px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;max-width:220px"></select>
   <button id="bot-toggle" style="display:none;margin-left:10px;border:none;border-radius:100px;padding:7px 14px;font-size:12.5px;font-weight:800;cursor:pointer;transition:.2s" onclick="toggleBot()"></button>

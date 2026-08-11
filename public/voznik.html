@@ -3,72 +3,205 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#42A842">
+<meta name="theme-color" content="#FBF8F1">
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="apple-touch-icon" href="/logo.png">
 <title>FlowTiq — Voznik</title>
+<link rel="canonical" href="https://flowtiq.si/voznik.html">
+<meta property="og:url" content="https://flowtiq.si/voznik.html">
+<meta name="description" content="Prijava za voznike: seznam naročil za dostavo z naslovi, telefoni in potrditvijo dostave. Dostop z imenom lokala in PIN kodo.">
+<meta property="og:title" content="FlowTiq — Voznik">
+<meta property="og:description" content="Prijava za voznike: seznam naročil za dostavo z naslovi, telefoni in potrditvijo dostave. Dostop z imenom lokala in PIN kodo.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="sl_SI">
+<meta property="og:image" content="https://flowtiq.si/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FlowTiq — naročila in termini na avtopilotu">
+<meta property="og:site_name" content="FlowTiq">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --green:#42A842;--green-dark:#338A33;--green-light:#EAF7EA;
-    --blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;
-    --ink:#0c1f17;--ink-soft:#4a5568;--ink-faint:#94a3b8;
-    --border:#e2e8f0;--bg:#f8fafc;--white:#fff;
-    --shadow-sm:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
-    --shadow-md:0 4px 16px rgba(0,0,0,.10);--shadow-lg:0 12px 40px rgba(0,0,0,.12);
-    --radius:16px;--display:'Bricolage Grotesque',sans-serif;
+  /* ─────────────────────────────────────────────────────────────
+     FlowTiq — voznik. Isti design kot prijava v salon.html.
+     Imena razredov so nespremenjena: render() jih zapisuje
+     v innerHTML (.order, .ref, .name, .addr, .meta, .total,
+     .phone, .deliver, .badge, .empty).
+     ───────────────────────────────────────────────────────────── */
+  :root {
+    --ink: #101E2B;
+    --ink-2: #2B3A47;
+    --muted: #5A6875;
+    --cream: #FBF8F1;
+    --cream-2: #F4EDE4;
+    --tan: #EDE4D6;
+    --green: #16A34A;
+    --green-dark: #0E7A38;
+    --green-tint: #E8F5EC;
+    --blue: #1D6FD0;
+    --red: #B4442E;
+    --red-bg: #FBEEEB;
+    --line: #E4DCCB;
+    --dash: #C9C0AE;
+    --white: #fff;
+    --radius: 18px;
+    --sans: "Fira Sans", system-ui, -apple-system, Segoe UI, sans-serif;
+    --mono: "Fira Mono", ui-monospace, Menlo, monospace;
   }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  body{margin:0;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--ink);}
-  .wrap{max-width:640px;margin:0 auto;padding:16px;padding-bottom:40px;}
-  .grad{background:linear-gradient(120deg,var(--green),var(--blue));}
-  .disp{font-family:var(--display);}
-  /* Login */
-  .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
-  .card{background:var(--white);border-radius:24px;box-shadow:var(--shadow-lg);padding:36px 28px;width:100%;max-width:400px;border:1px solid var(--border);}
-  .brand{display:flex;justify-content:center;margin-bottom:6px;}
-  .brand img{height:64px;object-fit:contain;}
-  .role{font-family:var(--display);text-align:center;font-size:24px;font-weight:800;margin:6px 0 2px;color:var(--ink);}
-  .sub{text-align:center;color:var(--ink-soft);font-size:14px;margin-bottom:22px;}
-  label{display:block;font-size:13px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
-  input{width:100%;padding:14px;border:1.5px solid var(--border);border-radius:12px;font-size:16px;outline:none;transition:border .15s;font-family:inherit;background:var(--bg);}
-  input:focus{border-color:var(--green);background:var(--white);}
-  #pin{letter-spacing:8px;text-align:center;font-size:22px;font-weight:700;}
-  .btn{width:100%;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;margin-top:20px;font-family:inherit;box-shadow:var(--shadow-sm);transition:transform .1s;}
-  .btn:active{transform:scale(.98);}
-  .btn.grad:disabled{opacity:.55;}
-  .err{background:#fef2f2;color:#b91c1c;border-radius:10px;padding:10px 12px;font-size:14px;margin-top:14px;display:none;}
-  .home{display:block;text-align:center;margin-top:18px;color:var(--ink-faint);font-size:13px;font-weight:600;text-decoration:none;}
-  /* Header */
-  .topbar{position:sticky;top:0;z-index:5;color:#fff;padding:16px 16px 14px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-md);}
-  .topbar .who{font-size:13px;opacity:.92;}
-  .topbar .loc{font-family:var(--display);font-size:18px;font-weight:800;}
-  .logout{background:rgba(255,255,255,.2);border:none;color:#fff;font-size:13px;font-weight:600;padding:8px 12px;border-radius:10px;cursor:pointer;font-family:inherit;}
-  .search{position:sticky;top:0;z-index:4;background:var(--bg);padding:12px 0;}
-  .search input{background:var(--white);box-shadow:var(--shadow-sm);}
-  .tabs{display:flex;gap:8px;margin:0 0 12px;}
-  .tab{flex:1;text-align:center;padding:10px;border-radius:12px;background:var(--white);border:1.5px solid var(--border);
-    font-size:14px;font-weight:600;color:var(--ink-soft);cursor:pointer;font-family:inherit;}
-  .tab.on{background:var(--ink);color:#fff;border-color:var(--ink);}
-  /* Orders */
-  .order{background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow-sm);border:1px solid var(--border);}
-  .order.done{opacity:.72;}
-  .row1{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-  .ref{font-size:12px;font-weight:700;color:var(--ink-soft);background:var(--bg);padding:3px 8px;border-radius:6px;font-family:var(--display);}
-  .name{font-family:var(--display);font-size:17px;font-weight:800;margin:6px 0 2px;}
-  .addr{font-size:15px;color:var(--ink);font-weight:600;}
-  .addr a{color:var(--blue);text-decoration:none;}
-  .meta{font-size:14px;color:var(--ink-soft);margin-top:8px;line-height:1.5;white-space:pre-wrap;}
-  .total{font-family:var(--display);font-weight:800;color:var(--green-dark);font-size:16px;}
-  .phone{display:inline-block;margin-top:10px;color:var(--blue);font-weight:700;text-decoration:none;font-size:15px;}
-  .deliver{width:100%;margin-top:14px;background:var(--green);color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm);}
-  .deliver:active{transform:scale(.99);}
-  .badge{display:inline-flex;align-items:center;gap:5px;background:var(--green-light);color:var(--green-dark);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;margin-top:12px;}
-  .empty{text-align:center;color:var(--ink-soft);padding:50px 20px;font-size:15px;}
-  .foot{text-align:center;color:var(--ink-faint);font-size:12px;margin-top:20px;}
-  .hidden{display:none;}
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background: var(--cream);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; }
+  /* legacy razred — nekoč gradient, zdaj polna zelena */
+  .grad { background: var(--green); }
+  .disp { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; }
+  /* JS preklaplja .hidden na .login in #appView; !important, da ne izgubi
+     proti .login{display:flex} ne glede na vrstni red pravil. */
+  .hidden { display: none !important; }
+  :focus-visible { outline: 3px solid rgba(22,163,74,.45); outline-offset: 2px; }
+
+  /* ── Prijava — enako kot salon.html ── */
+  .login {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 20px; background: linear-gradient(var(--cream), var(--cream-2));
+  }
+  .card {
+    background: var(--white); border: 2px solid var(--ink); border-radius: var(--radius);
+    box-shadow: 7px 7px 0 var(--ink);
+    padding: 32px 28px; width: 100%; max-width: 400px;
+  }
+  .brand { display: flex; justify-content: center; margin-bottom: 10px; }
+  .brand img { height: 34px; width: auto; object-fit: contain; }
+  .role {
+    font-family: var(--sans); text-align: center; font-size: 1.55rem;
+    font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 2px; color: var(--ink);
+  }
+  .sub { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 22px; }
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 14px 0 7px; }
+  input {
+    width: 100%; padding: 13px 14px;
+    border: 2px solid var(--ink); border-radius: var(--radius);
+    font-family: inherit; font-size: 16px; outline: none; background: var(--white); color: var(--ink);
+  }
+  input::placeholder { color: #93A0AC; }
+  input:focus { outline: 3px solid rgba(22,163,74,.35); outline-offset: 1px; }
+  #pin {
+    font-family: var(--mono); letter-spacing: 10px; text-align: center;
+    font-size: 22px; font-weight: 700;
+  }
+  .btn {
+    width: 100%; border: 2px solid var(--ink); border-radius: var(--radius);
+    padding: 14px; font-family: inherit; font-size: 16px; font-weight: 600;
+    color: #fff; cursor: pointer; margin-top: 20px;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s, background .15s;
+  }
+  .btn:hover { background: var(--green-dark); }
+  .btn:active { box-shadow: 1px 1px 0 var(--ink); transform: translate(3px, 3px); }
+  .btn.grad:disabled { opacity: .55; box-shadow: 4px 4px 0 var(--ink); transform: none; }
+  .err {
+    background: var(--red-bg); color: #8A3421;
+    border: 2px solid var(--red); border-radius: 14px;
+    padding: 11px 13px; font-size: 14px; margin-top: 14px; display: none;
+  }
+  .home {
+    display: block; text-align: center; margin-top: 18px;
+    color: var(--muted); font-size: 13px; font-weight: 600; text-decoration: none;
+  }
+  .home:hover { color: var(--ink); }
+
+  /* ── Glava seznama ── */
+  .topbar {
+    position: sticky; top: 0; z-index: 5; color: #fff;
+    /* enaka širina kot .wrap, da je na namizju poravnan s karticami */
+    max-width: 640px; margin: 0 auto;
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; border-bottom: 2px solid var(--ink);
+  }
+  .topbar .who { font-size: 13px; opacity: .95; }
+  .topbar .loc { font-family: var(--sans); font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .logout {
+    background: var(--white); border: 2px solid var(--ink); color: var(--ink);
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    padding: 8px 13px; border-radius: 12px; cursor: pointer; flex-shrink: 0;
+  }
+  .logout:hover { background: var(--tan); }
+
+  .search { position: sticky; top: 0; z-index: 4; background: var(--cream); padding: 12px 0; }
+  .search input { background: var(--white); }
+
+  .tabs { display: flex; gap: 8px; margin: 0 0 14px; }
+  .tab {
+    flex: 1; text-align: center; padding: 11px;
+    border-radius: 14px; background: var(--white); border: 2px solid var(--ink);
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer;
+  }
+  .tab:hover { background: var(--tan); }
+  .tab.on { background: var(--ink); color: var(--cream); }
+
+  /* ── Naročila ── */
+  .order {
+    background: var(--white); border: 2px solid var(--ink); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px;
+  }
+  .order.done { opacity: .7; }
+  .row1 { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .ref {
+    font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink);
+    background: var(--cream-2); border: 1.5px solid var(--ink);
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .name { font-family: var(--sans); font-size: 17px; font-weight: 800; letter-spacing: -0.01em; margin: 8px 0 2px; }
+  .addr { font-size: 15px; color: var(--ink); font-weight: 600; }
+  .addr a { color: var(--blue); text-decoration: none; border-bottom: 2px solid rgba(29,111,208,.35); }
+  .addr a:hover { border-bottom-color: var(--blue); }
+  .meta { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.5; white-space: pre-wrap; }
+  .total { font-family: var(--sans); font-weight: 800; color: var(--green-dark); font-size: 16px; }
+  .phone {
+    display: inline-block; margin-top: 10px; color: var(--blue);
+    font-weight: 600; text-decoration: none; font-size: 15px;
+    border-bottom: 2px solid rgba(29,111,208,.35);
+  }
+  .phone:hover { border-bottom-color: var(--blue); }
+  .deliver {
+    width: 100%; margin-top: 14px; background: var(--green); color: #fff;
+    border: 2px solid var(--ink); border-radius: var(--radius); padding: 13px;
+    font-family: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+    box-shadow: 4px 4px 0 var(--ink);
+    transition: transform .12s, box-shadow .12s, background .15s;
+  }
+  .deliver:hover { background: var(--green-dark); }
+  .deliver:active { box-shadow: 1px 1px 0 var(--ink); transform: translate(3px, 3px); }
+  .deliver:disabled { opacity: .6; box-shadow: 4px 4px 0 var(--ink); transform: none; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--green-tint); color: var(--green-dark);
+    border: 1.5px solid var(--ink);
+    font-size: 13px; font-weight: 600; padding: 6px 11px; border-radius: 999px; margin-top: 12px;
+  }
+  .empty {
+    text-align: center; color: var(--muted); padding: 44px 20px; font-size: 15px;
+    border: 2px dashed var(--dash); border-radius: var(--radius);
+  }
+  .foot {
+    text-align: center; color: var(--muted); font-family: var(--mono);
+    font-size: 11.5px; letter-spacing: .04em; margin-top: 22px;
+  }
+
+  @media (max-width: 420px) {
+    .card { padding: 26px 20px; box-shadow: 5px 5px 0 var(--ink); }
+    .wrap { padding: 12px 12px 40px; }
+    #pin { letter-spacing: 8px; }
+  }
+  /* logotip je povezava na domačo stran — inline-flex, da ne doda prostora pod sliko */
+  .ft-logo-link { display: inline-flex; align-items: center; }
 </style>
 </head>
 <body>
@@ -76,8 +209,8 @@
 <!-- PRIJAVA -->
 <div id="loginView" class="login">
   <form class="card" id="loginForm" onsubmit="doLogin(event)">
-    <div class="brand"><img src="/logo.png" alt="FlowTiq"></div>
-    <div class="role">Voznik</div>
+    <div class="brand"><a class="ft-logo-link" href="/" title="FlowTiq — domača stran"><img src="/ft-logo.png" width="188" height="55" alt="FlowTiq"></a></div>
+    <h1 class="role">Voznik</h1>
     <div class="sub">Dostop do naročil za dostavo</div>
     <label for="lokal">Lokal</label>
     <input id="lokal" placeholder="npr. picerija-mars" autocomplete="off" required>
