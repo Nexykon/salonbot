@@ -353,6 +353,45 @@ strong { font-weight: 700; }
   padding: 7px 14px; font-size: 14.5px; color: var(--muted);
 }
 
+/* ── Preklopnik mesečno / letno ──
+   Uporabljata ga cenik.html in naslovnica. Logika je v flowtiq-nav.js;
+   brez JS ostanejo vidne mesečne cene in vrstica z letno ceno, tako da je
+   cenik razumljiv tudi, če se skript ne naloži. */
+.obd-switch {
+  display: inline-flex; gap: 4px; padding: 5px;
+  background: var(--cream-2); border: 2px solid var(--ink); border-radius: 999px;
+}
+.obd-btn {
+  padding: 10px 20px; border: 2px solid transparent; border-radius: 999px;
+  background: none; color: var(--muted-2); font-family: var(--sans);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.obd-btn:hover { color: var(--ink); }
+/* Bela na kremni podlagi je bila premalo razvidna — izbrano obdobje zato
+   nosi polno temno polnilo, kot drugi poudarki v tem oblikovanju. */
+.obd-btn.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.obd-znacka {
+  display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px;
+  background: var(--green); color: #fff; font-size: 12px; font-weight: 700;
+}
+/* Na temnem polnilu značka potrebuje svetlejšo zeleno, da ne izgubi kontrasta. */
+.obd-btn.is-on .obd-znacka { background: var(--mint, #7FD69C); color: var(--ink); }
+
+/* Vrstica z letnim zneskom pod ceno paketa. */
+.cena-letno { margin-top: 8px; font-size: 13.5px; line-height: 1.45; color: var(--muted-2); }
+/* Temna kartica: cenik uporablja .paket--pro, naslovnica .plan--pro */
+.paket--pro .cena-letno, .plan--pro .cena-letno { color: var(--on-ink-4); }
+/* Ko JS prevzame, se vrstica skriva glede na izbrano obdobje.
+   min-height, da kartice ob preklopu ne poskočijo. */
+.js-obd .cena-letno { min-height: 2.9em; }
+.js-obd.obd-monthly .cena-letno { visibility: hidden; }
+
+@media (max-width: 520px) {
+  .obd-switch { width: 100%; }
+  .obd-btn { flex: 1; padding: 10px 8px; font-size: 14px; }
+}
+
 /* ── Lebdeči WhatsApp gumb ──
    Glavna storitev teče na WhatsAppu, zato je dosegljiv z vsake strani.
    Vstavi ga flowtiq-nav.js; brez JS ostanejo povezave v nogi in na kontaktu. */

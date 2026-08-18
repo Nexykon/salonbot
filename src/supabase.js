@@ -73,6 +73,13 @@ async function createServicesFromPreset(salonId, services) {
   return created;
 }
 
+/*
+  OPUŠČENO: stanje naročnin odslej piše applyStripeSubscription() v
+  src/stripe-sync.js, ki nastavi tudi valid_until, bot_active in ponastavi
+  opomnike. Ti dve funkciji zapišeta le podmnožico stolpcev — če ju uporabiš,
+  se veljavnost naročnine ne premakne in bot se po obdobju ustavi.
+  Ohranjeni sta samo zaradi združljivosti.
+*/
 async function updateSalonStripe(salonId, stripeCustomerId, stripeSubId, status, plan) {
   const body = { stripe_customer_id: stripeCustomerId, stripe_subscription_id: stripeSubId, subscription_status: status, subscription_plan: plan };
   // Ob uspešnem plačilu s kartico označi predračun kot plačan, da admin lahko priklopi bota
@@ -88,6 +95,29 @@ async function updateSalonStripe(salonId, stripeCustomerId, stripeSubId, status,
 async function getSalonByStripeSubId(stripeSubId) {
   const r = await axios.get(`${BASE}/sb_salons?stripe_subscription_id=eq.${stripeSubId}&limit=1`, { headers: HEADERS });
   return r.data[0] || null;
+}
+
+// Stripe račun je skupen z drugimi dejavnostmi iste firme, zato mora biti
+// iskanje strogo: če lokala s tem kupcem ni, naročnina pripada nečemu
+// drugemu in jo moramo spustiti, ne ugibati.
+async function getSalonByStripeCustomerId(stripeCustomerId) {
+  if (!stripeCustomerId) return null;
+  const r = await axios.get(`${BASE}/sb_salons?stripe_customer_id=eq.${encodeURIComponent(stripeCustomerId)}&limit=1`, { headers: HEADERS });
+  return r.data[0] || null;
+}
+
+// Ali je ta Stripe račun (invoice) že zabeležen — da ponovljena dostava
+// dogodka ne ustvari druge vrstice v sb_invoices.
+async function invoiceLogged(stripeInvoiceId) {
+  if (!stripeInvoiceId) return false;
+  try {
+    const r = await axios.get(`${BASE}/sb_invoices?stripe_invoice_id=eq.${encodeURIComponent(stripeInvoiceId)}&select=id&limit=1`, { headers: HEADERS });
+    return (r.data || []).length > 0;
+  } catch (e) {
+    // Tabela morda ne obstaja — beleženje računov ni kritično, ne blokiraj plačila.
+    console.warn('[invoiceLogged]', e.message);
+    return false;
+  }
 }
 
 async function updateSubscriptionStatus(stripeSubId, status, plan = null) {
@@ -801,6 +831,8 @@ module.exports = {
   getDailyStats, getBookedTimesForDate,
   updateBookingFields, getBookingsForReminder, getBookingsForReview, getBookingsForReactivation,
   getSalonByStripeSubId,
+  getSalonByStripeCustomerId,
+  invoiceLogged,
   logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonsByOwnerEmail, getSalonByToken,
   updateSalonSettings,

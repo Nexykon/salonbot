@@ -1,13 +1,11 @@
 // Predračun (proforma) — HTML za email + PDF priponka. Plačilo po nakazilu.
 const axios = require('axios');
+const plans = require('./plans');
 
-const PLAN = {
-  starter:  { label: 'Osnovni',    price: 49.99 },
-  pro:      { label: 'Pro',        price: 79.99 },
-  ai_start: { label: 'AI Start',   price: 89 },
-  ai:       { label: 'AI Pro',     price: 159.99 },
-  premium:  { label: 'Premium',    price: 299 }
-};
+// Cene so v src/plans.js (edini vir resnice). PLAN ostane izvožen zaradi
+// združljivosti; letni znesek se odslej vzame iz plans.planPrice(), da
+// predračun in Stripe zaračunata isto — letno je −30 %, ne mesečno × 12.
+const PLAN = plans.PLANS;
 
 const ISSUER = {
   name:    process.env.PROFORMA_NAME    || 'Webacus, Valentin Iljaž s.p.',
@@ -17,18 +15,24 @@ const ISSUER = {
   novat:   'Nisem zavezanec za DDV (1. odst. 94. člena ZDDV-1). DDV ni obračunan.'
 };
 
-function eur(n) { return Number(n || 0).toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+// useGrouping: true - sl-SI privzeto ne skupinja stirimestnih stevil (1343,88 -> 1.343,88)
+function eur(n) { return Number(n || 0).toLocaleString('sl-SI', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
 
 function computeProforma(salon, plan) {
-  const p = PLAN[plan] || PLAN.ai;
-  const yearly = salon.billing_period === 'yearly';
-  const amount = yearly ? p.price * 12 : p.price;
+  const p = plans.planInfo(plan);
+  const yearly = plans.isYearly(salon.billing_period);
+  const amount = plans.planPrice(plan, salon.billing_period);
   const no = 'PR-' + new Date().getFullYear() + '-' + String(salon.id).replace(/[^0-9a-f]/gi, '').slice(-6).toUpperCase();
   const sklic = 'SI00 ' + (String(salon.id).replace(/\D/g, '').slice(-8) || '0');
+  const period = yearly ? 'letna naročnina' : 'mesečna naročnina';
+  // Pri letni naročnini na predračunu pokažemo popust, da je znesek razumljiv
+  // (sicer izgleda, kot da 12 × 159,99 € ne gre skupaj).
+  const desc = 'FlowTiq paket ' + p.label + ' — ' + period
+    + (yearly ? ` (12 mesecev, −${Math.round(plans.yearlyDiscount(plan) * 100)} % · prihranek ${eur(plans.yearlySaving(plan))})` : '');
   return {
-    p, yearly, amount, no, sklic,
+    p, yearly, amount, no, sklic, desc,
     today: new Date(), due: new Date(Date.now() + 8 * 86400000),
-    period: yearly ? 'letna naročnina' : 'mesečna naročnina'
+    period
   };
 }
 
@@ -43,7 +47,7 @@ function proformaHtml(salon, plan) {
     <p style="margin-top:16px;font-size:14px;line-height:1.5"><b>Kupec:</b><br>${salon.company_name || salon.name || '—'}<br>${salon.address || ''}<br>${salon.vat_id ? ('Davčna št.: ' + salon.vat_id) : ''}</p>
     <table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:14px">
       <tr><th style="${td};text-align:left">Opis</th><th style="${td};text-align:right">Znesek</th></tr>
-      <tr><td style="${td}">FlowTiq paket ${c.p.label} — ${c.period}</td><td style="${td};text-align:right">${eur(c.amount)}</td></tr>
+      <tr><td style="${td}">${c.desc}</td><td style="${td};text-align:right">${eur(c.amount)}</td></tr>
       <tr><td style="${td};text-align:right"><b>Za plačilo</b></td><td style="${td};text-align:right"><b>${eur(c.amount)}</b></td></tr>
     </table>
     <p style="font-size:14px;line-height:1.5"><b>Plačilo po nakazilu:</b> IBAN <b>${ISSUER.iban}</b><br>Sklic: <b>${c.sklic}</b><br>Namen: FlowTiq ${c.no}</p>
@@ -84,7 +88,7 @@ async function proformaPdf(salon, plan) {
       if (salon.address) doc.text(salon.address);
       if (salon.vat_id) doc.text('Davčna št.: ' + salon.vat_id);
       doc.moveDown(0.7);
-      doc.text('FlowTiq paket ' + c.p.label + ' — ' + c.period + ':    ' + eur(c.amount));
+      doc.text(c.desc + ':    ' + eur(c.amount));
       doc.fontSize(12).text('ZA PLAČILO:    ' + eur(c.amount)); doc.fontSize(10);
       doc.moveDown(0.7); doc.text('Plačilo po nakazilu:');
       doc.text('IBAN: ' + ISSUER.iban);

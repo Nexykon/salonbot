@@ -12,13 +12,15 @@ const mail = require('./src/email');
 const { startScheduler } = require('./src/scheduler');
 const ownerAuth = require('./src/auth');
 const { getPreset, listBusinessTypes, normalizeBusinessType, slugify, planLimit } = require('./src/presets');
+const plans = require('./src/plans');
+// Stanje naročnin beremo iz Stripa (pull), ne prek webhooka — glej opombo v modulu.
+const stripeSync = require('./src/stripe-sync');
+const { stripeClient, stripePriceId } = stripeSync;
 const t = require('./src/time');
 const { botMsg, DEFAULTS: BOT_MSG_DEFAULTS, KEYS: BOT_MSG_KEYS } = require('./src/botmsg');
 
 const app = express();
 
-// ─── Raw body za Stripe webhook (mora biti pred express.json) ──
-app.use('/stripe/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '22mb' }));
 
 // ─── Static files (dashboard) ─────────────────────────────
@@ -165,41 +167,6 @@ async function resolveBookSalon(req) {
   const salon = await db.resolveSalon(ref);
   if (!salon || salon.subscription_status === 'inactive' || salon.is_active === false) return null;
   return salon;
-}
-
-// ─── Stripe helperja ──────────────────────────────────────
-function stripeClient() {
-  if (!process.env.STRIPE_SECRET_KEY) return null;
-  return require('stripe')(process.env.STRIPE_SECRET_KEY);
-}
-function stripePlanPrices() {
-  return {
-    starter: process.env.STRIPE_PRICE_STARTER || '',
-    pro: process.env.STRIPE_PRICE_PRO || '',
-    ai_start: process.env.STRIPE_PRICE_AISTART || '',
-    ai: process.env.STRIPE_PRICE_AI || '',
-    premium: process.env.STRIPE_PRICE_PREMIUM || '',
-    // letne cene (mesečna × 12)
-    ai_start_year: process.env.STRIPE_PRICE_AISTART_YEAR || '',
-    ai_year: process.env.STRIPE_PRICE_AI_YEAR || '',
-    premium_year: process.env.STRIPE_PRICE_PREMIUM_YEAR || ''
-  };
-}
-// Izbere pravi Stripe price ID glede na paket in obdobje (mesečno/letno),
-// z upoštevanjem morebitne cene po meri (custom_price_id) za AI/Premium.
-function stripePriceId(plan, period, customPriceId) {
-  if ((plan === 'ai' || plan === 'premium') && customPriceId) return customPriceId;
-  const prices = stripePlanPrices();
-  if (period === 'yearly' && prices[plan + '_year']) return prices[plan + '_year'];
-  return prices[plan] || '';
-}
-function planFromPriceId(priceId) {
-  if (!priceId) return null;
-  const prices = stripePlanPrices();
-  for (const [key, pid] of Object.entries(prices)) {
-    if (pid && pid === priceId) return key.replace(/_year$/, '');
-  }
-  return null;
 }
 
 function isMasterRequest(req) {
@@ -507,94 +474,6 @@ app.post('/api/pos/confirm-order/:salonId/:bookingId', adminAuth, async (req, re
   }
 });
 
-app.post('/stripe/webhook', async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!webhookSecret) {
-    res.sendStatus(200);
-    return;
-  }
-
-  let event;
-  try {
-    const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-    event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
-  } catch (err) {
-    console.error('Stripe webhook error:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const cs = event.data.object;
-        const salonId = cs.metadata?.salon_id;
-        const csPlan = ['starter', 'pro', 'ai_start', 'ai', 'premium'].includes(cs.metadata?.plan) ? cs.metadata.plan : 'ai';
-        if (salonId && cs.mode === 'subscription' && cs.subscription) {
-          await db.updateSalonStripe(salonId, cs.customer, cs.subscription, 'active', csPlan);
-          console.log('Checkout completed — salon', salonId, 'plan', csPlan);
-        }
-        break;
-      }
-      case 'invoice.paid': {
-        const invoice = event.data.object;
-        const subId = invoice.subscription;
-        if (subId) await db.updateSubscriptionStatus(subId, 'active');
-        await db.logInvoice(null, invoice.id, invoice.amount_paid / 100, 'paid');
-        console.log('Subscription activated:', subId);
-        break;
-      }
-      case 'customer.subscription.deleted':
-      case 'invoice.payment_failed': {
-        const sub = event.data.object;
-        const subId = sub.subscription || sub.id;
-        if (subId) await db.updateSubscriptionStatus(subId, 'inactive');
-        console.log('Subscription deactivated:', subId);
-
-        // Obvesti FlowTiq ownerja
-        try {
-          const cancelledSalon = await db.getSalonByStripeSubId(subId);
-          const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
-          const reason = event.type === 'invoice.payment_failed' ? 'Neuspešno plačilo' : 'Stranka odpovedala';
-          const waNumberId = cancelledSalon?.whatsapp_phone_number_id || 'ni nastavljen';
-          await mail.sendEmail(ownerEmail,
-            `⚠️ Odpoved naročnine — ${cancelledSalon?.name || subId}`,
-            [
-              `Salon je odpovedal naročnino ali plačilo ni uspelo.`,
-              ``,
-              `Salon: ${cancelledSalon?.name || '-'}`,
-              `Email: ${cancelledSalon?.owner_email || '-'}`,
-              `WhatsApp Phone Number ID: ${waNumberId}`,
-              `Admin telefon: ${cancelledSalon?.admin_phone || '-'}`,
-              `Razlog: ${reason}`,
-              `Stripe Sub ID: ${subId}`,
-              ``,
-              `UKREPAJ: Odstrani WhatsApp številko (Phone Number ID: ${waNumberId}) iz Meta Business Manager.`,
-            ].join('\n')
-          );
-        } catch (notifyErr) {
-          console.error('Cancellation notify error:', notifyErr.message);
-        }
-        break;
-      }
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const sub = event.data.object;
-        const statusMap = { active: 'active', trialing: 'trial', past_due: 'inactive', unpaid: 'inactive', canceled: 'inactive', incomplete_expired: 'inactive' };
-        const status = statusMap[sub.status] || 'trial';
-        const subPlan = planFromPriceId(sub.items?.data?.[0]?.price?.id);
-        await db.updateSubscriptionStatus(sub.id, status, subPlan);
-        break;
-      }
-    }
-  } catch (err) {
-    console.error('Stripe event processing error:', err.message);
-  }
-
-  res.json({ received: true });
-});
-
 // ─── Onboarding API — registracija novega salona ──────────────
 app.get('/api/business-types', (req, res) => {
   res.json(listBusinessTypes());
@@ -694,17 +573,16 @@ app.post('/onboard', async (req, res) => {
 });
 
 
-// ─── Katalog paketov (cene + ali vsebuje AI) ───────────────────
-const PLAN_CATALOG = {
-  // Opuščena paketa (ohranjena za prikaz obstoječih zapisov)
-  starter:  { label: 'Osnovni',     price: 49.99,  ai: false, limit: 0     },
-  pro:      { label: 'Pro',         price: 79.99,  ai: false, limit: 0     },
-  // Aktivni paketi
-  ai_start: { label: 'AI Start',    price: 89,     ai: true,  limit: 500   },
-  ai:       { label: 'AI Pro',      price: 159.99, ai: true,  limit: 1500  },
-  premium:  { label: 'Premium',     price: 299,    ai: true,  limit: 10000 }
-};
-function planInfo(plan) { return PLAN_CATALOG[plan] || PLAN_CATALOG.ai; }
+// ─── Katalog paketov ───────────────────────────────────────────
+// Cene, meje in oznake so v src/plans.js — edini vir resnice (glej opombo tam).
+// planInfo() vedno vrne veljaven paket; neznan zapis pade na DEFAULT_PLAN.
+const { planInfo, planPrice } = plans;
+
+// GET /api/plans — cenik za nadzorne plošče, da ga ne prepisujejo v HTML-u.
+app.get('/api/plans', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({ plans: plans.catalog(), yearly_discount_pct: Math.round(plans.YEARLY_DISCOUNT * 100) });
+});
 
 // ─── Javna samopostrežna registracija ──────────────────────────
 // Ustvari salon v statusu "čaka na priklop" (bot ugasnjen). AI paketi nimajo
@@ -720,7 +598,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     const vat     = String(b.vat_id || '').trim();
     const address = String(b.address || '').trim();
     const phone   = cleanPhone(b.phone);
-    const plan    = PLAN_CATALOG[b.plan] ? b.plan : 'ai';
+    const plan    = plans.planKey(b.plan);
     const payMethod = b.payment_method === 'proforma' ? 'proforma' : 'card';
     const type    = normalizeBusinessType(b.business_type || 'custom');
 
@@ -799,7 +677,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
         `DDV / davčna: ${vat || '-'}`,
         `Naslov: ${address || '-'}`,
         `Dejavnost: ${preset.label}`,
-        `Paket: ${info.label} (${info.price} €${info.ai ? ' — vsebuje AI, plačilo predračuna PRED priklopom' : ' — 30 dni brezplačno od priklopa'})`,
+        `Paket: ${info.label} (${planPrice(plan, salonData.billing_period)} €${info.ai ? ' — vsebuje AI, plačilo predračuna PRED priklopom' : ' — 30 dni brezplačno od priklopa'})`,
         `Obračun: ${salonData.billing_period === 'yearly' ? 'letno' : 'mesečno'}`,
         '', `Salon ID: ${salon.id}`,
         'Priklop opraviš v master dashboardu.'
@@ -812,7 +690,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     let checkoutUrl = null;
     if (payMethod === 'card') {
       const stripe = stripeClient();
-      const priceId = stripePriceId(plan, salonData.billing_period, null);
+      const priceId = await stripePriceId(plan, salonData.billing_period, null).catch(() => '');
       if (stripe && priceId) {
         try {
           const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
@@ -917,7 +795,7 @@ app.post('/api/settings/request-renewal', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   try {
-    const desiredPlan = PLAN_CATALOG[req.body?.plan] ? req.body.plan : salon.subscription_plan;
+    const desiredPlan = plans.isPlan(req.body?.plan) ? req.body.plan : salon.subscription_plan;
     const cur = planInfo(salon.subscription_plan);
     const want = planInfo(desiredPlan);
     const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
@@ -926,7 +804,7 @@ app.post('/api/settings/request-renewal', async (req, res) => {
       `Lokal: ${salon.name}${salon.company_name ? ' (' + salon.company_name + ')' : ''}`,
       `Kontakt: ${salon.contact_person || salon.owner_name || '-'} · ${salon.owner_email || '-'} · ${salon.admin_phone || '-'}`,
       `Trenutni paket: ${cur.label}`,
-      `Želeni paket: ${want.label} (${want.price} €)`,
+      `Želeni paket: ${want.label} (${planPrice(desiredPlan, salon.billing_period)} €)`,
       `Obračun: ${salon.billing_period === 'yearly' ? 'letno' : 'mesečno'}`,
       `Velja do: ${salon.valid_until ? new Date(salon.valid_until).toLocaleDateString('sl-SI') : '-'}`,
       '', `Salon ID: ${salon.id}`,
@@ -944,7 +822,7 @@ app.post('/api/admin/send-proforma/:id', async (req, res) => {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
     if (!salon.owner_email) return res.status(400).json({ error: 'Salon nima emaila stranke.' });
-    const plan = PLAN_CATALOG[req.body?.plan] ? req.body.plan : (salon.renewal_requested_plan || salon.subscription_plan);
+    const plan = plans.isPlan(req.body?.plan) ? req.body.plan : (salon.renewal_requested_plan || salon.subscription_plan);
     const proforma = require('./src/proforma');
     const c = proforma.computeProforma(salon, plan);
     const html = proforma.proformaHtml(salon, plan);
@@ -1138,7 +1016,7 @@ app.patch('/api/salons/:id/plan', async (req, res) => {
   if (!adminAuth(req, res)) return;
   const { id } = req.params;
   const { plan, billing_period } = req.body;
-  if (!['starter', 'pro', 'ai_start', 'ai', 'premium'].includes(plan)) return res.status(400).json({ error: 'Invalid plan' });
+  if (!plans.isPlan(plan)) return res.status(400).json({ error: 'Invalid plan' });
   try {
     const axios = require('axios');
     const BASE = process.env.SUPABASE_URL + '/rest/v1';
@@ -1479,7 +1357,7 @@ app.patch('/api/settings', async (req, res) => {
       updates.bot_messages = cleanBm;
     }
     const POS_KEYS = ['pos_type', 'pos_token', 'pos_account', 'pos_spot_id'];
-    if (POS_KEYS.some(k => updates[k] !== undefined) && !['pro', 'ai_start', 'ai', 'premium'].includes(salon.subscription_plan || 'ai')) {
+    if (POS_KEYS.some(k => updates[k] !== undefined) && !plans.isPlan(salon.subscription_plan || 'ai')) {
       return res.status(403).json({ error: 'POS integracija je vključena v paketih AI.' });
     }
     if (updates.pos_spot_id !== undefined) updates.pos_spot_id = parseInt(updates.pos_spot_id) || 1;
@@ -1492,7 +1370,7 @@ app.patch('/api/settings', async (req, res) => {
 app.post('/api/settings/pos-test', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  if (!['pro', 'ai_start', 'ai', 'premium'].includes(salon.subscription_plan || 'ai')) {
+  if (!plans.isPlan(salon.subscription_plan || 'ai')) {
     return res.status(403).json({ ok: false, msg: 'POS integracija je vključena v paketih AI.' });
   }
   try {
@@ -1515,9 +1393,14 @@ app.post('/api/billing/checkout', async (req, res) => {
   if (!salon) return;
   const stripe = stripeClient();
   if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
-  const plan = ['pro', 'ai_start', 'ai', 'premium'].includes(req.body.plan) ? req.body.plan : 'ai';
-  const period = (req.body.billing_period === 'yearly' || salon.billing_period === 'yearly') ? 'yearly' : 'monthly';
-  const priceId = stripePriceId(plan, period, salon.custom_price_id);
+  const plan = plans.planKey(req.body.plan);
+  // Obdobje iz zahteve ima prednost — stranka ga izbere s preklopnikom v plošči.
+  const period = (req.body.billing_period === 'yearly'
+    || (req.body.billing_period !== 'monthly' && salon.billing_period === 'yearly')) ? 'yearly' : 'monthly';
+  const priceId = await stripePriceId(plan, period, salon.custom_price_id).catch(e => {
+    console.error('[billing] iskanje cene:', e.message);
+    return '';
+  });
   if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" (${period === 'yearly' ? 'letno' : 'mesečno'}) še ni nastavljena.` });
   try {
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
@@ -1554,13 +1437,46 @@ app.post('/api/billing/portal', async (req, res) => {
     const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
     const portal = await stripe.billingPortal.sessions.create({
       customer: salon.stripe_customer_id,
-      return_url: `${baseUrl}/${returnPage}`
+      // ?billing=portal pove plošči, naj po vrnitvi uskladi stanje —
+      // stranka je morda ravno odpovedala ali zamenjala kartico.
+      return_url: `${baseUrl}/${returnPage}?billing=portal`
     });
     res.json({ url: portal.url });
   } catch (e) {
     console.error('[billing] portal error:', e.message);
     res.status(500).json({ error: e.message });
   }
+});
+
+/*
+  POST /api/billing/sync — preberi stanje naročnine iz Stripa in ga zapiši.
+
+  Kliče ga nadzorna plošča ob vrnitvi s plačila ali iz portala, da stranka
+  učinek vidi takoj in ji ni treba čakati na urno uskladitev. Ni od nje
+  odvisen: isto opravi urnik vsako uro, tudi če stranke ni.
+
+  Vrne osveženo obračunsko stanje, da plošča ne potrebuje drugega klica.
+*/
+app.post('/api/billing/sync', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    await stripeSync.sinhronizirajLokal(salon);
+  } catch (e) {
+    console.error('[billing] sync error:', e.message);
+  }
+  // Preberemo znova, tudi če uskladitev ni uspela — plošča dobi resnično stanje.
+  const svez = await db.getSalonById(salon.id).catch(() => salon);
+  res.json({
+    subscription_status: svez.subscription_status,
+    subscription_plan: svez.subscription_plan,
+    billing_period: svez.billing_period,
+    billing_status: svez.billing_status,
+    signup_status: svez.signup_status,
+    bot_active: svez.bot_active,
+    valid_until: svez.valid_until,
+    stripe_customer_id: svez.stripe_customer_id
+  });
 });
 
 // PATCH /api/settings/password — zamenjava gesla lastnika
@@ -3073,4 +2989,11 @@ app.post('/api/leads/bulk-send', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`FlowTiq server running on port ${PORT}`);
+  /*
+    Uskladitev naročnin s Stripom. Zavestno ni v startScheduler(): tista
+    funkcija se v tem projektu nikoli ne kliče, poleg tega pa poganja tudi
+    pošiljanje pošte strankam (dnevni povzetki, opomniki, prošnje za ocene).
+    Plačila ne smejo biti odvisna od tega, ali se tisto vklopi.
+  */
+  stripeSync.zacniUskladitev();
 });

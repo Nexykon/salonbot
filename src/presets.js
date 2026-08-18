@@ -189,16 +189,14 @@ const BUSINESS_TYPES = {
 };
 
 // ─── Mesečne meje naročil po paketu (fair-use) ───────────────
-// Enoten vir resnice; per-lokal override (ai_monthly_limit) ima prednost.
-const PLAN_LIMITS = {
-  ai_start: 500,
-  ai:       1500,
-  premium:  10000
-};
+// Meje živijo v src/plans.js skupaj s cenami. Tukaj sta samo preusmeritvi,
+// da klicna mesta (handler.js, server.js) ostanejo nespremenjena.
+// Per-lokal override (sb_salons.ai_monthly_limit) ima prednost na klicnem mestu.
+const plans = require('./plans');
 
-function planLimit(plan) {
-  return PLAN_LIMITS[plan] || (parseInt(process.env.AI_FAIR_USE_LIMIT) || 1500);
-}
+const PLAN_LIMITS = Object.fromEntries(plans.PLAN_KEYS.map(k => [k, plans.PLANS[k].limit]));
+
+function planLimit(plan) { return plans.planLimit(plan); }
 
 function normalizeBusinessType(type) {
   return BUSINESS_TYPES[type] ? type : 'custom';

@@ -1,5 +1,6 @@
 /*
-  Skupni skript javnih strani FlowTiq: burger meni + lebdeči WhatsApp gumb.
+  Skupni skript javnih strani FlowTiq:
+  burger meni + lebdeči WhatsApp gumb + preklopnik mesečno/letno.
 
   ── 1. Burger meni ──
 
@@ -121,4 +122,80 @@
   /* Vstopno animacijo (kratek zamik + zatemnitev) opravi CSS, da gumb
      ni odvisen od časovnika in se pokaže tudi, če se skript zatakne. */
   doc.body.appendChild(a);
+})();
+
+/*
+  ── 3. Preklopnik mesečno / letno ──
+
+  Uporabljata ga cenik.html in naslovnica; na straneh brez .obd-switch se
+  tiho ne zgodi nič.
+
+  Cene bere z /api/plans, kjer jih strežnik servira iz src/plans.js — istega
+  vira, iz katerega nastanejo cene na Stripu in zneski na predračunu. Če klic
+  pade, ostanejo številke, ki so v HTML-u že napisane; stran je uporabna tudi
+  povsem brez JS, saj sta takrat vidni obe (mesečna cena in letna vrstica).
+
+  Preklopnikov je lahko na strani več (npr. nad karticami in v primerjavi) —
+  vsi držijo isto stanje.
+*/
+(function () {
+  var doc = document;
+  var preklopniki = Array.prototype.slice.call(doc.querySelectorAll('.obd-switch'));
+  if (!preklopniki.length) return;
+
+  var korenina = doc.documentElement;
+  // useGrouping: true — sl-SI privzeto ne skupinja štirimestnih števil (1343,88 -> 1.343,88)
+  var eur = function (n) {
+    return Number(n).toLocaleString('sl-SI', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  };
+  // Cele cene pišemo brez decimalk (89 €, ne 89,00 €) — kot doslej na strani.
+  var eurKratko = function (n) {
+    return Number(n) % 1 === 0
+      ? Number(n).toLocaleString('sl-SI', { useGrouping: true }) + ' €'
+      : eur(n);
+  };
+
+  var cene = null;
+
+  function izpisi(obdobje) {
+    korenina.classList.toggle('obd-monthly', obdobje === 'monthly');
+    korenina.classList.toggle('obd-yearly', obdobje === 'yearly');
+
+    preklopniki.forEach(function (p) {
+      Array.prototype.forEach.call(p.querySelectorAll('.obd-btn'), function (b) {
+        var on = b.getAttribute('data-obd') === obdobje;
+        b.classList.toggle('is-on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    });
+
+    if (!cene) return;
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-cena]'), function (n) {
+      var p = cene[n.getAttribute('data-cena')];
+      if (!p) return;
+      n.textContent = obdobje === 'yearly' ? eur(p.monthly_equivalent) : eurKratko(p.month);
+    });
+    Array.prototype.forEach.call(doc.querySelectorAll('[data-letno]'), function (n) {
+      var p = cene[n.getAttribute('data-letno')];
+      if (!p) return;
+      n.textContent = eur(p.year) + ' enkratno za 12 mesecev · prihranek ' + eur(p.saving);
+    });
+  }
+
+  korenina.classList.add('js-obd');
+  izpisi('monthly');
+
+  preklopniki.forEach(function (p) {
+    p.addEventListener('click', function (e) {
+      var b = e.target.closest('.obd-btn');
+      if (b) izpisi(b.getAttribute('data-obd'));
+    });
+  });
+
+  fetch('/api/plans').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d || !d.plans) return;
+    cene = {};
+    d.plans.forEach(function (p) { cene[p.id] = p; });
+    izpisi(korenina.classList.contains('obd-yearly') ? 'yearly' : 'monthly');
+  }).catch(function () { /* tiho — ostanejo številke iz HTML-a */ });
 })();

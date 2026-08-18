@@ -42,6 +42,7 @@
   .paket-cta--pro:hover { background:var(--green-dark); color:#fff; }
   .cen-4 { display:grid; grid-template-columns:1.6fr 1fr 1fr 1fr; }
   @media (max-width:900px) { .cen-4 { min-width:660px; } }
+
 </style>
 <script type="application/ld+json">
 {
@@ -79,6 +80,22 @@
       "acceptedAnswer": {
         "@type": "Answer",
         "text": "Ne. Plačuješ mesečno in odpoveš, kadar želiš. Ob odpovedi ostaneta številka in seznam strank tvoja."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Je letno plačilo cenejše?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Da, za 30 %. Če plačaš celo leto naprej, Start pride na 62,30 € na mesec (747,60 € enkratno), Pro na 111,99 € (1.343,88 €) in Premium na 209,30 € (2.511,60 €). Prihranek je od 320 do 1.076 € na leto. Mesečno plačilo ostaja povsem enakovredna izbira — brez vezave."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Kako plačam?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Kakor ti je lažje. S kartico v nadzorni plošči — takrat se naročnina obnavlja sama in jo odpoveš z enim klikom. Ali pa po predračunu z nakazilom na naš račun, če tako vodiš stroške. Cena je v obeh primerih enaka."
       }
     },
     {
@@ -133,12 +150,20 @@
 
 <section class="sec sec--sm">
   <div class="wrap">
+    <!-- Preklopnik obračunskega obdobja. Brez JS ostanejo vidne mesečne cene
+         in vrstica pod njimi, ki letno ceno navede z besedami. -->
+    <div class="obd-switch" role="group" aria-label="Obračunsko obdobje">
+      <button type="button" class="obd-btn is-on" data-obd="monthly" aria-pressed="true">Mesečno</button>
+      <button type="button" class="obd-btn" data-obd="yearly" aria-pressed="false">Letno <span class="obd-znacka">−30 %</span></button>
+    </div>
+
     <div class="grid-3-20" style="align-items:start">
       <div class="paket">
         <div style="padding:26px 26px 0">
           <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">AI START</div>
           <h2 style="font-size:28px;margin-top:10px">Za začetek</h2>
-          <div class="paket-cena"><b>89 €</b><span>/ mesec</span></div>
+          <div class="paket-cena"><b data-cena="ai_start">89 €</b><span>/ mesec</span></div>
+          <div class="cena-letno" data-letno="ai_start">747,60 € enkratno za 12 mesecev · prihranek 320,40 €</div>
           <p class="body-sm" style="margin-top:10px">Manjši lokali, samostojni obrtniki in vsi, ki šele preizkušajo.</p>
         </div>
         <div class="paket-body">
@@ -159,7 +184,8 @@
             <div style="background:var(--green);color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px">NAJPOGOSTEJŠA IZBIRA</div>
           </div>
           <h2 style="font-size:28px;margin-top:10px">Za polno delovanje</h2>
-          <div class="paket-cena"><b>159,99 €</b><span>/ mesec</span></div>
+          <div class="paket-cena"><b data-cena="ai">159,99 €</b><span>/ mesec</span></div>
+          <div class="cena-letno" data-letno="ai">1.343,88 € enkratno za 12 mesecev · prihranek 576,00 €</div>
           <p style="font-size:14.5px;color:var(--on-ink-3);margin-top:10px;line-height:1.5">Ko hočeš, da se stranka pogovarja tako, kot bi z natakarjem ali receptorko.</p>
         </div>
         <div class="paket-body">
@@ -178,7 +204,8 @@
         <div style="padding:26px 26px 0">
           <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">PREMIUM</div>
           <h2 style="font-size:28px;margin-top:10px">Za verige</h2>
-          <div class="paket-cena"><b>299 €</b><span>/ mesec</span></div>
+          <div class="paket-cena"><b data-cena="premium">299 €</b><span>/ mesec</span></div>
+          <div class="cena-letno" data-letno="premium">2.511,60 € enkratno za 12 mesecev · prihranek 1.076,40 €</div>
           <p class="body-sm" style="margin-top:10px">Več lokacij, velik obseg naročil in prilagoditve po meri.</p>
         </div>
         <div class="paket-body">
@@ -272,6 +299,14 @@
       <details>
         <summary><span>Ali obstaja pogodba za več let?</span><span class="sign"></span></summary>
         <div class="faq-body measure-76">Ne. Plačuješ mesečno in odpoveš, kadar želiš. Ob odpovedi ostaneta številka in seznam strank tvoja.</div>
+      </details>
+      <details>
+        <summary><span>Je letno plačilo cenejše?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Da, za 30 %. Če plačaš celo leto naprej, Start pride na 62,30 € na mesec (747,60 € enkratno), Pro na 111,99 € (1.343,88 €) in Premium na 209,30 € (2.511,60 €). Prihranek je od 320 do 1.076 € na leto. Mesečno plačilo ostaja povsem enakovredna izbira — brez vezave.</div>
+      </details>
+      <details>
+        <summary><span>Kako plačam?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Kakor ti je lažje. S kartico v nadzorni plošči — takrat se naročnina obnavlja sama in jo odpoveš z enim klikom. Ali pa po predračunu z nakazilom na naš račun, če tako vodiš stroške. Cena je v obeh primerih enaka.</div>
       </details>
       <details>
         <summary><span>Kateri paket naj izberem?</span><span class="sign"></span></summary>
@@ -395,6 +430,7 @@
   sRacun.addEventListener('input', osvezi);
   osvezi();
 })();
+
 </script>
 </body>
 </html>

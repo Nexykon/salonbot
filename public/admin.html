@@ -1836,7 +1836,32 @@ let apiKey = '';
 let masterToken = '';
 let salonsData = [];
 
-const PLAN_PRICES = { starter: 49.99, pro: 79.99, ai_start: 89, ai: 159.99, premium: 299 };
+/*
+  Cenik pride z /api/plans (edini vir resnice je src/plans.js). REZERVA se
+  uporabi le, če klic pade. POMEMBNO: letna cena je −30 %, NE mesečna × 12 —
+  če bi tu računali ×12, bi predogled predračuna v adminu pokazal drug znesek
+  kot predračun, ki gre stranki po e-pošti.
+*/
+const PLAN_REZERVA = [
+  { id:'ai_start', label:'AI Start', month:89,     year:747.60,  monthly_equivalent:62.30,  saving:320.40,  limit:500 },
+  { id:'ai',       label:'AI Pro',   month:159.99, year:1343.88, monthly_equivalent:111.99, saving:576.00,  limit:1500 },
+  { id:'premium',  label:'Premium',  month:299,    year:2511.60, monthly_equivalent:209.30, saving:1076.40, limit:10000 }
+];
+let CENIK = PLAN_REZERVA.slice();
+
+function planRec(id) { return CENIK.find(p => p.id === id) || CENIK.find(p => p.id === 'ai') || PLAN_REZERVA[1]; }
+function planLabelById(id) { return planRec(id).label; }
+// Znesek za eno obračunsko obdobje.
+function planAmount(id, period) { const p = planRec(id); return period === 'yearly' ? p.year : p.month; }
+// Mesečni prihodek — pri letni naročnini dvanajstina letnega zneska.
+function planMrr(id, period) { const p = planRec(id); return period === 'yearly' ? p.monthly_equivalent : p.month; }
+
+function naloziCenik() {
+  return fetch('/api/plans').then(r => r.ok ? r.json() : null).then(d => {
+    if (d && d.plans && d.plans.length) CENIK = d.plans;
+  }).catch(() => { /* tiho — ostane REZERVA */ });
+}
+
 const resetToken = new URLSearchParams(window.location.search).get('reset') || '';
 
 // ── AUTH ──────────────────────────────────────────────────
@@ -2050,7 +2075,8 @@ function apiFetch(path, options = {}) {
 // ── RENDER ────────────────────────────────────────────────
 async function refreshSalons() {
   try {
-    const res = await apiFetch('/salons');
+    // Cenik pred izrisom, da zneski in mesečni prihodek niso iz REZERVE.
+    const [res] = await Promise.all([apiFetch('/salons'), naloziCenik()]);
     if (res.ok) {
       salonsData = await res.json();
       renderAll();
@@ -2078,17 +2104,18 @@ function renderStats() {
   const total = salonsData.length;
   const active = salonsData.filter(s => s.subscription_status === 'active').length;
   const trial = salonsData.filter(s => s.subscription_status === 'trial').length;
+  // Mesečni prihodek: letne naročnine štejemo kot dvanajstino letnega zneska.
   const revenue = salonsData
     .filter(s => s.subscription_status === 'active')
-    .reduce((sum, s) => sum + (PLAN_PRICES[s.subscription_plan] || 159.99), 0);
+    .reduce((sum, s) => sum + planMrr(s.subscription_plan, s.billing_period), 0);
 
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-active').textContent = active;
   document.getElementById('stat-trial').textContent = trial;
-  document.getElementById('stat-revenue').textContent = revenue > 0 ? `€${revenue}` : '€0';
+  document.getElementById('stat-revenue').textContent = revenue > 0
+    ? '€' + revenue.toLocaleString('sl-SI', { maximumFractionDigits: 0 })
+    : '€0';
 }
-
-const PLAN_SHORT = { starter:'Osnovni', pro:'Pro (POS)', ai_start:'AI Start', ai:'AI Pro', premium:'Premium' };
 function salonInitials(name){ return ((name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('')||'?').toUpperCase(); }
 let salonFilter = 'all';
 let salonPage = 0;
@@ -2120,11 +2147,13 @@ function renderTable() {
       : (s.subscription_status === 'trial' ? '<span class="sb sb-trial">Preizkus</span>' : '<span class="sb sb-off">Neaktivno</span>');
     const badges = [
       statusBadge,
-      `<span class="sb sb-plan">${PLAN_SHORT[s.subscription_plan] || s.subscription_plan}</span>`,
+      `<span class="sb sb-plan">${planLabelById(s.subscription_plan)}</span>`,
       s.signup_status === 'pending' ? '<span class="sb sb-warn">Čaka na priklop</span>' : '',
       s.billing_status === 'awaiting' ? '<span class="sb sb-danger">Predračun neplačan</span>' : '',
       s.billing_status === 'paid' ? '<span class="sb sb-ok">Plačano</span>' : '',
-      s.renewal_requested_plan ? `<span class="sb sb-req">🔔 Želi: ${PROFORMA_PLANNAME[s.renewal_requested_plan] || s.renewal_requested_plan}</span>` : ''
+      // Kartična naročnina se obnavlja sama — predračuna ji ni treba pošiljati.
+      s.stripe_subscription_id ? `<span class="sb sb-plan" title="Kartica prek Stripe — samodejno obnavljanje&#10;Customer: ${s.stripe_customer_id || '—'}&#10;Subscription: ${s.stripe_subscription_id}">💳 Stripe</span>` : '',
+      s.renewal_requested_plan ? `<span class="sb sb-req">🔔 Želi: ${planLabelById(s.renewal_requested_plan)}</span>` : ''
     ].filter(Boolean).join('');
     let validLine = '';
     if (s.valid_until) {
@@ -2142,15 +2171,13 @@ function renderTable() {
         ${validLine}
         <div class="salon-plan-row">
           <select class="plan-select" onchange="changePlan('${s.id}', this.value)" title="Spremeni paket">
-            ${s.subscription_plan==='starter'?'<option value="starter" selected>Osnovni · 49,99 €/mes (opuščen)</option>':''}
-            ${s.subscription_plan==='pro'?'<option value="pro" selected>Pro · 79,99 €/mes (opuščen)</option>':''}
             <option value="ai_start" ${s.subscription_plan==='ai_start'?'selected':''}>AI Start · 89 €/mes (500)</option>
             <option value="ai" ${s.subscription_plan==='ai'?'selected':''}>AI Pro · 159,99 €/mes (1.500)</option>
             <option value="premium" ${s.subscription_plan==='premium'?'selected':''}>Premium · 299 €/mes (10.000)</option>
           </select>
           <select class="plan-select" onchange="changePeriod('${s.id}', this.value)" title="Obdobje plačila">
             <option value="monthly" ${s.billing_period!=='yearly'?'selected':''}>Mesečno</option>
-            <option value="yearly" ${s.billing_period==='yearly'?'selected':''}>Letno ×12</option>
+            <option value="yearly" ${s.billing_period==='yearly'?'selected':''}>Letno −30 %</option>
           </select>
           <span class="usage-cell" data-salon="${s.id}" style="font-size:12px;color:var(--text2);font-weight:700" title="Naročila prek bota ta mesec">📦 —</span>
         </div>
@@ -2279,7 +2306,9 @@ function fillUsageCells() {
     const cnt = usageData.usage[el.dataset.salon];
     if (cnt === undefined) return;
     const salon = salonsData.find(s => s.id === el.dataset.salon);
-    const isAi = salon && salon.subscription_plan === 'ai';
+    // Prej je preverjalo samo === 'ai', zato ai_start in premium nikoli nista
+    // pokazala meje porabe in se nista obarvala ob preseganju.
+    const isAi = !!(salon && CENIK.some(p => p.id === salon.subscription_plan));
     const lim = (usageData.limits && usageData.limits[el.dataset.salon]) || usageData.limit;
     const over = isAi && cnt >= lim;
     el.textContent = isAi ? `📦 ${cnt} / ${lim}` : `📦 ${cnt} naročil`;
@@ -2421,11 +2450,10 @@ const PROFORMA_ISSUER = {
   iban: 'SI56 0298 5266 0633 091',
   novat: 'Nisem zavezanec za DDV (1. odst. 94. člena ZDDV-1). DDV ni obračunan.'
 };
-const PROFORMA_PRICE = { starter: 49.99, pro: 79.99, ai_start: 89, ai: 159.99, premium: 299 };
 async function sendProformaEmail(id) {
   const s = salonsData.find(x => x.id === id);
   const plan = (s && (s.renewal_requested_plan || s.subscription_plan)) || 'ai';
-  if (!confirm(`Poslati predračun (${PROFORMA_PLANNAME[plan] || plan}) na email stranke ${(s && s.owner_email) || ''}?`)) return;
+  if (!confirm(`Poslati predračun (${planLabelById(plan)}) na email stranke ${(s && s.owner_email) || ''}?`)) return;
   try {
     const res = await apiFetch(`/api/admin/send-proforma/${id}`, { method: 'POST', body: JSON.stringify({ plan }) });
     const d = await res.json();
@@ -2433,16 +2461,18 @@ async function sendProformaEmail(id) {
     else showToast('Napaka: ' + (d.error || 'Neznana'), 'error');
   } catch (e) { showToast('Napaka: ' + e.message, 'error'); }
 }
-const PROFORMA_PLANNAME = { starter: 'Osnovni', pro: 'Pro', ai_start: 'AI Start', ai: 'AI Pro', premium: 'Premium' };
 function openProforma(id) {
   const s = salonsData.find(x => x.id === id);
   if (!s) { showToast('Salon ni najden', 'error'); return; }
   const plan = s.subscription_plan || 'ai';
   const yearly = s.billing_period === 'yearly';
-  const monthly = PROFORMA_PRICE[plan] || 0;
-  const amount = yearly ? monthly * 12 : monthly;
-  const period = yearly ? 'letna naročnina' : 'mesečna naročnina';
-  const eur = n => n.toLocaleString('sl-SI', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  // Isti znesek kot src/proforma.js: letno je −30 %, ne mesečno × 12.
+  const amount = planAmount(plan, yearly ? 'yearly' : 'monthly');
+  const rec = planRec(plan);
+  const period = yearly
+    ? 'letna naročnina (12 mesecev, −30 % · prihranek ' + rec.saving.toLocaleString('sl-SI', { useGrouping: true, minimumFractionDigits: 2 }) + ' €)'
+    : 'mesečna naročnina';
+  const eur = n => n.toLocaleString('sl-SI', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
   const today = new Date().toLocaleDateString('sl-SI');
   const due = new Date(Date.now() + 8 * 24 * 3600 * 1000).toLocaleDateString('sl-SI');
   const no = 'PR-' + new Date().getFullYear() + '-' + String(id).replace(/[^0-9a-f]/gi, '').slice(-6).toUpperCase();
@@ -2458,7 +2488,7 @@ function openProforma(id) {
   <div class="box r"><h1>PREDRAČUN</h1>Št.: <b>${no}</b><br>Datum: ${today}<br>Rok plačila: ${due}</div></div>
   <div class="box" style="margin-top:16px"><b>Kupec:</b><br>${s.company_name || s.name || '—'}<br>${s.address || ''}<br>${s.vat_id ? ('Davčna št.: ' + s.vat_id) : ''}</div>
   <table><tr><th>Opis</th><th class="r">Znesek</th></tr>
-  <tr><td>FlowTiq paket ${PROFORMA_PLANNAME[plan] || plan} — ${period}</td><td class="r">${eur(amount)}</td></tr>
+  <tr><td>FlowTiq paket ${planLabelById(plan)} — ${period}</td><td class="r">${eur(amount)}</td></tr>
   <tr class="tot"><td class="r">Za plačilo</td><td class="r">${eur(amount)}</td></tr></table>
   <div class="box"><b>Plačilo po nakazilu:</b> IBAN <b>${PROFORMA_ISSUER.iban}</b><br>Sklic: <b>${sklic}</b><br>Namen: FlowTiq ${no}</div>
   <p class="muted">${PROFORMA_ISSUER.novat}<br>Predračun ni davčni dokument. Po prejemu plačila izdamo račun in aktiviramo storitev.</p>

@@ -566,12 +566,20 @@
       <p class="lead" style="font-size:18px">Nič provizij od naročila, nič stroškov postavitve, nič pogodbe za tri leta. Nehaš, kadar hočeš.</p>
     </div>
 
-    <div class="grid-3-20" style="margin-top:40px;align-items:start">
+    <!-- Preklopnik obdobja; logika je v flowtiq-nav.js, slogi v flowtiq-site.css.
+         Brez JS ostanejo mesečne cene in vrstica z letno ceno pod njimi. -->
+    <div class="obd-switch" role="group" aria-label="Obračunsko obdobje" style="margin-top:32px">
+      <button type="button" class="obd-btn is-on" data-obd="monthly" aria-pressed="true">Mesečno</button>
+      <button type="button" class="obd-btn" data-obd="yearly" aria-pressed="false">Letno <span class="obd-znacka">−30 %</span></button>
+    </div>
+
+    <div class="grid-3-20" style="margin-top:24px;align-items:start">
       <div class="plan">
         <div style="padding:24px 24px 0">
           <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">AI START</div>
           <h3 style="font-size:26px;margin-top:10px">Za začetek</h3>
-          <div class="plan-price"><b>89 €</b><span>/ mesec</span></div>
+          <div class="plan-price"><b data-cena="ai_start">89 €</b><span>/ mesec</span></div>
+          <div class="cena-letno" data-letno="ai_start">747,60 € enkratno za 12 mesecev · prihranek 320,40 €</div>
           <p class="body-sm" style="margin-top:10px">Manjši lokali in obrtniki, ki šele začenjajo.</p>
         </div>
         <div class="plan-body">
@@ -590,7 +598,8 @@
             <div style="background:var(--green);color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;letter-spacing:.04em">NAJPOGOSTEJŠA IZBIRA</div>
           </div>
           <h3 style="font-size:26px;margin-top:10px">Za polno delovanje</h3>
-          <div class="plan-price"><b>159,99 €</b><span>/ mesec</span></div>
+          <div class="plan-price"><b data-cena="ai">159,99 €</b><span>/ mesec</span></div>
+          <div class="cena-letno" data-letno="ai">1.343,88 € enkratno za 12 mesecev · prihranek 576,00 €</div>
           <p style="font-size:14.5px;color:var(--on-ink-3);margin-top:10px;line-height:1.5">Ko hočeš, da se stranka pogovarja kot s človekom.</p>
         </div>
         <div class="plan-body">
@@ -607,7 +616,8 @@
         <div style="padding:24px 24px 0">
           <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">PREMIUM</div>
           <h3 style="font-size:26px;margin-top:10px">Za verige</h3>
-          <div class="plan-price"><b>299 €</b><span>/ mesec</span></div>
+          <div class="plan-price"><b data-cena="premium">299 €</b><span>/ mesec</span></div>
+          <div class="cena-letno" data-letno="premium">2.511,60 € enkratno za 12 mesecev · prihranek 1.076,40 €</div>
           <p class="body-sm" style="margin-top:10px">Več lokacij in velik obseg naročil.</p>
         </div>
         <div class="plan-body">

@@ -240,6 +240,10 @@ async function sendRenewalReminders() {
     for (const salon of salons) {
       if (salon.signup_status !== 'active' || !salon.valid_until || !salon.owner_email) continue;
       if (salon.renewal_reminded_at) continue; // že opomnjeno v tem obdobju (resetira se ob plačilu)
+      // Kartično naročnino Stripe obnovi sam — poziv "zaprosite za predračun"
+      // bi bil zavajajoč. Če plačilo ne uspe, se valid_until ne premakne in
+      // stranko doseže sendExpiryNotices spodaj (z besedilom za kartico).
+      if (salon.stripe_subscription_id && salon.subscription_status === 'active') continue;
       const end = new Date(salon.valid_until);
       const days = Math.ceil((end - new Date()) / 86400000);
       if (days < 0 || days > 7) continue;
@@ -270,6 +274,12 @@ async function sendExpiryNotices() {
       const daysPast = Math.floor((Date.now() - end.getTime()) / 86400000);
       if (daysPast < 0) continue; // še ni poteklo
 
+      // Kartičnega naročnika napotimo na portal, ne na predračun.
+      const naKartico = !!salon.stripe_subscription_id;
+      const kakoPodaljsa = naKartico
+        ? 'V nadzorni plošči kliknite "Upravljaj naročnino" in preverite kartico.'
+        : 'V nadzorni plošči kliknite "Zaprosi za podaljšanje" — pošljemo vam predračun.';
+
       // (a) Potekla, a še v 3-dnevnem odlogu — obvesti enkrat
       if (daysPast < SUB_GRACE_DAYS && !salon.grace_notified_at) {
         try {
@@ -278,7 +288,7 @@ async function sendExpiryNotices() {
             `naročnina za "${salon.name}" je potekla ${end.toLocaleDateString('sl-SI')}.`,
             `Bot še vedno deluje, imate pa ${SUB_GRACE_DAYS} dni časa za podaljšanje. Po tem se samodejno ustavi.`,
             '',
-            'V nadzorni plošči kliknite "Zaprosi za podaljšanje" — pošljemo vam predračun.',
+            kakoPodaljsa,
             '', 'Ekipa FlowTiq'
           ].join('\n'));
           await db.updateSalonSettings(salon.id, { grace_notified_at: new Date().toISOString() });
@@ -294,7 +304,7 @@ async function sendExpiryNotices() {
             `ker naročnina za "${salon.name}" ni bila podaljšana, je bot začasno ustavljen in ne sprejema naročil.`,
             'Stranke dobijo vljudno obvestilo, da trenutno ne sprejemate naročil.',
             '',
-            'Za takojšnjo ponovno aktivacijo podaljšajte naročnino — v nadzorni plošči kliknite "Zaprosi za podaljšanje".',
+            'Za takojšnjo ponovno aktivacijo: ' + kakoPodaljsa,
             '', 'Ekipa FlowTiq'
           ].join('\n'));
           await db.updateSalonSettings(salon.id, { paused_notified_at: new Date().toISOString() });

@@ -508,6 +508,40 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
 }
   /* logotip je povezava na domačo stran — inline-flex, da ne doda prostora pod sliko */
   .ft-logo-link { display: inline-flex; align-items: center; }
+
+  /* ── Naročnina: preklopnik obdobja in kartice paketov ── */
+  .per-btn {
+    flex: 1; padding: 9px 10px; border: 2px solid transparent; border-radius: 8px;
+    background: none; color: var(--muted); font-family: inherit; font-size: 13px;
+    font-weight: 700; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .per-btn:hover { color: var(--text); }
+  .per-btn.active { background: var(--surface); border-color: var(--ink, #101E2B); color: var(--text); }
+  .per-btn #per-disc {
+    display: inline-block; margin-left: 4px; padding: 1px 6px; border-radius: 99px;
+    background: var(--purple); color: #fff; font-size: 11px; font-weight: 700;
+  }
+
+  .plan-card {
+    border: 2px solid var(--border); border-radius: 12px; padding: 12px 10px;
+    text-align: center; background: var(--surface);
+  }
+  .plan-card.current { border-color: var(--purple); background: rgba(22,163,74,.08); }
+  .plan-card .pc-name { font-weight: 800; font-size: 13px; color: var(--text); }
+  .plan-card .pc-price { color: var(--purple); font-weight: 800; font-size: 16px; margin-top: 4px; }
+  .plan-card .pc-per { color: var(--muted); font-weight: 400; font-size: 12px; }
+  /* min-height, da se kartice ne premikajo ob preklopu mesečno/letno */
+  .plan-card .pc-sub { color: var(--muted); font-size: 11px; margin-top: 3px; min-height: 1.9em; line-height: 1.35; }
+  .plan-card .pc-mine { font-size: 11px; color: var(--purple); font-weight: 700; margin-top: 8px; }
+  .plan-card .pc-btns { display: grid; gap: 5px; margin-top: 8px; }
+  .pc-pay, .pc-ask {
+    padding: 6px 8px; border-radius: 8px; font-family: inherit; font-size: 12px;
+    font-weight: 700; cursor: pointer; border: 2px solid var(--ink, #101E2B);
+  }
+  .pc-pay { background: var(--purple); color: #fff; }
+  .pc-pay:hover { background: var(--purple-light, #0E7A38); }
+  .pc-ask { background: var(--surface); color: var(--text); }
+  .pc-ask:hover { background: var(--surface2); }
 </style>
 </head>
 <body>
@@ -647,8 +681,18 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
         <div id="billing-info" style="font-size:14px;margin-bottom:8px;color:var(--muted)">Nalagam ...</div>
         <div id="billing-note" style="font-size:13px;color:var(--muted);margin-top:6px"></div>
         <div id="billing-expiry" style="font-size:13px;color:var(--muted);margin-top:6px"></div>
-        <div id="plan-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-top:14px"></div>
-        <button class="btn-save" style="margin-top:12px;width:100%" onclick="requestRenewal()">🔁 Zaprosi za podaljšanje</button>
+
+        <!-- Preklopnik obračunskega obdobja; letno je −30 % -->
+        <div id="period-switch" style="display:flex;gap:6px;margin-top:16px;padding:4px;background:var(--surface2,#f1f5f9);border-radius:10px">
+          <button type="button" class="per-btn" data-period="monthly" onclick="setBillingPeriod('monthly')">Mesečno</button>
+          <button type="button" class="per-btn" data-period="yearly" onclick="setBillingPeriod('yearly')">Letno <span id="per-disc">−30 %</span></button>
+        </div>
+
+        <div id="plan-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:14px"></div>
+        <div id="billing-actions" style="margin-top:12px"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5">
+          Cene so končne — DDV ne obračunavamo. Odpoved je mogoča kadar koli.
+        </div>
       </div>
     </div>
     <div class="tab-content" id="tab-settings">
@@ -1523,7 +1567,9 @@ async function loadSettingsData() {
     currentPlan = d.subscription_plan || 'ai';
     if (ownerToken && !masterToken) initLocationSwitcher(() => ownerToken, (t) => { ownerToken = t; localStorage.setItem('ft_delivery_token', t); });
     renderBotMessages(d);
-    renderBilling(d);
+    // Najprej cenik z /api/plans, nato izris — brez čakanja bi se pokazala
+    // REZERVA in takoj zatem znova prerisala z drugimi številkami.
+    naloziCenik().then(function () { renderBilling(d); obravnavajVrnitevSPlacila(); });
     renderPosTab(d);
     const pack = parseFloat(d.packaging_price||0), del = parseFloat(d.delivery_fee||0);
     document.getElementById('s-pack-on').checked = pack > 0;
@@ -1779,31 +1825,71 @@ async function initLocationSwitcher(tokenGetter, tokenSetter) {
 }
 
 // ── Naročnina (Stripe) ─────────────────────────────────
+/*
+  Cenik pride z /api/plans (edini vir resnice je src/plans.js). REZERVA se
+  uporabi, če klic pade — kartice paketov se ne smejo sprazniti.
+*/
+var PLAN_REZERVA = [
+  { id:'ai_start', label:'AI Start', month:89,     year:747.60,  monthly_equivalent:62.30,  saving:320.40,  discount_pct:30 },
+  { id:'ai',       label:'AI Pro',   month:159.99, year:1343.88, monthly_equivalent:111.99, saving:576.00,  discount_pct:30 },
+  { id:'premium',  label:'Premium',  month:299,    year:2511.60, monthly_equivalent:209.30, saving:1076.40, discount_pct:30 }
+];
+var CENIK = PLAN_REZERVA.slice();
+var billingPeriod = 'monthly';
+var billingData = null;
+
+// useGrouping: true - sl-SI privzeto ne skupinja stirimestnih stevil (1343,88 -> 1.343,88)
+function eurSl(n) { return Number(n).toLocaleString('sl-SI', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
+function planLabelById(id) { var p = CENIK.find(function (x) { return x.id === id; }); return p ? p.label : 'AI Pro'; }
+
+function naloziCenik() {
+  return fetch('/api/plans').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (d && d.plans && d.plans.length) CENIK = d.plans;
+  }).catch(function () { /* tiho — ostane REZERVA */ });
+}
+
+function setBillingPeriod(p) {
+  billingPeriod = (p === 'yearly') ? 'yearly' : 'monthly';
+  Array.prototype.forEach.call(document.querySelectorAll('.per-btn'), function (b) {
+    b.classList.toggle('active', b.getAttribute('data-period') === billingPeriod);
+  });
+  if (billingData) { renderPlanCards(billingData.subscription_plan); renderBillingActions(billingData); }
+}
+
 function renderBilling(d) {
+  billingData = d;
   const el = document.getElementById('billing-info');
   if (!el) return;
-  const PLAN_LABELS = { starter:'Osnovni (49,99 €/mes)', pro:'Pro (79,99 €/mes)', ai_start:'AI Start (89 €/mes)', ai:'AI Pro (159,99 €/mes)', premium:'Premium (299 €/mes)' };
-  const planLabel = PLAN_LABELS[d.subscription_plan] || 'AI Pro (159,99 €/mes)';
-  const isAi = d.subscription_plan === 'ai' || d.subscription_plan === 'premium';
+  const planLabel = planLabelById(d.subscription_plan);
+  const cena = CENIK.find(function (x) { return x.id === d.subscription_plan; });
+  const jeLetno = d.billing_period === 'yearly';
+  const znesek = cena ? eurSl(jeLetno ? cena.year : cena.month) + (jeLetno ? '/leto' : '/mes') : '';
+  setBillingPeriod(jeLetno ? 'yearly' : 'monthly');
+
+  const naKartico = !!d.stripe_customer_id;
   let statusHtml, note = '';
   if (d.signup_status === 'pending') {
-    if (isAi && d.billing_status !== 'paid') {
-      statusHtml = '⏳ Čaka na plačilo predračuna';
-      note = 'Za aktivacijo poravnajte predračun, ki vam ga pošljemo na email. Po plačilu vas priklopimo in vam izdamo račun.';
+    if (d.billing_status !== 'paid') {
+      statusHtml = '⏳ Čaka na plačilo';
+      note = 'Plačajte s kartico spodaj in bot se zažene takoj, ko je vaša WhatsApp številka priklopljena. Če vam bolj ustreza nakazilo, zaprosite za predračun.';
     } else {
-      statusHtml = '⏳ Čaka na priklop';
-      note = 'Vaš račun je ustvarjen. Kontaktirali vas bomo za priklop (aktivacijo bota) — običajno v nekaj urah.';
+      statusHtml = '⏳ Plačano — čaka priklop';
+      note = 'Plačilo je zabeleženo. Priklapljamo vašo WhatsApp številko — običajno v nekaj urah.';
     }
   } else if (d.subscription_status === 'active') {
     statusHtml = '✅ Aktivno';
-    note = 'Vaš bot je aktiven.';
+    note = naKartico
+      ? 'Bot je aktiven. Naročnina se samodejno obnavlja s kartico — odpoved kadar koli pod „Upravljaj naročnino“.'
+      : 'Bot je aktiven. Naročnino plačujete po predračunu; pred potekom vas opozorimo.';
   } else if (d.subscription_status === 'trial') {
     statusHtml = '🎁 Preizkusno obdobje';
   } else {
     statusHtml = '⛔ Neaktivno';
-    note = 'Za ponovno aktivacijo nas kontaktirajte.';
+    note = naKartico
+      ? 'Naročnina je odpovedana ali plačilo ni uspelo. Za ponovni zagon izberite paket spodaj.'
+      : 'Za ponovno aktivacijo izberite paket spodaj ali nas kontaktirajte.';
   }
-  el.innerHTML = 'Paket: <b>' + planLabel + '</b> &nbsp;·&nbsp; Status: <b>' + statusHtml + '</b>';
+  el.innerHTML = 'Paket: <b>' + planLabel + (znesek ? ' — ' + znesek : '') + '</b> &nbsp;·&nbsp; Status: <b>' + statusHtml + '</b>';
   const nb = document.getElementById('billing-note');
   if (nb) nb.textContent = note;
   const exEl = document.getElementById('billing-expiry');
@@ -1818,24 +1904,39 @@ function renderBilling(d) {
     } else { exEl.textContent = ''; }
   }
   renderPlanCards(d.subscription_plan);
+  renderBillingActions(d);
 }
 
-const OWNER_PLANS = [
-  { id: 'ai_start', name: 'AI Start',   price: '89 €' },
-  { id: 'ai',       name: 'AI Pro',     price: '159,99 €' },
-  { id: 'premium',  name: 'Premium',    price: '299 €' }
-];
 function renderPlanCards(currentPlan) {
   const el = document.getElementById('plan-cards');
   if (!el) return;
-  el.innerHTML = OWNER_PLANS.map(p => `
-    <div style="border:1.5px solid ${p.id === currentPlan ? '#25D366' : 'var(--border)'};border-radius:10px;padding:10px;text-align:center;${p.id === currentPlan ? 'background:rgba(37,211,102,.08);' : ''}">
-      <div style="font-weight:700;font-size:13px">${p.name}</div>
-      <div style="color:#059669;font-weight:700;font-size:13px">${p.price}<span style="color:var(--muted);font-weight:400">/mes</span></div>
-      ${p.id === currentPlan
-        ? '<div style="font-size:11px;color:#059669;margin-top:6px">Vaš paket</div>'
-        : `<button class="btn-save" style="margin-top:6px;padding:5px 8px;font-size:12px" onclick="requestRenewal('${p.id}')">Nadgradi</button>`}
-    </div>`).join('');
+  const letno = billingPeriod === 'yearly';
+  el.innerHTML = CENIK.map(function (p) {
+    const jeMoj = p.id === currentPlan;
+    // Pri letnem je velika številka mesečni ekvivalent — tako sta obdobji primerljivi.
+    const velika = letno ? p.monthly_equivalent : p.month;
+    const pod = letno ? eurSl(p.year) + ' enkratno<br>prihranek ' + eurSl(p.saving) : '';
+    return '<div class="plan-card' + (jeMoj ? ' current' : '') + '">'
+      + '<div class="pc-name">' + p.label + '</div>'
+      + '<div class="pc-price">' + eurSl(velika) + '<span class="pc-per">/mes</span></div>'
+      + '<div class="pc-sub">' + pod + '</div>'
+      + '<div class="pc-btns">'
+      +   '<button class="pc-pay" onclick="billingCheckout(\'' + p.id + '\')">'
+      +     (jeMoj ? 'Plačaj s kartico' : 'Preidi — kartica') + '</button>'
+      +   '<button class="pc-ask" onclick="requestRenewal(\'' + p.id + '\')">Predračun</button>'
+      + '</div>'
+      + (jeMoj ? '<div class="pc-mine">Vaš paket</div>' : '')
+      + '</div>';
+  }).join('');
+}
+
+// Gumb za Stripe portal se pokaže le, če je stranka tam že kupec.
+function renderBillingActions(d) {
+  const el = document.getElementById('billing-actions');
+  if (!el) return;
+  el.innerHTML = d && d.stripe_customer_id
+    ? '<button class="btn-save" style="width:100%" onclick="billingPortal()">⚙️ Upravljaj naročnino (kartica, računi, odpoved)</button>'
+    : '<button class="btn-save" style="width:100%" onclick="requestRenewal()">🔁 Zaprosi za podaljšanje po predračunu</button>';
 }
 async function requestRenewal(plan) {
   const what = plan ? 'nadgradnjo paketa' : 'podaljšanje naročnine';
@@ -1852,11 +1953,17 @@ async function requestRenewal(plan) {
   } catch (e) { showToast('Napaka pri pošiljanju zahteve', 'error'); }
 }
 async function billingCheckout(plan) {
+  const p = CENIK.find(function (x) { return x.id === plan; });
+  const letno = billingPeriod === 'yearly';
+  if (p && !confirm('Paket ' + p.label + ' — ' + (letno
+      ? eurSl(p.year) + ' enkratno za 12 mesecev (' + eurSl(p.monthly_equivalent) + '/mes)'
+      : eurSl(p.month) + ' na mesec')
+      + '.\n\nCena je končna, DDV ne obračunavamo. Nadaljujem na varno plačilno stran?')) return;
   try {
     const r = await fetch('/api/billing/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken },
-      body: JSON.stringify({ plan })
+      body: JSON.stringify({ plan: plan, billing_period: billingPeriod })
     });
     const d = await r.json();
     if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
@@ -1873,6 +1980,45 @@ async function billingPortal() {
     if (!r.ok) { showToast('❌ ' + (d.error || 'Napaka'), 'error'); return; }
     window.location.href = d.url;
   } catch (e) { showToast('Napaka', 'error'); }
+}
+
+/*
+  Vrnitev s Stripe Checkouta ali iz portala.
+
+  ?billing=success NI dokaz plačila — vsakdo ga lahko vtipka — zato mu ničesar
+  ne verjamemo. Je le namig, da je zdaj pravi trenutek, da strežnik prebere
+  stanje iz Stripa. Resnico zapiše /api/billing/sync, ki vpraša Stripe.
+  Če ta klic pade, ni nič izgubljeno: isto opravi urnik vsako uro.
+*/
+function obravnavajVrnitevSPlacila() {
+  const q = new URLSearchParams(location.search);
+  const b = q.get('billing');
+  q.delete('billing');
+  history.replaceState({}, '', location.pathname + (q.toString() ? '?' + q.toString() : ''));
+  if (!b) return;
+
+  if (b === 'cancel') {
+    showToast('Plačilo ni bilo zaključeno. Paket lahko izberete znova.', 'info');
+    return;
+  }
+  if (b !== 'success' && b !== 'portal') return;
+
+  if (b === 'success') showToast('✅ Plačilo prejeto — preverjam pri Stripe …', 'success');
+  fetch('/api/billing/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken }
+  })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+      renderBilling(Object.assign({}, billingData || {}, d));
+      if (b === 'success') {
+        showToast(d.bot_active
+          ? '✅ Plačilo potrjeno — bot je aktiven.'
+          : '✅ Plačilo potrjeno. Priklapljamo vašo WhatsApp številko.', 'success');
+      }
+    })
+    .catch(function () { /* tiho — uskladi urnik */ });
 }
 
 // ── POS terminal (vključen v paketu AI Pro / Premium) ──
