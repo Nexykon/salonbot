@@ -358,7 +358,12 @@ strong { font-weight: 700; }
    brez JS ostanejo vidne mesečne cene in vrstica z letno ceno, tako da je
    cenik razumljiv tudi, če se skript ne naloži. */
 .obd-switch {
-  display: inline-flex; gap: 4px; padding: 5px;
+  /* flex + fit-content namesto inline-flex: navpični robovi so pri blokovnem
+     elementu predvidljivi, pri atomičnem inline pa odvisni od vrstične škatle.
+     margin-bottom se sesede z margin-top mreže kartic, zato je razmik enak
+     na ceniku in na naslovnici. */
+  display: flex; width: fit-content; gap: 4px; padding: 5px;
+  margin: 0 0 28px;
   background: var(--cream-2); border: 2px solid var(--ink); border-radius: 999px;
 }
 .obd-btn {
