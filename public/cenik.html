@@ -103,7 +103,7 @@
       "name": "Kateri paket naj izberem?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Če šele začenjaš in imaš manj kot 500 naročil na mesec, vzemi Start. Če hočeš, da se stranke pogovarjajo prosto in da ti bot pomaga tudi po obisku (ocene, vabila nazaj), vzemi Pro — to izbere večina. Premium je za več lokacij."
+        "text": "Po funkcijah so vsi enaki, zato izbiraš samo po obsegu. Do 500 naročil na mesec vzemi Start. Če jih imaš več — pri picerijah z dostavo je to običajno — vzemi Pro, to izbere večina. Premium je za več lokacij pod eno nadzorno ploščo. Če se zmotiš, paket kadar koli zamenjaš."
       }
     },
     {
@@ -157,7 +157,9 @@
       <button type="button" class="obd-btn" data-obd="yearly" aria-pressed="false">Letno <span class="obd-znacka">−30 %</span></button>
     </div>
 
-    <div class="grid-3-20" style="align-items:start">
+    <!-- stretch, ne start: odkar imajo paketi enake funkcije, je kartica Pro
+         najkrajša in bi ob start izgledala odrezana. Enaka višina jih poravna. -->
+    <div class="grid-3-20">
       <div class="paket">
         <div style="padding:26px 26px 0">
           <div class="mono" style="font-size:11.5px;letter-spacing:.1em;color:var(--muted-2)">AI START</div>
@@ -168,10 +170,12 @@
         </div>
         <div class="paket-body">
           <div>Naročila in rezervacije 24 ur na dan</div>
+          <div>Razume prosto besedilo, tudi po domače in z napakami</div>
           <div>Lasten koledar z dolžinami storitev</div>
-          <div>Opomniki dan prej</div>
-          <div>Nadzorna plošča s statistiko</div>
-          <div>Povezava z blagajno</div>
+          <div>Opomniki dan prej s potrditvijo</div>
+          <div>Zapomni si stranke: „enako kot zadnjič“</div>
+          <div>Vabila nazaj in zbiranje Google ocen</div>
+          <div>Nadzorna plošča in povezava z blagajno</div>
           <div>Do <strong>500 naročil</strong> na mesec</div>
         </div>
         <a class="paket-cta" href="/kontakt.html">Odpri račun</a>
@@ -186,16 +190,12 @@
           <h2 style="font-size:28px;margin-top:10px">Za polno delovanje</h2>
           <div class="paket-cena"><b data-cena="ai">159,99 €</b><span>/ mesec</span></div>
           <div class="cena-letno" data-letno="ai">1.343,88 € enkratno za 12 mesecev · prihranek 576,00 €</div>
-          <p style="font-size:14.5px;color:var(--on-ink-3);margin-top:10px;line-height:1.5">Ko hočeš, da se stranka pogovarja tako, kot bi z natakarjem ali receptorko.</p>
+          <p style="font-size:14.5px;color:var(--on-ink-3);margin-top:10px;line-height:1.5">Za lokale, ki jih 500 naročil na mesec ne pokrije — okoli 50 na dan.</p>
         </div>
         <div class="paket-body">
-          <div>Vse iz paketa Start</div>
-          <div>Razume prosto besedilo in glasovna sporočila</div>
-          <div>Zapomni si stranke: „enako kot zadnjič“</div>
-          <div>Vabila nazaj po 8 tednih</div>
-          <div>Zbiranje Google ocen</div>
-          <div>Čakalna lista za odpovedi</div>
+          <div><strong>Vse funkcije iz paketa Start</strong>, brez izjem</div>
           <div>Do <strong>1.500 naročil</strong> na mesec</div>
+          <div>Pri picerijah z dostavo je to običajno prava izbira</div>
         </div>
         <a class="paket-cta paket-cta--pro" href="/kontakt.html">Odpri račun</a>
       </div>
@@ -217,6 +217,14 @@
         </div>
         <a class="paket-cta" href="/kontakt.html">Odpri račun</a>
       </div>
+    </div>
+    <div class="card card--pad" style="margin-top:24px">
+      <p class="body" style="font-size:16px;line-height:1.6">
+        <strong>Funkcij ne skrivamo za dražji paket.</strong> Vsi trije dobijo isto: prosto besedilo,
+        koledar, opomnike, pomnjenje strank, vabila nazaj, ocene in povezavo z blagajno.
+        Razlikuje se <strong>obseg naročil</strong> — pri Premiumu pa še več lokacij in prednostna podpora.
+        Če prerasteš svoj paket, ti nič ne ugasnemo: opozorimo te in skupaj pogledamo, ali se višji splača.
+      </p>
     </div>
     <div class="row" style="margin-top:20px;gap:8px 26px;font-size:15px;color:var(--muted-2)">
       <span><strong>Cena je končna</strong> — DDV ne obračunavamo</span><span>·</span><span>Postavitev brezplačna</span><span>·</span><span>Brez vezave</span><span>·</span><span>Odpoved kadarkoli</span>
@@ -260,23 +268,24 @@
 <section class="sec sec--tight">
   <div class="wrap">
     <div class="pill">02 · Primerjava paketov</div>
+    <h2 class="h-3 measure-20" style="margin-top:18px">Funkcije so enake. Razlikuje se obseg.</h2>
+    <p class="body measure-76" style="margin-top:12px">Spodnja tabela je namenoma dolgočasna — to je poanta. Nič ni zaklenjeno v dražji paket.</p>
     <div class="tbl" style="margin-top:26px">
       <div class="tbl-inner">
         <div class="tbl-head cen-4"><div>Zmožnost</div><div>Start</div><div class="is-hi">Pro</div><div>Premium</div></div>
         <div class="tbl-row cen-4"><div>Naročila in rezervacije 24/7</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
+        <div class="tbl-row cen-4"><div>Razume prosto besedilo</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
         <div class="tbl-row cen-4"><div>Lasten koledar in opomniki</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
+        <div class="tbl-row cen-4"><div>Zapomni si stranke</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
+        <div class="tbl-row cen-4"><div>Vabila nazaj in ocene</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
         <div class="tbl-row cen-4"><div>Nadzorna plošča s statistiko</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
         <div class="tbl-row cen-4"><div>Povezava z blagajno</div><div>Da</div><div class="is-hi">Da</div><div>Da</div></div>
-        <div class="tbl-row cen-4"><div>Razume prosto besedilo</div><div>Osnovno</div><div class="is-hi">Polno</div><div>Polno</div></div>
-        <div class="tbl-row cen-4"><div>Glasovna sporočila</div><div>—</div><div class="is-hi">Da</div><div>Da</div></div>
-        <div class="tbl-row cen-4"><div>Zapomni si stranke</div><div>—</div><div class="is-hi">Da</div><div>Da</div></div>
-        <div class="tbl-row cen-4"><div>Vabila nazaj in ocene</div><div>—</div><div class="is-hi">Da</div><div>Da</div></div>
-        <div class="tbl-row cen-4"><div>Čakalna lista</div><div>—</div><div class="is-hi">Da</div><div>Da</div></div>
-        <div class="tbl-row cen-4"><div>Naročil na mesec</div><div>500</div><div class="is-hi">1.500</div><div>10.000</div></div>
-        <div class="tbl-row cen-4"><div>Več lokacij</div><div>—</div><div class="is-hi">—</div><div>Da</div></div>
+        <div class="tbl-row cen-4"><div><strong>Naročil na mesec</strong></div><div>500</div><div class="is-hi">1.500</div><div>10.000</div></div>
+        <div class="tbl-row cen-4"><div>Več lokacij pod eno ploščo</div><div>—</div><div class="is-hi">—</div><div>Da</div></div>
         <div class="tbl-row cen-4"><div>Prednostna podpora</div><div>—</div><div class="is-hi">—</div><div>Da</div></div>
       </div>
     </div>
+    <p class="body-sm" style="margin-top:16px;color:var(--muted-2)">Ko presežeš število naročil, se nič ne izklopi. Opozorimo te in skupaj pogledamo, ali se ti višji paket splača.</p>
   </div>
 </section>
 
@@ -310,7 +319,7 @@
       </details>
       <details>
         <summary><span>Kateri paket naj izberem?</span><span class="sign"></span></summary>
-        <div class="faq-body measure-76">Če šele začenjaš in imaš manj kot 500 naročil na mesec, vzemi Start. Če hočeš, da se stranke pogovarjajo prosto in da ti bot pomaga tudi po obisku (ocene, vabila nazaj), vzemi Pro — to izbere večina. Premium je za več lokacij.</div>
+        <div class="faq-body measure-76">Po funkcijah so vsi enaki, zato izbiraš samo po obsegu. Do 500 naročil na mesec vzemi Start. Če jih imaš več — pri picerijah z dostavo je to običajno — vzemi Pro, to izbere večina. Premium je za več lokacij pod eno nadzorno ploščo. Če se zmotiš, paket kadar koli zamenjaš.</div>
       </details>
       <details>
         <summary><span>Se cenam prišteje DDV?</span><span class="sign"></span></summary>

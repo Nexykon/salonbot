@@ -54,7 +54,7 @@ module.exports = [
       { t: "Različno dolge storitve", o: "Barvanje traja 2 uri, striženje 40 minut. Bot rezervira pravo dolžino, ne enotnega bloka." },
       { t: "Izbira frizerke", o: "„Pri Ani, prosim.“ Vsak zaposlen ima svoj koledar in svoje storitve." },
       { t: "Opomnik dan prej", o: "„Jutri ob 15:00 pri Ani. Potrdi z DA ali odpovej z NE.“ Odpovedan termin se takoj sprosti." },
-      { t: "Čakalna lista", o: "Ko se termin sprosti, bot obvesti tiste, ki so čakali. Luknja v urniku se zapolni sama." },
+      { t: "Zbiranje Google ocen", o: "Po obisku bot prijazno vpraša za oceno in ponudi povezavo. Brez tvojega opominjanja." },
       { t: "Vabilo nazaj", o: "Stranke, ki jih 8 tednov ni bilo, dobijo prijazno povabilo. Koledar se polni iz strank, ki jih že imaš." }
     ],
     pogovor: [
@@ -192,7 +192,7 @@ module.exports = [
     primeri: [
       { t: "Naročanje na pregled", o: "Pacient izbere vrsto obiska (pregled, čiščenje, kontrola) in dobi prost termin." },
       { t: "Triaža nujnih primerov", o: "Pri bolečini bot takoj označi primer kot nujen in ti pošlje obvestilo." },
-      { t: "Opomniki in potrditve", o: "48 in 24 ur prej. Nepotrjen termin se sprosti za čakalno listo." },
+      { t: "Opomniki in potrditve", o: "48 in 24 ur prej. Nepotrjen termin se sprosti in je spet na voljo." },
       { t: "Redne kontrole na 6 mesecev", o: "Bot sam povabi paciente na kontrolo, ko pride čas." },
       { t: "Napotki pred posegom", o: "„Pridi na tešče“, „vzemi kartico zavarovanja“ — samodejno." },
       { t: "Odgovori na cene", o: "Cenik samoplačniških storitev pošlje takoj, brez čakanja na receptorko." }
@@ -321,9 +321,9 @@ module.exports = [
   },
   {
     slug: "trenerji", mono: "TR", ime: "Osebni trenerji in fitnes",
-    kratko: "Termini, skupinske vadbe, čakalna lista in paketi treningov.",
+    kratko: "Termini, skupinske vadbe z omejenimi mesti in paketi treningov.",
     naslov: "Ti trenirate.\nUrnik se ureja sam.",
-    podnaslov: "FlowTiq vodi individualne termine in skupinske vadbe z omejenim številom mest — vključno s čakalno listo.",
+    podnaslov: "FlowTiq vodi individualne termine in skupinske vadbe z omejenim številom mest, šteje pa tudi porabljene treninge iz paketa.",
     boli: [
       { t: "Prijave na vadbo v treh kanalih", o: "Nekdo napiše na WhatsApp, drug na Instagram, tretji v živo. Kaos." },
       { t: "Odpovedi zadnji trenutek", o: "Prosto mesto ostane prazno, čeprav bi ga kdo vzel." },
@@ -331,8 +331,8 @@ module.exports = [
     ],
     primeri: [
       { t: "Individualni termin", o: "Stranka izbere prost termin, bot ga rezervira in doda v tvoj koledar." },
-      { t: "Skupinska vadba z mesti", o: "„Joga, torek 18:00, prostih 3 od 12.“ Ko se zapolni, gre naslednji na čakalno listo." },
-      { t: "Čakalna lista", o: "Odpoved sprosti mesto — bot takoj ponudi prvemu na listi." },
+      { t: "Skupinska vadba z mesti", o: "„Joga, torek 18:00, prostih 3 od 12.“ Ko se zapolni, bot to takoj pove." },
+      { t: "Odpoved sprosti mesto", o: "Odpovedan termin se takoj vrne med proste — naslednji, ki vpraša, ga dobi." },
       { t: "Paketi treningov", o: "Bot šteje porabljene treninge in opozori, ko se paket izteka." },
       { t: "Opomniki", o: "Dve uri pred vadbo. Manj praznih mest, manj čakanja." },
       { t: "Mesečno obračunavanje", o: "Pregled obiskov po stranki za obračun ob koncu meseca." }
@@ -345,7 +345,7 @@ module.exports = [
     ],
     stevilke: [
       { v: "mesta", o: "sproti in točno" },
-      { v: "čakalna lista", o: "prazna mesta se zapolnijo" },
+      { v: "odpovedi", o: "mesto se takoj sprosti" },
       { v: "paketi", o: "samodejno štetje" }
     ],
     faq: [
@@ -401,7 +401,7 @@ module.exports = [
     ],
     primeri: [
       { t: "Prijava na inštrukcije", o: "Predmet, razred, želen termin — bot poveže z ustreznim učiteljem." },
-      { t: "Skupinski tečaji", o: "Omejeno število mest, čakalna lista, potrditev prijave." },
+      { t: "Skupinski tečaji", o: "Omejeno število mest in potrditev prijave. Bot pove, koliko je še prostih." },
       { t: "Opomnik pred uro", o: "Dan prej starš in dijak dobita opomnik. Manj pozabljenih ur." },
       { t: "Obvestilo vsem naenkrat", o: "„Jutrišnja ura odpade.“ Eno sporočilo, vsi obveščeni." },
       { t: "Evidenca obiskov", o: "Kdo je prišel, kdo ne — podlaga za mesečni obračun." },
