@@ -2056,8 +2056,11 @@ async function loadApp() {
     renderAll();
     loadErrors();
     loadUsage();
+    // Ali WhatsApp žeton vsakega lokala še dela — tega ni v zabeleženih napakah.
+    loadWaStanje();
     // Auto-refresh vsako 1h
     setInterval(loadErrors, 3600000);
+    setInterval(loadWaStanje, 3600000);
   } catch (e) {
     document.getElementById('login-error').style.display = 'block';
   }
@@ -2188,6 +2191,8 @@ function renderTable() {
             <option value="yearly" ${s.billing_period==='yearly'?'selected':''}>Letno −30 %</option>
           </select>
           <span class="usage-cell" data-salon="${s.id}" style="font-size:12px;color:var(--text2);font-weight:700" title="Naročila prek bota ta mesec">📦 —</span>
+          <!-- Napolni fillWaCells(), ko odgovori Meta. Ko je vse v redu, ostane prazna. -->
+          <span class="wa-cell" data-salon="${s.id}" style="font-size:12px"></span>
         </div>
       </div>
       <div class="salon-actions">
@@ -2206,6 +2211,10 @@ function renderTable() {
       </div>
     </div>`;
   }).join('');
+
+  // Povzetek pokvarjenih WhatsApp povezav nad seznam, da ga ni mogoče spregledati.
+  box.insertAdjacentHTML('afterbegin', opozoriloWa());
+  fillWaCells();
 }
 
 // ── ACTIONS ───────────────────────────────────────────────
@@ -2324,6 +2333,68 @@ function fillUsageCells() {
     el.style.color = over ? 'var(--red)' : (cnt > lim * 0.8 && isAi ? 'var(--yellow)' : 'var(--text2)');
     el.title = over ? `Presežena AI meja (${lim}) — ponudi višji paket!` : `Naročila v ${usageData.month}`;
   });
+}
+
+/*
+  ── Stanje WhatsApp povezave po lokalih ──
+
+  Nastalo iz primera Botane: Meta je aplikaciji, ki ji pripada njen žeton,
+  zaprla dostop ("API access blocked"). Ob blokadi neha dostavljati tudi
+  webhooke, zato v tabeli napak ni bilo NIČESAR — bot je osemnajst dni tiho
+  molčal. Takih okvar ni mogoče videti iz zabeleženih napak, zato žeton
+  aktivno vprašamo.
+
+  Poizvedba je ločena od izrisa vrstic: seznam lokalov se pokaže takoj,
+  stanje se dopolni, ko odgovori Meta (klic na lokal, brez pošiljanja sporočil).
+*/
+let waStanje = null;
+
+async function loadWaStanje() {
+  try {
+    const res = await apiFetch('/api/admin/wa-stanje');
+    if (!res.ok) return;
+    const d = await res.json();
+    waStanje = d.stanje || {};
+    /*
+      Prerišemo tabelo, ne le celic: opozorilni blok nad seznamom nastane v
+      renderTable(), ta pa je stekel še preden je Meta odgovorila. Če bi tu
+      klicali samo fillWaCells(), bi se značke pojavile, povzetek pa nikoli.
+    */
+    renderTable();
+  } catch (e) { /* neobvezno — vrstice ostanejo brez tega podatka */ }
+}
+
+function fillWaCells() {
+  if (!waStanje) return;
+  document.querySelectorAll('.wa-cell').forEach(el => {
+    const st = waStanje[el.dataset.salon];
+    if (!st) { el.textContent = ''; return; }        // lokal brez WhatsApp številke
+    if (st.ok) {
+      el.textContent = '';                           // vse v redu -> brez šuma
+      el.title = 'WhatsApp deluje · ' + (st.stevilka || '') + (st.ime ? ' · ' + st.ime : '');
+      return;
+    }
+    el.textContent = '✖ WhatsApp ne dela';
+    el.className = 'sb sb-danger wa-cell';
+    el.title = 'Bot ne more pošiljati sporočil.\n'
+      + (st.koda ? 'Meta koda ' + st.koda + '\n' : '')
+      + (st.podrobno || st.kaj || '')
+      + '\nŽeton: ' + (st.lastenZeton ? 'lasten (lokalov)' : 'globalni WA_TOKEN')
+      + (st.lastenZeton ? '\nPoskus: pobriši lokalov žeton (Uredi) — koda pade na globalni.' : '');
+  });
+}
+
+function opozoriloWa() {
+  if (!waStanje) return '';
+  const pokvarjeni = Object.keys(waStanje).filter(id => !waStanje[id].ok);
+  if (!pokvarjeni.length) return '';
+  const imena = pokvarjeni.map(id => (salonsData.find(s => s.id === id) || {}).name || id);
+  return '<div class="card" id="wa-opozorilo" style="border-color:var(--red);background:rgba(180,68,46,.06);padding:14px 18px;margin-bottom:14px">'
+    + '<div style="font-weight:800;color:var(--red)">✖ WhatsApp ne dela: ' + imena.map(esc).join(', ') + '</div>'
+    + '<div style="font-size:13px;color:var(--text2);margin-top:5px">'
+    + 'Bot pri teh lokalih ne more pošiljati sporočil. Ob blokadi pri Meti se to '
+    + 'ne pokaže med napakami spodaj, ker webhooki ne prihajajo — zato preverjamo žeton neposredno. '
+    + 'Podrobnosti dobiš, če greš z miško na značko v vrstici lokala.</div></div>';
 }
 
 async function changePlan(id, plan) {

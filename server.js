@@ -1588,6 +1588,67 @@ app.get('/api/admin/stripe-stanje', async (req, res) => {
   res.json(out);
 });
 
+/*
+  GET /api/admin/wa-stanje — ali WhatsApp žeton vsakega lokala še dela (samo master).
+
+  Nastalo iz konkretnega primera: Meta je aplikaciji, ki ji pripada Botanin
+  žeton, zaprla dostop do API-ja ("API access blocked"). Ob blokadi neha
+  dostavljati tudi webhooke, zato v sb_errors ni bilo NIČESAR — bot je
+  osemnajst dni tiho molčal in tega ni opazil nihče.
+
+  Takih okvar torej ni mogoče prikazati iz zabeleženih napak; žeton je treba
+  vprašati. Ta endpoint za vsak lokal z WhatsApp številko naredi eno poizvedbo
+  na Meto in vrne, ali ta številka odgovarja. Sporočil ne pošilja.
+
+  Žeton razrešimo enako kot povsod v kodi (lasten, sicer globalni), da rezultat
+  pove, kaj bi se res zgodilo, ko stranka piše.
+*/
+app.get('/api/admin/wa-stanje', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  try {
+    const salons = await db.getAllSalons();
+    const zaPreverbo = salons.filter(s => s.whatsapp_phone_number_id);
+
+    const out = {};
+    await Promise.all(zaPreverbo.map(async s => {
+      const token = s.whatsapp_access_token || process.env.WA_TOKEN;
+      if (!token) {
+        out[s.id] = { ok: false, kaj: 'ni žetona', podrobno: 'Lokal nima lastnega žetona, globalni WA_TOKEN pa ni nastavljen.' };
+        return;
+      }
+      try {
+        const r = await axios.get(`https://graph.facebook.com/v19.0/${s.whatsapp_phone_number_id}`, {
+          params: { fields: 'display_phone_number,verified_name' },
+          headers: { Authorization: 'Bearer ' + token },
+          timeout: 8000
+        });
+        out[s.id] = {
+          ok: true,
+          stevilka: r.data.display_phone_number || '',
+          ime: r.data.verified_name || '',
+          lastenZeton: !!s.whatsapp_access_token
+        };
+      } catch (e) {
+        const err = e.response?.data?.error;
+        out[s.id] = {
+          ok: false,
+          kaj: err ? (err.message || 'napaka') : (e.code === 'ECONNABORTED' ? 'časovna omejitev' : e.message),
+          koda: err ? String(err.code) + (err.error_subcode ? '/' + err.error_subcode : '') : '',
+          lastenZeton: !!s.whatsapp_access_token,
+          podrobno: err
+            ? [err.type, err.message, err.error_user_msg].filter(Boolean).join(' — ')
+            : String(e.message || '')
+        };
+      }
+    }));
+
+    res.json({ preverjeno: new Date().toISOString(), stanje: out });
+  } catch (err) {
+    console.error('[wa-stanje]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // POST /api/billing/portal — Stripe portal za upravljanje naročnine in računov
 app.post('/api/billing/portal', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
