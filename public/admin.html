@@ -2153,6 +2153,14 @@ function renderTable() {
       s.billing_status === 'paid' ? '<span class="sb sb-ok">Plačano</span>' : '',
       // Kartična naročnina se obnavlja sama — predračuna ji ni treba pošiljati.
       s.stripe_subscription_id ? `<span class="sb sb-plan" title="Kartica prek Stripe — samodejno obnavljanje&#10;Customer: ${s.stripe_customer_id || '—'}&#10;Subscription: ${s.stripe_subscription_id}">💳 Stripe</span>` : '',
+      /*
+        Lokal je v javnem imeniku, a brez bot_phone_display. Na /imenik.html se
+        mu zato namesto gumba izpiše "Povezava na WhatsApp v pripravi" — obiskovalec
+        ga vidi, naročiti pa ne more. Namenoma ne uporabimo admin_phone kot rezerve:
+        to je lastnikova zasebna številka za obvestila.
+      */
+      (s.listed_public && !String(s.bot_phone_display || '').trim())
+        ? '<span class="sb sb-danger" title="V javnem imeniku, a brez WhatsApp številke — obiskovalec ne more naročiti. Vpiši jo v nastavitvah lokala (Številka bota).">⚠ Javen brez številke</span>' : '',
       s.renewal_requested_plan ? `<span class="sb sb-req">🔔 Želi: ${planLabelById(s.renewal_requested_plan)}</span>` : ''
     ].filter(Boolean).join('');
     let validLine = '';

@@ -1031,6 +1031,12 @@ app.get('/salons', async (req, res) => {
       renewal_requested_plan: s.renewal_requested_plan || null,
       renewal_requested_at: s.renewal_requested_at || null,
       admin_phone: s.admin_phone,
+      // Za značko 💳 Stripe: brez teh dveh je admin ni mogel prikazati.
+      stripe_customer_id: s.stripe_customer_id || null,
+      stripe_subscription_id: s.stripe_subscription_id || null,
+      // Za značko "javen brez številke": lokal v imeniku brez bot_phone_display
+      // obiskovalec vidi, naročiti pa ne more.
+      listed_public: s.listed_public === true,
       created_at: s.created_at
     })));
   } catch (err) {
