@@ -50,24 +50,80 @@ function isMasterAdminPhone(phone) {
   return masterAdminPhones().has(cleanPhone(phone));
 }
 
-// ─── Preprost rate limiter za javne endpointe (per IP) ────────
+/*
+  ─── Omejevanje zahtev ────────────────────────────────────────────────────────
+
+  Dve stvari, ki sta bili prej narobe in bi omejevanje prijav naredili
+  brezpredmetno:
+
+  1. IP se je bral kot PRVI vnos v x-forwarded-for. Tega pošlje odjemalec,
+     posrednik ga le dopolni — napadalec je torej lahko ob vsaki zahtevi
+     napisal drug IP in se omejitvi izognil. Zdaj vzamemo ZADNJI vnos, ki ga
+     doda najbližji posrednik in ga odjemalec ne more ponarediti.
+
+  2. Ob 10.000 vnosih se je celotna mapa izpraznila, s čimer je napadalec z
+     zahtevami na naključne poti pobrisal števce vsem. Zdaj počistimo samo
+     iztečene vnose.
+
+  Pri prijavah omejujemo predvsem po IDENTITETI (e-pošta, telefon), ker je ta
+  neponaredljiva; IP je le groba dodatna zavora.
+*/
 const rateBuckets = new Map();
-function rateLimit(maxReq, windowMs) {
+
+function odjemalecIp(req) {
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean);
+  return xff.length ? xff[xff.length - 1] : (req.ip || 'unknown');
+}
+
+function pocistiIztecene(now) {
+  for (const [k, b] of rateBuckets) if (now - b.start > b.window) rateBuckets.delete(k);
+}
+
+/*
+  maxReq zahtev v windowMs. `kljucIz` neobvezno vrne dodaten del ključa
+  (npr. e-pošto); če vrne null, se ta omejitev za to zahtevo preskoči.
+*/
+function rateLimit(maxReq, windowMs, kljucIz) {
   return (req, res, next) => {
-    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.ip || 'unknown';
-    const key = req.path + '|' + ip;
+    const dodatek = kljucIz ? kljucIz(req) : odjemalecIp(req);
+    if (dodatek == null) return next();
+    const key = req.path + '|' + dodatek;
     const now = Date.now();
+
     let bucket = rateBuckets.get(key);
     if (!bucket || now - bucket.start > windowMs) {
-      bucket = { start: now, count: 0 };
+      bucket = { start: now, count: 0, window: windowMs };
       rateBuckets.set(key, bucket);
     }
     bucket.count++;
-    if (rateBuckets.size > 10000) rateBuckets.clear(); // varovalka proti puščanju pomnilnika
-    if (bucket.count > maxReq) return res.status(429).json({ error: 'Preveč zahtev. Poskusite čez nekaj minut.' });
+
+    if (rateBuckets.size > 10000) pocistiIztecene(now);
+    if (bucket.count > maxReq) {
+      const cezSekund = Math.ceil((bucket.start + windowMs - now) / 1000);
+      res.set('Retry-After', String(Math.max(1, cezSekund)));
+      return res.status(429).json({ error: 'Preveč poskusov. Poskusite čez nekaj minut.' });
+    }
     next();
   };
 }
+
+// Prijave: omejitev po identiteti IN po IP. Prva ustavi napad na en račun z
+// več naslovov, druga pa preizkušanje mnogih računov z enega naslova.
+const poEposti = polje => req => {
+  const v = String(req.body?.[polje] || '').trim().toLowerCase();
+  return v ? 'e:' + v : null;
+};
+const poTelefonu = polje => req => {
+  const v = String(req.body?.[polje] || '').replace(/\D/g, '');
+  return v ? 't:' + v : null;
+};
+const poIp = () => req => 'ip:' + odjemalecIp(req);
+
+// 10 poskusov na 15 minut na identiteto, 30 na 15 minut na IP.
+const omejiPrijavo = polje => [
+  rateLimit(10, 15 * 60 * 1000, poEposti(polje)),
+  rateLimit(30, 15 * 60 * 1000, poIp())
+];
 
 function defaultFormFields(salon) {
   const type = salon?.business_type || 'custom';
@@ -169,11 +225,50 @@ async function resolveBookSalon(req) {
   return salon;
 }
 
+/*
+  ─── Preklic sej master adminov ───────────────────────────────────────────────
+
+  isMasterRequest() je sinhron in ga kliče ~40 mest, zato ob vsaki zahtevi ne
+  moremo brati baze. Namesto tega imamo majhen predpomnilnik
+  (e-pošta -> sessions_valid_from) za dve vrstici v sb_master_admins:
+  osvežimo ga ob zagonu, vsakih 60 s in takoj ob odjavi.
+
+  S tem odjava velja tudi po ponovnem zagonu strežnika — pomnilniški seznam
+  preklicanih žetonov bi se ob deployu izgubil in bi odjava tiho nehala veljati.
+*/
+const masterValidFrom = new Map();
+
+async function osveziMasterValidFrom() {
+  try {
+    const seznam = await db.getMasterAdmins();
+    masterValidFrom.clear();
+    for (const a of seznam) {
+      if (a.email) masterValidFrom.set(String(a.email).toLowerCase(), a.sessions_valid_from || null);
+    }
+  } catch (e) {
+    // Ob napaki obdržimo staro vsebino: raje malo zastarelo kot nič.
+    console.error('[auth] osvežitev master sej:', e.message);
+  }
+}
+
+// Časovno varna primerjava, da dolžina ujemanja ne uhaja skozi čas odziva.
+function enakaSkrivnost(a, b) {
+  const x = Buffer.from(String(a || ''));
+  const y = Buffer.from(String(b || ''));
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+}
+
 function isMasterRequest(req) {
+  const configuredApiKey = process.env.ADMIN_API_KEY;
+  if (configuredApiKey && enakaSkrivnost(req.headers['x-api-key'], configuredApiKey)) return true;
+
   const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
   const session = ownerAuth.getSession(bearer);
-  const configuredApiKey = process.env.ADMIN_API_KEY;
-  return session?.role === 'master' || (!!configuredApiKey && req.headers['x-api-key'] === configuredApiKey);
+  if (session?.role !== 'master') return false;
+
+  const email = String(session.email || '').toLowerCase();
+  if (ownerAuth.jeSejaPreklicana(session, masterValidFrom.get(email))) return false;
+  return true;
 }
 
 function adminAuth(req, res, next) {
@@ -191,7 +286,8 @@ async function salonAuth(req, res) {
   const session = ownerAuth.getSession(bearer);
   if (session && session.role !== 'driver') {
     const salon = await db.getSalonById(session.salonId);
-    if (salon) return salon;
+    // Lokal je tu itak že prebran, zato preklic seje ne stane dodatne poizvedbe.
+    if (salon && !ownerAuth.jeSejaPreklicana(session, salon.sessions_valid_from)) return salon;
   }
   const token = req.headers['x-salon-token'] || req.query.token;
   if (token) {
@@ -1596,7 +1692,8 @@ app.delete('/api/settings/drivers/:id', async (req, res) => {
 });
 
 // Voznik: prijava (lokal + PIN)
-app.post('/api/driver/login', async (req, res) => {
+app.post('/api/driver/login', rateLimit(10, 15 * 60 * 1000, req => 's:' + String(req.body?.salon || '').trim().toLowerCase()),
+  rateLimit(30, 15 * 60 * 1000, poIp()), async (req, res) => {
   try {
     const slug = String(req.body.salon || '').trim();
     const pin = String(req.body.pin || '').trim();
@@ -1808,7 +1905,7 @@ app.get('/api/logs', async (req, res) => {
 });
 
 // ─── Owner WhatsApp OTP auth ─────────────────────────────────
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', ...omejiPrijavo('email'), async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
   if (!email || !password) return res.status(400).json({ error: 'Email in geslo sta obvezna' });
@@ -1833,7 +1930,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/master-login', async (req, res) => {
+app.post('/api/auth/master-login', ...omejiPrijavo('email'), async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
   if (!email || !password) return res.status(400).json({ error: 'Email in geslo sta obvezna' });
@@ -1851,7 +1948,8 @@ app.post('/api/auth/master-login', async (req, res) => {
   }
 });
 
-app.post('/api/auth/master-forgot', async (req, res) => {
+app.post('/api/auth/master-forgot', rateLimit(5, 60 * 60 * 1000, poEposti('email')),
+  rateLimit(15, 60 * 60 * 1000, poIp()), async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   if (!email) return res.status(400).json({ error: 'Email je obvezen' });
   try {
@@ -1873,7 +1971,7 @@ app.post('/api/auth/master-forgot', async (req, res) => {
   }
 });
 
-app.post('/api/auth/master-reset', async (req, res) => {
+app.post('/api/auth/master-reset', rateLimit(10, 60 * 60 * 1000, poIp()), async (req, res) => {
   const token = String(req.body.token || '').trim();
   const password = String(req.body.password || '');
   if (!token || password.length < 8) return res.status(400).json({ error: 'Token ali geslo ni veljavno' });
@@ -1920,7 +2018,8 @@ app.post('/api/auth/master-change-password', async (req, res) => {
   }
 });
 
-app.post('/api/auth/start', async (req, res) => {
+app.post('/api/auth/start', rateLimit(5, 15 * 60 * 1000, poTelefonu('phone')),
+  rateLimit(20, 15 * 60 * 1000, poIp()), async (req, res) => {
   const phone = cleanPhone(req.body.phone);
   if (phone.length < 8) return res.status(400).json({ error: 'Neveljavna telefonska stevilka' });
   try {
@@ -1945,7 +2044,8 @@ app.post('/api/auth/start', async (req, res) => {
   }
 });
 
-app.post('/api/auth/verify', async (req, res) => {
+app.post('/api/auth/verify', rateLimit(10, 15 * 60 * 1000, poTelefonu('phone')),
+  rateLimit(30, 15 * 60 * 1000, poIp()), async (req, res) => {
   const phone = cleanPhone(req.body.phone);
   const token = ownerAuth.verifyOtp(phone, req.body.code);
   if (!token) return res.status(401).json({ error: 'Napacna ali potekla koda' });
@@ -1994,8 +2094,36 @@ app.post('/api/auth/switch', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.post('/api/auth/logout', (req, res) => {
-  ownerAuth.clearSession(req.headers.authorization || req.headers['x-owner-token']);
+/*
+  Odjava. Prej je pobrisala le pomnilniško kopijo, žeton pa je bil podpisan in
+  brezstanjski — torej je ukraden žeton po odjavi delal še do 30 dni.
+
+  Zdaj zapišemo sessions_valid_from na lokal oziroma master admina; vsi žetoni,
+  izdani pred tem trenutkom, so s tem neveljavni. Posledica, ki jo je treba
+  poznati: odjava velja za VSE naprave tega računa, ne le za trenutno. Za
+  administracijsko orodje je to prava privzeta izbira — če je žeton ušel,
+  hočemo, da neha delati povsod.
+*/
+app.post('/api/auth/logout', async (req, res) => {
+  const bearer = req.headers.authorization || req.headers['x-owner-token'] || '';
+  const session = ownerAuth.getSession(bearer);
+  ownerAuth.clearSession(bearer);
+
+  const zdaj = new Date().toISOString();
+  try {
+    if (session?.role === 'master' && session.email) {
+      const admin = await db.getMasterAdminByEmail(session.email);
+      if (admin) {
+        await db.updateMasterAdmin(admin.id, { sessions_valid_from: zdaj });
+        masterValidFrom.set(String(session.email).toLowerCase(), zdaj);   // takoj, brez čakanja na osvežitev
+      }
+    } else if (session?.salonId) {
+      await db.updateSalonSettings(session.salonId, { sessions_valid_from: zdaj });
+    }
+  } catch (e) {
+    // Odjava na odjemalcu se zgodi tako ali tako; napake ne skrivamo, a je ne vračamo kot 500.
+    console.error('[auth] preklic sej ob odjavi:', e.message);
+  }
   res.json({ success: true });
 });
 
@@ -2996,4 +3124,12 @@ app.listen(PORT, () => {
     Plačila ne smejo biti odvisna od tega, ali se tisto vklopi.
   */
   stripeSync.zacniUskladitev();
+
+  /*
+    Predpomnilnik preklicanih master sej. Napolnimo ga takoj, da odjava velja
+    tudi po ponovnem zagonu, in osvežujemo vsako minuto, da preklic z drugega
+    procesa ali iz baze pride v veljavo brez deploya.
+  */
+  osveziMasterValidFrom();
+  setInterval(osveziMasterValidFrom, 60 * 1000).unref();
 });

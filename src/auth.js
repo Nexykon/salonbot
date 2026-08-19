@@ -50,16 +50,40 @@ const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_KEY ||
 const SESSION_TTL_OWNER = 30 * 24 * 60 * 60 * 1000;   // 30 dni (lastniki salonov)
 const SESSION_TTL_MASTER = 30 * 24 * 60 * 60 * 1000;  // 30 dni (master admin)
 
+/*
+  Seja nosi tudi `iat` — čas izdaje. Brez njega odjave ni mogoče uveljaviti:
+  žeton je podpisan in brezstanjski, zato strežnik po podpisu ne more ločiti
+  "izdan pred odjavo" od "izdan po njej". Ob odjavi zapišemo na lokal oziroma
+  admina `sessions_valid_from`; vsak žeton z manjšim `iat` je s tem preklican.
+  Glej jeSejaPreklicana() spodaj in klicna mesta v server.js.
+*/
 function createSession(salonId, role = 'owner', identity = {}) {
   const ttl = role === 'master' ? SESSION_TTL_MASTER : SESSION_TTL_OWNER;
-  const expiresAt = Date.now() + ttl;
-  const payload = JSON.stringify({ salonId, role, ...identity, expiresAt });
+  const now = Date.now();
+  const expiresAt = now + ttl;
+  const payload = JSON.stringify({ salonId, role, ...identity, iat: now, expiresAt });
   const payloadB64 = Buffer.from(payload).toString('base64url');
   const sig = crypto.createHmac('sha256', SESSION_SECRET).update(payloadB64).digest('base64url');
   const token = `${payloadB64}.${sig}`;
   // Ohrani tudi in-memory za backward compatibility
-  sessions.set(token, { salonId, role, ...identity, expiresAt });
+  sessions.set(token, { salonId, role, ...identity, iat: now, expiresAt });
   return token;
+}
+
+/*
+  Ali je seja preklicana. `validFrom` je vrednost stolpca sessions_valid_from
+  z lokala ali master admina.
+
+  Starejši žetoni (izdani pred to spremembo) nimajo `iat`. Tem NE zaupamo:
+  če je bila odjava kdaj izvedena, jih štejemo za preklicane — sicer bi
+  odjava zanje tiho ne delovala.
+*/
+function jeSejaPreklicana(session, validFrom) {
+  if (!validFrom) return false;
+  const meja = Date.parse(validFrom);
+  if (Number.isNaN(meja)) return false;
+  if (typeof session?.iat !== 'number') return true;   // žeton brez iat = star
+  return session.iat < meja;
 }
 
 function verifyOtp(phone, code) {
@@ -116,5 +140,5 @@ function clearSession(token) {
 
 module.exports = {
   cleanPhone, createOtp, hashPassword, verifyPassword, hashToken,
-  createSession, verifyOtp, getSession, clearSession
+  createSession, verifyOtp, getSession, clearSession, jeSejaPreklicana
 };

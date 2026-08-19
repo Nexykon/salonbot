@@ -663,6 +663,12 @@ async function getMasterAdminByEmail(email) {
   return r.data[0] || null;
 }
 
+// Vsi master admini — samo polja, ki jih rabi predpomnilnik preklicanih sej.
+async function getMasterAdmins() {
+  const r = await axios.get(`${BASE}/sb_master_admins?select=id,email,sessions_valid_from`, { headers: HEADERS });
+  return r.data || [];
+}
+
 async function getMasterAdminByResetTokenHash(tokenHash) {
   const clean = String(tokenHash || '').trim();
   if (!clean) return null;
@@ -836,7 +842,7 @@ module.exports = {
   logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonsByOwnerEmail, getSalonByToken,
   updateSalonSettings,
-  getMasterAdminByEmail, getMasterAdminByResetTokenHash, updateMasterAdmin,
+  getMasterAdminByEmail, getMasterAdmins, getMasterAdminByResetTokenHash, updateMasterAdmin,
   saveAiSession, loadAiSession, clearAiSession,
   logAiMiss, getAiMissesSince
 };
