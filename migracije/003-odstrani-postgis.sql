@@ -1,3 +1,23 @@
+-- ⚠⚠ NE POGANJAJ TE MIGRACIJE ⚠⚠
+--
+-- Ugotovljeno po prvem poskusu: PostGIS uporablja DRUGA aplikacija v isti bazi.
+--   column route_line of table routes depends on type geography
+--   column point of table activity_points depends on function geography(geometry)
+--
+-- drop je (namenoma brez cascade) odpovedal in ničesar ni izbrisal. Datoteko
+-- ohranjamo kot zapis poskusa in kot opozorilo: v tej bazi ne živi samo
+-- FlowTiq, zato ne odstranjujemo razširitev in ne delamo posegov na
+-- "vse v shemi public". Glej migracijo 004.
+--
+-- spatial_ref_sys torej ostane brez RLS. To ni tveganje: vsebuje javno znane
+-- koordinatne sisteme, ne osebnih podatkov. Supabase Advisor ga bo navajal
+-- naprej — to je znano in sprejeto.
+--
+-- Spodnja vsebina je ohranjena samo za zapis; presoja "PostGIS ni v uporabi"
+-- je bila napačna, ker sem preveril le FlowTiqovo kodo, ne pa cele baze.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+
 -- 003 · Odstrani nerabljeno razširitev PostGIS
 -- Avgust 2026 · povod: Supabase Advisor vztraja pri spatial_ref_sys
 --

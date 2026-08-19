@@ -16,9 +16,25 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 
 | Datoteka | Kaj naredi |
 |---|---|
-| `001-rls-vklop.sql` | Vklopi Row Level Security na naših tabelah v `public` |
+| `001-rls-vklop.sql` | ⚠ **preširoka** — vklopila je RLS na vseh tabelah v `public`. Popravi jo 004; te ne poganjaj več |
 | `002-preklic-sej.sql` | Doda `sessions_valid_from` za preklic sej ob odjavi |
-| `003-odstrani-postgis.sql` | Odstrani nerabljeni PostGIS in z njim `spatial_ref_sys` |
+| `003-odstrani-postgis.sql` | ⚠ **ne poganjaj** — PostGIS uporablja druga aplikacija v isti bazi |
+| `004-rls-samo-nase-tabele.sql` | Popravek 001: RLS samo na FlowTiqovih tabelah, tujim vrne prejšnje stanje |
+
+## V tej bazi ni samo FlowTiq
+
+Projekt gosti še eno aplikacijo — poti, aktivnosti in trenerski del:
+`activities`, `activity_points`, `routes`, `saved_routes`, `map_packs`,
+`user_map_packs`, `coach_profiles`, `coach_plans`, `coach_messages`,
+`profiles`, `user_subscriptions`, `subscription_products`, `audit_log`.
+
+**Vsaka migracija mora zato našteti tabele izrecno**, ne pa delovati na
+»vse v shemi public«. Migracija 001 je to pravilo kršila in je RLS vklopila
+tudi tuji aplikaciji; če ta bere bazo z anon ključem, jo je to ustavilo.
+Popravlja jo 004.
+
+Iz istega razloga PostGIS-a ni mogoče odstraniti: `routes.route_line` in
+`activity_points.point` sta tipa `geography`.
 
 ## Tabele, ki niso naše
 
