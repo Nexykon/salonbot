@@ -2380,7 +2380,8 @@ function fillWaCells() {
       + (st.koda ? 'Meta koda ' + st.koda + '\n' : '')
       + (st.podrobno || st.kaj || '')
       + '\nŽeton: ' + (st.lastenZeton ? 'lasten (lokalov)' : 'globalni WA_TOKEN')
-      + (st.lastenZeton ? '\nPoskus: pobriši lokalov žeton (Uredi) — koda pade na globalni.' : '');
+      + (st.lastenZeton ? '\nGlobalni žeton pomaga le, če je ta številka v isti Meta aplikaciji kot on;'
+                        + '\nsicer je odgovor koda 100/33 (številke ne vidi). Preverjeno pri Botani.' : '');
   });
 }
 
