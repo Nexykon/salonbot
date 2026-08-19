@@ -26,15 +26,35 @@ const mail = require('./email');
 const plans = require('./plans');
 
 /*
-  Ključ obrežemo. Vrednost, prilepljena v Railway ali .env, pogosto dobi
-  odvečen presledek ali prelom vrstice; tak znak v glavi Authorization Node
-  zavrne že pri sestavljanju zahteve, Stripe SDK pa to prijavi kot
+  Ključ očistimo: obdržimo samo znake, ki v Stripovem ključu res nastopajo
+  (`sk_live_` / `sk_test_` + črke, števke, podčrtaji).
+
+  Zakaj tako in ne le trim(): vrednost, kopirana iz brskalnika ali prilepljena
+  v Railwayevo polje, pobere nevidno znamenje — neprelomni presledek, zero-width
+  space, prelom vrstice sredi niza. Tak znak Node zavrne že pri sestavljanju
+  glave Authorization (ERR_INVALID_CHAR), Stripe SDK pa to prijavi kot
   StripeConnectionError — torej kot da Stripe ni dosegljiv, čeprav je težava
-  v vrednosti. Obrezovanje je varno: API ključi nikoli nimajo pomenskih
-  presledkov na robovih.
+  v vrednosti. Presledek na robu bi trim() odpravil, znaka sredi niza pa ne.
+
+  Čiščenje je varno: nobeden od odstranjenih znakov ne more biti del ključa.
+  Če je ključ napačen, bo Stripe to povedal jasno (AuthenticationError) —
+  kar je boljša napaka od "Stripe ni dosegljiv".
+
+  Odstranjene znake vedno tudi javimo, da tiho ne krijemo napake pri vnosu.
 */
+const KLJUC_ZNAKI = /[^A-Za-z0-9_]/g;
+
+// Slovenščina ima dvojino: 1 znak, 2 znaka, 3–4 znake, 5+ znakov.
+function neveljavniZnaki(n) {
+  const zadnji = n % 100;
+  if (zadnji === 1) return 'neveljaven znak';
+  if (zadnji === 2) return 'neveljavna znaka';
+  if (zadnji === 3 || zadnji === 4) return 'neveljavne znake';
+  return 'neveljavnih znakov';
+}
+
 function stripeKljuc() {
-  return String(process.env.STRIPE_SECRET_KEY || '').trim();
+  return String(process.env.STRIPE_SECRET_KEY || '').replace(KLJUC_ZNAKI, '');
 }
 
 function stripeClient() {
@@ -46,24 +66,31 @@ function stripeClient() {
 /*
   Preverba oblike ključa ob zagonu. Ne izpiše ključa, samo kaj je z njim
   narobe — da se taka napaka vidi takoj in ne šele, ko stranka klikne plačilo.
+  Odstranjene znake navede kot kode (U+00A0 ipd.), da jih je mogoče prepoznati.
 */
 function preveriKljuc() {
   const surov = String(process.env.STRIPE_SECRET_KEY || '');
-  const k = surov.trim();
-  if (!k) return { ok: false, opis: 'ni nastavljen' };
+  const k = stripeKljuc();
+  if (!k) return { ok: false, opis: 'ni nastavljen', dolzina: 0 };
+
+  const odstranjeni = (surov.match(KLJUC_ZNAKI) || []);
+  const kode = [...new Set(odstranjeni.map(c =>
+    'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')))];
 
   const tezave = [];
-  if (surov !== k) tezave.push('ima odvečne presledke ali prelom vrstice (obrezali smo ga)');
-  if (/^["']|["']$/.test(k)) tezave.push('je v narekovajih');
+  if (odstranjeni.length) {
+    tezave.push('vseboval je ' + odstranjeni.length + ' ' + neveljavniZnaki(odstranjeni.length)
+      + ' (' + kode.join(', ') + ') — odstranjeno');
+  }
   if (!/^sk_(test|live)_/.test(k)) tezave.push('se ne začne s sk_test_ ali sk_live_');
-  if (/[^A-Za-z0-9_]/.test(k)) tezave.push('vsebuje znake, ki v ključu ne nastopajo');
   if (k.length < 40) tezave.push('je prekratek (' + k.length + ' znakov)');
 
   return {
     ok: tezave.length === 0,
     zivi: k.startsWith('sk_live_'),
     opis: tezave.length ? tezave.join('; ') : 'videti je v redu',
-    dolzina: k.length
+    dolzina: k.length,
+    ocisceno: odstranjeni.length
   };
 }
 
