@@ -19,6 +19,16 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 | `001-rls-vklop.sql` | Vklopi Row Level Security na vseh tabelah v `public` |
 | `002-preklic-sej.sql` | Doda `sessions_valid_from` za preklic sej ob odjavi |
 
+## Tabele, ki niso naše
+
+V shemi `public` ležijo tudi tabele razširitev — pri nas PostGIS-ov
+`spatial_ref_sys`. Teh ne lastimo, zato `alter table` nanje vrne
+`42501: must be owner of table`. Migracija 001 jih izloči.
+
+Supabase Advisor jih bo morda še naprej navajal med opozorili. Pri
+`spatial_ref_sys` to ni težava: vsebuje javno znane koordinatne sisteme,
+ne osebnih podatkov.
+
 ## Zakaj je RLS varen brez politik
 
 Aplikacija do baze dostopa izključno s `service_role` ključem s strežnika
