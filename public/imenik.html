@@ -204,19 +204,18 @@
   var gumbi = Array.prototype.slice.call(document.querySelectorAll('.filter'));
   if (!seznam) return;
 
-  // Lokali, ki jih vodimo ročno, dokler niso v bazi. Iz API-ja se po imenu ne podvojijo.
-  var ROCNI = [{
-    name: 'Botana',
-    logo_url: 'https://wtlucrpfxbhfkpgimjfh.supabase.co/storage/v1/object/public/logos/fe184def-3f3d-4721-8889-6f7ce89b3766-1785581101435.png',
-    business_type: 'restaurant',
-    address: '',
-    phone: '',
-    allow_delivery: false,
-    allow_pickup: false,
-    hours: ''
-  }];
+  /*
+    Vir podatkov je izključno /api/public/restaurants.
 
-  var VSI = ROCNI.slice();
+    Prej je bila tu ročno vpisana Botana s prazno številko — iz časa, ko je v
+    bazi še ni bilo. Rezultat iz API-ja se je po imenu izločil, zato je zastareli
+    ročni vnos povozil prave podatke in na kartici je pisalo "Povezava na
+    WhatsApp v pripravi", čeprav je bila številka v bazi vpisana.
+
+    Zato ročnih vnosov ni več: kar ni v bazi, se v imeniku ne pojavi. Lokal se
+    objavi tako, da v svojih nastavitvah vklopi javno objavo.
+  */
+  var VSI = [];
   var filter = 'vse';
   var iskanje = '';
 
@@ -320,12 +319,10 @@
     .then(function (r) { return r.ok ? r.json() : []; })
     .then(function (list) {
       if (!Array.isArray(list)) return;
-      var imena = ROCNI.map(function (l) { return l.name.trim().toLowerCase(); });
-      var iz_baze = list.filter(function (l) { return imena.indexOf(String(l.name || '').trim().toLowerCase()) === -1; });
-      VSI = ROCNI.concat(iz_baze);
+      VSI = list;
       izpisi();
     })
-    .catch(function () { /* tiho — ostanejo ročni vnosi */ });
+    .catch(function () { /* tiho — ostane samo vabilo "prijavite svoj lokal" */ });
 })();
 </script>
 </body>

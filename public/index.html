@@ -213,6 +213,12 @@
       </div>
     </div>
   </div>
+
+  <!-- Ploščica s podatki lokala. Vsebino vstavi JS; brez JS ostane skrita
+       in kartice v traku so navadne povezave na imenik. -->
+  <div class="lokal-ozadje" id="lokal-ozadje" role="dialog" aria-modal="true" aria-labelledby="lokal-ime">
+    <div class="lokal-plosca" id="lokal-plosca"></div>
+  </div>
 </section>
 
 <!-- ── 01 Potek ── -->
@@ -380,6 +386,43 @@
     .fn-row { grid-template-columns:40px 1fr; }
     .fn-row > div:last-child { grid-column:2; }
   }
+
+  /* ── Kartica lokala v traku in ploščica s podatki ── */
+  .lokal-gumb {
+    font-family:inherit; text-align:left; cursor:pointer;
+    background:var(--surface,#fff); border:2px solid var(--ink); border-radius:18px;
+    padding:16px 20px; display:flex; align-items:center; gap:16px; min-width:260px;
+    color:var(--ink); transition:box-shadow .18s ease, transform .18s ease;
+  }
+  .lokal-gumb:hover { box-shadow:4px 4px 0 var(--ink); transform:translate(-2px,-2px); }
+  .lokal-gumb .lg-namig { font-size:12.5px; color:var(--green-dark); font-weight:600; margin-top:3px; }
+
+  .lokal-ozadje {
+    position:fixed; inset:0; z-index:80; display:none;
+    background:rgba(16,30,43,.55); padding:20px;
+    align-items:center; justify-content:center;
+  }
+  .lokal-ozadje.odprto { display:flex; }
+  .lokal-plosca {
+    background:var(--cream,#FBF8F1); border:2px solid var(--ink); border-radius:18px;
+    box-shadow:7px 7px 0 var(--ink); width:100%; max-width:440px;
+    max-height:calc(100vh - 40px); overflow-y:auto;
+  }
+  .lokal-plosca-glava { display:flex; align-items:flex-start; gap:14px; padding:22px 22px 0; }
+  .lokal-plosca-zapri {
+    margin-left:auto; flex:0 0 auto; width:34px; height:34px; cursor:pointer;
+    background:none; border:2px solid var(--ink); border-radius:10px;
+    font-size:18px; line-height:1; font-family:inherit; color:var(--ink);
+  }
+  .lokal-plosca-zapri:hover { background:var(--tan,#EDE4D6); }
+  .lokal-plosca-wa {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin:18px 22px 22px; padding:15px;
+    background:var(--green); color:#fff; border:2px solid var(--ink);
+    border-radius:18px; font-weight:700; font-size:16px;
+  }
+  .lokal-plosca-wa:hover { background:var(--green-dark); color:#fff; }
+  .lokal-plosca-tel { font-family:var(--mono); font-size:15px; color:var(--ink); }
 </style>
 
 <!-- ── 04 Kaj vse zna ── -->
@@ -771,31 +814,123 @@
   box.innerHTML = html;
 })();
 
-/* Lokali, ki že uporabljajo FlowTiq — bere isti javni seznam kot /restavracije. */
+/*
+  Lokali, ki že uporabljajo FlowTiq — bere isti javni seznam kot /imenik.html.
+
+  Klik na kartico odpre ploščico s podatki in gumbom, ki obiskovalca vrže
+  naravnost v WhatsApp pogovor z lokalom.
+
+  Statična kartica v HTML-u je le rezerva za obiskovalce brez JS. Ko podatki
+  pridejo, trak v celoti prerišemo iz njih — prej smo API filtrirali po imenih
+  iz HTML-a in je zastareli statični vnos povozil prave podatke.
+*/
 (function () {
   var strip = document.getElementById('lokali-strip');
-  if (!strip) return;
+  var ozadje = document.getElementById('lokal-ozadje');
+  var plosca = document.getElementById('lokal-plosca');
+  if (!strip || !ozadje || !plosca) return;
+
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var ini = function (n) { return (String(n || '').replace(/[^\p{L}\p{N}]/gu, '').charAt(0) || '?').toUpperCase(); };
-  // Lokali, ki so že v HTML-ju (npr. Botana), se ne podvajajo.
-  var ze = Array.prototype.slice.call(strip.querySelectorAll('[data-lokal]'))
-    .map(function (n) { return (n.getAttribute('data-lokal') || '').trim().toLowerCase(); });
+
+  var IMENA = {
+    restaurant: 'Restavracija', pizzeria: 'Picerija', burger: 'Burgerija', kebab: 'Kebab',
+    barber: 'Brivnica', cosmetics: 'Kozmetika', hair: 'Frizerski salon', beauty: 'Lepotni salon',
+    massage: 'Masaže', tattoo: 'Tattoo studio', wellness: 'Wellness', dog_grooming: 'Pasji salon',
+    dentist: 'Zobozdravstvo', fitness: 'Fitnes', veterinary: 'Veterina', optical: 'Optika',
+    physiotherapy: 'Fizioterapija', photography: 'Fotografija', custom: 'Storitve'
+  };
+
+  // Enako pravilo kot na /imenik.html: 0 na začetku zamenja 386.
+  function waPovezava(tel) {
+    var d = String(tel || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.charAt(0) === '0') d = '386' + d.slice(1);
+    else if (d.slice(0, 3) !== '386') d = '386' + d;
+    if (d.length < 10) return '';
+    return 'https://wa.me/' + d + '?text=' + encodeURIComponent('Dober dan, rad bi naročil prek WhatsAppa.');
+  }
+
+  var LOKALI = [];
+  var prejsnjiFokus = null;
+
+  function znacka(l, velikost) {
+    return l.logo_url
+      ? '<img src="' + esc(l.logo_url) + '" alt="' + esc(l.name) + '" style="width:' + velikost + 'px;height:42px;object-fit:contain;flex:0 0 auto">'
+      : '<span style="width:44px;height:44px;flex:0 0 auto;border:2px solid #101E2B;border-radius:18px;background:#F4EDE4;display:grid;place-items:center;font-weight:800">' + ini(l.name) + '</span>';
+  }
+
+  function odpri(i) {
+    var l = LOKALI[i];
+    if (!l) return;
+    var wa = waPovezava(l.phone);
+    var pod = [IMENA[l.business_type] || '', l.address || l.delivery_area || l.pickup_address || '']
+      .filter(Boolean).join(' · ');
+    var znacke = [];
+    if (l.allow_delivery) znacke.push('Dostava');
+    if (l.allow_pickup) znacke.push('Osebni prevzem');
+    if (l.hours) znacke.push(l.hours);
+
+    plosca.innerHTML =
+      '<div class="lokal-plosca-glava">' + znacka(l, 124)
+      + '<div><h3 id="lokal-ime" style="font-size:21px;line-height:1.15">' + esc(l.name) + '</h3>'
+      + (pod ? '<div style="font-size:13.5px;color:var(--muted-2);margin-top:3px">' + esc(pod) + '</div>' : '')
+      + '</div>'
+      + '<button type="button" class="lokal-plosca-zapri" aria-label="Zapri">✕</button></div>'
+      + (znacke.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:7px;padding:14px 22px 0">'
+            + znacke.map(function (z) { return '<div class="tag" style="padding:5px 12px;font-size:13px">' + esc(z) + '</div>'; }).join('')
+            + '</div>'
+          : '')
+      + (l.phone
+          ? '<div style="padding:14px 22px 0"><div class="mono-label">WhatsApp</div>'
+            + '<div class="lokal-plosca-tel" style="margin-top:4px">' + esc(l.phone) + '</div></div>'
+          : '')
+      + (wa
+          ? '<a class="lokal-plosca-wa" href="' + wa + '" target="_blank" rel="noopener">'
+            + '<svg width="22" height="22" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.46 1.32 4.97L2 22l5.25-1.38a9.9 9.9 0 004.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2Zm4.52 12.22c-.25-.12-1.47-.72-1.69-.8-.23-.09-.39-.13-.56.12-.16.25-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.09-.17.04-.31-.02-.43-.06-.13-.56-1.35-.77-1.84-.2-.49-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.23.25-.87.85-.87 2.07 0 1.22.89 2.4 1.01 2.57.13.16 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.6.19 1.14.16 1.57.1.48-.07 1.48-.6 1.69-1.19.21-.58.21-1.08.15-1.19-.06-.11-.23-.18-.48-.3Z"/></svg>'
+            + 'Naročite na WhatsAppu →</a>'
+          : '<div style="margin:18px 22px 22px;padding:14px;border:2px dashed var(--line);border-radius:18px;'
+            + 'font-size:14.5px;color:var(--muted-2);text-align:center">Povezava na WhatsApp v pripravi</div>');
+
+    prejsnjiFokus = document.activeElement;
+    ozadje.classList.add('odprto');
+    document.body.style.overflow = 'hidden';
+    var zapriGumb = plosca.querySelector('.lokal-plosca-zapri');
+    if (zapriGumb) { zapriGumb.addEventListener('click', zapri); zapriGumb.focus(); }
+  }
+
+  function zapri() {
+    ozadje.classList.remove('odprto');
+    document.body.style.overflow = '';
+    if (prejsnjiFokus && prejsnjiFokus.focus) prejsnjiFokus.focus();
+  }
+
+  ozadje.addEventListener('click', function (e) { if (e.target === ozadje) zapri(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && ozadje.classList.contains('odprto')) zapri();
+  });
 
   fetch('/api/public/restaurants').then(function (r) { return r.ok ? r.json() : []; }).then(function (list) {
     if (!Array.isArray(list) || !list.length) return;
-    list = list.filter(function (l) { return ze.indexOf(String(l.name || '').trim().toLowerCase()) === -1; });
-    if (!list.length) return;
-    var cards = list.slice(0, 3).map(function (l) {
-      var badge = l.logo_url
-        ? '<img src="' + esc(l.logo_url) + '" alt="' + esc(l.name) + '" style="width:124px;height:42px;object-fit:contain;flex:0 0 auto">'
-        : '<span style="width:44px;height:44px;flex:0 0 auto;border:2px solid #101E2B;border-radius:18px;background:#F4EDE4;display:grid;place-items:center;font-weight:800">' + ini(l.name) + '</span>';
-      return '<a class="card" href="/imenik.html" style="padding:16px 20px;display:flex;align-items:center;gap:16px;min-width:260px;color:#101E2B">'
-        + badge
+    LOKALI = list.slice(0, 3);
+
+    var kartice = LOKALI.map(function (l, i) {
+      return '<button type="button" class="lokal-gumb" data-lokal="' + esc(l.name) + '" data-i="' + i + '">'
+        + znacka(l, 124)
         + '<div><div style="font-weight:800;font-size:18px">' + esc(l.name) + '</div>'
-        + '<div style="font-size:13px;color:#5A6875">Naročanje prek WhatsAppa je vzpostavljeno</div></div></a>';
+        + '<div class="lg-namig">Poglej podatke in naroči →</div></div></button>';
     }).join('');
-    strip.insertAdjacentHTML('afterbegin', cards);
-  }).catch(function () { /* tiho — ostane samo dashed kartica */ });
+
+    // Zamenjamo statične kartice, dashed vabilo pa pustimo na koncu.
+    Array.prototype.slice.call(strip.querySelectorAll('[data-lokal]')).forEach(function (n) { n.remove(); });
+    strip.insertAdjacentHTML('afterbegin', kartice);
+
+    strip.addEventListener('click', function (e) {
+      var g = e.target.closest('.lokal-gumb');
+      if (g) odpri(Number(g.getAttribute('data-i')));
+    });
+  }).catch(function () { /* tiho — ostaneta statična kartica in vabilo */ });
 })();
 
 /* Pogovor v heroju — trije primeri, ki se ponavljajo v zanki.
