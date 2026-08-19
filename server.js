@@ -1513,25 +1513,43 @@ app.post('/api/billing/checkout', async (req, res) => {
     return res.status(503).json({ error: `Stripe cena za paket "${plan}" (${period === 'yearly' ? 'letno' : 'mesečno'}) še ni nastavljena.`, ...zaMastra });
   }
   const priceId = r.priceId;
+  const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+  const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
+
+  const sejaOpts = zKupcem => ({
+    mode: 'subscription',
+    line_items: [{ price: priceId, quantity: 1 }],
+    // Obstoječega Stripe kupca ponovno uporabi, sicer predizpolni email
+    ...(zKupcem ? { customer: salon.stripe_customer_id } : { customer_email: salon.owner_email || undefined }),
+    subscription_data: { metadata: { salon_id: salon.id, plan } },
+    metadata: { salon_id: salon.id, plan },
+    allow_promotion_codes: true,
+    success_url: `${baseUrl}/${returnPage}?billing=success`,
+    cancel_url: `${baseUrl}/${returnPage}?billing=cancel`
+  });
+
   try {
-    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
-    const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
-    const session = await stripe.checkout.sessions.create({
-      mode: 'subscription',
-      line_items: [{ price: priceId, quantity: 1 }],
-      // Obstoječega Stripe kupca ponovno uporabi, sicer predizpolni email
-      ...(salon.stripe_customer_id ? { customer: salon.stripe_customer_id } : { customer_email: salon.owner_email || undefined }),
-      subscription_data: {
-        metadata: { salon_id: salon.id, plan }
-      },
-      metadata: { salon_id: salon.id, plan },
-      allow_promotion_codes: true,
-      success_url: `${baseUrl}/${returnPage}?billing=success`,
-      cancel_url: `${baseUrl}/${returnPage}?billing=cancel`
-    });
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create(sejaOpts(!!salon.stripe_customer_id));
+    } catch (e) {
+      /*
+        Shranjeni kupec lahko v tem Stripe načinu ne obstaja — tipično po
+        preklopu s testnega na živi ključ, ko v bazi ostanejo testni ID-ji,
+        pa tudi če je bil kupec v Stripu izbrisan. Plačilo zato ne sme pasti:
+        poskusimo znova brez kupca in tako ustvarimo novega. Pravi ID zapiše
+        uskladitev po plačilu.
+      */
+      const jeNeznanKupec = salon.stripe_customer_id
+        && /No such customer/i.test(String(e.message || ''));
+      if (!jeNeznanKupec) throw e;
+      console.warn(`[billing] kupec ${salon.stripe_customer_id} v tem načinu ne obstaja `
+        + `(${salon.name}) — nadaljujem brez njega; ID v bazi je zastarel`);
+      session = await stripe.checkout.sessions.create(sejaOpts(false));
+    }
     res.json({ url: session.url });
   } catch (e) {
-    console.error('[billing] checkout error:', e.message);
+    console.error('[billing] checkout error: ' + stripeSync.opisNapake(e));
     res.status(500).json({ error: e.message });
   }
 });
@@ -1582,7 +1600,17 @@ app.post('/api/billing/portal', async (req, res) => {
     });
     res.json({ url: portal.url });
   } catch (e) {
-    console.error('[billing] portal error:', e.message);
+    /*
+      Kupca v tem Stripe načinu ni (zastarel testni ID po preklopu ključa ali
+      izbrisan kupec). Za stranko to ni napaka strežnika — ni česa upravljati,
+      zato ji povemo isto kot lokalu, ki Stripa še ne uporablja.
+    */
+    if (/No such customer/i.test(String(e.message || ''))) {
+      console.warn(`[billing] portal: kupec ${salon.stripe_customer_id} v tem načinu ne obstaja `
+        + `(${salon.name}) — ID v bazi je zastarel`);
+      return res.status(400).json({ error: 'Naročnina prek Stripe še ni aktivirana.' });
+    }
+    console.error('[billing] portal error: ' + stripeSync.opisNapake(e));
     res.status(500).json({ error: e.message });
   }
 });
