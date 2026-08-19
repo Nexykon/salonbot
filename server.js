@@ -786,7 +786,9 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
     let checkoutUrl = null;
     if (payMethod === 'card') {
       const stripe = stripeClient();
-      const priceId = await stripePriceId(plan, salonData.billing_period, null).catch(() => '');
+      const rCena = await stripePriceId(plan, salonData.billing_period, null).catch(e => ({ napaka: 'stripe', podrobno: e.message }));
+      if (rCena.napaka) console.warn('[signup] Stripe cena: ' + rCena.podrobno + ' — ponujen bo predračun');
+      const priceId = rCena.priceId;
       if (stripe && priceId) {
         try {
           const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
@@ -1493,11 +1495,24 @@ app.post('/api/billing/checkout', async (req, res) => {
   // Obdobje iz zahteve ima prednost — stranka ga izbere s preklopnikom v plošči.
   const period = (req.body.billing_period === 'yearly'
     || (req.body.billing_period !== 'monthly' && salon.billing_period === 'yearly')) ? 'yearly' : 'monthly';
-  const priceId = await stripePriceId(plan, period, salon.custom_price_id).catch(e => {
-    console.error('[billing] iskanje cene:', e.message);
-    return '';
-  });
-  if (!priceId) return res.status(503).json({ error: `Stripe cena za paket "${plan}" (${period === 'yearly' ? 'letno' : 'mesečno'}) še ni nastavljena.` });
+  /*
+    Ločimo dve različni težavi, ki sta prej obe javili "cena ni nastavljena":
+    klic v Stripe ni uspel (neveljaven ključ, nedosegljiv Stripe) ali pa cene
+    s tem lookup_key res ni. Prva kaže na okolje, druga na cenik.
+  */
+  const r = await stripePriceId(plan, period, salon.custom_price_id);
+  // Podrobnost o napaki dobi le master — stranki ne koristi, nam pa prihrani
+  // ugibanje, ker dnevnikov Railwaya ni vedno pri roki.
+  const zaMastra = isMasterRequest(req) ? { podrobno: r.podrobno } : {};
+  if (r.napaka === 'stripe') {
+    console.error('[billing] checkout: ' + r.podrobno);
+    return res.status(502).json({ error: 'Povezava s Stripom ni uspela. Poskusite znova ali pišite na info@flowtiq.si.', ...zaMastra });
+  }
+  if (!r.priceId) {
+    console.error('[billing] checkout: ' + (r.podrobno || 'cene ni'));
+    return res.status(503).json({ error: `Stripe cena za paket "${plan}" (${period === 'yearly' ? 'letno' : 'mesečno'}) še ni nastavljena.`, ...zaMastra });
+  }
+  const priceId = r.priceId;
   try {
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
     const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';

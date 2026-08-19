@@ -59,13 +59,30 @@ async function stripeCene() {
   return out;
 }
 
-// Vrstni red: cena po meri za lokal -> ročna prevlada iz okolja -> lookup_key.
+/*
+  Vrstni red: cena po meri za lokal -> ročna prevlada iz okolja -> lookup_key.
+
+  Vrne { priceId } ali { napaka }. Napake ob klicu v Stripe NE požiramo:
+  prej je neuspel klic izgledal kot "cena ni nastavljena", kar kaže na
+  napačno mesto — pri neveljavnem ključu ali nedosegljivem Stripu bi človek
+  iskal manjkajočo konfiguracijo cen, čeprav je težava v ključu ali omrežju.
+*/
 async function stripePriceId(plan, period, customPriceId) {
-  if (customPriceId && plans.isPlan(plan)) return customPriceId;
+  if (customPriceId && plans.isPlan(plan)) return { priceId: customPriceId };
   const izOkolja = stripePriceEnv(plan, period);
-  if (izOkolja) return izOkolja;
-  const cene = await stripeCene().catch(e => { console.error('[stripe] branje cen:', e.message); return {}; });
-  return cene[plans.lookupKey(plan, period)] || '';
+  if (izOkolja) return { priceId: izOkolja };
+
+  let cene;
+  try {
+    cene = await stripeCene();
+  } catch (e) {
+    console.error('[stripe] branje cen ni uspelo: ' + (e.type || e.name || 'napaka') + ' — ' + e.message);
+    return { napaka: 'stripe', podrobno: (e.type || e.name || '') + ': ' + e.message };
+  }
+
+  const id = cene[plans.lookupKey(plan, period)];
+  if (id) return { priceId: id };
+  return { napaka: 'cena', podrobno: 'lookup_key ' + plans.lookupKey(plan, period) + ' ni med aktivnimi cenami' };
 }
 
 /*
