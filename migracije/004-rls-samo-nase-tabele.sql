@@ -1,3 +1,25 @@
+-- ✔ PREVERJENO: TE MIGRACIJE NI TREBA POGNATI
+--
+-- Korak 1 je pokazal, da so vse tuje tabele ŽE prej imele RLS vklopljen in
+-- politike (routes 4, audit_log 2, profiles 2, user_subscriptions 2, ostale
+-- po 1). Migracija 001 je delovala samo na tabelah, kjer RLS ni bil vklopljen,
+-- zato jih je vse preskočila — tuja aplikacija ni bila prizadeta.
+--
+-- Stanje je pravilno že brez te migracije:
+--   13 FlowTiqovih tabel  RLS vklopljen, 0 politik (zavrni vse razen service_role)
+--   13 tujih tabel        RLS vklopljen, 1–4 njihove politike
+--   spatial_ref_sys       brez RLS, last razširitve
+--
+-- Datoteko ohranjamo za dva namena: kot zapis preverbe in kot pripravljen
+-- popravek, če bi kdaj kdo pognal poseg na "vse v shemi public". Korak 1 je
+-- uporaben sam po sebi — pokaže, katera tabela ima RLS brez politik.
+--
+-- Da se ni zalomilo, je bila SREČA, ne zasnova: tuja aplikacija je bila
+-- pravilno postavljena. Pravilo iz README ostaja v veljavi — migracija mora
+-- tabele našteti izrecno.
+--
+-- ─────────────────────────────────────────────────────────────────────────────
+
 -- 004 · POPRAVEK migracije 001: RLS naj velja samo na FlowTiqovih tabelah
 -- Avgust 2026
 --

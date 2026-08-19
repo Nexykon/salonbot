@@ -14,12 +14,12 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 
 ## Zaporedje
 
-| Datoteka | Kaj naredi |
+| Datoteka | Stanje |
 |---|---|
-| `001-rls-vklop.sql` | ⚠ **preširoka** — vklopila je RLS na vseh tabelah v `public`. Popravi jo 004; te ne poganjaj več |
-| `002-preklic-sej.sql` | Doda `sessions_valid_from` za preklic sej ob odjavi |
-| `003-odstrani-postgis.sql` | ⚠ **ne poganjaj** — PostGIS uporablja druga aplikacija v isti bazi |
-| `004-rls-samo-nase-tabele.sql` | Popravek 001: RLS samo na FlowTiqovih tabelah, tujim vrne prejšnje stanje |
+| `001-rls-vklop.sql` | ✔ pognana. Preširoko zastavljena (delovala je na vse v `public`), a brez posledic — glej spodaj |
+| `002-preklic-sej.sql` | ✔ pognana. Doda `sessions_valid_from` za preklic sej ob odjavi |
+| `003-odstrani-postgis.sql` | ✖ **ne poganjaj** — PostGIS uporablja druga aplikacija v isti bazi |
+| `004-rls-samo-nase-tabele.sql` | ✔ ni potrebna (preverjeno). Korak 1 je uporaben kot pregled stanja RLS |
 
 ## V tej bazi ni samo FlowTiq
 
@@ -28,13 +28,24 @@ Projekt gosti še eno aplikacijo — poti, aktivnosti in trenerski del:
 `user_map_packs`, `coach_profiles`, `coach_plans`, `coach_messages`,
 `profiles`, `user_subscriptions`, `subscription_products`, `audit_log`.
 
-**Vsaka migracija mora zato našteti tabele izrecno**, ne pa delovati na
-»vse v shemi public«. Migracija 001 je to pravilo kršila in je RLS vklopila
-tudi tuji aplikaciji; če ta bere bazo z anon ključem, jo je to ustavilo.
-Popravlja jo 004.
+Migracija 001 je bila zastavljena na »vse tabele v shemi public« in bi lahko
+tuji aplikaciji vzela dostop. **Ni se zgodilo**, ker so vse njene tabele že
+prej imele RLS vklopljen in politike (`routes` 4, `audit_log` 2, `profiles` 2,
+`user_subscriptions` 2, ostale po 1), 001 pa je delovala samo tam, kjer RLS
+ni bil vklopljen.
+
+To je bila sreča, ne zasnova. Zato velja pravilo: **vsaka migracija mora
+tabele našteti izrecno** in ne delovati na »vse v shemi public«.
 
 Iz istega razloga PostGIS-a ni mogoče odstraniti: `routes.route_line` in
 `activity_points.point` sta tipa `geography`.
+
+## Preverba naj bo ločena od posega
+
+Supabase SQL editor pokaže samo rezultat zadnjega stavka. Kontrolna poizvedba
+»mora vrniti 0 vrstic« v isti datoteki kot uničujoč ukaz je zato neuporabna —
+tako je v 003 ostala nevidena. Poglej pregledni del, poženi ga ločeno, in
+šele nato poseg.
 
 ## Tabele, ki niso naše
 
