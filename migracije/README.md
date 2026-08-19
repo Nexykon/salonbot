@@ -16,18 +16,26 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 
 | Datoteka | Kaj naredi |
 |---|---|
-| `001-rls-vklop.sql` | Vklopi Row Level Security na vseh tabelah v `public` |
+| `001-rls-vklop.sql` | Vklopi Row Level Security na naših tabelah v `public` |
 | `002-preklic-sej.sql` | Doda `sessions_valid_from` za preklic sej ob odjavi |
+| `003-odstrani-postgis.sql` | Odstrani nerabljeni PostGIS in z njim `spatial_ref_sys` |
 
 ## Tabele, ki niso naše
 
 V shemi `public` ležijo tudi tabele razširitev — pri nas PostGIS-ov
 `spatial_ref_sys`. Teh ne lastimo, zato `alter table` nanje vrne
-`42501: must be owner of table`. Migracija 001 jih izloči.
+`42501: must be owner of table`. Migracija 001 jih izloči; tudi gumb
+**Enable RLS** v nadzorni plošči odpove z isto napako, ker teče pod isto vlogo.
 
-Supabase Advisor jih bo morda še naprej navajal med opozorili. Pri
-`spatial_ref_sys` to ni težava: vsebuje javno znane koordinatne sisteme,
-ne osebnih podatkov.
+`spatial_ref_sys` sam po sebi ni tveganje — vsebuje javno znane koordinatne
+sisteme, ne osebnih podatkov. Ker pa FlowTiq PostGIS-a nikjer ne uporablja,
+ga migracija 003 raje odstrani: tako izgine tabela in z njo opozorilo.
+
+Če bi PostGIS kdaj potrebovali, ga ne vračaj v `public`:
+
+```sql
+create extension postgis schema extensions;
+```
 
 ## Zakaj je RLS varen brez politik
 
