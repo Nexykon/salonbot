@@ -1536,6 +1536,34 @@ app.post('/api/billing/checkout', async (req, res) => {
   }
 });
 
+/*
+  GET /api/admin/stripe-stanje — diagnostika Stripe okolja (samo master).
+
+  Nastala je iz izkušnje: stanje okoljskih spremenljivk smo trikrat sklepali
+  iz vedenja endpointov in se enkrat zmotili. Tu se vidi na en pogled, brez
+  dostopa do dnevnikov Railwaya.
+
+  Ključa NE izpisuje — le njegovo obliko in način. Cene preverja po lookup_key,
+  torej po isti poti, kot jih najde checkout.
+*/
+app.get('/api/admin/stripe-stanje', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const kljuc = stripeSync.preveriKljuc();
+  const out = { kljuc, cene: {}, napaka: null };
+
+  if (!kljuc.ok && kljuc.opis === 'ni nastavljen') return res.json(out);
+
+  for (const paket of plans.PLAN_KEYS) {
+    for (const obdobje of ['monthly', 'yearly']) {
+      const r = await stripePriceId(paket, obdobje, null);
+      out.cene[plans.lookupKey(paket, obdobje)] = r.priceId
+        || ((r.napaka === 'stripe' ? 'NAPAKA: ' : 'NI: ') + (r.podrobno || ''));
+      if (r.napaka === 'stripe' && !out.napaka) out.napaka = r.podrobno;
+    }
+  }
+  res.json(out);
+});
+
 // POST /api/billing/portal — Stripe portal za upravljanje naročnine in računov
 app.post('/api/billing/portal', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);

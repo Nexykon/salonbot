@@ -25,9 +25,46 @@ const db = require('./supabase');
 const mail = require('./email');
 const plans = require('./plans');
 
+/*
+  Ključ obrežemo. Vrednost, prilepljena v Railway ali .env, pogosto dobi
+  odvečen presledek ali prelom vrstice; tak znak v glavi Authorization Node
+  zavrne že pri sestavljanju zahteve, Stripe SDK pa to prijavi kot
+  StripeConnectionError — torej kot da Stripe ni dosegljiv, čeprav je težava
+  v vrednosti. Obrezovanje je varno: API ključi nikoli nimajo pomenskih
+  presledkov na robovih.
+*/
+function stripeKljuc() {
+  return String(process.env.STRIPE_SECRET_KEY || '').trim();
+}
+
 function stripeClient() {
-  if (!process.env.STRIPE_SECRET_KEY) return null;
-  return require('stripe')(process.env.STRIPE_SECRET_KEY);
+  const k = stripeKljuc();
+  if (!k) return null;
+  return require('stripe')(k);
+}
+
+/*
+  Preverba oblike ključa ob zagonu. Ne izpiše ključa, samo kaj je z njim
+  narobe — da se taka napaka vidi takoj in ne šele, ko stranka klikne plačilo.
+*/
+function preveriKljuc() {
+  const surov = String(process.env.STRIPE_SECRET_KEY || '');
+  const k = surov.trim();
+  if (!k) return { ok: false, opis: 'ni nastavljen' };
+
+  const tezave = [];
+  if (surov !== k) tezave.push('ima odvečne presledke ali prelom vrstice (obrezali smo ga)');
+  if (/^["']|["']$/.test(k)) tezave.push('je v narekovajih');
+  if (!/^sk_(test|live)_/.test(k)) tezave.push('se ne začne s sk_test_ ali sk_live_');
+  if (/[^A-Za-z0-9_]/.test(k)) tezave.push('vsebuje znake, ki v ključu ne nastopajo');
+  if (k.length < 40) tezave.push('je prekratek (' + k.length + ' znakov)');
+
+  return {
+    ok: tezave.length === 0,
+    zivi: k.startsWith('sk_live_'),
+    opis: tezave.length ? tezave.join('; ') : 'videti je v redu',
+    dolzina: k.length
+  };
 }
 
 /* ── Iskanje cen ───────────────────────────────────────────────────────────
@@ -41,6 +78,25 @@ function stripeClient() {
 let _cene = null;
 let _ceneOb = 0;
 const CENE_TTL_MS = 10 * 60 * 1000;
+
+/*
+  Stripove napake pogosto skrijejo pravi vzrok: StripeConnectionError v
+  sporočilu pove le "connection to Stripe", izvorna napaka (npr. Nodejev
+  ERR_INVALID_CHAR pri neveljavnem znaku v ključu) pa čaka v .detail ali
+  .cause. Brez tega smo pri diagnozi slepi.
+*/
+function opisNapake(e) {
+  const deli = [(e && (e.type || e.name)) || 'napaka'];
+  if (e && e.message) deli.push(e.message);
+  const izvor = e && (e.detail || e.cause);
+  if (izvor) {
+    const t = izvor.code || izvor.name || '';
+    const m = izvor.message || String(izvor);
+    deli.push('izvor: ' + (t ? t + ' — ' : '') + m);
+  }
+  if (e && e.statusCode) deli.push('HTTP ' + e.statusCode);
+  return deli.join(' | ');
+}
 
 function stripePriceEnv(plan, period) {
   const suffix = plans.PLANS[plans.planKey(plan)].env;
@@ -76,8 +132,9 @@ async function stripePriceId(plan, period, customPriceId) {
   try {
     cene = await stripeCene();
   } catch (e) {
-    console.error('[stripe] branje cen ni uspelo: ' + (e.type || e.name || 'napaka') + ' — ' + e.message);
-    return { napaka: 'stripe', podrobno: (e.type || e.name || '') + ': ' + e.message };
+    const podrobno = opisNapake(e);
+    console.error('[stripe] branje cen ni uspelo: ' + podrobno);
+    return { napaka: 'stripe', podrobno };
   }
 
   const id = cene[plans.lookupKey(plan, period)];
@@ -446,10 +503,14 @@ async function sinhronizirajVse() {
   odločitve, ali se tista opravila vklopijo ali ne.
 */
 function zacniUskladitev() {
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.log('[stripe-sync] STRIPE_SECRET_KEY ni nastavljen — uskladitev naročnin ne teče');
+  const kljuc = preveriKljuc();
+  if (!kljuc.ok && kljuc.opis === 'ni nastavljen') {
+    console.log('[stripe] STRIPE_SECRET_KEY ni nastavljen — plačila in uskladitev naročnin ne tečejo');
     return;
   }
+  // Ob zagonu povemo, v katerem načinu smo in ali je s ključem kaj narobe.
+  console.log('[stripe] ključ: ' + (kljuc.zivi ? '⚠ ŽIVI' : 'testni')
+    + ', ' + kljuc.dolzina + ' znakov — ' + kljuc.opis);
   const cron = require('node-cron');
 
   // Ob :20, da se ne prekriva z drugimi urnimi opravili ob polni uri.
@@ -469,5 +530,6 @@ function zacniUskladitev() {
 module.exports = {
   stripeClient, stripePriceId, planFromPrice, waPriklopljen,
   applyStripeSubscription, salonForSubscription,
-  sinhronizirajLokal, sinhronizirajVse, zacniUskladitev
+  sinhronizirajLokal, sinhronizirajVse, zacniUskladitev,
+  preveriKljuc, opisNapake
 };
