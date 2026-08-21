@@ -209,5 +209,124 @@ background:transparent;color:inherit;border-radius:9px;cursor:pointer}\
     return out.length ? out : null;
   }
 
-  window.DostavaPolja = { izrisi: izrisi, zberi: zberi, vCeno: vCeno, izCene: izCene, vKraje: vKraje };
+  /* ── Kraji brez cene ─────────────────────────────────────────────────────
+     Napačno zapisan kraj ni nikoli ujet — posledica je vidna pri naročilu, a
+     nihče je ne sešteje. Tu pokažemo, kateri kraji se v pravih naslovih
+     ponavljajo in niso pokriti, ter jih dodamo z enim klikom. Ker šifranta
+     krajev ni, so predlogi vzeti iz naslovov, ki so jih napisale stranke.
+  */
+  var SLOG_N = '\
+.dzn{margin-top:14px;border:1px dashed var(--border,#d1d5db);border-radius:12px;padding:12px 13px}\
+.dzn-naslov{font-size:12.5px;font-weight:700;color:#b45309;margin-bottom:2px}\
+.dzn-opis{font-size:12px;color:var(--muted,#6b7280);margin-bottom:10px}\
+.dzn-vrstica{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,110px) auto;\
+align-items:center;column-gap:8px;padding:6px 0;border-top:1px solid var(--border,#d1d5db)}\
+.dzn-vrstica:first-of-type{border-top:0}\
+.dzn-kraj{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\
+.dzn-koliko{font-size:12px;color:var(--muted,#6b7280);white-space:nowrap}\
+.dzn select,.dzn input{box-sizing:border-box;display:block;width:100%;min-width:0;margin:0;font-size:13px}\
+.dzn-primeri{font-size:11.5px;color:var(--muted,#6b7280);grid-column:1/-1;margin:0 0 4px}\
+@media(max-width:560px){.dzn-vrstica{grid-template-columns:minmax(0,1fr) minmax(0,92px) auto}\
+.dzn-koliko{display:none}}';
+
+  function poskrbiZaSlogN() {
+    if (document.getElementById('dzn-slog')) return;
+    var s = document.createElement('style');
+    s.id = 'dzn-slog';
+    s.textContent = SLOG_N;
+    document.head.appendChild(s);
+  }
+
+  // Kraj vpiši v razred z dano ceno; če razreda ni, ga ustvari.
+  function dodajVRazred(zoneId, kraj, cena) {
+    var el = document.getElementById(zoneId);
+    if (!el || cena === null) return false;
+    var cilj = null;
+    razredi(el).forEach(function (r) {
+      if (cilj) return;
+      if (vCeno(r.querySelector('.dz-cena').value) === cena) cilj = r;
+    });
+    if (!cilj) {
+      var prazen = null;
+      razredi(el).forEach(function (r) {
+        if (!prazen && !vCeno(r.querySelector('.dz-cena').value)
+          && !vKraje(r.querySelector('.dz-kraji').value).length) prazen = r;
+      });
+      if (prazen) { cilj = prazen; cilj.querySelector('.dz-cena').value = izCene(cena); }
+      else {
+        el.querySelector('.dz-razredi').insertAdjacentHTML('beforeend', razredHtml(cena, ''));
+        cilj = el.querySelector('.dz-razredi').lastElementChild;
+      }
+    }
+    var polje = cilj.querySelector('.dz-kraji');
+    var obstoj = vKraje(polje.value);
+    if (obstoj.map(kljuc).indexOf(kljuc(kraj)) < 0) obstoj.push(kraj);
+    polje.value = obstoj.join(', ');
+    osvezi(el);
+    cilj.scrollIntoView({ block: 'nearest' });
+    return true;
+  }
+
+  function izrisiNeznane(vsebnikId, kraji, zoneId) {
+    var el = document.getElementById(vsebnikId);
+    if (!el) return;
+    if (!kraji || !kraji.length) { el.innerHTML = ''; return; }
+    poskrbiZaSlogN();
+
+    // Predlagane cene = razredi, ki že obstajajo
+    var zoneEl = document.getElementById(zoneId);
+    var cene = [];
+    if (zoneEl) razredi(zoneEl).forEach(function (r) {
+      var c = vCeno(r.querySelector('.dz-cena').value);
+      if (c !== null && cene.indexOf(c) < 0) cene.push(c);
+    });
+    cene.sort(function (a, b) { return a - b; });
+
+    var moznosti = cene.map(function (c) { return '<option value="' + c + '">' + izCene(c) + ' €</option>'; }).join('')
+      + '<option value="">druga cena…</option>';
+
+    el.innerHTML = '<div class="dzn">'
+      + '<div class="dzn-naslov">Kraji brez cene</div>'
+      + '<div class="dzn-opis">V naslovih iz naročil se pojavljajo ti kraji, ki jih na ceniku ni. Če je ime napačno zapisano, ga popravi v polju zgoraj; sicer izberi ceno in dodaj. Predlogi so vzeti iz naslovov, ki so jih napisale stranke.</div>'
+      + kraji.map(function (k, i) {
+        return '<div class="dzn-vrstica" data-dzn="' + i + '">'
+          + '<span class="dzn-kraj" title="' + String(k.naslovi || []).replace(/"/g, '&quot;') + '">' + k.kraj + '</span>'
+          + '<span class="dzn-koliko">' + k.narocil + ' '
+          + (k.narocil === 1 ? 'naročilo' : k.narocil === 2 ? 'naročili' : k.narocil < 5 ? 'naročila' : 'naročil') + '</span>'
+          + (cene.length
+            ? '<select class="dzn-cena">' + moznosti + '</select>'
+            : '<input type="text" class="dzn-cena-rocno" inputmode="decimal" placeholder="cena">')
+          + '<button type="button" class="dz-gumb dzn-dodaj">dodaj</button>'
+          + '<div class="dzn-primeri">' + (k.naslovi || []).slice(0, 3).join(' · ') + '</div>'
+          + '</div>';
+      }).join('')
+      + '</div>';
+
+    el.addEventListener('change', function (e) {
+      if (!e.target.classList || !e.target.classList.contains('dzn-cena')) return;
+      if (e.target.value !== '') return;
+      // "druga cena…" → zamenjaj s prostim vnosom
+      var vr = e.target.closest('.dzn-vrstica');
+      e.target.outerHTML = '<input type="text" class="dzn-cena-rocno" inputmode="decimal" placeholder="cena">';
+      var novo = vr.querySelector('.dzn-cena-rocno');
+      if (novo) novo.focus();
+    });
+
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.dzn-dodaj');
+      if (!b) return;
+      var vr = b.closest('.dzn-vrstica');
+      var izbor = vr.querySelector('.dzn-cena') || vr.querySelector('.dzn-cena-rocno');
+      var cena = vCeno(izbor && izbor.value);
+      if (cena === null) { if (izbor) izbor.focus(); return; }
+      var kraj = vr.querySelector('.dzn-kraj').textContent.trim();
+      if (dodajVRazred(zoneId, kraj, cena)) vr.remove();
+      if (!el.querySelectorAll('.dzn-vrstica').length) el.innerHTML = '';
+    });
+  }
+
+  window.DostavaPolja = {
+    izrisi: izrisi, zberi: zberi, vCeno: vCeno, izCene: izCene, vKraje: vKraje,
+    izrisiNeznane: izrisiNeznane, dodajVRazred: dodajVRazred
+  };
 })();

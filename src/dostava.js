@@ -178,6 +178,92 @@ function strosek(salon, naslov) {
   return { cena: najden.cena, kraj: najden.kraj, neznana: false };
 }
 
+/* ── Kraji, ki jih v ceniku ni ────────────────────────────────────────────
+   Lastnik se pri vpisu lahko zmoti (napačno zapisan kraj ni nikoli ujet) ali
+   pa kraja preprosto ni na listu. Oboje se pokaže enako: naročilo dobi oznako
+   "kraj ni na seznamu". Ker šifranta slovenskih krajev nimamo, imena ni s čim
+   primerjati — zato izhajamo iz PRAVIH naslovov iz naročil. Kar se v njih
+   ponavlja in ni pokrito, je kandidat za vpis.
+*/
+
+// Besede, ki označujejo ulico in ne kraja.
+const ULICNE = new Set(['ulica', 'ul', 'cesta', 'pot', 'trg', 'naselje',
+  'nabrezje', 'drevored', 'steza', 'obala', 'park', 'sp', 'st']);
+// Pridevniške končnice ulic (Vojkova, Ljubljanska, Tržaška) — kraji jih redko imajo.
+const ULICNI_KONEC = /(ova|eva|ska|cka|zka)$/;
+
+// Najboljša domneva, kateri del naslova je kraj. Vrne besedo, kot je zapisana
+// (s šumniki), ali null. Domneva je lahko napačna — zato jo lastnik potrdi.
+function kandidatKraja(naslov) {
+  const deli = String(naslov == null ? '' : naslov).split(',').map(s => s.trim()).filter(Boolean);
+  const izDela = del => {
+    const surove = del.split(/\s+/).filter(Boolean);
+    const kandidati = surove.filter(w => {
+      const n = normaliziraj(w);
+      return n && !/\d/.test(n) && !ULICNE.has(n) && !VEZNE.has(n);
+    });
+    return kandidati.length ? kandidati[kandidati.length - 1] : null;
+  };
+  // Kraj je najpogosteje v zadnjem delu za vejico; če je videti kot ulica,
+  // poskusimo prejšnji del.
+  for (let i = deli.length - 1; i >= 0; i--) {
+    const w = izDela(deli[i]);
+    if (!w) continue;
+    if (i > 0 && ULICNI_KONEC.test(normaliziraj(w))) continue;
+    return w.replace(/[.,;:]+$/, '');
+  }
+  for (let i = deli.length - 1; i >= 0; i--) {
+    const w = izDela(deli[i]);
+    if (w) return w.replace(/[.,;:]+$/, '');
+  }
+  return null;
+}
+
+// Naslov dostave iz zapisa naročila (form_answers ali opomba).
+function naslovNarocila(booking) {
+  if (!booking) return null;
+  let fa = booking.form_answers;
+  if (typeof fa === 'string') { try { fa = JSON.parse(fa); } catch { fa = null; } }
+  let naslov = (fa && fa.naslov) || null;
+  if (!naslov && booking.notes) {
+    const m = String(booking.notes).match(/Naslov:\s*([^|]+)/);
+    if (m) naslov = m[1].trim();
+  }
+  if (!naslov) return null;
+  naslov = String(naslov).trim();
+  if (!naslov || /osebni prevzem/i.test(naslov)) return null;
+  return naslov;
+}
+
+/*
+  Iz naročil izbere naslove, pri katerih kraja ni bilo mogoče določiti, in jih
+  strne po domnevnem kraju.
+
+  Vrne [{ kraj, naročil, naslovi: [..], zadnje }] — od najpogostejšega.
+*/
+function neznaniKraji(salon, bookings, najvec) {
+  if (!zoneLokala(salon)) return [];
+  const skupine = new Map();
+  for (const b of (bookings || [])) {
+    const naslov = naslovNarocila(b);
+    if (!naslov) continue;
+    const r = strosek(salon, naslov);
+    if (!r.neznana) continue;
+    const kandidat = kandidatKraja(naslov) || naslov;
+    const k = normaliziraj(kandidat);
+    if (!k) continue;
+    if (!skupine.has(k)) skupine.set(k, { kraj: kandidat, narocil: 0, naslovi: [], zadnje: null });
+    const g = skupine.get(k);
+    g.narocil++;
+    if (g.naslovi.length < 5 && g.naslovi.indexOf(naslov) < 0) g.naslovi.push(naslov);
+    const kdaj = b.created_at || b.booking_date || null;
+    if (kdaj && (!g.zadnje || String(kdaj) > String(g.zadnje))) g.zadnje = kdaj;
+  }
+  return [...skupine.values()]
+    .sort((a, b) => b.narocil - a.narocil || String(b.zadnje).localeCompare(String(a.zadnje)))
+    .slice(0, najvec || 20);
+}
+
 // Kraji, strnjeni po ceni — za prikaz in za nadzor nad vpisanim cenikom.
 function poCenah(salon) {
   const zone = zoneLokala(salon) || [];
@@ -195,5 +281,6 @@ function poCenah(salon) {
 module.exports = {
   normaliziraj, besede, lev, besedaUjema,
   varneZone, zoneLokala, poKrajih, najdiKraj, strosek, poCenah,
+  kandidatKraja, naslovNarocila, neznaniKraji,
   MAX_KRAJEV
 };

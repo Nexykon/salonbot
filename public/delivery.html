@@ -771,6 +771,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
         <div class="s-row">
           <label>Cena dostave po krajih</label>
           <div id="s-zone"></div>
+          <div id="s-zone-neznani"></div>
           <div style="font-size:12px;color:var(--muted);margin-top:10px">Vpiši ceno in pod njo vse kraje, ki zanjo veljajo — tako, kot je cenik napisan na papirju. Bot iz naslova, ki ga stranka napiše, prepozna kraj in doda njegovo ceno; razume tudi sklone (»v Vodicah«, »v Domžalah«) in okrajšave (»Zg. Brnik«).<br>Kraj, ki ni na seznamu, ostane <b>brez cene</b>: naročilo gre skozi, stranka dobi obvestilo, da strošek sporočite ob potrditvi, na naročilu pa je to posebej označeno. Cene ne ugibamo.</div>
         </div>
         <div class="s-row">
@@ -1600,6 +1601,11 @@ async function loadSettingsData() {
     document.getElementById('s-delivery-area').value = d.delivery_area || '';
     UrnikPolja.izrisi('s-urnik', d.urnik);
     DostavaPolja.izrisi('s-zone', d.delivery_zones);
+    // Kraji iz pravih naslovov, ki jih na ceniku ni — izračunani iz naročil
+    fetch('/api/settings/dostava-neznani', { headers: { 'Authorization': 'Bearer ' + ownerToken } })
+      .then(function (r) { return r.ok ? r.json() : { kraji: [] }; })
+      .then(function (n) { DostavaPolja.izrisiNeznane('s-zone-neznani', n.kraji, 's-zone'); })
+      .catch(function () {});
     // Predogled sporočila „lokal zaprt" vsebuje urnik — osveži ga ob spremembi
     document.getElementById('s-urnik').addEventListener('change', function () {
       if (document.getElementById('bm-bub-closed')) bmInput('closed');

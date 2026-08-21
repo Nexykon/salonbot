@@ -207,6 +207,48 @@ console.log('\n12) Botanin cenik je konsistenten');
   je('vsak kraj najde svojo ceno', napake, []);
 }
 
+console.log('\n12b) Domneva, kateri del naslova je kraj');
+{
+  je('kraj in hišna številka', d.kandidatKraja('Nasovče 11'), 'Nasovče');
+  je('ulica in kraj za vejico', d.kandidatKraja('Vojkova 5, Ljubljana'), 'Ljubljana');
+  je('kraj brez vejice na koncu', d.kandidatKraja('Suhadole 59b komenda'), 'komenda');
+  je('poštna številka se izpusti', d.kandidatKraja('Dvorje 14 4207 cerklje'), 'cerklje');
+  je('šumniki se ohranijo', d.kandidatKraja('Škaručna 7'), 'Škaručna');
+  je('večbesedni kraj vrne zadnjo besedo', d.kandidatKraja('Dol pri Ljubljani 2'), 'Ljubljani');
+  // Pridevniška ulica na koncu: raje vzame prejšnji del
+  je('ulica na koncu se preskoči', d.kandidatKraja('Kamnik, Maistrova 3'), 'Kamnik');
+  je('beseda "ulica" se preskoči', d.kandidatKraja('Glavna ulica 5, Šenčur'), 'Šenčur');
+  je('prazno', d.kandidatKraja(''), null);
+  je('samo številka', d.kandidatKraja('12b'), null);
+}
+
+console.log('\n12c) Kraji brez cene iz pravih naročil');
+{
+  const narocila = [
+    { created_at: '2026-08-20T10:00:00Z', form_answers: { naslov: 'Nasovče 11' } },
+    { created_at: '2026-08-18T10:00:00Z', form_answers: { naslov: 'Nasovče 4' } },
+    { created_at: '2026-08-15T10:00:00Z', notes: 'RAZVOZ | Naslov: Suhadole 59b | Skupaj: 20 €' },
+    { created_at: '2026-08-10T10:00:00Z', form_answers: { naslov: 'Komenda 5' } },        // pokrit
+    { created_at: '2026-08-09T10:00:00Z', form_answers: { naslov: 'Osebni prevzem' } },   // ni dostava
+    { created_at: '2026-08-08T10:00:00Z', form_answers: {} }                              // brez naslova
+  ];
+  const n = d.neznaniKraji(salon, narocila);
+  je('dva neznana kraja', n.length, 2);
+  je('najpogostejši je prvi', n[0].kraj, 'Nasovče');
+  je('šteje naročila', n[0].narocil, 2);
+  je('hrani primere naslovov', n[0].naslovi, ['Nasovče 11', 'Nasovče 4']);
+  je('zadnje naročilo', String(n[0].zadnje).slice(0, 10), '2026-08-20');
+  je('naslov iz opombe je prebran', n[1].kraj, 'Suhadole');
+  je('pokrit kraj se ne pojavi', n.some(x => /komenda/i.test(x.kraj)), false);
+
+  // Brez cenika te preverbe ni — velja enotna cena, vsak naslov je "pokrit"
+  je('brez cenika prazen seznam', d.neznaniKraji({ delivery_zones: null, delivery_fee: 3 }, narocila), []);
+  je('brez naročil prazen seznam', d.neznaniKraji(salon, []), []);
+  je('naslov iz opombe', d.naslovNarocila({ notes: 'RAZVOZ | Naslov: Vodice 3 | Skupaj: 10 €' }), 'Vodice 3');
+  je('prevzem ni naslov', d.naslovNarocila({ form_answers: { naslov: 'Osebni prevzem' } }), null);
+  je('form_answers kot niz', d.naslovNarocila({ form_answers: '{"naslov":"Vodice 3"}' }), 'Vodice 3');
+}
+
 console.log('\n13) Zneski skupaj z embalažo (prava koda computeTotals)');
 {
   const { computeTotals } = require('../src/ai-order');

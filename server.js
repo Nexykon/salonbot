@@ -1925,6 +1925,23 @@ app.get('/api/settings/services', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+/*
+  GET /api/settings/dostava-neznani
+  Kraji iz pravih naslovov, ki jih na ceniku dostave ni. Napačno zapisan kraj
+  v ceniku se pokaže enako kot manjkajoč — oboje je tu, s številom naročil.
+  Nič ne piše in nič ne hrani: izračuna se iz naročil ob vsakem klicu, zato
+  vpisan kraj s seznama izgine sam.
+*/
+app.get('/api/settings/dostava-neznani', async (req, res) => {
+  const salon = await settingsSalonAuth(req, res);
+  if (!salon) return;
+  try {
+    if (!dostava.poKrajih(salon)) return res.json({ kraji: [] });
+    const bookings = await db.listBookings(salon.id);
+    res.json({ kraji: dostava.neznaniKraji(salon, bookings, 20) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // GET /api/settings/customers — agregirane stranke iz rezervacij (obiski, zadnji obisk)
 app.get('/api/settings/customers', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
