@@ -151,5 +151,36 @@ console.log('\n12) Botanin primer (cene po artiklu, enotna ni nastavljena)');
   console.log('      ' + t.text);
 }
 
+console.log('\n13) Obnovljena seja: vrstica brez cene → cena se poišče v meniju');
+{
+  // Prav ta primer se je zgodil v živo: artikla sta bila dana v košarico,
+  // preden je koda cene embalaže poznala, seja pa je preživela ponovni zagon.
+  const s = lokal({ packaging_price: 0 });
+  const meni = [
+    { id: 'p1', name: 'Botana', price: 12.5, packaging_price: 0.6 },
+    { id: 'p2', name: 'Panakota z jagodami', price: 5.2, packaging_price: 0.6 },
+    { id: 'p3', name: 'Bufalo mozzarella', price: 3.5, packaging_price: 0.4 }
+  ];
+  const stara = [
+    { id: 'p2', name: 'Panakota z jagodami', price: 5.2, qty: 1, pack: null },
+    { id: 'p1', name: 'Botana', price: 12.5, qty: 2, pack: null }
+  ];
+  je('brez menija embalaža izpade (staro vedenje)', computeTotals(s, stara, 'dostava').packFee, 0);
+  je('z menijem se cena najde po id', computeTotals(s, stara, 'dostava', meni).packFee, 1.8);
+  je('skupaj', computeTotals(s, stara, 'dostava', meni).grand, '32.00');
+
+  const brezId = [{ name: 'Bufalo mozzarella', price: 3.5, qty: 2 }];
+  je('cena se najde tudi po imenu', computeTotals(s, brezId, 'dostava', meni).packFee, 0.8);
+
+  const neznan = [{ id: 'x', name: 'Nekaj, česar ni na meniju', price: 4, qty: 1 }];
+  je('artikel, ki ga ni v meniju, ostane brez embalaže', computeTotals(s, neznan, 'dostava', meni).packFee, 0);
+
+  const izrecnaNic = [{ id: 'p1', name: 'Botana', price: 12.5, qty: 1, pack: 0 }];
+  je('izrecna 0 v vrstici se NE povozi iz menija', computeTotals(s, izrecnaNic, 'dostava', meni).packFee, 0);
+
+  je('opomba o dodatnih stroških zazna ceno iz menija',
+    hasExtras(s, [{ id: 'p1', name: 'Botana', price: 12.5, qty: 1 }], meni), true);
+}
+
 console.log('\n' + (ni ? '✖ ' + ni + ' od ' + (ok + ni) + ' ni v redu' : '✔ vse v redu (' + ok + ')'));
 process.exit(ni ? 1 : 0);

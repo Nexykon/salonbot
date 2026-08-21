@@ -64,8 +64,15 @@ const TOOLS = [
 // Če ni ne enega ne drugega, je embalaža brezplačna.
 //
 // Cena artikla je v košarici zapisana kot `pack` in se vpiše ob dodajanju.
-function packUnitFor(item) {
-  const lastna = item ? item.pack : undefined;
+// Kadar je manjka (seja iz časa pred to zmožnostjo, obnovljena po ponovnem
+// zagonu), jo poiščemo v meniju — sicer bi embalaža tiho izpadla.
+function packUnitFor(item, services) {
+  let lastna = item ? item.pack : undefined;
+  if ((lastna === undefined || lastna === null || lastna === '') && Array.isArray(services)) {
+    const svc = services.find(s => String(s.id) === String(item && item.id))
+      || services.find(s => String(s.name || '').toLowerCase() === String((item && item.name) || '').toLowerCase());
+    if (svc) lastna = svc.packaging_price;
+  }
   if (lastna === undefined || lastna === null || lastna === '') return 0;
   const v = parseFloat(lastna);
   return (isNaN(v) || v < 0) ? 0 : v;
@@ -77,7 +84,8 @@ function enotnaEmbalaza(salon) {
   return (isNaN(g) || g < 0) ? 0 : g;
 }
 
-function computeTotals(salon, cart, mode) {
+// services je neobvezen: uporabi se le za vrstice brez zapisane cene embalaže.
+function computeTotals(salon, cart, mode, services) {
   const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
   const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
   const enotnaCena = enotnaEmbalaza(salon);
@@ -90,7 +98,7 @@ function computeTotals(salon, cart, mode) {
     packFee = (chargePack && cart.length) ? enotnaCena : 0;
   } else {
     for (const i of cart) {
-      const u = packUnitFor(i);
+      const u = packUnitFor(i, services);
       enote.add(u.toFixed(2));
       if (chargePack) packFee += u * (i.qty || 1);
     }
@@ -391,7 +399,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
         if (m === 'dostava' && salon.allow_delivery === false) { result = 'Dostava ni na voljo — ponudi osebni prevzem.'; break; }
         if (m === 'prevzem' && salon.allow_pickup === false) { result = 'Osebni prevzem ni na voljo — ponudi dostavo.'; break; }
         newOrder.mode = m;
-        const tt = computeTotals(salon, newCart, m);
+        const tt = computeTotals(salon, newCart, m, services);
         result = m === 'prevzem'
           ? `Način zabeležen: osebni prevzem. ${salon.pickup_address ? `POVEJ stranki: "Prevzem bo na naslovu ${salon.pickup_address}." ` : ''}NIKOLI ne sprašuj stranke za naslov prevzema. ${tt.text} Zdaj vprašaj SAMO za ime in priimek.`
           : `Način zabeležen: dostava. ${tt.text} Zdaj vprašaj SAMO za ime in priimek — brez omembe območja dostave.`;
@@ -403,14 +411,14 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
         newOrder.name = nm;
         result = (newOrder.mode === 'dostava' && !newOrder.address)
           ? `Ime zabeleženo. Zdaj vprašaj SAMO: "Prosim, napišite naslov za dostavo." — brez zahvale, brez ponavljanja imena in brez omembe območja dostave.`
-          : `Ime zabeleženo. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke in TOČNO te zneske ter vprašaj: "Potrjujete naročilo?"`;
+          : `Ime zabeleženo. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava', services).text} Povzemi TOČNO te postavke in TOČNO te zneske ter vprašaj: "Potrjujete naročilo?"`;
         break;
       }
       case 'set_address': {
         const ad = String(input.address || '').trim().slice(0, 200);
         if (!ad) { result = 'Naslov je prazen — vprašaj znova.'; break; }
         newOrder.address = ad;
-        result = `Naslov zabeležen. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava').text} Povzemi TOČNO te postavke (s posebnostmi), naslov in TOČNO te zneske (Artikli/Embalaža/Dostava/SKUPAJ) ter vprašaj: "Potrjujete naročilo?"`;
+        result = `Naslov zabeležen. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava', services).text} Povzemi TOČNO te postavke (s posebnostmi), naslov in TOČNO te zneske (Artikli/Embalaža/Dostava/SKUPAJ) ter vprašaj: "Potrjujete naročilo?"`;
         break;
       }
       case 'confirm_order': {
@@ -503,8 +511,8 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
 
 // Ali bo k narocilu poleg artiklov prislo se kaj (embalaza ali dostava)?
 // Z ceno embalaze po artiklu enotna cena lokala ni vec zadosten pokazatelj.
-function hasExtras(salon, cart) {
-  const t = computeTotals(salon, cart || [], 'dostava');
+function hasExtras(salon, cart, services) {
+  const t = computeTotals(salon, cart || [], 'dostava', services);
   return t.packFee > 0 || t.delFee > 0;
 }
 
