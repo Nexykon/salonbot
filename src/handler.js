@@ -6,6 +6,7 @@ const session = require('./session');
 const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 const t = require('./time');
+const urnik = require('./urnik');
 const { botMsg } = require('./botmsg');
 const { askOrderAI, computeTotals, aiConfigured, findService } = require('./ai-order');
 const { planLimit } = require('./presets');
@@ -73,8 +74,10 @@ function roundTo5Min(timeStr) {
 }
 
 async function resolveCustomTime(salon, date, requestedTime, serviceDuration = null) {
-  const start = (salon.working_hours_start || '08:00').substring(0, 5);
-  const end   = (salon.working_hours_end   || '19:00').substring(0, 5);
+  const dan = urnik.zaDatum(salon, date);
+  if (!dan) return null;                      // na ta dan je zaprto
+  const start = dan.od;
+  const end   = dan.do;
   const duration = serviceDuration || salon.booking_interval_minutes || 30;
   const bookedSlots = await db.getBookedTimesForDate(salon.id, date);
   const rounded = roundTo5Min(requestedTime);
@@ -190,6 +193,20 @@ async function handleMessage(msgObj, salon) {
   const SUB_GRACE_MS = 3 * 24 * 60 * 60 * 1000;
   if (!isAdmin && salon.valid_until && Date.now() > new Date(salon.valid_until).getTime() + SUB_GRACE_MS) {
     await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'bot_offline')));
+    return;
+  }
+
+  // ── Lokal je zaprt: naročila ne sprejemamo ──────────────────
+  // Velja samo za tokove, ki jemljejo naročila (dostava, POS). Rezervacijskih
+  // tokov ne zapiramo: pri frizerju je normalno, da stranka piše zvečer in
+  // rezervira termin za jutri. Lastnik dela naprej.
+  const JEMLJE_NAROCILA = ['delivery', 'pos_order'];
+  if (!isAdmin && JEMLJE_NAROCILA.includes(salon.booking_mode) && !urnik.jeOdprto(salon).odprto) {
+    const n = urnik.naslednjeOdprtje(salon);
+    await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'closed', {
+      urnik: urnik.besedilo(salon),
+      odprtje: n ? ' ' + n.kdaj + ' po ' + n.od : ''
+    })));
     return;
   }
 
@@ -1991,11 +2008,10 @@ async function handleMessage(msgObj, salon) {
   // ── Step 31: natural language date (datetime_position = 'last') ──
   if (sess.step === 31 && msgText) {
     const { date, time } = parseCustomerDateTime(msgText);
-    const workingDays = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
     if (date && time) {
       const d = new Date(date + 'T12:00:00');
-      if (!workingDays.includes(d.getDay())) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+      if (!urnik.jeOdprtDan(salon, d.getDay())) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo (' + urnik.besedilo(salon) + '). Izberite drug dan:'));
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
         return;
       }
@@ -2022,8 +2038,8 @@ async function handleMessage(msgObj, salon) {
       }
     } else if (date) {
       const d = new Date(date + 'T12:00:00');
-      if (!workingDays.includes(d.getDay())) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+      if (!urnik.jeOdprtDan(salon, d.getDay())) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo (' + urnik.besedilo(salon) + '). Izberite drug dan:'));
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
         return;
       }
@@ -2223,11 +2239,10 @@ async function handleMessage(msgObj, salon) {
   // ── Step 1: natural language date ──
   if (sess.step === 1 && msgText) {
     const { date, time } = parseCustomerDateTime(msgText);
-    const workingDays = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
     if (date && time) {
       const d = new Date(date + 'T12:00:00');
-      if (!workingDays.includes(d.getDay())) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+      if (!urnik.jeOdprtDan(salon, d.getDay())) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo (' + urnik.besedilo(salon) + '). Izberite drug dan:'));
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
         return;
       }
@@ -2240,8 +2255,8 @@ async function handleMessage(msgObj, salon) {
       }
     } else if (date) {
       const d = new Date(date + 'T12:00:00');
-      if (!workingDays.includes(d.getDay())) {
-        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo. Izberite drug dan:'));
+      if (!urnik.jeOdprtDan(salon, d.getDay())) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Na ta dan ne delamo (' + urnik.besedilo(salon) + '). Izberite drug dan:'));
         await wa.send(phoneId, token, wa.dateList(from, await getFreeDates(salon, 30, sess.serviceDuration)));
         return;
       }

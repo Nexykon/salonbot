@@ -869,7 +869,7 @@
     var znacke = [];
     if (l.allow_delivery) znacke.push('Dostava');
     if (l.allow_pickup) znacke.push('Osebni prevzem');
-    if (l.hours) znacke.push(l.hours);
+    if (l.danes) znacke.push(l.danes);
 
     plosca.innerHTML =
       '<div class="lokal-plosca-glava">' + znacka(l, 124)
@@ -881,6 +881,10 @@
           ? '<div style="display:flex;flex-wrap:wrap;gap:7px;padding:14px 22px 0">'
             + znacke.map(function (z) { return '<div class="tag" style="padding:5px 12px;font-size:13px">' + esc(z) + '</div>'; }).join('')
             + '</div>'
+          : '')
+      + (l.urnik_besedilo
+          ? '<div style="padding:14px 22px 0"><div class="mono-label">Odpiralni čas</div>'
+            + '<div style="margin-top:4px;font-size:14.5px;line-height:1.5">' + esc(l.urnik_besedilo) + '</div></div>'
           : '')
       + (l.phone
           ? '<div style="padding:14px 22px 0"><div class="mono-label">WhatsApp</div>'

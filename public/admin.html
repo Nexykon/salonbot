@@ -1152,6 +1152,7 @@
   /* logotip je povezava na domačo stran — inline-flex, da ne doda prostora pod sliko */
   .ft-logo-link { display: inline-flex; align-items: center; }
 </style>
+<script src="/urnik-vmesnik.js"></script>
 </head>
 <body>
 
@@ -1549,15 +1550,10 @@
             </div>
           </div>
           <div class="studio-section-body">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Začetek delovnika</label>
-                <input type="time" id="bs-start">
-              </div>
-              <div class="form-group">
-                <label>Konec delovnika</label>
-                <input type="time" id="bs-end">
-              </div>
+            <div class="form-group">
+              <label>Delovni čas po dnevih</label>
+              <div id="bs-urnik"></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:8px">Zaprt dan pomeni, da bot na ta dan ne ponuja terminov in ne sprejema naročil.</div>
             </div>
             <div class="form-row" style="margin-bottom:0">
               <div class="form-group">
@@ -2782,8 +2778,7 @@ async function openManageSalon(id) {
     document.getElementById('bs-ai-limit').value = settings.ai_monthly_limit || 0;
     document.getElementById('bs-owner-password').value = '';
     document.getElementById('bs-greeting').value = settings.greeting_message || '';
-    document.getElementById('bs-start').value = (settings.working_hours_start || '08:00').substring(0,5);
-    document.getElementById('bs-end').value = (settings.working_hours_end || '19:00').substring(0,5);
+    UrnikPolja.izrisi('bs-urnik', settings.urnik);
     document.getElementById('bs-interval').value = String(settings.booking_interval_minutes || 30);
     document.getElementById('bs-max-days').value = settings.max_advance_days || 30;
     renderBookingModeCards(settings.booking_mode || 'exact_time');
@@ -3211,8 +3206,7 @@ async function saveBotStudio() {
       business_slug: document.getElementById('bs-slug').value.trim(),
       bot_phone_display: document.getElementById('bs-bot-phone').value.trim(),
       greeting_message: document.getElementById('bs-greeting').value.trim(),
-      working_hours_start: document.getElementById('bs-start').value,
-      working_hours_end: document.getElementById('bs-end').value,
+      working_hours: UrnikPolja.zberi('bs-urnik'),
       booking_interval_minutes: parseInt(document.getElementById('bs-interval').value),
       max_advance_days: parseInt(document.getElementById('bs-max-days').value),
       booking_mode: getSelectedBookingMode(),

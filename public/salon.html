@@ -557,6 +557,7 @@
   .pc-ask { background: var(--surface); color: var(--ink); }
   .pc-ask:hover { background: var(--tan); }
 </style>
+<script src="/urnik-vmesnik.js"></script>
 </head>
 <body>
 
@@ -725,27 +726,9 @@
       <div class="card-title">🕐 Delovni čas</div>
 
       <div class="form-group">
-        <label>Delovni dnevi</label>
-        <div class="days-grid" id="days-grid">
-          <div class="day-toggle" data-day="1">Pon</div>
-          <div class="day-toggle" data-day="2">Tor</div>
-          <div class="day-toggle" data-day="3">Sre</div>
-          <div class="day-toggle" data-day="4">Čet</div>
-          <div class="day-toggle" data-day="5">Pet</div>
-          <div class="day-toggle" data-day="6">Sob</div>
-          <div class="day-toggle" data-day="0">Ned</div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Začetek delovnika</label>
-          <input type="time" id="hours-start" value="08:00">
-        </div>
-        <div class="form-group">
-          <label>Konec delovnika</label>
-          <input type="time" id="hours-end" value="19:00">
-        </div>
+        <label>Delovni čas po dnevih</label>
+        <div id="sm-urnik"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px">Na dan, ki je označen kot zaprt, bot ne ponuja terminov.</div>
       </div>
     </div>
 
@@ -983,7 +966,6 @@ let ownerToken = sessionStorage.getItem('ft_owner_token') || '';
 let masterToken = previewSalonId ? (settingsParams.get('master_token') || sessionStorage.getItem('ft_master_token') || '') : '';
 let _adminOverride = false;   // admin pregled: samostojen fetch-override
 let salonPhone = '';
-let selectedDays = new Set();
 let selectedInterval = 30;
 let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
@@ -1622,23 +1604,12 @@ function loadUI(data) {
   document.getElementById('notify-whatsapp').checked = data.notify_whatsapp !== false;
   document.getElementById('notify-email').checked = data.notify_email !== false;
   const acEl=document.getElementById('auto-confirm');if(acEl)acEl.checked=data.auto_confirm===true;
-  document.getElementById('hours-start').value = (data.working_hours_start || '08:00').substring(0,5);
-  document.getElementById('hours-end').value = (data.working_hours_end || '19:00').substring(0,5);
   document.getElementById('break-between').value = data.break_between_minutes || 0;
   document.getElementById('max-advance').value = data.max_advance_days || 30;
 
-  // Days
-  selectedDays = new Set((data.working_days || '1,2,3,4,5,6').split(',').map(Number));
-  document.querySelectorAll('.day-toggle').forEach(el => {
-    const d = parseInt(el.dataset.day);
-    el.classList.toggle('active', selectedDays.has(d));
-    el.onclick = () => {
-      if (selectedDays.has(d)) selectedDays.delete(d);
-      else selectedDays.add(d);
-      el.classList.toggle('active', selectedDays.has(d));
-      updatePreview();
-    };
-  });
+  // Urnik po dnevih (nadomešča izbirnik dni in eno samo območje ur)
+  UrnikPolja.izrisi('sm-urnik', data.urnik);
+  document.getElementById('sm-urnik').addEventListener('change', updatePreview);
 
   // Interval
   selectedInterval = data.booking_interval_minutes || 30;
@@ -1652,11 +1623,6 @@ function loadUI(data) {
       updatePreview();
     };
   });
-
-  // Time change listeners
-  ['hours-start','hours-end'].forEach(id =>
-    document.getElementById(id).addEventListener('change', updatePreview)
-  );
 
   updatePreview();
   loadServices();
@@ -1684,8 +1650,13 @@ function loadUI(data) {
 
 // ── Preview ────────────────────────────────────────────────
 function updatePreview() {
-  const start = document.getElementById('hours-start').value || '08:00';
-  const end = document.getElementById('hours-end').value || '19:00';
+  // Predogled kaže prvi odprti dan — urnik je zdaj po dnevih.
+  const u = UrnikPolja.zberi('sm-urnik') || {};
+  const prvi = UrnikPolja.DNEVI.map(d => u[d.dan]).find(Boolean);
+  const el0 = document.getElementById('preview-slots');
+  if (!prvi) { if (el0) el0.innerHTML = '<span style="color:var(--muted);font-size:0.8rem">Vsi dnevi so zaprti</span>'; return; }
+  const start = prvi.od;
+  const end = prvi.do;
   const slots = [];
   const [sh, sm] = start.split(':').map(Number);
   const [eh, em] = end.split(':').map(Number);
@@ -1736,19 +1707,22 @@ async function saveSettings() {
   const btn = document.getElementById('save-btn');
   btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Shranjujem…';
 
+  const urnikNov = UrnikPolja.zberi('sm-urnik');
   const body = {
     name: document.getElementById('salon-name').value.trim(),
-    working_days: Array.from(selectedDays).sort().join(','),
-    working_hours_start: document.getElementById('hours-start').value,
-    working_hours_end: document.getElementById('hours-end').value,
+    working_hours: urnikNov,
     booking_interval_minutes: selectedInterval,
     break_between_minutes: parseInt(document.getElementById('break-between').value),
     max_advance_days: parseInt(document.getElementById('max-advance').value),
     greeting_message: (document.getElementById('welcome-msg-input')?.value||'').trim()||null
   };
 
-  if (!body.working_days) { showToast('Izberite vsaj en delovni dan', 'error'); btn.disabled=false; btn.textContent='💾 Shrani nastavitve'; return; }
-  if (body.working_hours_start >= body.working_hours_end) { showToast('Začetek mora biti pred koncem delovnika', 'error'); btn.disabled=false; btn.textContent='💾 Shrani nastavitve'; return; }
+  const odveci = btn => { btn.disabled = false; btn.textContent = '💾 Shrani nastavitve'; };
+  if (!urnikNov) { showToast('Vsaj en dan mora biti odprt', 'error'); odveci(btn); return; }
+  for (const d of UrnikPolja.DNEVI) {
+    const v = urnikNov[d.dan];
+    if (v && v.od >= v.do) { showToast(d.dolgo + ': začetek mora biti pred koncem', 'error'); odveci(btn); return; }
+  }
 
   try {
     const headers = authHeaders({ 'Content-Type': 'application/json' });

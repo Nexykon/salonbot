@@ -3,6 +3,8 @@
 // košarico, deterministična koda pa cene, zaključek in oddajo.
 const axios = require('axios');
 const db = require('./supabase');
+const t = require('./time');
+const urnik = require('./urnik');
 
 // Retry wrapper — poizkusi do 2x z 1.5s zamudo
 async function axiosRetry(fn) {
@@ -141,7 +143,12 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
     return `- ${s.name} (${s.category || 'Ostalo'}): ${s.price} €${tg}${dsc}${algc}`;
   }).join('\n');
   const areaLine = salon.delivery_area ? `\nOBMOČJE DOSTAVE: ${salon.delivery_area}` : '';
-  const hoursLine = (salon.working_hours_start && salon.working_hours_end) ? `\nODPIRALNI ČAS: ${salon.working_hours_start}–${salon.working_hours_end} (če stranka vpraša za delovni/odpiralni čas, ji ga povej)` : '';
+  // Odpiralni čas po dnevih — prej je bilo eno samo območje za vse dni, zato
+  // bot o zaprtih dnevih ni vedel nič.
+  const _urnikDanes = urnik.zaDan(salon, t.todayDow());
+  const hoursLine = `\nODPIRALNI ČAS PO DNEVIH: ${urnik.besedilo(salon)}`
+    + `\nDANES: ${_urnikDanes ? _urnikDanes.od + '–' + _urnikDanes.do : 'zaprto'}`
+    + `\n(če stranka vpraša za odpiralni čas, ji povej ta urnik; ne izmišljuj si drugih ur in ne obljubljaj dostave na dan, ko je zaprto)`;
   const _minOrd = parseFloat(salon.min_order || 0);
   const minLine = _minOrd > 0 ? `\nMINIMALNO NAROČILO ZA DOSTAVO: ${_minOrd.toFixed(2)} € (velja za artikle brez dostave/embalaže). Če stranka vpraša ali če je pod tem zneskom pri dostavi, jo prijazno opozori.` : '';
   const _delU = parseFloat(salon.delivery_fee || 0);

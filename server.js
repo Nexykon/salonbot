@@ -17,6 +17,7 @@ const plans = require('./src/plans');
 const stripeSync = require('./src/stripe-sync');
 const { stripeClient, stripePriceId } = stripeSync;
 const t = require('./src/time');
+const urnik = require('./src/urnik');
 const { botMsg, DEFAULTS: BOT_MSG_DEFAULTS, KEYS: BOT_MSG_KEYS } = require('./src/botmsg');
 
 const app = express();
@@ -203,6 +204,7 @@ function publicSalon(salon) {
     working_days: salon.working_days || '1,2,3,4,5,6',
     working_hours_start: salon.working_hours_start,
     working_hours_end: salon.working_hours_end,
+    urnik: urnik.zaVmesnik(salon),
     booking_interval_minutes: salon.booking_interval_minutes || 30,
     break_between_minutes: salon.break_between_minutes || 0,
     max_advance_days: salon.max_advance_days || 30,
@@ -585,9 +587,13 @@ app.get('/api/public/restaurants', async (req, res) => {
       address: s.address || '',
       delivery_area: s.delivery_area || '',
       pickup_address: s.pickup_address || '',
-      hours: (s.working_hours_start && s.working_hours_end)
-        ? String(s.working_hours_start).slice(0, 5) + '–' + String(s.working_hours_end).slice(0, 5)
-        : '',
+      // Značka na kartici pove današnje stanje, podrobno okno pa cel teden.
+      odprto: urnik.jeOdprto(s).odprto,
+      danes: (() => {
+        const d = urnik.zaDan(s, t.todayDow());
+        return d ? 'Danes ' + d.od + '–' + d.do : 'Danes zaprto';
+      })(),
+      urnik_besedilo: urnik.besedilo(s),
       phone: s.bot_phone_display || '',
       business_type: s.business_type || '',
       slug: s.business_slug || '',
@@ -1173,6 +1179,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'working_days',
     'working_hours_start',
     'working_hours_end',
+    'working_hours',
     'booking_interval_minutes',
     'break_between_minutes',
     'max_advance_days',
@@ -1215,6 +1222,8 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
   if (updates.booking_mode !== undefined) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
   if (updates.datetime_position !== undefined) updates.datetime_position = updates.datetime_position === 'last' ? 'last' : 'first';
   if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
+  // null pomeni "urnika ni" — takrat velja star model (working_days + eno območje)
+  if (updates.working_hours !== undefined) updates.working_hours = urnik.varenUrnik(updates.working_hours);
   try {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
@@ -1346,6 +1355,7 @@ app.get('/api/settings', async (req, res) => {
       working_days: salon.working_days || '1,2,3,4,5',
       working_hours_start: salon.working_hours_start || '08:00',
       working_hours_end: salon.working_hours_end || '18:00',
+      urnik: urnik.zaVmesnik(salon),
       booking_interval_minutes: salon.booking_interval_minutes || 30,
       break_between_minutes: salon.break_between_minutes || 0,
       max_advance_days: salon.max_advance_days || 30,
@@ -1390,6 +1400,7 @@ app.get('/api/settings', async (req, res) => {
       working_hours_start: salon.working_hours_start || '',
       working_hours_end: salon.working_hours_end || '',
       working_days: salon.working_days || '1,2,3,4,5,6',
+      urnik: urnik.zaVmesnik(salon),
       bot_messages: (salon.bot_messages && typeof salon.bot_messages === 'object') ? salon.bot_messages : {},
       bot_messages_defaults: BOT_MSG_DEFAULTS,
       review_link: salon.review_link || '',
@@ -1413,7 +1424,7 @@ app.patch('/api/settings', async (req, res) => {
   if (!salon) return;
   try {
     const allowed = ['name', 'greeting_message', 'working_days', 'working_hours_start',
-      'working_hours_end', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
+      'working_hours_end', 'working_hours', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
       'packaging_price', 'delivery_fee', 'delivery_per_item', 'min_order',
@@ -1438,6 +1449,8 @@ app.patch('/api/settings', async (req, res) => {
       updates.review_delay_hours = (isNaN(h) || h < 1) ? 2 : Math.min(48, h);
     }
     if (updates.booking_mode) updates.booking_mode = normalizeBookingMode(updates.booking_mode);
+    // null pomeni "urnika ni" — takrat velja star model (working_days + eno območje)
+    if (updates.working_hours !== undefined) updates.working_hours = urnik.varenUrnik(updates.working_hours);
     if (updates.datetime_position) updates.datetime_position = updates.datetime_position === 'last' ? 'last' : 'first';
     if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
     if (updates.packaging_price !== undefined) updates.packaging_price = Math.max(0, parseFloat(String(updates.packaging_price).replace(',', '.')) || 0);

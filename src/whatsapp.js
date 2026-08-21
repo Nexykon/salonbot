@@ -1,4 +1,5 @@
 const axios = require('axios');
+const urnik = require('./urnik');
 
 function client(phoneId, token) {
   return axios.create({
@@ -400,9 +401,8 @@ function deliveryWelcome(salon, customerName) {
   const info = [];
   if ((salon.allow_delivery !== false) && salon.delivery_area) info.push('Dostava: ' + salon.delivery_area);
   if (salon.allow_pickup && salon.pickup_address) info.push('Osebni prevzem: ' + salon.pickup_address);
-  if (salon.working_hours_start && salon.working_hours_end) {
-    info.push('Delovni čas: ' + String(salon.working_hours_start).substring(0, 5) + '–' + String(salon.working_hours_end).substring(0, 5));
-  }
+  const _urnik = urnik.besedilo(salon);
+  if (_urnik && _urnik !== 'zaprto') info.push('Delovni čas: ' + _urnik);
   const firstName = stripEmoji(customerName).split(' ')[0];
   let txt = firstName
     ? 'Pozdravljeni, *' + firstName + '*! Lepo, da ste spet pri *' + name + '*.'

@@ -1,7 +1,9 @@
 // ─── Prilagodljiva sporočila bota ────────────────────────────
 // Lastnik lahko v nastavitvah povozi katerokoli sporočilo;
 // prazna vrednost pomeni privzeto besedilo spodaj.
-// Oznake: {ime} {ref} {minute} {naslov} se zamenjajo ob pošiljanju.
+// Oznake: {ime} {ref} {minute} {naslov} se zamenjajo ob pošiljanju,
+// pri sporočilu "closed" še {urnik} (npr. "Pon–Sob 10:00–21:00, Ned zaprto")
+// in {odprtje} (npr. " jutri po 10:00").
 
 const DEFAULTS = {
   mode_question:      '🛒 Skoraj končano!\n\nKako želite prevzeti naročilo?',
@@ -14,7 +16,8 @@ const DEFAULTS = {
   accepted_pickup:    '🏃 Vaše naročilo je potrjeno!\n\n⏱️ Pripravljeno za prevzem v pribl. *{minute} minutah*{naslov}\n\nHvala za naročilo! 😊',
   rejected:           '😔 Žal vašega naročila nismo mogli sprejeti. Pokličite nas za več informacij.',
   cancelled:          'V redu, naročanje je preklicano. Pišite nam, ko boste spet lačni! 🍕',
-  bot_offline:        '⏸️ Trenutno žal ne sprejemamo naročil. Poskusite malo kasneje. Hvala za razumevanje! 🙏'
+  bot_offline:        '⏸️ Trenutno žal ne sprejemamo naročil. Poskusite malo kasneje. Hvala za razumevanje! 🙏',
+  closed:             '🕐 Trenutno imamo zaprto.\n\nOdpiralni čas: {urnik}\n\nVeseli bomo vašega naročila{odprtje}! 🙏'
 };
 
 const KEYS = Object.keys(DEFAULTS);
@@ -34,7 +37,9 @@ function botMsg(salon, key, vars = {}) {
     .replace(/\{ime\}/g, vars.ime !== undefined ? String(vars.ime) : '')
     .replace(/\{ref\}/g, vars.ref !== undefined ? String(vars.ref) : '')
     .replace(/\{minute\}/g, vars.minute !== undefined ? String(vars.minute) : '')
-    .replace(/\{naslov\}/g, vars.naslov !== undefined ? String(vars.naslov) : '');
+    .replace(/\{naslov\}/g, vars.naslov !== undefined ? String(vars.naslov) : '')
+    .replace(/\{urnik\}/g, vars.urnik !== undefined ? String(vars.urnik) : '')
+    .replace(/\{odprtje\}/g, vars.odprtje !== undefined ? String(vars.odprtje) : '');
 }
 
 module.exports = { botMsg, DEFAULTS, KEYS };

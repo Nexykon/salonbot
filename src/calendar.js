@@ -1,5 +1,6 @@
 const db = require('./supabase');
 const t = require('./time');
+const urnik = require('./urnik');
 
 function generateWorkingTimes(startTime, endTime, intervalMin = 30) {
   const [sh, sm] = startTime.split(':').map(Number);
@@ -35,12 +36,8 @@ function isSlotFree(candidateTime, candidateDuration, bookedSlots) {
 
 // serviceDuration = trajanje izbrane storitve v minutah (null = interval salona)
 async function getFreeDates(salon, maxDays = 30, serviceDuration = null) {
-  const workingDays = (salon.working_days || '1,2,3,4,5,6').split(',').map(Number);
-  const startTime = (salon.working_hours_start || '08:00').substring(0, 5);
-  const endTime = (salon.working_hours_end || '19:00').substring(0, 5);
   const interval = salon.booking_interval_minutes || 30;
   const duration = serviceDuration || interval;
-  const allTimes = generateWorkingTimes(startTime, endTime, interval);
 
   const todayStr = t.todayStr();
   const currentTime = t.nowTimeStr();
@@ -51,13 +48,15 @@ async function getFreeDates(salon, maxDays = 30, serviceDuration = null) {
 
   for (let i = 0; i < Math.min(maxDays, maxDay); i++) {
     const dateStr = cur.toISOString().split('T')[0];
-    const dayOfWeek = cur.getDay();
+    // Vsak dan ima lahko svoj odpiralni čas; null pomeni zaprto.
+    const dan = urnik.zaDan(salon, cur.getDay());
 
-    if (workingDays.includes(dayOfWeek)) {
+    if (dan) {
+      const allTimes = generateWorkingTimes(dan.od, dan.do, interval);
       const bookedSlots = await db.getBookedTimesForDate(salon.id, dateStr);
       let freeTimes = allTimes.filter(t => {
         if (dateStr === todayStr && t <= currentTime) return false;
-        if (!fitsBeforeEnd(t, duration, endTime)) return false;
+        if (!fitsBeforeEnd(t, duration, dan.do)) return false;
         return isSlotFree(t, duration, bookedSlots);
       });
       if (freeTimes.length > 0) freeDates.push({ date: dateStr, count: freeTimes.length });
@@ -68,11 +67,11 @@ async function getFreeDates(salon, maxDays = 30, serviceDuration = null) {
 }
 
 async function getFreeTimesForDate(salon, date, serviceDuration = null) {
-  const startTime = (salon.working_hours_start || '08:00').substring(0, 5);
-  const endTime = (salon.working_hours_end || '19:00').substring(0, 5);
+  const dan = urnik.zaDatum(salon, date);
+  if (!dan) return [];                      // na ta dan je zaprto
   const interval = salon.booking_interval_minutes || 30;
   const duration = serviceDuration || interval;
-  const allTimes = generateWorkingTimes(startTime, endTime, interval);
+  const allTimes = generateWorkingTimes(dan.od, dan.do, interval);
 
   const todayStr = t.todayStr();
   const currentTime = t.nowTimeStr();
@@ -80,7 +79,7 @@ async function getFreeTimesForDate(salon, date, serviceDuration = null) {
   const bookedSlots = await db.getBookedTimesForDate(salon.id, date);
   return allTimes.filter(t => {
     if (date === todayStr && t <= currentTime) return false;
-    if (!fitsBeforeEnd(t, duration, endTime)) return false;
+    if (!fitsBeforeEnd(t, duration, dan.do)) return false;
     return isSlotFree(t, duration, bookedSlots);
   });
 }

@@ -543,6 +543,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
   .pc-ask { background: var(--surface); color: var(--text); }
   .pc-ask:hover { background: var(--surface2); }
 </style>
+<script src="/urnik-vmesnik.js"></script>
 </head>
 <body>
 
@@ -741,12 +742,9 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
           <input type="text" id="s-delivery-area" placeholder='npr. "Kranj z okolico" ali "Kranj, Naklo, Šenčur"'>
         </div>
         <div class="s-row">
-          <label>Delovni čas (odpiralni čas — natakar ga sporoči strankam)</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="time" id="s-open" style="max-width:140px">
-            <span style="color:var(--muted)">do</span>
-            <input type="time" id="s-close" style="max-width:140px">
-          </div>
+          <label>Delovni čas po dnevih (natakar ga sporoči strankam)</label>
+          <div id="s-urnik"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px">Na dan, ki je označen kot zaprt, bot naročil ne sprejema — stranki pove, kdaj spet odprete.</div>
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Če sta omogočena oba načina, bot stranko vpraša "Dostava ali osebni prevzem?". Pri prevzemu se dostava ne zaračuna.</div>
       </div>
@@ -976,6 +974,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
         <div><label><span class="bm-num">10</span>Naročilo zavrnjeno</label><textarea id="bm-rejected" rows="2" oninput="bmInput('rejected')" onfocus="bmFocus('rejected')"></textarea></div>
         <div><label><span class="bm-num">11</span>Naročanje preklicano (stranka napiše „prekliči")</label><textarea id="bm-cancelled" rows="2" oninput="bmInput('cancelled')" onfocus="bmFocus('cancelled')"></textarea></div>
         <div><label><span class="bm-num">12</span>Bot izklopljen (rdeče stikalo)</label><textarea id="bm-bot_offline" rows="3" oninput="bmInput('bot_offline')" onfocus="bmFocus('bot_offline')"></textarea></div>
+        <div><label><span class="bm-num">13</span>Lokal zaprt (izven odpiralnega časa)<span style="display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px">Oznaki <b>{urnik}</b> in <b>{odprtje}</b> se zamenjata z urnikom in s tem, kdaj spet odprete.</span></label><textarea id="bm-closed" rows="4" oninput="bmInput('closed')" onfocus="bmFocus('closed')"></textarea></div>
       </div>
       <div class="bm-phone-wrap">
         <div class="phone-preview">
@@ -1585,8 +1584,11 @@ async function loadSettingsData() {
     document.getElementById('s-pick-pack').checked  = d.pickup_packaging !== false;
     document.getElementById('s-pickup-addr').value  = d.pickup_address || '';
     document.getElementById('s-delivery-area').value = d.delivery_area || '';
-    if (document.getElementById('s-open')) document.getElementById('s-open').value = d.working_hours_start || '';
-    if (document.getElementById('s-close')) document.getElementById('s-close').value = d.working_hours_end || '';
+    UrnikPolja.izrisi('s-urnik', d.urnik);
+    // Predogled sporočila „lokal zaprt" vsebuje urnik — osveži ga ob spremembi
+    document.getElementById('s-urnik').addEventListener('change', function () {
+      if (document.getElementById('bm-bub-closed')) bmInput('closed');
+    });
     if (document.getElementById('s-review-on')) document.getElementById('s-review-on').checked = d.review_enabled === true;
     if (document.getElementById('s-review-link')) document.getElementById('s-review-link').value = d.review_link || '';
     if (document.getElementById('s-review-delay')) document.getElementById('s-review-delay').value = d.review_delay_hours || 2;
@@ -1621,7 +1623,7 @@ function feeValue(checkId, inputId) {
 }
 
 // ── Sporočila bota (urejevalnik s predogledom telefona) ──
-const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected','cancelled','bot_offline'];
+const BM_KEYS = ['mode_question','note_question','name_question','address_question','submitted_delivery','submitted_pickup','accepted_delivery','accepted_pickup','rejected','cancelled','bot_offline','closed'];
 const BM_GREET_DEFAULT = '👇 Izberite artikel iz menija:';
 const BM_TIME = '11:42';
 let bmDefaults = {};
@@ -1661,7 +1663,9 @@ function bmRender(key) {
     .replace(/\{ime\}/g, 'Janez Novak')
     .replace(/\{ref\}/g, 'A1B2C3')
     .replace(/\{minute\}/g, '30')
-    .replace(/\{naslov\}/g, '\n📍 Prevzem: ' + addr);
+    .replace(/\{naslov\}/g, '\n📍 Prevzem: ' + addr)
+    .replace(/\{urnik\}/g, UrnikPolja.besediloIzPolj('s-urnik'))
+    .replace(/\{odprtje\}/g, ' jutri po 10:00');
   return bmFormat(t);
 }
 const BM_NOTE_PREFIX = '🛒 *Vaše naročilo* (🚗 Dostava):\n• Pica Margerita x2 — 17.00 €\n\n💵 *SKUPAJ: 17.00 €*\n\n';
@@ -1710,7 +1714,9 @@ function renderBmChat() {
     bmLabel('🚫 Ko stranka napiše „prekliči"'),
     bmBubble('recv', '', 'cancelled'),
     bmLabel('🔴 Ko je bot izklopljen'),
-    bmBubble('recv', '', 'bot_offline')
+    bmBubble('recv', '', 'bot_offline'),
+    bmLabel('🕐 Ko stranka piše izven odpiralnega časa'),
+    bmBubble('recv', '', 'closed')
   ].join('');
 }
 
@@ -2106,8 +2112,7 @@ async function saveSettings() {
         pickup_packaging:document.getElementById('s-pick-pack').checked,
         pickup_address:document.getElementById('s-pickup-addr').value.trim(),
         delivery_area:document.getElementById('s-delivery-area').value.trim(),
-        working_hours_start:document.getElementById('s-open').value||null,
-        working_hours_end:document.getElementById('s-close').value||null,
+        working_hours:UrnikPolja.zberi('s-urnik'),
         review_enabled:document.getElementById('s-review-on').checked,
         review_link:document.getElementById('s-review-link').value.trim(),
         review_delay_hours:parseInt(document.getElementById('s-review-delay').value)||2,

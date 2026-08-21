@@ -248,11 +248,21 @@ async function getLastOrderItemsByPhone(salonId, phone) {
 
 // Javno objavljeni lokali — za stran /restavracije
 async function getPublicRestaurants() {
-  const cols = 'id,name,logo_url,address,delivery_area,pickup_address,working_hours_start,working_hours_end,bot_phone_display,business_type,business_slug,allow_delivery,allow_pickup';
-  const r = await axios.get(
+  const osnovni = 'id,name,logo_url,address,delivery_area,pickup_address,working_hours_start,working_hours_end,working_days,bot_phone_display,business_type,business_slug,allow_delivery,allow_pickup';
+  const poizvedba = cols => axios.get(
     `${BASE}/sb_salons?listed_public=eq.true&subscription_status=neq.inactive&select=${cols}&order=name`,
     { headers: HEADERS }
   );
+  let r;
+  try {
+    r = await poizvedba(osnovni + ',working_hours');
+  } catch (e) {
+    // Stolpec working_hours doda migracija 005. Če ta še ni pognana, PostgREST
+    // vrne 400 in javni imenik bi ostal prazen — zato brez njega še enkrat.
+    if (!e.response || e.response.status !== 400) throw e;
+    console.warn('[urnik] stolpca working_hours še ni — poženi migracijo 005; berem star urnik');
+    r = await poizvedba(osnovni);
+  }
   return (r.data || []).filter(s => s.is_active !== false);
 }
 
@@ -649,11 +659,20 @@ async function getSalonByToken(token) {
 }
 
 async function updateSalonSettings(salonId, settings) {
-  await axios.patch(
-    `${BASE}/sb_salons?id=eq.${salonId}`,
-    settings,
-    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
-  );
+  try {
+    await axios.patch(
+      `${BASE}/sb_salons?id=eq.${salonId}`,
+      settings,
+      { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+    );
+  } catch (e) {
+    // Manjkajoč stolpec da nerazumljivo sporočilo; povejmo, kaj je treba narediti.
+    const opis = (e.response && e.response.data && (e.response.data.message || e.response.data.hint)) || '';
+    if (/working_hours/.test(opis) && /column|stolpec/i.test(opis)) {
+      throw new Error('Urnika ni mogoče shraniti: v bazi manjka stolpec working_hours. Poženi migracijo migracije/005-urnik-po-dnevih.sql.');
+    }
+    throw e;
+  }
 }
 
 async function getMasterAdminByEmail(email) {
