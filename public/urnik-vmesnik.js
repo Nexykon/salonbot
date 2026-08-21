@@ -20,19 +20,30 @@
     { dan: 0, kratko: 'Ned', dolgo: 'Nedelja' }
   ];
 
+  // Vrstica je mreža, ne flex: tako se stolpci poravnajo med vsemi dnevi in
+  // polji ostaneta v isti vrstici tudi tam, kjer plošča vnosnim poljem sicer
+  // da display:block in width:100% (sicer se vsako postavi v svojo vrstico).
   var SLOG = '\
-.urnik-tabela{display:flex;flex-direction:column;gap:6px;margin-top:6px}\
-.urnik-vrstica{display:flex;align-items:center;gap:8px;flex-wrap:wrap}\
-.urnik-dan{min-width:104px;font-weight:600;font-size:14px}\
-.urnik-vrstica input[type=time]{max-width:120px}\
-.urnik-do{color:var(--muted,#6b7280);font-size:13px}\
-.urnik-zaprto{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:13px;color:var(--muted,#6b7280)}\
-.urnik-vrstica.je-zaprto .urnik-ure{opacity:.4}\
-.urnik-orodja{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}\
+.urnik-tabela{display:flex;flex-direction:column;gap:8px;margin-top:8px}\
+.urnik-vrstica{display:grid;\
+grid-template-columns:minmax(84px,auto) minmax(0,146px) auto minmax(0,146px) auto minmax(0,1fr);\
+align-items:center;column-gap:10px;row-gap:4px}\
+.urnik-vrstica .urnik-dan{font-weight:600;font-size:14px;white-space:nowrap;margin:0}\
+.urnik-vrstica input[type=time]{box-sizing:border-box;display:block;width:100%;min-width:0;margin:0}\
+.urnik-vrstica .urnik-do{color:var(--muted,#6b7280);font-size:13px;text-align:center;margin:0}\
+.urnik-vrstica .urnik-zaprto{display:inline-flex;align-items:center;gap:6px;cursor:pointer;\
+user-select:none;font-size:13px;font-weight:400;color:var(--muted,#6b7280);white-space:nowrap;\
+justify-self:start;margin:0}\
+.urnik-vrstica .urnik-zaprto input[type=checkbox]{width:auto;min-width:0;flex:0 0 auto;margin:0;padding:0}\
+.urnik-vrstica.je-zaprto input[type=time]{opacity:.45}\
+.urnik-vrstica.je-zaprto .urnik-do{opacity:.45}\
+.urnik-orodja{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap}\
 .urnik-gumb{font:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--border,#d1d5db);\
 background:transparent;color:inherit;border-radius:8px;cursor:pointer}\
 .urnik-gumb:hover{border-color:var(--muted,#6b7280)}\
-@media(max-width:480px){.urnik-dan{min-width:76px}.urnik-vrstica input[type=time]{max-width:104px}}';
+@media(max-width:560px){\
+.urnik-vrstica{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto}\
+.urnik-vrstica .urnik-dan{grid-column:1/-1}}';
 
   function poskrbiZaSlog() {
     if (document.getElementById('urnik-slog')) return;
@@ -58,13 +69,12 @@ background:transparent;color:inherit;border-radius:8px;cursor:pointer}\
     el.innerHTML = DNEVI.map(function (d) {
       var v = m[d.dan] || { zaprto: true, od: '', do: '' };
       var zaprto = !!v.zaprto;
+      // Otroci so neposredno v mreži — ovoj bi jih spet zvil v en stolpec.
       return '<div class="urnik-vrstica' + (zaprto ? ' je-zaprto' : '') + '" data-dan="' + d.dan + '">'
         + '<span class="urnik-dan">' + d.dolgo + '</span>'
-        + '<span class="urnik-ure">'
         + '<input type="time" class="urnik-od" value="' + (v.od || '') + '"' + (zaprto ? ' disabled' : '') + '>'
-        + ' <span class="urnik-do">do</span> '
+        + '<span class="urnik-do">do</span>'
         + '<input type="time" class="urnik-doo" value="' + (v.do || '') + '"' + (zaprto ? ' disabled' : '') + '>'
-        + '</span>'
         + '<label class="urnik-zaprto"><input type="checkbox" class="urnik-zaprt"'
         + (zaprto ? ' checked' : '') + '> zaprto</label>'
         + '</div>';
