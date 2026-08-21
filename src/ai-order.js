@@ -50,33 +50,50 @@ const TOOLS = [
 
 // Izračun zneskov — VEDNO deterministična koda, nikoli AI
 // ─── Embalaža ─────────────────────────────────────────────────────────────
-// Cena embalaže je lahko določena na artikel (sb_services.packaging_price):
-// pica 0,60 €, dodatek 0,40 €, pijača 0. Kadar artikel svoje cene nima,
-// velja enotna cena lokala (sb_salons.packaging_price). Znesek je zato vsota
-// po vrsticah in ne "kosov × ena cena".
+// Dva načina, ki se IZKLJUČUJETA:
 //
-// Cena je na artiklu zapisana kot `pack` in se vpiše, ko gre artikel v
-// košarico. Če je `pack` neznan (stara seja), pade na enotno ceno lokala.
-function packUnitFor(salon, item) {
-  var lastna = item ? item.pack : undefined;
-  if (lastna !== undefined && lastna !== null && lastna !== '') {
-    const v = parseFloat(lastna);
-    if (!isNaN(v) && v >= 0) return v;
-  }
+//   1) Enotna cena za CELOTNO naročilo (sb_salons.packaging_price > 0)
+//      Hitra nastavitev: npr. vrečka za 1 €, ki se prišteje enkrat, ne glede
+//      na to, kaj je stranka naročila. Cene pri artiklih se takrat NE
+//      uporabijo.
+//
+//   2) Cena po artiklu (sb_services.packaging_price)
+//      Velja, kadar enotna cena ni nastavljena. Znesek je vsota po vrsticah:
+//      pica 0,60 €, dodatek 0,40 €. Prazno ali 0 pomeni brez embalaže.
+//
+// Če ni ne enega ne drugega, je embalaža brezplačna.
+//
+// Cena artikla je v košarici zapisana kot `pack` in se vpiše ob dodajanju.
+function packUnitFor(item) {
+  const lastna = item ? item.pack : undefined;
+  if (lastna === undefined || lastna === null || lastna === '') return 0;
+  const v = parseFloat(lastna);
+  return (isNaN(v) || v < 0) ? 0 : v;
+}
+
+// Enotna cena za celotno naročilo; 0 pomeni, da ta način ni v uporabi.
+function enotnaEmbalaza(salon) {
   const g = parseFloat(salon.packaging_price || 0);
-  return isNaN(g) || g < 0 ? 0 : g;
+  return (isNaN(g) || g < 0) ? 0 : g;
 }
 
 function computeTotals(salon, cart, mode) {
   const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
   const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
+  const enotnaCena = enotnaEmbalaza(salon);
+  const naNarocilo = enotnaCena > 0;
 
   let packFee = 0;
   const enote = new Set();
-  for (const i of cart) {
-    const u = packUnitFor(salon, i);
-    enote.add(u.toFixed(2));
-    if (chargePack) packFee += u * (i.qty || 1);
+  if (naNarocilo) {
+    // Enotna cena se prišteje enkrat — le če je v košarici sploh kaj.
+    packFee = (chargePack && cart.length) ? enotnaCena : 0;
+  } else {
+    for (const i of cart) {
+      const u = packUnitFor(i);
+      enote.add(u.toFixed(2));
+      if (chargePack) packFee += u * (i.qty || 1);
+    }
   }
   packFee = +packFee.toFixed(2);
 
@@ -87,10 +104,11 @@ function computeTotals(salon, cart, mode) {
   const itemsTotal = cart.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
   const grand = (itemsTotal + packFee + delFee).toFixed(2);
 
-  // Kadar imajo vsi artikli isto ceno embalaže, je razčlenitev "3 × 0,60 €"
-  // razumljivejša; ko se cene razlikujejo, bi bila napačna, zato le vsota.
-  const enotna = enote.size === 1 && parseFloat([...enote][0]) > 0;
-  const packText = enotna
+  // Pri ceni po artiklu je razčlenitev "3 × 0,60 €" razumljivejša, kadar imajo
+  // vsi artikli isto ceno; ko se cene razlikujejo, bi bil zmnožek napačen,
+  // zato le vsota. Pri enotni ceni na naročilo je zmnožka sploh ni.
+  const istaCena = !naNarocilo && enote.size === 1 && parseFloat([...enote][0]) > 0;
+  const packText = istaCena
     ? `${kosov} × ${[...enote][0]} € = ${packFee.toFixed(2)} €`
     : `${packFee.toFixed(2)} €`;
 
@@ -107,7 +125,7 @@ function computeTotals(salon, cart, mode) {
   return { itemsTotal, packFee, delFee, grand, packText, vrstice, text: parts.join(' · ') + '.' };
 }
 
-// Cena embalaže artikla iz menija; null pomeni "uporabi enotno ceno lokala".
+// Cena embalaže artikla iz menija; null pomeni "brez embalaže" (enako kot 0).
 function packOfService(svc) {
   if (!svc) return null;
   const v = svc.packaging_price;
@@ -203,12 +221,15 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
   const minLine = _minOrd > 0 ? `\nMINIMALNO NAROČILO ZA DOSTAVO: ${_minOrd.toFixed(2)} € (velja za artikle brez dostave/embalaže). Če stranka vpraša ali če je pod tem zneskom pri dostavi, jo prijazno opozori.` : '';
   const _delU = parseFloat(salon.delivery_fee || 0);
   const feeLine = _delU > 0 ? `\nSTROŠEK DOSTAVE: ${_delU.toFixed(2)} € na naročilo (doda se ob zaključku).` : '';
-  // Embalaža ima lahko svojo ceno pri vsakem artiklu; zneskov ne sme ugibati AI.
-  const _emb = services.map(s => packOfService(s)).filter(v => v !== null && v > 0);
-  const _embG = parseFloat(salon.packaging_price || 0) || 0;
-  const embLine = (_emb.length || _embG > 0)
-    ? `\nEMBALAŽA: se doda ob zaključku glede na naročene artikle. Zneskov NE računaj in NE ugibaj — izračuna jih sistem. Če stranka vpraša, povej le, da se embalaža obračuna po artiklih in bo prikazana v povzetku.`
-    : '';
+  // Embalaža: enotna cena na naročilo ali cena po artiklu. Zneskov ne sme
+  // ugibati AI — izračuna jih koda.
+  const _embEnotna = enotnaEmbalaza(salon);
+  const _embArtikli = services.some(s => (packOfService(s) || 0) > 0);
+  const embLine = _embEnotna > 0
+    ? `\nEMBALAŽA: ${_embEnotna.toFixed(2)} € na celotno naročilo (doda se enkrat ob zaključku, ne glede na število artiklov).`
+    : (_embArtikli
+      ? `\nEMBALAŽA: se doda ob zaključku glede na naročene artikle. Zneskov NE računaj in NE ugibaj — izračuna jih sistem. Če stranka vpraša, povej le, da se embalaža obračuna po artiklih in bo prikazana v povzetku.`
+      : `\nEMBALAŽA: brezplačna. Če stranka vpraša, povej, da embalaže ne zaračunamo.`);
   // Zavedanje datuma/ure (slovenski čas)
   const _now = new Date();
   let _danes;

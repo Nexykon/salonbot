@@ -7,27 +7,28 @@
 -- kot artikel na meniju ("Embalaža za pizzo - karton").
 --
 -- KAJ
--- Doda en stolpec: sb_services.packaging_price (numeric).
---   NULL  = artikel svoje cene nima → velja enotna cena lokala
---           (sb_salons.packaging_price)
---   0     = ta artikel je izrecno BREZ embalaže (npr. pijača)
---   > 0   = cena embalaže za en kos tega artikla
+-- Doda en stolpec: sb_services.packaging_price (numeric) — cena embalaže za
+-- en kos tega artikla. NULL ali 0 pomeni brez embalaže.
 --
--- Ta razlika med NULL in 0 je namerna: brez nje pijače ne bi bilo mogoče
--- izvzeti, ne da bi lokal izgubil enotno ceno za vse ostalo.
+-- Embalaža ima dva načina, ki se IZKLJUČUJETA:
+--   1) sb_salons.packaging_price > 0
+--      enotna cena za CELOTNO naročilo (npr. vrečka 1 €), prišteta enkrat.
+--      Cene pri artiklih se takrat NE upoštevajo.
+--   2) sb_salons.packaging_price = 0
+--      velja cena po artiklu; zneski se seštejejo.
+-- Brez obojega je embalaža brezplačna.
 --
 -- VARNOST
 -- Samo dodajanje stolpca, brez brisanja in brez sprememb obstoječih vrstic.
--- Dokler je stolpec pri vseh artiklih NULL, se zneski ne spremenijo niti za
--- cent — velja enotna cena lokala, tako kot doslej.
--- Varno je pognati večkrat.
+-- Varno je pognati večkrat — tudi ponovno, če je bil komentar stolpca zapisan
+-- po starem pravilu.
 
 -- ── 1. korak: sprememba ────────────────────────────────────────────────────
 alter table public.sb_services
   add column if not exists packaging_price numeric;
 
 comment on column public.sb_services.packaging_price is
-  'Cena embalaze za en kos tega artikla v EUR. NULL = uporabi enotno ceno lokala (sb_salons.packaging_price), 0 = brez embalaze.';
+  'Cena embalaze za en kos tega artikla v EUR. NULL ali 0 = brez embalaze. Velja samo, kadar je sb_salons.packaging_price = 0; sicer velja enotna cena za celotno narocilo.';
 
 
 -- ── 2. korak: preverba ─────────────────────────────────────────────────────

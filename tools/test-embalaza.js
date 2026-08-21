@@ -1,5 +1,9 @@
 /*
-  Preizkus zneskov: embalaža po artiklu, enotna cena lokala, dostava.
+  Preizkus zneskov embalaže. Dva načina, ki se izključujeta:
+    1) enotna cena za CELOTNO naročilo (sb_salons.packaging_price > 0)
+    2) cena po artiklu (sb_services.packaging_price); prazno ali 0 = brez
+  Brez obojega je embalaža brezplačna.
+
   Brez baze in brez omrežja — samo vhod → izhod na pravi kodi (computeTotals).
 
     node tools/test-embalaza.js
@@ -15,131 +19,134 @@ function je(opis, dobil, pricakoval) {
 
 const lokal = (d) => Object.assign({ packaging_price: 0, delivery_fee: 0, pickup_packaging: true }, d);
 
-console.log('\n1) Enotna cena lokala (kot doslej — nič se ne sme spremeniti)');
+console.log('\n1) Enotna cena za CELOTNO naročilo (vrečka 1 €)');
 {
-  const s = lokal({ packaging_price: 0.6, delivery_fee: 3 });
-  const cart = [{ name: 'Margherita', price: 7.5, qty: 2 }, { name: 'Cola', price: 2.5, qty: 1 }];
-  const t = computeTotals(s, cart, 'dostava');
-  je('embalaža 3 kosi × 0,60', t.packFee, 1.8);
-  je('dostava enkrat na naročilo', t.delFee, 3);
-  je('artikli', +t.itemsTotal.toFixed(2), 17.5);
-  je('skupaj', t.grand, '22.30');
-  je('razčlenitev navede množenje', t.packText, '3 × 0.60 € = 1.80 €');
+  const s = lokal({ packaging_price: 1 });
+  je('en artikel → 1,00 €', computeTotals(s, [{ name: 'Pica', price: 8, qty: 1 }], 'dostava').packFee, 1);
+  je('pet kosov → še vedno 1,00 €', computeTotals(s, [{ name: 'Pica', price: 8, qty: 5 }], 'dostava').packFee, 1);
+  je('tri vrstice → še vedno 1,00 €', computeTotals(s, [
+    { name: 'A', price: 5, qty: 2 }, { name: 'B', price: 3, qty: 1 }, { name: 'C', price: 2, qty: 4 }
+  ], 'dostava').packFee, 1);
+  je('prazna košarica → 0', computeTotals(s, [], 'dostava').packFee, 0);
+  je('brez zmnožka v razčlenitvi', computeTotals(s, [{ name: 'Pica', price: 8, qty: 3 }], 'dostava').packText, '1.00 €');
+  je('skupaj', computeTotals(s, [{ name: 'Pica', price: 8, qty: 2 }], 'dostava').grand, '17.00');
 }
 
-console.log('\n2) Cena embalaže po artiklu (pica 0,60, dodatek 0,40)');
+console.log('\n2) Enotna cena PREVLADA nad cenami pri artiklih');
 {
-  const s = lokal({ packaging_price: 0.6 });
-  const cart = [
-    { name: 'Margherita', price: 7.5, qty: 2, pack: 0.6 },
-    { name: 'Gobe', price: 1.5, qty: 3, pack: 0.4 }
-  ];
-  const t = computeTotals(s, cart, 'dostava');
-  // 2 × 0,60 = 1,20  +  3 × 0,40 = 1,20  →  2,40
-  je('embalaža je vsota po vrsticah', t.packFee, 2.4);
-  je('skupaj', t.grand, '21.90');
-  je('pri različnih cenah ni zmnožka, le vsota', t.packText, '2.40 €');
+  const s = lokal({ packaging_price: 1 });
+  const cart = [{ name: 'Pica', price: 8, qty: 2, pack: 0.6 }, { name: 'Gobe', price: 1.5, qty: 3, pack: 0.4 }];
+  // po artiklih bi bilo 2×0,60 + 3×0,40 = 2,40; enotna cena to povozi
+  je('šteje samo enotna cena', computeTotals(s, cart, 'dostava').packFee, 1);
+  je('skupaj', computeTotals(s, cart, 'dostava').grand, '21.50');
 }
 
-console.log('\n3) Artikel brez embalaže (pijača, cena 0)');
+console.log('\n3) Cena po artiklu (enotna cena ni nastavljena)');
 {
-  const s = lokal({ packaging_price: 0.6 });
-  const cart = [
-    { name: 'Margherita', price: 7.5, qty: 1, pack: 0.6 },
-    { name: 'Cola', price: 2.5, qty: 4, pack: 0 }
-  ];
-  const t = computeTotals(s, cart, 'dostava');
-  je('pijača ne doda embalaže', t.packFee, 0.6);
-  je('enotna cena lokala je NE povozi', t.grand, '18.10');
+  const s = lokal({ packaging_price: 0 });
+  const cart = [{ name: 'Pica', price: 8, qty: 2, pack: 0.6 }, { name: 'Gobe', price: 1.5, qty: 3, pack: 0.4 }];
+  je('2 × 0,60 + 3 × 0,40 = 2,40', computeTotals(s, cart, 'dostava').packFee, 2.4);
+  je('pri različnih cenah le vsota', computeTotals(s, cart, 'dostava').packText, '2.40 €');
+  const iste = [{ name: 'A', price: 8, qty: 3, pack: 0.6 }];
+  je('pri isti ceni tudi zmnožek', computeTotals(s, iste, 'dostava').packText, '3 × 0.60 € = 1.80 €');
 }
 
-console.log('\n4) Artikel brez svoje cene pade na enotno ceno lokala');
+console.log('\n4) Pri artiklu prazno ali 0 pomeni BREZ embalaže');
 {
-  const s = lokal({ packaging_price: 0.5 });
-  const cart = [
-    { name: 'Pica', price: 8, qty: 1, pack: 0.6 },
-    { name: 'Solata', price: 5, qty: 1 },            // brez pack → 0,50
-    { name: 'Juha', price: 4, qty: 1, pack: null }   // null → 0,50
-  ];
-  je('vsota 0,60 + 0,50 + 0,50', computeTotals(s, cart, 'dostava').packFee, 1.6);
+  const s = lokal({ packaging_price: 0 });
+  je('cena 0', computeTotals(s, [{ name: 'Cola', price: 2.5, qty: 4, pack: 0 }], 'dostava').packFee, 0);
+  je('brez polja', computeTotals(s, [{ name: 'Cola', price: 2.5, qty: 4 }], 'dostava').packFee, 0);
+  je('null', computeTotals(s, [{ name: 'Cola', price: 2.5, qty: 4, pack: null }], 'dostava').packFee, 0);
+  je('prazen niz', computeTotals(s, [{ name: 'Cola', price: 2.5, qty: 4, pack: '' }], 'dostava').packFee, 0);
+  je('mešano: samo pica se šteje', computeTotals(s, [
+    { name: 'Pica', price: 8, qty: 1, pack: 0.6 }, { name: 'Cola', price: 2.5, qty: 4, pack: 0 }
+  ], 'dostava').packFee, 0.6);
 }
 
-console.log('\n5) Osebni prevzem');
+console.log('\n5) Brez obojega je embalaža brezplačna');
+{
+  const s = lokal({ packaging_price: 0 });
+  const t = computeTotals(s, [{ name: 'Pica', price: 8, qty: 3 }], 'dostava');
+  je('embalaža 0', t.packFee, 0);
+  je('v razčlenitvi ni vrstice embalaže', t.vrstice.length, 1);
+  je('skupaj so samo artikli', t.grand, '24.00');
+}
+
+console.log('\n6) Osebni prevzem');
 {
   const cart = [{ name: 'Pica', price: 8, qty: 2, pack: 0.6 }];
-  const zEmb = lokal({ packaging_price: 0.6, delivery_fee: 3, pickup_packaging: true });
-  const brezEmb = lokal({ packaging_price: 0.6, delivery_fee: 3, pickup_packaging: false });
-  je('pri prevzemu ni dostave', computeTotals(zEmb, cart, 'prevzem').delFee, 0);
-  je('embalaža pri prevzemu (vklopljeno)', computeTotals(zEmb, cart, 'prevzem').packFee, 1.2);
-  je('embalaža pri prevzemu (izklopljeno)', computeTotals(brezEmb, cart, 'prevzem').packFee, 0);
-  je('skupaj pri prevzemu brez embalaže', computeTotals(brezEmb, cart, 'prevzem').grand, '16.00');
+  const enotna = lokal({ packaging_price: 1, delivery_fee: 3 });
+  const enotnaBrez = lokal({ packaging_price: 1, delivery_fee: 3, pickup_packaging: false });
+  const poArtiklu = lokal({ delivery_fee: 3 });
+  const poArtikluBrez = lokal({ delivery_fee: 3, pickup_packaging: false });
+  je('pri prevzemu ni dostave', computeTotals(enotna, cart, 'prevzem').delFee, 0);
+  je('enotna cena velja tudi pri prevzemu', computeTotals(enotna, cart, 'prevzem').packFee, 1);
+  je('enotna cena izklopljena pri prevzemu', computeTotals(enotnaBrez, cart, 'prevzem').packFee, 0);
+  je('cena po artiklu pri prevzemu', computeTotals(poArtiklu, cart, 'prevzem').packFee, 1.2);
+  je('cena po artiklu izklopljena pri prevzemu', computeTotals(poArtikluBrez, cart, 'prevzem').packFee, 0);
 }
 
-console.log('\n6) Prazna in nenavadna košarica');
+console.log('\n7) Nenavadne vrednosti');
 {
-  const s = lokal({ packaging_price: 0.6, delivery_fee: 3 });
-  je('prazna košarica: embalaža 0', computeTotals(s, [], 'dostava').packFee, 0);
-  je('prazna košarica: dostava se vseeno šteje', computeTotals(s, [], 'dostava').delFee, 3);
-  je('brez količine šteje kot 1', computeTotals(s, [{ name: 'X', price: 5 }], 'prevzem').packFee, 0.6);
-  je('smeti v ceni embalaže padejo na enotno', computeTotals(s, [{ name: 'X', price: 5, qty: 1, pack: 'abc' }], 'prevzem').packFee, 0.6);
-  je('negativna cena embalaže pade na enotno', computeTotals(s, [{ name: 'X', price: 5, qty: 1, pack: -2 }], 'prevzem').packFee, 0.6);
+  const s = lokal({ packaging_price: 0 });
+  je('smeti v ceni artikla → brez embalaže', computeTotals(s, [{ name: 'X', price: 5, qty: 1, pack: 'abc' }], 'dostava').packFee, 0);
+  je('negativna cena artikla → brez embalaže', computeTotals(s, [{ name: 'X', price: 5, qty: 1, pack: -2 }], 'dostava').packFee, 0);
+  je('negativna enotna cena se ne šteje', computeTotals(lokal({ packaging_price: -5 }), [{ name: 'X', price: 5, qty: 1 }], 'dostava').packFee, 0);
+  je('brez količine šteje kot 1', computeTotals(s, [{ name: 'X', price: 5, pack: 0.6 }], 'dostava').packFee, 0.6);
+  je('dostava se šteje tudi pri prazni košarici', computeTotals(lokal({ delivery_fee: 3 }), [], 'dostava').delFee, 3);
 }
 
-console.log('\n7) Zaokroževanje (drobci ne smejo pobegniti)');
+console.log('\n8) Zaokroževanje');
 {
   const s = lokal({ packaging_price: 0 });
   const cart = Array.from({ length: 3 }, () => ({ name: 'X', price: 0.1, qty: 1, pack: 0.1 }));
-  const t = computeTotals(s, cart, 'prevzem');
-  je('3 × 0,10 = 0,30 in ne 0,30000000000000004', t.packFee, 0.3);
-  je('skupaj 0,60', t.grand, '0.60');
+  je('3 × 0,10 = 0,30 in ne 0,30000000000000004', computeTotals(s, cart, 'prevzem').packFee, 0.3);
+  je('skupaj 0,60', computeTotals(s, cart, 'prevzem').grand, '0.60');
 }
 
-console.log('\n8) Razčlenitev za WhatsApp');
+console.log('\n9) Razčlenitev za WhatsApp');
 {
-  const s = lokal({ packaging_price: 0.6, delivery_fee: 3 });
-  const t = computeTotals(s, [{ name: 'Pica', price: 8, qty: 1, pack: 0.6 }], 'dostava');
-  je('tri vrstice', t.vrstice.length, 3);
-  je('artikli', t.vrstice[0], '💰 Artikli: 8.00 €');
-  je('embalaža', t.vrstice[1], '📦 Embalaža: 1 × 0.60 € = 0.60 €');
-  je('dostava', t.vrstice[2], '🚗 Dostava:  3.00 €');
-  const brez = computeTotals(lokal({}), [{ name: 'Pica', price: 8, qty: 1, pack: 0 }], 'prevzem');
-  je('brez stroškov ostane samo vrstica artiklov', brez.vrstice.length, 1);
+  const enotna = computeTotals(lokal({ packaging_price: 1, delivery_fee: 3 }), [{ name: 'Pica', price: 8, qty: 2 }], 'dostava');
+  je('tri vrstice', enotna.vrstice.length, 3);
+  je('artikli', enotna.vrstice[0], '💰 Artikli: 16.00 €');
+  je('embalaža na naročilo', enotna.vrstice[1], '📦 Embalaža: 1.00 €');
+  je('dostava', enotna.vrstice[2], '🚗 Dostava:  3.00 €');
+  const poArt = computeTotals(lokal({ delivery_fee: 0 }), [{ name: 'Pica', price: 8, qty: 2, pack: 0.6 }], 'dostava');
+  je('embalaža po artiklu z zmnožkom', poArt.vrstice[1], '📦 Embalaža: 2 × 0.60 € = 1.20 €');
 }
 
-console.log('\n9) Cena embalaže z artikla menija');
+console.log('\n10) Cena embalaže z artikla menija');
 {
   je('številka', packOfService({ packaging_price: 0.6 }), 0.6);
-  je('ničla je veljavna (brez embalaže)', packOfService({ packaging_price: 0 }), 0);
+  je('ničla', packOfService({ packaging_price: 0 }), 0);
   je('niz s piko', packOfService({ packaging_price: '0.40' }), 0.4);
-  je('null pomeni enotno ceno', packOfService({ packaging_price: null }), null);
-  je('prazen niz pomeni enotno ceno', packOfService({ packaging_price: '' }), null);
+  je('null', packOfService({ packaging_price: null }), null);
+  je('prazen niz', packOfService({ packaging_price: '' }), null);
   je('manjkajoče polje', packOfService({}), null);
   je('smeti', packOfService({ packaging_price: 'x' }), null);
   je('negativno', packOfService({ packaging_price: -1 }), null);
   je('brez artikla', packOfService(null), null);
 }
 
-console.log('\n10) Opomba "embalaža in dostava se dodata"');
+console.log('\n11) Opomba "embalaža in dostava se dodata"');
 {
-  je('enotna cena lokala', hasExtras(lokal({ packaging_price: 0.6 }), [{ name: 'X', price: 5, qty: 1 }]), true);
+  je('enotna cena na naročilo', hasExtras(lokal({ packaging_price: 1 }), [{ name: 'X', price: 5, qty: 1 }]), true);
+  je('cena pri artiklu', hasExtras(lokal({}), [{ name: 'X', price: 5, qty: 1, pack: 0.4 }]), true);
   je('samo dostava', hasExtras(lokal({ delivery_fee: 2 }), [{ name: 'X', price: 5, qty: 1 }]), true);
   je('nič od tega', hasExtras(lokal({}), [{ name: 'X', price: 5, qty: 1 }]), false);
-  // Prav to je bilo prej narobe: lokal brez enotne cene, a artikel ima svojo
-  je('lokal brez enotne cene, artikel ima svojo', hasExtras(lokal({}), [{ name: 'X', price: 5, qty: 1, pack: 0.4 }]), true);
-  je('vsi artikli brez embalaže', hasExtras(lokal({ packaging_price: 0.6 }), [{ name: 'X', price: 5, qty: 1, pack: 0 }]), false);
+  je('vsi artikli brez embalaže', hasExtras(lokal({}), [{ name: 'X', price: 5, qty: 1, pack: 0 }]), false);
 }
 
-console.log('\n11) Botanin primer iz zahteve');
+console.log('\n12) Botanin primer (cene po artiklu, enotna ni nastavljena)');
 {
-  // Enotna cena lokala 0,60; dodatki 0,40; brez dostave
-  const s = lokal({ packaging_price: 0.6, delivery_fee: 0, pickup_packaging: true });
+  const s = lokal({ packaging_price: 0, delivery_fee: 0 });
   const cart = [
-    { name: 'Botana', price: 12.5, qty: 2, pack: 0.6 },   // dve pici
+    { name: 'Botana', price: 12.5, qty: 2, pack: 0.6 },
     { name: 'Bufalo mozzarella', price: 3.5, qty: 1, pack: 0.4 }
   ];
   const t = computeTotals(s, cart, 'dostava');
-  je('artikli 2×12,50 + 3,50', +t.itemsTotal.toFixed(2), 28.5);
-  je('embalaža 2×0,60 + 1×0,40', t.packFee, 1.6);
+  je('artikli', +t.itemsTotal.toFixed(2), 28.5);
+  je('embalaža 2×0,60 + 0,40', t.packFee, 1.6);
   je('skupaj', t.grand, '30.10');
   console.log('      ' + t.text);
 }
