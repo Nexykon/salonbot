@@ -334,8 +334,8 @@ console.log('\n13) Zneski skupaj z embalažo (prava koda computeTotals)');
   je('embalaža', komenda.packFee, 1.6);
   je('dostava Komenda', komenda.delFee, 2);
   je('skupaj', komenda.grand, '32.10');
-  je('brez pripisa o dostavi', komenda.grandText, '32.10 €');
-  je('v razčlenitvi je kraj', komenda.vrstice[2], '🚗 Dostava:  2.00 € (Komenda)');
+  je('brez pripisa o dostavi', komenda.grandText, '32,10 €');
+  je('v razčlenitvi je kraj', komenda.vrstice[2], '🚗 Dostava:  2,00 € (Komenda)');
   console.log('      ' + komenda.text);
 
   const kamnik = computeTotals(bot, kosarica, 'dostava', null, 'Kamnik, Šutna 1');
@@ -345,7 +345,7 @@ console.log('\n13) Zneski skupaj z embalažo (prava koda computeTotals)');
   const neznan = computeTotals(bot, kosarica, 'dostava', null, 'Maribor, Partizanska 1');
   je('neznan kraj: dostave ni v znesku', neznan.delFee, 0);
   je('neznan kraj: označeno', neznan.delNeznana, true);
-  je('neznan kraj: znesek ni dokončen', neznan.grandText, '30.10 € + dostava');
+  je('neznan kraj: znesek ni dokončen', neznan.grandText, '30,10 € + dostava');
   je('neznan kraj: vrstica pove, kaj sledi', neznan.vrstice[2], '🚗 Dostava:  sporočimo ob potrditvi');
   console.log('      ' + neznan.text);
 
@@ -356,13 +356,13 @@ console.log('\n13) Zneski skupaj z embalažo (prava koda computeTotals)');
   const prevzem = computeTotals(bot, kosarica, 'prevzem', null, 'Komenda 1');
   je('prevzem: brez dostave', prevzem.delFee, 0);
   je('prevzem: ni nedoločena', prevzem.delNeznana, false);
-  je('prevzem: znesek dokončen', prevzem.grandText, '30.10 €');
+  je('prevzem: znesek dokončen', prevzem.grandText, '30,10 €');
 
   const stari = { delivery_zones: null, delivery_fee: 3, packaging_price: 0, pickup_packaging: true };
   const s = computeTotals(stari, kosarica, 'dostava', null, 'Kjerkoli 5');
   je('brez krajev velja enotna cena', s.delFee, 3);
-  je('… in znesek je dokončen', s.grandText, '33.10 €');
-  je('… brez imena kraja v razčlenitvi', s.vrstice[2], '🚗 Dostava:  3.00 €');
+  je('… in znesek je dokončen', s.grandText, '33,10 €');
+  je('… brez imena kraja v razčlenitvi', s.vrstice[2], '🚗 Dostava:  3,00 €');
 }
 
 console.log('\n' + (ni ? '✖ ' + ni + ' od ' + (ok + ni) + ' ni v redu' : '✔ vse v redu (' + ok + ')'));

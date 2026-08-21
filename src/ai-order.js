@@ -6,6 +6,7 @@ const db = require('./supabase');
 const t = require('./time');
 const urnik = require('./urnik');
 const dostava = require('./dostava');
+const { evri } = require('./denar');
 
 // Retry wrapper — poizkusi do 2x z 1.5s zamudo
 async function axiosRetry(fn) {
@@ -116,23 +117,23 @@ function computeTotals(salon, cart, mode, services, naslov) {
   const itemsTotal = cart.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
   const grand = (itemsTotal + packFee + delFee).toFixed(2);
   // Ob nedoločeni dostavi skupni znesek ni dokončen — to mora biti vidno.
-  const grandText = delNeznana ? `${grand} € + dostava` : `${grand} €`;
+  const grandText = delNeznana ? `${evri(grand)} + dostava` : evri(grand);
 
   // Samo znesek. Vmesni izračun "4 × 0,60 € =" je stranko bolj obremenil kot
   // pojasnil — zanima jo, koliko je embalaža.
-  const packText = `${packFee.toFixed(2)} €`;
+  const packText = evri(packFee);
 
   const delText = delFee > 0
-    ? `${delFee.toFixed(2)} €${delKraj ? ` (${delKraj})` : ''}`
+    ? `${evri(delFee)}${delKraj ? ` (${delKraj})` : ''}`
     : (delNeznana ? 'sporočimo ob potrditvi' : null);
 
-  const parts = [`Artikli: ${itemsTotal.toFixed(2)} €`];
+  const parts = [`Artikli: ${evri(itemsTotal)}`];
   if (packFee > 0) parts.push(`Embalaža: ${packText}`);
   if (delText) parts.push(`Dostava: ${delText}`);
   parts.push(`SKUPAJ: ${grandText}`);
 
   // Razčlenitev za WhatsApp — en vir za vse korake zaključka.
-  const vrstice = [`💰 Artikli: ${itemsTotal.toFixed(2)} €`];
+  const vrstice = [`💰 Artikli: ${evri(itemsTotal)}`];
   if (packFee > 0) vrstice.push(`📦 Embalaža: ${packText}`);
   if (delText) vrstice.push(`🚗 Dostava:  ${delText}`);
 
@@ -235,19 +236,19 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
     + `\nDANES: ${_urnikDanes ? _urnikDanes.od + '–' + _urnikDanes.do : 'zaprto'}`
     + `\n(če stranka vpraša za odpiralni čas, ji povej ta urnik; ne izmišljuj si drugih ur in ne obljubljaj dostave na dan, ko je zaprto)`;
   const _minOrd = parseFloat(salon.min_order || 0);
-  const minLine = _minOrd > 0 ? `\nMINIMALNO NAROČILO ZA DOSTAVO: ${_minOrd.toFixed(2)} € (velja za artikle brez dostave/embalaže). Če stranka vpraša ali če je pod tem zneskom pri dostavi, jo prijazno opozori.` : '';
+  const minLine = _minOrd > 0 ? `\nMINIMALNO NAROČILO ZA DOSTAVO: ${evri(_minOrd)} (velja za artikle brez dostave/embalaže). Če stranka vpraša ali če je pod tem zneskom pri dostavi, jo prijazno opozori.` : '';
   // Strošek dostave: enotna cena ali cena po krajih. Zneskov ne sme ugibati AI.
   const _delU = parseFloat(salon.delivery_fee || 0);
   const _zone = dostava.zoneLokala(salon);
   const feeLine = _zone
     ? `\nSTROŠEK DOSTAVE: odvisen je od kraja dostave in ga izračuna sistem, ko stranka napiše naslov. Zneska NE ugibaj in NE navajaj cen po krajih. Če stranka vpraša, povej, da je strošek odvisen od kraja in bo prikazan v povzetku naročila.`
-    : (_delU > 0 ? `\nSTROŠEK DOSTAVE: ${_delU.toFixed(2)} € na naročilo (doda se ob zaključku).` : '');
+    : (_delU > 0 ? `\nSTROŠEK DOSTAVE: ${evri(_delU)} na naročilo (doda se ob zaključku).` : '');
   // Embalaža: enotna cena na naročilo ali cena po artiklu. Zneskov ne sme
   // ugibati AI — izračuna jih koda.
   const _embEnotna = enotnaEmbalaza(salon);
   const _embArtikli = services.some(s => (packOfService(s) || 0) > 0);
   const embLine = _embEnotna > 0
-    ? `\nEMBALAŽA: ${_embEnotna.toFixed(2)} € na celotno naročilo (doda se enkrat ob zaključku, ne glede na število artiklov).`
+    ? `\nEMBALAŽA: ${evri(_embEnotna)} na celotno naročilo (doda se enkrat ob zaključku, ne glede na število artiklov).`
     : (_embArtikli
       ? `\nEMBALAŽA: se doda ob zaključku glede na naročene artikle. Zneskov NE računaj in NE ugibaj — izračuna jih sistem. Če stranka vpraša, povej le, da se embalaža obračuna po artiklih in bo prikazana v povzetku.`
       : `\nEMBALAŽA: brezplačna. Če stranka vpraša, povej, da embalaže ne zaračunamo.`);

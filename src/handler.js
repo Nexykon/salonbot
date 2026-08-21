@@ -8,6 +8,7 @@ const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } =
 const t = require('./time');
 const urnik = require('./urnik');
 const { botMsg } = require('./botmsg');
+const { evri } = require('./denar');
 const { askOrderAI, computeTotals, aiConfigured, findService, packOfService, hasExtras } = require('./ai-order');
 const { planLimit } = require('./presets');
 
@@ -651,7 +652,7 @@ async function handleMessage(msgObj, salon) {
         const q = item.qty || 1;
         const lineTotal = (parseFloat(item.price || 0) * q).toFixed(2);
         const nm = item.note ? `${item.name} (${item.note})` : item.name;
-        return q > 1 ? `• ${nm} x${q} — ${lineTotal} €` : `• ${nm} — ${lineTotal} €`;
+        return q > 1 ? `• ${nm} x${q} — ${evri(lineTotal)}` : `• ${nm} — ${evri(lineTotal)}`;
       }).join('\n');
     }
     function cartTotal(cart) {
@@ -660,7 +661,7 @@ async function handleMessage(msgObj, salon) {
     function cartSummaryShort(cart) {
       if (!cart || !cart.length) return null;
       const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
-      return `${kosov} kosov | ${cartTotal(cart)} €`;
+      return `${kosov} kosov | ${evri(cartTotal(cart))}`;
     }
 
     // ── Ostranjevanje kategorij: "▶️ Več kategorij" ──
@@ -769,7 +770,7 @@ async function handleMessage(msgObj, salon) {
           const feeNote = hasExtras(salon, cart, services)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
+            `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cart))}*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
           ));
         } else {
           await addQtyToCart(qty306);
@@ -872,7 +873,7 @@ async function handleMessage(msgObj, salon) {
         fmtCart(cartS),
         cur.opomba ? `Opomba: ${cur.opomba}` : null,
         '',
-        `Artikli: ${tot.itemsTotal.toFixed(2)} €`,
+        `Artikli: ${evri(tot.itemsTotal)}`,
         tot.packFee > 0 ? `Embalaža: ${tot.packText}` : null,
         tot.delText ? `Dostava: ${tot.delText}` : null,
         `SKUPAJ: ${tot.grandText}`,
@@ -1031,7 +1032,7 @@ async function handleMessage(msgObj, salon) {
         if (itemsSum < minOrder) {
           const manjka = (minOrder - itemsSum).toFixed(2);
           await wa.send(phoneId, token, wa.textMsg(from,
-            `Minimalno naročilo za dostavo je ${minOrder.toFixed(2)} €. Trenutno imate za ${itemsSum.toFixed(2)} € artiklov - dodajte še za ${manjka} €, pa zaključimo. Lahko pa izberete osebni prevzem.`));
+            `Minimalno naročilo za dostavo je ${evri(minOrder)}. Trenutno imate za ${evri(itemsSum)} artiklov - dodajte še za ${evri(manjka)}, pa zaključimo. Lahko pa izberete osebni prevzem.`));
           return;
         }
       }
@@ -1060,7 +1061,7 @@ async function handleMessage(msgObj, salon) {
         notes:          `${isPickup ? 'PREVZEM | Osebni prevzem' : 'RAZVOZ | Naslov: ' + s.deliveryAddress}`
           + `${!isPickup && totFin.delKraj ? ' | Kraj: ' + totFin.delKraj : ''}`
           + `${!isPickup && totFin.delNeznana ? ' | DOSTAVA: KRAJ NI NA SEZNAMU — ceno določi lokal' : ''}`
-          + ` | Skupaj: ${s.grandTotal || total} €${totFin.delNeznana ? ' + dostava' : ''}`
+          + ` | Skupaj: ${evri(s.grandTotal || total)}${totFin.delNeznana ? ' + dostava' : ''}`
           + `${s.payment ? ' | Plačilo: ' + s.payment : ''}${opomba ? ' | Opomba: ' + opomba : ''}`,
         form_answers:   JSON.stringify({
           nacin:     isPickup ? 'Osebni prevzem 🏃' : 'Dostava 🚗',
@@ -1069,12 +1070,12 @@ async function handleMessage(msgObj, salon) {
           placilo:   s.payment || null,
           narocilo:  fmtCart(cart),
           opomba:    opomba,
-          artikli:   cartTotal(cart) + ' €',
-          embalaza:  s.packFee > 0 ? s.packFee.toFixed(2) + ' €' : null,
+          artikli:   evri(cartTotal(cart)),
+          embalaza:  s.packFee > 0 ? evri(s.packFee) : null,
           dostava:   totFin.delNeznana
             ? 'KRAJ NI NA SEZNAMU — ceno določi lokal'
-            : (s.delFee > 0 ? s.delFee.toFixed(2) + ' €' + (totFin.delKraj ? ' (' + totFin.delKraj + ')' : '') : null),
-          skupaj:    (s.grandTotal || total) + ' €' + (totFin.delNeznana ? ' + dostava' : '')
+            : (s.delFee > 0 ? evri(s.delFee) + (totFin.delKraj ? ' (' + totFin.delKraj + ')' : '') : null),
+          skupaj:    evri(s.grandTotal || total) + (totFin.delNeznana ? ' + dostava' : '')
         })
       };
       const booking = await db.createBooking(bookingData);
@@ -1176,7 +1177,7 @@ async function handleMessage(msgObj, salon) {
           const feeN = hasExtras(salon, cur.cart, services)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cur.cart)} €*${feeN}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
+            `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cur.cart))}*${feeN}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
           ));
           return;
         }
@@ -1215,7 +1216,7 @@ async function handleMessage(msgObj, salon) {
           const feeN2 = hasExtras(salon, cart2, services)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
-            `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart2)} €*${feeN2}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
+            `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cart2))}*${feeN2}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
           ));
           return;
         }
@@ -1529,7 +1530,7 @@ async function handleMessage(msgObj, salon) {
 
     // Helper: format cart for display
     function fmtPosCart(cart) {
-      return cart.map(i => `• ${i.name} x${i.qty} — ${(i.price * i.qty).toFixed(2)} €`).join('\n');
+      return cart.map(i => `• ${i.name} x${i.qty} — ${evri(i.price * i.qty)}`).join('\n');
     }
     function posCartTotal(cart) {
       return cart.reduce((s, i) => s + i.price * i.qty, 0).toFixed(2);
@@ -1567,12 +1568,12 @@ async function handleMessage(msgObj, salon) {
           rows: cats[cat].slice(0, 10).map(item => ({
             id:          `pos_item_${item.id}`,
             title:       item.name.slice(0, 24),
-            description: `${item.price.toFixed(2)} €${item.description ? ' — ' + item.description.slice(0, 50) : ''}`,
+            description: `${evri(item.price)}${item.description ? ' — ' + item.description.slice(0, 50) : ''}`,
           }))
         }));
 
         const cartSum = sess.cart && sess.cart.length
-          ? `\n🛒 Košarica: ${sess.cart.length} artiklov | ${posCartTotal(sess.cart || [])} €`
+          ? `\n🛒 Košarica: ${sess.cart.length} artiklov | ${evri(posCartTotal(sess.cart || []))}`
           : '';
         const greeting = salon.greeting_message
           ? salon.greeting_message + '\n\n'
@@ -1621,7 +1622,7 @@ async function handleMessage(msgObj, salon) {
         type: 'interactive',
         interactive: {
           type: 'button',
-          body: { text: `*${item.name}*\n💰 ${item.price.toFixed(2)} €\n\nKoliko kosov?` },
+          body: { text: `*${item.name}*\n💰 ${evri(item.price)}\n\nKoliko kosov?` },
           action: {
             buttons: [
               { type: 'reply', reply: { id: `pos_qty_1`, title: '1 kos' } },

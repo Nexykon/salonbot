@@ -1,5 +1,6 @@
 const axios = require('axios');
 const urnik = require('./urnik');
+const { evri } = require('./denar');
 
 function client(phoneId, token) {
   return axios.create({
@@ -311,13 +312,6 @@ const ROW_DESC = 72;
 
 const rowTitle = ime => trimWords(String(ime == null ? '' : ime).trim(), ROW_TITLE);
 
-// Cena, kot jo bere stranka: "15,40 €" in ne "15.4 €".
-function evri(v) {
-  const n = parseFloat(v);
-  if (isNaN(n)) return '';
-  return n.toFixed(2).replace('.', ',') + ' €';
-}
-
 function menuRowDesc(s, prikazanNaslov) {
   const price = s.price ? evri(s.price) : '';
   const polno = String(s.name == null ? '' : s.name).trim();
@@ -460,7 +454,7 @@ function deliveryCartButtons(to, cartText, total) {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'button',
-      body: { text: '🛒 *Vaše naročilo:*\n\n' + cartText + '\n\n💰 Skupaj: ' + total + ' €\n\nDodajte še kaj ali zaključite?' },
+      body: { text: '🛒 *Vaše naročilo:*\n\n' + cartText + '\n\n💰 Skupaj: ' + evri(total) + '\n\nDodajte še kaj ali zaključite?' },
       action: {
         buttons: [
           { type: 'reply', reply: { id: 'delivery_add_more', title: '➕ Dodaj še' } },
@@ -495,7 +489,7 @@ function deliveryAdminNotif(to, customerPhone, cartText, address, total, ref6) {
     interactive: {
       type: 'button',
       body: {
-        text: '🍕 *NOVO NAROČILO #' + ref6 + '*\n\n' + cartText + '\n\n📍 Naslov: ' + address + '\n💰 Skupaj: ' + total + ' €\n📞 Stranka: +' + customerPhone + '\n\nSprejemite in vnesite čas dostave.'
+        text: '🍕 *NOVO NAROČILO #' + ref6 + '*\n\n' + cartText + '\n\n📍 Naslov: ' + address + '\n💰 Skupaj: ' + evri(total) + '\n📞 Stranka: +' + customerPhone + '\n\nSprejemite in vnesite čas dostave.'
       },
       action: {
         buttons: [
@@ -517,7 +511,7 @@ function posAdminNotif(to, customerPhone, cartText, comment, total, ref6) {
       body: {
         text: '🍽️ *NOVO POS NAROČILO #' + ref6 + '*\n\n' +
               cartText + commentLine +
-              '\n\n💰 Skupaj: ' + total + ' €' +
+              '\n\n💰 Skupaj: ' + evri(total) +
               '\n📞 Stranka: +' + customerPhone +
               '\n\nSprejmite in vnesite čas (v minutah).'
       },
