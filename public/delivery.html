@@ -757,7 +757,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
             <input type="checkbox" id="s-pack-on" onchange="toggleFee('s-packaging', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
             📦 Enotna cena embalaže za celotno naročilo (€)
           </label>
-          <input type="number" id="s-packaging" min="0" step="0.10" inputmode="decimal" placeholder="npr. 1.00 €" disabled>
+          <input type="text" id="s-packaging" inputmode="decimal" placeholder="npr. 1,00" disabled>
           <div style="font-size:12px;color:var(--muted);margin-top:4px">Hitra nastavitev: znesek se prišteje <b>enkrat na naročilo</b>, ne glede na to, kaj stranka naroči (npr. vrečka za 1 €).<br>Če tega ne uporabiš, <b>ceno embalaže urediš pri posameznem artiklu</b> v zavihku <b>Meni</b> (pica 0,60 €, dodatek 0,40 €) in zneski se seštejejo. Vklopljena enotna cena ima prednost — cene pri artiklih se takrat ne upoštevajo.<br>Če ni ne enega ne drugega, je embalaža brezplačna.</div>
         </div>
         <div class="s-row">
@@ -765,21 +765,19 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
             <input type="checkbox" id="s-del-on" onchange="toggleFee('s-delivery', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
             🚗 Enotna cena dostave za vsa naročila (€)
           </label>
-          <input type="number" id="s-delivery" min="0" step="0.05" inputmode="decimal" placeholder="npr. 2.00 €" disabled>
+          <input type="text" id="s-delivery" inputmode="decimal" placeholder="npr. 2,00" disabled>
           <div style="font-size:12px;color:var(--muted);margin-top:4px">Velja, dokler spodaj ni vpisan noben kraj. Če so kraji vpisani, ima cena po kraju prednost.</div>
         </div>
         <div class="s-row">
+          <label>Cena dostave po krajih</label>
+          <div id="s-zone"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:10px">Vpiši ceno in pod njo vse kraje, ki zanjo veljajo — tako, kot je cenik napisan na papirju. Bot iz naslova, ki ga stranka napiše, prepozna kraj in doda njegovo ceno; razume tudi sklone (»v Vodicah«, »v Domžalah«) in okrajšave (»Zg. Brnik«).<br>Kraj, ki ni na seznamu, ostane <b>brez cene</b>: naročilo gre skozi, stranka dobi obvestilo, da strošek sporočite ob potrditvi, na naročilu pa je to posebej označeno. Cene ne ugibamo.</div>
+        </div>
+        <div class="s-row">
           <label>Minimalno naročilo za dostavo (€)</label>
-          <input type="number" id="s-min-order" min="0" step="0.50" inputmode="decimal" placeholder="npr. 13.00 € (0 = brez minimuma)">
+          <input type="text" id="s-min-order" inputmode="decimal" placeholder="npr. 13,00 (prazno = brez minimuma)">
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Dostava se zaračuna enkrat na naročilo. Bot zneske prikaže stranki ločeno in pri dostavi upošteva minimalno naročilo.</div>
-      </div>
-      <div class="settings-card">
-        <div class="settings-card-title">Kraji in cena dostave</div>
-        <div class="s-row" style="margin-bottom:0">
-          <div id="s-zone"></div>
-          <div style="font-size:12px;color:var(--muted);margin-top:10px">Bot iz naslova, ki ga stranka napiše, prepozna kraj in doda njegovo ceno. Prepozna tudi sklone (»v Vodicah«, »v Domžalah«) in okrajšave (»Zg. Brnik«).<br>Kraj, ki ni na seznamu, ostane <b>brez cene</b> — naročilo gre skozi, stranka dobi obvestilo, da strošek sporočite ob potrditvi, na naročilu pa je to posebej označeno. Cene ne ugibamo.</div>
-        </div>
       </div>
 
       <div class="settings-card" style="margin-top:16px">
@@ -1053,11 +1051,11 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">Cena (€)</label>
-      <input id="new-item-price" type="number" step="0.5" min="0" placeholder="7.50" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none">
+      <input id="new-item-price" type="text" inputmode="decimal" placeholder="7,50" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none">
     </div>
     <div style="margin-bottom:12px">
       <label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px">Cena embalaže (€)</label>
-      <input id="new-item-pack" type="number" step="0.10" min="0" placeholder="prazno = brez embalaže" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none">
+      <input id="new-item-pack" type="text" inputmode="decimal" placeholder="prazno = brez embalaže" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-size:14px;font-family:inherit;outline:none">
       <div style="font-size:12px;color:var(--muted);margin-top:4px">Za en kos tega artikla, npr. pica <b>0,60</b>, dodatek <b>0,40</b>. Prazno ali <b>0</b> pomeni brez embalaže.<br>Če je v Nastavitvah vklopljena <b>enotna cena za celotno naročilo</b>, te cene ne veljajo.</div>
     </div>
     <div style="margin-bottom:20px">
@@ -1558,7 +1556,9 @@ async function saveNewItem() {
   if(!name||!price){showToast('Vnesite ime in ceno','error');return;}
   const tags = [...document.querySelectorAll('#new-item-tags input:checked')].map(c=>c.value);
   const packRaw = (document.getElementById('new-item-pack').value || '').trim();
-  const body = JSON.stringify({name,price:parseFloat(price),description:desc,category:cat,tags,duration_minutes:0,packaging_price:packRaw});
+  const cenaArtikla = parseFloat(String(price).replace(',', '.'));
+  if (isNaN(cenaArtikla) || cenaArtikla < 0) { showToast('Cena ni veljavna','error'); return; }
+  const body = JSON.stringify({name,price:cenaArtikla,description:desc,category:cat,tags,duration_minutes:0,packaging_price:packRaw});
   const url = editingId ? '/api/settings/services/'+editingId : '/api/settings/services';
   const method = editingId ? 'PATCH' : 'POST';
   const r = await fetch(url,{method,
@@ -1586,12 +1586,13 @@ async function loadSettingsData() {
     renderPosTab(d);
     const pack = parseFloat(d.packaging_price||0), del = parseFloat(d.delivery_fee||0);
     document.getElementById('s-pack-on').checked = pack > 0;
-    document.getElementById('s-packaging').value = pack > 0 ? pack : '';
+    document.getElementById('s-packaging').value = cenaVPolje(pack);
     document.getElementById('s-packaging').disabled = !(pack > 0);
     document.getElementById('s-del-on').checked = del > 0;
-    document.getElementById('s-delivery').value = del > 0 ? del : '';
+    document.getElementById('s-delivery').value = cenaVPolje(del);
     document.getElementById('s-delivery').disabled = !(del > 0);
-    if (document.getElementById('s-min-order')) document.getElementById('s-min-order').value = parseFloat(d.min_order||0) > 0 ? parseFloat(d.min_order) : '';
+    if (document.getElementById('s-min-order')) document.getElementById('s-min-order').value = cenaVPolje(d.min_order);
+    pripniOblikovanjeCen(['s-packaging', 's-delivery', 's-min-order']);
     document.getElementById('s-allow-del').checked  = d.allow_delivery !== false;
     document.getElementById('s-allow-pick').checked = d.allow_pickup !== false;
     document.getElementById('s-pick-pack').checked  = d.pickup_packaging !== false;
@@ -1629,6 +1630,29 @@ function toggleFee(inputId, on) {
   const el = document.getElementById(inputId);
   el.disabled = !on;
   if (on) el.focus(); else el.value = '';
+}
+// Cena za prikaz v polju: 0.6 -> "0,60". Prazno, kadar cene ni.
+function cenaVPolje(v) {
+  const n = parseFloat(v);
+  return (isNaN(n) || n <= 0) ? '' : n.toFixed(2).replace('.', ',');
+}
+// Vpisana cena -> stevilka. Sprejme vejico in piko.
+function cenaIzPolja(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const n = parseFloat(String(el.value || '').replace(/[€\s]/g, '').replace(',', '.'));
+  return (isNaN(n) || n < 0) ? null : Math.round(n * 100) / 100;
+}
+// Ob izstopu iz polja zapisi na dve decimalki
+function pripniOblikovanjeCen(ids) {
+  ids.forEach(function (id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('blur', function () {
+      const n = cenaIzPolja(id);
+      el.value = n === null ? '' : n.toFixed(2).replace('.', ',');
+    });
+  });
 }
 function feeValue(checkId, inputId) {
   if (!document.getElementById(checkId).checked) return 0;
@@ -2119,7 +2143,7 @@ async function saveSettings() {
         bot_phone_display:document.getElementById('s-botnum').value,
         packaging_price:feeValue('s-pack-on','s-packaging'),
         delivery_fee:feeValue('s-del-on','s-delivery'),
-        min_order:(function(){var v=parseFloat(String(document.getElementById('s-min-order')?.value||'').replace(',','.'));return isNaN(v)||v<0?0:v;})(),
+        min_order:cenaIzPolja('s-min-order') || 0,
         allow_delivery:document.getElementById('s-allow-del').checked,
         allow_pickup:document.getElementById('s-allow-pick').checked,
         pickup_packaging:document.getElementById('s-pick-pack').checked,

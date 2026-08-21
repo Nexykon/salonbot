@@ -1,37 +1,44 @@
-// ─── Vnos krajev in cen dostave ──────────────────────────────────────────
-// Lastnik vpiše kraje s cenami; bot iz naslova stranke prepozna kraj in
-// doda pravo ceno. Kraj, ki ni na seznamu, pomeni, da ceno določi lokal.
+// ─── Cena dostave po krajih ───────────────────────────────────────────────
+// Vnos je urejen po CENOVNIH RAZREDIH, ne po posameznih krajih: ena cena in
+// pod njo vsi kraji, ki zanjo veljajo. Tako je vpisan tudi cenik na papirju
+// ("2 € — Vodice, Sp. Brnik, Komenda"), zato je prepis hiter.
+//
+// Cena je polje type="text" in ne "number": brskalnik pri "number" vejico
+// zavrne in .value vrne prazen niz — cena bi tiho izginila. Sprejmemo vejico
+// in piko, ob izstopu iz polja pa zapišemo na dve decimalki.
 //
 // Uporaba:
 //   DostavaPolja.izrisi('s-zone', d.delivery_zones);
 //   var z = DostavaPolja.zberi('s-zone');   // → [{kraj,cena}] ali null
 //
-// zberi() vrne null, kadar ni nobenega kraja — strežnik to razume kot
-// "krajev ni" in obdrži enotno ceno dostave.
+// Navzven ostane oblika enaka: polje {kraj, cena}.
 
 (function () {
   var SLOG = '\
-.dz-tabela{display:flex;flex-direction:column;gap:8px;margin-top:8px}\
-.dz-vrstica{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,110px) auto;\
-align-items:center;column-gap:10px}\
-.dz-vrstica input{box-sizing:border-box;display:block;width:100%;min-width:0;margin:0}\
-.dz-brisi{width:32px;height:32px;padding:0;border:1px solid var(--border,#d1d5db);border-radius:9px;\
-background:transparent;color:inherit;font:inherit;font-size:14px;cursor:pointer;opacity:.7}\
+.dz-razredi{display:flex;flex-direction:column;gap:12px;margin-top:8px}\
+.dz-razred{border:1px solid var(--border,#d1d5db);border-radius:12px;padding:12px 13px}\
+.dz-vrh{display:grid;grid-template-columns:auto minmax(0,120px) auto minmax(0,1fr) auto;\
+align-items:center;column-gap:8px}\
+.dz-oznaka{font-size:12.5px;font-weight:600;color:var(--muted,#6b7280);white-space:nowrap}\
+.dz-razred input.dz-cena{box-sizing:border-box;display:block;width:100%;min-width:0;margin:0;\
+text-align:right;font-variant-numeric:tabular-nums}\
+.dz-enota{font-size:13px;color:var(--muted,#6b7280)}\
+.dz-koliko{font-size:12px;color:var(--muted,#6b7280);white-space:nowrap;justify-self:end}\
+.dz-brisi{width:30px;height:30px;padding:0;border:1px solid var(--border,#d1d5db);border-radius:9px;\
+background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer;opacity:.7;justify-self:end}\
 .dz-brisi:hover{opacity:1;border-color:#dc2626;color:#dc2626}\
-.dz-glava{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,110px) auto;column-gap:10px;\
-font-size:12px;font-weight:600;color:var(--muted,#6b7280)}\
-.dz-glava span:last-child{width:32px}\
+.dz-razred textarea.dz-kraji{box-sizing:border-box;display:block;width:100%;margin:8px 0 0;\
+min-height:58px;font-family:inherit;font-size:13.5px;line-height:1.5;resize:vertical}\
 .dz-orodja{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}\
 .dz-gumb{font:inherit;font-size:13px;padding:7px 11px;border:1px solid var(--border,#d1d5db);\
 background:transparent;color:inherit;border-radius:9px;cursor:pointer}\
 .dz-gumb:hover{border-color:var(--muted,#6b7280)}\
-.dz-hitri{margin-top:12px}\
-.dz-hitri textarea{box-sizing:border-box;width:100%;min-height:92px;font-family:inherit;font-size:13px}\
-.dz-opozorilo{margin-top:8px;font-size:12.5px;color:#b45309}\
-.dz-vrstica.je-podvojen input:first-child{border-color:#b45309}\
 .dz-stevec{font-size:12px;color:var(--muted,#6b7280)}\
+.dz-opozorilo{margin-top:8px;font-size:12.5px;color:#b45309}\
+.dz-razred.je-brez-cene{border-color:#b45309}\
 @media(max-width:560px){\
-.dz-vrstica,.dz-glava{grid-template-columns:minmax(0,1fr) 92px auto}}';
+.dz-vrh{grid-template-columns:auto minmax(0,96px) auto minmax(0,1fr) auto}\
+.dz-koliko{display:none}}';
 
   function poskrbiZaSlog() {
     if (document.getElementById('dz-slog')) return;
@@ -41,167 +48,166 @@ background:transparent;color:inherit;border-radius:9px;cursor:pointer}\
     document.head.appendChild(s);
   }
 
-  // Za prepoznavo podvojenih: brez šumnikov, male črke, brez ločil
+  // Za prepoznavo podvojenih krajev: brez šumnikov, male črke, brez ločil
   function kljuc(s) {
     return String(s == null ? '' : s)
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
 
-  function vrsticaHtml(kraj, cena) {
-    return '<div class="dz-vrstica">'
-      + '<input type="text" class="dz-kraj" placeholder="npr. Vodice" value="'
-      + String(kraj || '').replace(/"/g, '&quot;') + '">'
-      + '<input type="number" class="dz-cena" min="0" step="0.10" inputmode="decimal" placeholder="2.00" value="'
-      + (cena === '' || cena === null || cena === undefined ? '' : cena) + '">'
-      + '<button type="button" class="dz-brisi" title="Odstrani kraj">✕</button>'
+  // "2" → 2, "2,5" → 2.5, "2.50 €" → 2.5, smeti → null
+  function vCeno(v) {
+    var s = String(v == null ? '' : v).replace(/[€\s]/g, '').replace(',', '.');
+    if (!s) return null;
+    var n = parseFloat(s);
+    if (isNaN(n) || n < 0 || n > 100) return null;
+    return Math.round(n * 100) / 100;
+  }
+
+  // Prikaz z vejico in dvema decimalkama — tako, kot cene pišemo pri nas.
+  function izCene(n) {
+    return (n === null || n === undefined || n === '') ? '' : Number(n).toFixed(2).replace('.', ',');
+  }
+
+  // "Vodice, Sp. Brnik\nKomenda" → ['Vodice','Sp. Brnik','Komenda']
+  function vKraje(besedilo) {
+    return String(besedilo || '').split(/[,;\n\r]+/)
+      .map(function (s) { return s.trim(); })
+      .filter(Boolean);
+  }
+
+  function razredHtml(cena, kraji) {
+    return '<div class="dz-razred">'
+      + '<div class="dz-vrh">'
+      + '<span class="dz-oznaka">Cena dostave</span>'
+      + '<input type="text" class="dz-cena" inputmode="decimal" placeholder="2,00" value="'
+      + String(izCene(cena)).replace(/"/g, '&quot;') + '">'
+      + '<span class="dz-enota">€</span>'
+      + '<span class="dz-koliko"></span>'
+      + '<button type="button" class="dz-brisi" title="Odstrani cenovni razred">✕</button>'
+      + '</div>'
+      + '<textarea class="dz-kraji" placeholder="Kraji, ločeni z vejico — npr. Vodice, Sp. Brnik, Komenda">'
+      + String(kraji || '').replace(/</g, '&lt;') + '</textarea>'
       + '</div>';
   }
 
-  function seznam(el) { return [].slice.call(el.querySelectorAll('.dz-vrstica')); }
+  var razredi = function (el) { return [].slice.call(el.querySelectorAll('.dz-razred')); };
 
-  // Označi podvojene kraje in izpiši stanje
   function osvezi(el) {
-    var videni = {}, podvojenih = 0, brezCene = 0, stevec = 0;
-    seznam(el).forEach(function (v) {
-      var ime = v.querySelector('.dz-kraj').value.trim();
-      var cena = v.querySelector('.dz-cena').value.trim();
-      var k = kljuc(ime);
-      var jePodvojen = !!(k && videni[k]);
-      if (k) videni[k] = true;
-      if (k) stevec++;
-      if (jePodvojen) podvojenih++;
-      if (k && cena === '') brezCene++;
-      v.classList.toggle('je-podvojen', jePodvojen);
+    var videni = {}, podvojenih = [], brezCene = 0, skupno = 0, razredov = 0;
+    razredi(el).forEach(function (r) {
+      var cena = vCeno(r.querySelector('.dz-cena').value);
+      var kraji = vKraje(r.querySelector('.dz-kraji').value);
+      r.classList.toggle('je-brez-cene', cena === null && kraji.length > 0);
+      if (cena === null && kraji.length) brezCene += kraji.length;
+      if (cena !== null && kraji.length) razredov++;
+      kraji.forEach(function (k) {
+        var kk = kljuc(k);
+        if (!kk) return;
+        if (videni[kk]) { if (podvojenih.indexOf(k) < 0) podvojenih.push(k); return; }
+        videni[kk] = true;
+        if (cena !== null) skupno++;
+      });
+      var koliko = r.querySelector('.dz-koliko');
+      if (koliko) koliko.textContent = kraji.length
+        ? kraji.length + ' ' + (kraji.length === 1 ? 'kraj' : kraji.length === 2 ? 'kraja' : kraji.length < 5 ? 'kraji' : 'krajev')
+        : '';
     });
-    var op = el.parentNode.querySelector('.dz-opozorilo');
-    var st = el.parentNode.querySelector('.dz-stevec');
-    if (st) st.textContent = stevec + ' ' + (stevec === 1 ? 'kraj' : stevec === 2 ? 'kraja' : stevec < 5 ? 'kraji' : 'krajev');
+
+    var st = el.querySelector('.dz-stevec');
+    if (st) {
+      st.textContent = skupno
+        ? skupno + ' ' + (skupno === 1 ? 'kraj' : skupno === 2 ? 'kraja' : skupno < 5 ? 'kraji' : 'krajev')
+          + ' v ' + razredov + ' ' + (razredov === 1 ? 'razredu' : razredov === 2 ? 'razredih' : 'razredih')
+        : 'ni vpisanih krajev — velja enotna cena dostave';
+    }
+    var op = el.querySelector('.dz-opozorilo');
     if (op) {
       var t = [];
-      if (podvojenih) t.push(podvojenih + (podvojenih === 1 ? ' kraj je vpisan dvakrat' : ' krajev je vpisanih dvakrat') + ' — obvelja prvi');
-      if (brezCene) t.push(brezCene + (brezCene === 1 ? ' kraj je brez cene' : ' krajev je brez cene') + ' — ne bo shranjen');
+      if (podvojenih.length) t.push('podvojeni kraji: ' + podvojenih.slice(0, 6).join(', ')
+        + (podvojenih.length > 6 ? ' …' : '') + ' — obvelja prva cena');
+      if (brezCene) t.push(brezCene + (brezCene === 1 ? ' kraj je v razredu brez cene' : ' krajev je v razredu brez cene') + ' — ne bo shranjen');
       op.textContent = t.join(' · ');
       op.style.display = t.length ? 'block' : 'none';
     }
-  }
-
-  function pripni(el) {
-    el.addEventListener('input', function () { osvezi(el); });
-    el.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('.dz-brisi');
-      if (!b) return;
-      b.closest('.dz-vrstica').remove();
-      osvezi(el);
-    });
   }
 
   function izrisi(vsebnikId, zone) {
     var el = document.getElementById(vsebnikId);
     if (!el) return;
     poskrbiZaSlog();
-    var vrstice = (zone && zone.length ? zone : [{ kraj: '', cena: '' }])
-      .map(function (z) { return vrsticaHtml(z.kraj, z.cena); }).join('');
 
-    el.innerHTML =
-      '<div class="dz-glava"><span>Kraj</span><span>Cena (€)</span><span></span></div>'
-      + '<div class="dz-tabela">' + vrstice + '</div>'
+    // Kraje strnemo po ceni — cenik je tako tudi napisan
+    var skupine = {};
+    (zone || []).forEach(function (z) {
+      var c = vCeno(z.cena);
+      if (c === null || !String(z.kraj || '').trim()) return;
+      var k = c.toFixed(2);
+      if (!skupine[k]) skupine[k] = [];
+      skupine[k].push(String(z.kraj).trim());
+    });
+    var cene = Object.keys(skupine).sort(function (a, b) { return parseFloat(a) - parseFloat(b); });
+    var html = cene.length
+      ? cene.map(function (c) { return razredHtml(parseFloat(c), skupine[c].join(', ')); }).join('')
+      : razredHtml('', '');
+
+    el.innerHTML = '<div class="dz-razredi">' + html + '</div>'
       + '<div class="dz-orodja">'
-      + '<button type="button" class="dz-gumb" data-dz-dodaj>+ dodaj kraj</button>'
-      + '<button type="button" class="dz-gumb" data-dz-hitri>Hitri vnos več krajev</button>'
+      + '<button type="button" class="dz-gumb" data-dz-dodaj>+ dodaj cenovni razred</button>'
       + '<span class="dz-stevec"></span>'
       + '</div>'
-      + '<div class="dz-opozorilo" style="display:none"></div>'
-      + '<div class="dz-hitri" style="display:none">'
-      + '<div style="font-size:12px;color:var(--muted);margin-bottom:5px">Prilepi po vrsticah: <b>Vodice 2</b>, <b>Žeje pri Komendi 3</b>, <b>Domžale 4,00 €</b> … Vsak kraj v svojo vrstico; deluje tudi vejica ali pomišljaj med imenom in ceno.</div>'
-      + '<textarea placeholder="Vodice 2&#10;Komenda 2&#10;Šenčur 3"></textarea>'
-      + '<div class="dz-orodja">'
-      + '<button type="button" class="dz-gumb" data-dz-dodaj-prilepljeno>Dodaj na seznam</button>'
-      + '<button type="button" class="dz-gumb" data-dz-zamenjaj>Zamenjaj celoten seznam</button>'
-      + '</div></div>';
+      + '<div class="dz-opozorilo" style="display:none"></div>';
 
-    var tabela = el.querySelector('.dz-tabela');
-    pripni(tabela);
+    var vsebnik = el.querySelector('.dz-razredi');
 
-    el.querySelector('[data-dz-dodaj]').addEventListener('click', function () {
-      tabela.insertAdjacentHTML('beforeend', vrsticaHtml('', ''));
-      var zadnja = tabela.lastElementChild;
-      if (zadnja) zadnja.querySelector('.dz-kraj').focus();
-      osvezi(tabela);
+    el.addEventListener('input', function () { osvezi(el); });
+    // Ob izstopu iz polja ceno zapišemo na dve decimalki
+    el.addEventListener('focusout', function (e) {
+      if (!e.target.classList || !e.target.classList.contains('dz-cena')) return;
+      var c = vCeno(e.target.value);
+      e.target.value = c === null ? '' : izCene(c);
+      osvezi(el);
     });
-    var hitri = el.querySelector('.dz-hitri');
-    el.querySelector('[data-dz-hitri]').addEventListener('click', function () {
-      hitri.style.display = hitri.style.display === 'none' ? 'block' : 'none';
-      if (hitri.style.display === 'block') hitri.querySelector('textarea').focus();
+    el.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.dz-brisi');
+      if (b) {
+        if (razredi(el).length > 1) b.closest('.dz-razred').remove();
+        else {
+          var r = b.closest('.dz-razred');
+          r.querySelector('.dz-cena').value = '';
+          r.querySelector('.dz-kraji').value = '';
+        }
+        osvezi(el);
+        return;
+      }
+      if (e.target.closest && e.target.closest('[data-dz-dodaj]')) {
+        vsebnik.insertAdjacentHTML('beforeend', razredHtml('', ''));
+        var zadnji = vsebnik.lastElementChild;
+        if (zadnji) zadnji.querySelector('.dz-cena').focus();
+        osvezi(el);
+      }
     });
-    el.querySelector('[data-dz-dodaj-prilepljeno]').addEventListener('click', function () {
-      prilepi(el, tabela, false);
-    });
-    el.querySelector('[data-dz-zamenjaj]').addEventListener('click', function () {
-      prilepi(el, tabela, true);
-    });
-    osvezi(tabela);
+
+    osvezi(el);
   }
 
-  // "Vodice 2", "Žeje pri Komendi 3", "Domžale - 4,00 €", "Utik;5"
-  function razcleni(besedilo) {
-    var out = [];
-    String(besedilo || '').split(/[\n\r]+/).forEach(function (vrstica) {
-      var v = vrstica.trim();
-      if (!v) return;
-      // cena je zadnje število v vrstici
-      var m = v.match(/^(.*?)[\s,;:\-–—]*(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur)?\s*$/i);
-      if (!m) return;
-      var kraj = m[1].replace(/[\s,;:\-–—]+$/, '').trim();
-      var cena = parseFloat(m[2].replace(',', '.'));
-      if (!kraj || isNaN(cena)) return;
-      out.push({ kraj: kraj, cena: cena });
-    });
-    return out;
-  }
-
-  function prilepi(el, tabela, zamenjaj) {
-    var ta = el.querySelector('.dz-hitri textarea');
-    var novi = razcleni(ta.value);
-    if (!novi.length) { osvezi(tabela); return; }
-    if (zamenjaj) tabela.innerHTML = '';
-    else {
-      // pobriši prazne vrstice, da ne ostanejo vmes
-      seznam(tabela).forEach(function (v) {
-        if (!v.querySelector('.dz-kraj').value.trim()) v.remove();
-      });
-    }
-    var obstojeci = {};
-    seznam(tabela).forEach(function (v) {
-      obstojeci[kljuc(v.querySelector('.dz-kraj').value)] = true;
-    });
-    novi.forEach(function (z) {
-      if (obstojeci[kljuc(z.kraj)]) return;      // ne podvajamo
-      obstojeci[kljuc(z.kraj)] = true;
-      tabela.insertAdjacentHTML('beforeend', vrsticaHtml(z.kraj, z.cena));
-    });
-    ta.value = '';
-    osvezi(tabela);
-  }
-
-  // Vrne [{kraj,cena}] ali null, če ni nobenega uporabnega kraja.
+  // Vrne [{kraj,cena}] ali null. Podvojen kraj obvelja pri prvi ceni.
   function zberi(vsebnikId) {
     var el = document.getElementById(vsebnikId);
     if (!el) return null;
     var out = [], videni = {};
-    seznam(el).forEach(function (v) {
-      var kraj = v.querySelector('.dz-kraj').value.trim();
-      var cenaN = v.querySelector('.dz-cena').value.trim();
-      if (!kraj || cenaN === '') return;
-      var cena = parseFloat(cenaN.replace(',', '.'));
-      if (isNaN(cena) || cena < 0) return;
-      var k = kljuc(kraj);
-      if (!k || videni[k]) return;
-      videni[k] = true;
-      out.push({ kraj: kraj, cena: Math.round(cena * 100) / 100 });
+    razredi(el).forEach(function (r) {
+      var cena = vCeno(r.querySelector('.dz-cena').value);
+      if (cena === null) return;
+      vKraje(r.querySelector('.dz-kraji').value).forEach(function (kraj) {
+        var k = kljuc(kraj);
+        if (!k || videni[k]) return;
+        videni[k] = true;
+        out.push({ kraj: kraj, cena: cena });
+      });
     });
     return out.length ? out : null;
   }
 
-  window.DostavaPolja = { izrisi: izrisi, zberi: zberi, razcleni: razcleni };
+  window.DostavaPolja = { izrisi: izrisi, zberi: zberi, vCeno: vCeno, izCene: izCene, vKraje: vKraje };
 })();
