@@ -71,8 +71,17 @@ const skupniZacetek = (a, b) => {
 // glavni izziv: Vodice → v Vodicah, Mengeš → v Mengšu, Homec → v Homcu.
 // Namenoma NE uporabljamo vsebovanosti podnizov (kot wordMatch v ai-order.js):
 // s tem bi "Dol" ujel "Dolsko" in Dol pri Ljubljani bi dobil ceno Dolskega.
+// Pridevniške končnice ulic, izpeljanih iz imen krajev: Kamniška cesta,
+// Ljubljanska, Vojkova. Kraji jih skoraj nimajo.
+const PRIDEVNISKA = /(ova|eva|ska|cka|zka|ska|ska)$/;
+
+// a = beseda iz naslova, b = beseda kraja s cenika.
 function besedaUjema(a, b) {
   if (a === b) return true;
+  // "Kamniška cesta" ne sme ujeti kraja Kamnik, "Ljubljanska" ne Ljubljane.
+  // Pridevniška oblika v naslovu se sme ujeti le TOČNO — sicer bi ulica
+  // povlekla ceno oddaljenega mesta.
+  if (PRIDEVNISKA.test(a) && !PRIDEVNISKA.test(b)) return false;
   // Prva črka se mora ujemati. Sklon je skoraj nikoli ne spremeni, dva
   // različna kraja pa se prav po njej ločita: "Vojsko" (5 €) in "Dolsko"
   // (6 €) se razlikujeta v dveh črkah in bi se brez tega ujela.
@@ -81,19 +90,44 @@ function besedaUjema(a, b) {
   const meja = dolzina <= 3 ? 0 : dolzina === 4 ? 1 : 2;
   if (lev(a, b) <= meja) return true;
   // Skupen začetek petih črk: "vodic|e" ~ "vodic|ah". Pet in ne štiri, da
-  // "cerk|lje" ne ujame "cerk|nice".
-  return skupniZacetek(a, b) >= 5;
+  // "cerk|lje" ne ujame "cerk|nice". Dolžini se ne smeta preveč razlikovati,
+  // sicer "kranj|ska" ujame "Kranj".
+  return skupniZacetek(a, b) >= 5 && Math.abs(a.length - b.length) <= 2;
 }
 
-// Koliko besed kraja se pojavi v naslovu. Vse morajo, sicer 0.
+/*
+  Kako dobro se kraj ujema z naslovom. Vse besede kraja morajo biti v naslovu,
+  sicer ni ujemanja.
+
+  Vrne { besed, tocnih, prvi } ali null:
+    besed   — koliko besed kraja je najdenih (bolj določen kraj zmaga)
+    tocnih  — koliko od njih se ujema TOČNO, ne le približno
+    prvi    — najmanjši položaj v naslovu, kjer je bil kraj najden
+
+  Zakaj `tocnih`: pri 200 krajih so podobna imena povsod (Vašca/Vesca/Vaše,
+  Križ/Kršič, Zbilje/Žablje). Brez tega merila se ujamejo med sabo in ker
+  imajo različne cene, obvelja "kraja ni mogoče določiti".
+
+  Zakaj `prvi`: slovenski naslov gre od naselja k pošti — "Suhadole 59b,
+  Komenda". Ko se ujameta oba, je pravi tisti spredaj.
+*/
 function ujemanje(besedeNaslova, besedeKraja) {
-  if (!besedeKraja.length) return 0;
-  let zadetkov = 0;
+  if (!besedeKraja.length) return null;
+  let tocnih = 0;
+  let prvi = Infinity;
   for (const kw of besedeKraja) {
-    if (!besedeNaslova.some(aw => besedaUjema(aw, kw))) return 0;
-    zadetkov++;
+    let najden = -1;
+    let jeTocen = false;
+    for (let i = 0; i < besedeNaslova.length; i++) {
+      const aw = besedeNaslova[i];
+      if (aw === kw) { najden = i; jeTocen = true; break; }      // točno ima prednost
+      if (najden < 0 && besedaUjema(aw, kw)) najden = i;
+    }
+    if (najden < 0) return null;
+    if (jeTocen) tocnih++;
+    if (najden < prvi) prvi = najden;
   }
-  return zadetkov;
+  return { besed: besedeKraja.length, tocnih, prvi };
 }
 
 // Preveri in počisti kraje, kot jih pošlje vmesnik. Vrne polje ali null, če
@@ -140,13 +174,22 @@ function najdiKraj(zone, naslov) {
   const bn = besede(naslov);
   if (!bn.length) return null;
 
-  let najboljse = 0;
+  // Merila po vrsti:
+  //   1. več besed kraja  — "Selo pri Vodicah" pretehta "Vodice"
+  //   2. prej v naslovu   — naselje je pred pošto ("v Suhadolah, Komenda")
+  //   3. več TOČNIH ujemanj — pri istem položaju odloči točnost
+  //      ("Vodice" pred tipkarskim "Vodica")
+  const boljse = (a, b) => a.besed !== b.besed ? a.besed - b.besed
+    : a.prvi !== b.prvi ? b.prvi - a.prvi
+      : a.tocnih - b.tocnih;
+  let najboljse = null;
   let zmagovalci = [];
   for (const z of seznam) {
     const n = ujemanje(bn, besede(z.kraj));
     if (!n) continue;
-    if (n > najboljse) { najboljse = n; zmagovalci = [z]; }
-    else if (n === najboljse) zmagovalci.push(z);
+    const razlika = najboljse ? boljse(n, najboljse) : 1;
+    if (razlika > 0) { najboljse = n; zmagovalci = [z]; }
+    else if (razlika === 0) zmagovalci.push(z);
   }
   if (!zmagovalci.length) return null;
 

@@ -89,13 +89,22 @@ console.log('\n5) Dvoumnost ni ugibanje');
   // besedi), zato je izid neznan kraj — cena se ne ugane.
   je('sam "Brnik" → neznana (Sp. 2 €, Zg. 3 €)', cena('Brnik 5'), 'neznana');
 
-  // Dvoumnost nastane, kadar sta v ceniku dva zelo podobna kraja z RAZLIČNO
-  // ceno — tipičen vnosni spodrsljaj. Takrat cene prav tako ne ugibamo.
+  // Točno ujemanje premaga približno: "Vodice" ostane 2 €, tudi če je v
+  // ceniku tipkarski "Vodica" z drugo ceno.
   const spodrsljaj = { delivery_zones: [{ kraj: 'Vodice', cena: 2 }, { kraj: 'Vodica', cena: 5 }] };
-  const r = d.strosek(spodrsljaj, 'Vodice 12');
-  je('podobna kraja z različno ceno → neznana', r.neznana, true);
-  je('… in povemo, katera sta', r.dvoumno, ['Vodice', 'Vodica']);
+  je('točno ujemanje premaga približno', d.strosek(spodrsljaj, 'Vodice 12').cena, 2);
+  je('in obratno', d.strosek(spodrsljaj, 'Vodica 12').cena, 5);
+
+  // Dvoumnost ostane, kadar je napisana beseda enako blizu dvema krajema z
+  // različno ceno — takrat cene ne ugibamo. Zbilje in Žablje sta na Botaninem
+  // ceniku res (4 € in 6 €); stranki dovolj, da izpusti eno črko.
+  const enakoBlizu = { delivery_zones: [{ kraj: 'Zbilje', cena: 4 }, { kraj: 'Žablje', cena: 6 }] };
+  const r = d.strosek(enakoBlizu, 'Zblje 3');
+  je('enako blizu dvema z različno ceno → neznana', r.neznana, true);
+  je('… in povemo, katera sta', r.dvoumno, ['Zbilje', 'Žablje']);
   je('… cene ne ugibamo', r.cena, 0);
+  // Ko je zapisano pravilno, dvoumnosti ni
+  je('pravilno zapisano ni dvoumno', d.strosek(enakoBlizu, 'Zbilje 3').cena, 4);
 
   // Enako dobro ujemanje z ISTO ceno ni dvoumnost, le dve poimenovanji
   const isto = { delivery_zones: [{ kraj: 'Vodice', cena: 2 }, { kraj: 'Vodica', cena: 2 }] };
@@ -129,6 +138,65 @@ console.log('\n6b) Hišna številka, zlepljena z imenom, in tipkarske napake str
   je('Vodce 4 → Vodice', kraj('Vodce 4'), 'Vodice');
   je('Kamnk 2 → Kamnik', kraj('Kamnk 2'), 'Kamnik');
   je('Dolske 1 → Dolsko', kraj('Dolske 1'), 'Dolsko');
+}
+
+console.log('\n6c) Gost cenik: podobna imena in več krajev v naslovu');
+{
+  // Botanin cenik je zrasel na več kot 200 krajev. Pri tej gostoti so podobna
+  // imena povsod; brez pravila "točno pred približnim" se ujamejo med sabo.
+  const gost = {
+    delivery_zones: [
+      { kraj: 'Komenda', cena: 2 }, { kraj: 'Suhadole', cena: 3 },
+      { kraj: 'Vašca', cena: 3 }, { kraj: 'Vesca', cena: 3 }, { kraj: 'Vaše', cena: 5 },
+      { kraj: 'Križ', cena: 3 }, { kraj: 'Kršič', cena: 4 },
+      { kraj: 'Moste', cena: 3 }, { kraj: 'Moše', cena: 4 },
+      { kraj: 'Košiše', cena: 4 }, { kraj: 'Koseze', cena: 6 },
+      { kraj: 'Zbilje', cena: 4 }, { kraj: 'Žablje', cena: 6 },
+      { kraj: 'Srednja Bela', cena: 5 }, { kraj: 'Spodnja Bela', cena: 6 },
+      { kraj: 'Olševek', cena: 4 }, { kraj: 'Oševek', cena: 5 },
+      { kraj: 'Dragočajna', cena: 4 }, { kraj: 'Dragomelj', cena: 6 }
+    ]
+  };
+  const c = n => { const r = d.strosek(gost, n); return r.neznana ? 'neznana' : r.cena; };
+  const k = n => { const r = d.strosek(gost, n); return r.neznana ? 'neznana' : r.kraj; };
+
+  je('Vašca ni Vesca ni Vaše', k('Vašca 1'), 'Vašca');
+  je('Vesca ni Vašca', k('Vesca 1'), 'Vesca');
+  je('Vaše ni Vašca', k('Vaše 1'), 'Vaše');
+  je('Križ ni Kršič', c('Križ 1'), 3);
+  je('Kršič ni Križ', c('Kršič 1'), 4);
+  je('Moste ni Moše', c('Moste 1'), 3);
+  je('Moše ni Moste', c('Moše 1'), 4);
+  je('Košiše niso Koseze', c('Košiše 1'), 4);
+  je('Koseze niso Košiše', c('Koseze 1'), 6);
+  je('Zbilje niso Žablje', c('Zbilje 1'), 4);
+  je('Žablje niso Zbilje', c('Žablje 1'), 6);
+  je('Srednja Bela ni Spodnja Bela', c('Srednja Bela 1'), 5);
+  je('Spodnja Bela ni Srednja Bela', c('Spodnja Bela 1'), 6);
+  je('Olševek ni Oševek', c('Olševek 1'), 4);
+  je('Dragočajna ni Dragomelj', c('Dragočajna 1'), 4);
+
+  // Naselje in pošta v istem naslovu — pravi je tisti spredaj
+  je('Suhadole 59b, Komenda → Suhadole', k('Suhadole 59b, Komenda'), 'Suhadole');
+  je('… in cena naselja, ne pošte', c('Suhadole 59b, Komenda'), 3);
+  je('brez vejice enako', k('Suhadole 59b komenda'), 'Suhadole');
+  je('sama Komenda ostane Komenda', k('Komenda 4'), 'Komenda');
+  je('sklon naselja spredaj', k('v Suhadolah 59b, Komenda'), 'Suhadole');
+
+  // Pridevniška ulica ne sme povleči cene oddaljenega mesta
+  const zUlicami = {
+    delivery_zones: [
+      { kraj: 'Komenda', cena: 2 }, { kraj: 'Domžale', cena: 4 },
+      { kraj: 'Kamnik', cena: 5 }, { kraj: 'Kranj', cena: 5 },
+      { kraj: 'Dol pri Ljubljani', cena: 6 }, { kraj: 'Kamniška Bistrica', cena: 6 }
+    ]
+  };
+  const ku = n => { const r = d.strosek(zUlicami, n); return r.neznana ? 'neznana' : r.kraj; };
+  je('Kamniška cesta ni Kamnik', ku('Kamniška cesta 5, Domžale'), 'Domžale');
+  je('Kranjska cesta ni Kranj', ku('Kranjska cesta 12, Komenda'), 'Komenda');
+  je('Ljubljanska cesta ni Dol pri Ljubljani', ku('Ljubljanska cesta 20, Domžale'), 'Domžale');
+  je('pravi Kamnik se še vedno najde', ku('Kamnik, Šutna 1'), 'Kamnik');
+  je('Kamniška Bistrica se najde točno', ku('Kamniška Bistrica 3'), 'Kamniška Bistrica');
 }
 
 console.log('\n7) Neznan kraj');
