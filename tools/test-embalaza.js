@@ -46,9 +46,11 @@ console.log('\n3) Cena po artiklu (enotna cena ni nastavljena)');
   const s = lokal({ packaging_price: 0 });
   const cart = [{ name: 'Pica', price: 8, qty: 2, pack: 0.6 }, { name: 'Gobe', price: 1.5, qty: 3, pack: 0.4 }];
   je('2 × 0,60 + 3 × 0,40 = 2,40', computeTotals(s, cart, 'dostava').packFee, 2.4);
+  // Stranki pokažemo samo znesek; vmesni izračun "3 × 0,60 € =" je bolj
+  // obremenil kot pojasnil.
   je('pri različnih cenah le vsota', computeTotals(s, cart, 'dostava').packText, '2.40 €');
   const iste = [{ name: 'A', price: 8, qty: 3, pack: 0.6 }];
-  je('pri isti ceni tudi zmnožek', computeTotals(s, iste, 'dostava').packText, '3 × 0.60 € = 1.80 €');
+  je('pri isti ceni tudi le vsota', computeTotals(s, iste, 'dostava').packText, '1.80 €');
 }
 
 console.log('\n4) Pri artiklu prazno ali 0 pomeni BREZ embalaže');
@@ -112,7 +114,7 @@ console.log('\n9) Razčlenitev za WhatsApp');
   je('embalaža na naročilo', enotna.vrstice[1], '📦 Embalaža: 1.00 €');
   je('dostava', enotna.vrstice[2], '🚗 Dostava:  3.00 €');
   const poArt = computeTotals(lokal({ delivery_fee: 0 }), [{ name: 'Pica', price: 8, qty: 2, pack: 0.6 }], 'dostava');
-  je('embalaža po artiklu z zmnožkom', poArt.vrstice[1], '📦 Embalaža: 2 × 0.60 € = 1.20 €');
+  je('embalaža po artiklu je samo znesek', poArt.vrstice[1], '📦 Embalaža: 1.20 €');
 }
 
 console.log('\n10) Cena embalaže z artikla menija');

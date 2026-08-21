@@ -88,21 +88,17 @@ function enotnaEmbalaza(salon) {
 // services je neobvezen: uporabi se le za vrstice brez zapisane cene embalaže.
 // naslov je neobvezen: potrebuje ga cena dostave po krajih.
 function computeTotals(salon, cart, mode, services, naslov) {
-  const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
   const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
   const enotnaCena = enotnaEmbalaza(salon);
   const naNarocilo = enotnaCena > 0;
 
   let packFee = 0;
-  const enote = new Set();
   if (naNarocilo) {
     // Enotna cena se prišteje enkrat — le če je v košarici sploh kaj.
     packFee = (chargePack && cart.length) ? enotnaCena : 0;
   } else {
     for (const i of cart) {
-      const u = packUnitFor(i, services);
-      enote.add(u.toFixed(2));
-      if (chargePack) packFee += u * (i.qty || 1);
+      if (chargePack) packFee += packUnitFor(i, services) * (i.qty || 1);
     }
   }
   packFee = +packFee.toFixed(2);
@@ -122,13 +118,9 @@ function computeTotals(salon, cart, mode, services, naslov) {
   // Ob nedoločeni dostavi skupni znesek ni dokončen — to mora biti vidno.
   const grandText = delNeznana ? `${grand} € + dostava` : `${grand} €`;
 
-  // Pri ceni po artiklu je razčlenitev "3 × 0,60 €" razumljivejša, kadar imajo
-  // vsi artikli isto ceno; ko se cene razlikujejo, bi bil zmnožek napačen,
-  // zato le vsota. Pri enotni ceni na naročilo je zmnožka sploh ni.
-  const istaCena = !naNarocilo && enote.size === 1 && parseFloat([...enote][0]) > 0;
-  const packText = istaCena
-    ? `${kosov} × ${[...enote][0]} € = ${packFee.toFixed(2)} €`
-    : `${packFee.toFixed(2)} €`;
+  // Samo znesek. Vmesni izračun "4 × 0,60 € =" je stranko bolj obremenil kot
+  // pojasnil — zanima jo, koliko je embalaža.
+  const packText = `${packFee.toFixed(2)} €`;
 
   const delText = delFee > 0
     ? `${delFee.toFixed(2)} €${delKraj ? ` (${delKraj})` : ''}`
