@@ -36,8 +36,8 @@ function textMsg(to, body) {
 function serviceList(to, services, salon = {}) {
   const rows = services.map(s => ({
     id: 'svc_' + s.id,
-    title: s.name.substring(0, 24),
-    description: `${s.duration_minutes} min · ${s.price} €`.substring(0, 72)
+    title: rowTitle(s.name),
+    description: `${s.duration_minutes} min · ${evri(s.price)}`.substring(0, 72)
   })).slice(0, 10);
   return {
     messaging_product: 'whatsapp', to, type: 'interactive',
@@ -300,16 +300,56 @@ const CATS_PER_PAGE = 9;
 const ITEMS_PER_PAGE = 9;
 // Opis vrstice v WhatsApp seznamu (meja 72 znakov). Cena je VEDNO spredaj,
 // sestavine se skrajšajo na celo besedo z "…", da ni odrezanih besed.
-function menuRowDesc(s) {
-  const LIMIT = 72;
-  const price = s.price ? (s.price + ' €') : '';
-  let desc = (s.description || '').toString().trim();
-  if (!desc) return price.substring(0, LIMIT);
-  if (!price) return desc.length > LIMIT ? trimWords(desc, LIMIT) : desc;
+// ─── Meje seznama pri WhatsAppu ───────────────────────────────────────────
+// Meta dovoli 24 znakov za naslov vrstice in 72 za opis. Tega ni mogoče
+// povečati, zato ju uporabimo skupaj: naslov reže PO BESEDAH, kar ostane od
+// imena, pa gre na začetek opisa. Pri Botani ima 36 % jedi ime nad 24 znakov
+// (do 77), večina brez opisa — brez tega je odrezano ime edini podatek in
+// stranka bere "Ocvrti rakci v pivskem t".
+const ROW_TITLE = 24;
+const ROW_DESC = 72;
+
+const rowTitle = ime => trimWords(String(ime == null ? '' : ime).trim(), ROW_TITLE);
+
+// Cena, kot jo bere stranka: "15,40 €" in ne "15.4 €".
+function evri(v) {
+  const n = parseFloat(v);
+  if (isNaN(n)) return '';
+  return n.toFixed(2).replace('.', ',') + ' €';
+}
+
+function menuRowDesc(s, prikazanNaslov) {
+  const price = s.price ? evri(s.price) : '';
+  const polno = String(s.name == null ? '' : s.name).trim();
+  const opis = (s.description || '').toString().trim();
+
+  // Kaj od imena v naslovu ni bilo prikazano?
+  let ostanek = '';
+  if (prikazanNaslov) {
+    const vidno = String(prikazanNaslov).replace(/…$/, '').trim();
+    if (vidno && polno.length > vidno.length && polno.slice(0, vidno.length) === vidno) {
+      ostanek = polno.slice(vidno.length).replace(/^[\s,;:.-]+/, '').trim();
+    }
+  }
+
   const sep = ' · ';
-  const avail = LIMIT - price.length - sep.length;
-  if (desc.length > avail) desc = trimWords(desc, avail);
-  return (price + sep + desc).substring(0, LIMIT);
+  const kosi = [];
+  let prostor = ROW_DESC;
+  const dodaj = (besedilo, predznak) => {
+    if (!besedilo) return;
+    const potreben = (kosi.length ? sep.length : 0) + (predznak ? predznak.length : 0);
+    const naVoljo = prostor - potreben;
+    if (naVoljo < 6) return;                       // pod tem ni več berljivo
+    const t = besedilo.length > naVoljo ? trimWords(besedilo, naVoljo) : besedilo;
+    kosi.push((predznak || '') + t);
+    prostor -= potreben + t.length;
+  };
+
+  dodaj(price);
+  // Nadaljevanje imena je pomembnejše od opisa: ime jed identificira.
+  if (ostanek) dodaj(ostanek, '…');
+  if (opis) dodaj(opis);
+  return kosi.join(sep).slice(0, ROW_DESC);
 }
 function trimWords(text, max) {
   if (text.length <= max) return text;
@@ -337,7 +377,7 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
     const start = page * CATS_PER_PAGE;
     const pageCats = orderedCats.slice(start, start + CATS_PER_PAGE);
     const moreCats = orderedCats.length > start + pageCats.length;
-    const rows = pageCats.map(cat => ({ id: 'cat_' + cat, title: cat.substring(0, 24), description: nItems(grouped[cat].length) }));
+    const rows = pageCats.map(cat => ({ id: 'cat_' + cat, title: rowTitle(cat), description: nItems(grouped[cat].length) }));
     if (moreCats) rows.push({ id: 'catspage_' + (page + 1), title: '▶️ Več kategorij', description: 'Naslednja stran' });
     else rows.push({ id: 'cat_ALL', title: '📋 Cel meni', description: 'Prikaži vse kot besedilo' });
     return listMsg(cartLine + (cartSummary ? 'Izberite kategorijo:' : defaultGreeting), 'Kategorije', [{ title: 'Kategorije', rows }]);
@@ -358,11 +398,12 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
   const sections = [];
   for (const { s, c } of pageItems) {
     let sec = sections.find(x => x._c === c);
-    if (!sec) { sec = { _c: c, title: c.substring(0, 24), rows: [] }; sections.push(sec); }
+    if (!sec) { sec = { _c: c, title: rowTitle(c), rows: [] }; sections.push(sec); }
+    const naslovVrstice = rowTitle(s.name);
     sec.rows.push({
       id: 'menu_' + s.id,
-      title: (s.name).substring(0, 24),
-      description: menuRowDesc(s)
+      title: naslovVrstice,
+      description: menuRowDesc(s, naslovVrstice)
     });
   }
   if (hasMore && sections.length) {
@@ -383,7 +424,7 @@ function deliveryMenuText(to, services) {
   let txt = '*Naš meni*\n';
   for (const cat of orderedCats) {
     let block = '\n*' + cat + '*\n';
-    for (const s of grouped[cat]) block += '• ' + s.name + (s.price ? ' — ' + s.price + ' €' : '') + '\n';
+    for (const s of grouped[cat]) block += '• ' + s.name + (s.price ? ' — ' + evri(s.price) : '') + '\n';
     if (txt.length + block.length > MAX) { parts.push(txt); txt = block; }
     else txt += block;
   }
