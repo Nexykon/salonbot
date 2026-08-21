@@ -340,9 +340,12 @@ function menuRowDesc(s, prikazanNaslov) {
   };
 
   dodaj(price);
-  // Nadaljevanje imena je pomembnejše od opisa: ime jed identificira.
+  // Nikoli obojega: nadaljevanje imena IN opis skupaj presegata 72 znakov,
+  // zato bi bilo odrezano oboje in vrstica se ne bi brala kot stavek.
+  // Kadar je ime odrezano, ima nadaljevanje prednost — ime jed identificira.
+  // Cel ostanek imena vedno gre v opis, tudi pri najdaljših (77 znakov).
   if (ostanek) dodaj(ostanek, '…');
-  if (opis) dodaj(opis);
+  else if (opis) dodaj(opis);
   return kosi.join(sep).slice(0, ROW_DESC);
 }
 function trimWords(text, max) {

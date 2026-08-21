@@ -89,6 +89,32 @@ console.log('\n4) Kratko ime ostane nedotaknjeno, opis se ohrani');
   je('cena je v opisu', /16,00 €/.test(trakci.description), true);
 }
 
+console.log('\n4b) Nikoli obojega: ime ALI opis, ne oboje odrezano');
+{
+  // Prav to je bilo nečitljivo: "…avokadinim capresom · Priloga: polenta s…"
+  const zObojim = [{
+    id: 'z', category: 'A', price: 17,
+    name: 'Beef zrezek (140g) z avokadinim capresom',
+    description: 'Priloga: polenta s skuto, rukolo in ribanim sirom'
+  }];
+  const r = wa.deliveryMenuList('386', zObojim, {}, null, 'A', 0)
+    .interactive.action.sections[0].rows[0];
+  je('naslov je odrezan', r.title, 'Beef zrezek (140g) z…');
+  je('opis nadaljuje ime in se konča', r.description, '17,00 € · …avokadinim capresom');
+  je('opisa jedi ni zraven', /Priloga/.test(r.description), false);
+  je('samo eno tropičje v opisu', (r.description.match(/…/g) || []).length, 1);
+
+  // Najdaljše ime v celoti gre v 72 znakov
+  const najdaljse = [{
+    id: 'n', category: 'A', price: 15.4,
+    name: 'Gratinirane kraljeve kozice z mariniranim češnjevim paradižnikom in zelenjavo'
+  }];
+  const rn = wa.deliveryMenuList('386', najdaljse, {}, null, 'A', 0)
+    .interactive.action.sections[0].rows[0];
+  je('nadaljevanje najdaljšega imena ni odrezano', /zelenjavo$/.test(rn.description), true);
+  je('… in ostane pod 72 znaki', rn.description.length <= 72, true);
+}
+
 console.log('\n5) Cena je vedno vidna');
 {
   const r = vrstice().filter(x => x.id.startsWith('menu_'));
