@@ -18,6 +18,7 @@ const stripeSync = require('./src/stripe-sync');
 const { stripeClient, stripePriceId } = stripeSync;
 const t = require('./src/time');
 const urnik = require('./src/urnik');
+const dostava = require('./src/dostava');
 const { botMsg, DEFAULTS: BOT_MSG_DEFAULTS, KEYS: BOT_MSG_KEYS } = require('./src/botmsg');
 
 const app = express();
@@ -1180,6 +1181,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
     'working_hours_start',
     'working_hours_end',
     'working_hours',
+    'delivery_zones',
     'booking_interval_minutes',
     'break_between_minutes',
     'max_advance_days',
@@ -1224,6 +1226,7 @@ app.patch('/api/admin/salons/:id/settings', async (req, res) => {
   if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
   // null pomeni "urnika ni" — takrat velja star model (working_days + eno območje)
   if (updates.working_hours !== undefined) updates.working_hours = urnik.varenUrnik(updates.working_hours);
+  if (updates.delivery_zones !== undefined) updates.delivery_zones = dostava.varneZone(updates.delivery_zones);
   try {
     const salon = await db.getSalonById(req.params.id);
     if (!salon) return res.status(404).json({ error: 'Salon not found' });
@@ -1396,6 +1399,7 @@ app.get('/api/settings', async (req, res) => {
       pickup_address: salon.pickup_address || '',
       bot_active: salon.bot_active !== false,
       delivery_area: salon.delivery_area || '',
+      delivery_zones: dostava.zoneLokala(salon) || [],
       working_hours_start: salon.working_hours_start || '',
       working_hours_end: salon.working_hours_end || '',
       working_days: salon.working_days || '1,2,3,4,5,6',
@@ -1426,7 +1430,7 @@ app.patch('/api/settings', async (req, res) => {
       'working_hours_end', 'working_hours', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
-      'packaging_price', 'delivery_fee', 'min_order',
+      'packaging_price', 'delivery_fee', 'delivery_zones', 'min_order',
       'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message',
       'review_enabled', 'review_delay_hours', 'listed_public', 'ai_instructions',
@@ -1454,6 +1458,8 @@ app.patch('/api/settings', async (req, res) => {
     if (updates.form_fields !== undefined) updates.form_fields = safeFormFields(updates.form_fields, {});
     if (updates.packaging_price !== undefined) updates.packaging_price = Math.max(0, parseFloat(String(updates.packaging_price).replace(',', '.')) || 0);
     if (updates.delivery_fee !== undefined) updates.delivery_fee = Math.max(0, parseFloat(String(updates.delivery_fee).replace(',', '.')) || 0);
+    // null pomeni "krajev ni" — takrat velja enotna cena dostave
+    if (updates.delivery_zones !== undefined) updates.delivery_zones = dostava.varneZone(updates.delivery_zones);
     for (const bkey of ['allow_delivery', 'allow_pickup', 'pickup_packaging', 'bot_active']) {
       if (updates[bkey] !== undefined) updates[bkey] = updates[bkey] === true || updates[bkey] === 'true';
     }

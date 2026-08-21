@@ -544,6 +544,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
   .pc-ask:hover { background: var(--surface2); }
 </style>
 <script src="/urnik-vmesnik.js"></script>
+<script src="/dostava-vmesnik.js"></script>
 <script src="/pomoc.js"></script>
 </head>
 <body>
@@ -762,15 +763,23 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
         <div class="s-row">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
             <input type="checkbox" id="s-del-on" onchange="toggleFee('s-delivery', this.checked)" style="accent-color:#7c3aed;width:17px;height:17px">
-            🚗 Zaračunaj dostavo (€ na naročilo)
+            🚗 Enotna cena dostave za vsa naročila (€)
           </label>
           <input type="number" id="s-delivery" min="0" step="0.05" inputmode="decimal" placeholder="npr. 2.00 €" disabled>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Velja, dokler spodaj ni vpisan noben kraj. Če so kraji vpisani, ima cena po kraju prednost.</div>
         </div>
         <div class="s-row">
           <label>Minimalno naročilo za dostavo (€)</label>
           <input type="number" id="s-min-order" min="0" step="0.50" inputmode="decimal" placeholder="npr. 13.00 € (0 = brez minimuma)">
         </div>
         <div style="font-size:12px;color:var(--muted);margin-top:4px">Dostava se zaračuna enkrat na naročilo. Bot zneske prikaže stranki ločeno in pri dostavi upošteva minimalno naročilo.</div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-card-title">Kraji in cena dostave</div>
+        <div class="s-row" style="margin-bottom:0">
+          <div id="s-zone"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:10px">Bot iz naslova, ki ga stranka napiše, prepozna kraj in doda njegovo ceno. Prepozna tudi sklone (»v Vodicah«, »v Domžalah«) in okrajšave (»Zg. Brnik«).<br>Kraj, ki ni na seznamu, ostane <b>brez cene</b> — naročilo gre skozi, stranka dobi obvestilo, da strošek sporočite ob potrditvi, na naročilu pa je to posebej označeno. Cene ne ugibamo.</div>
+        </div>
       </div>
 
       <div class="settings-card" style="margin-top:16px">
@@ -1589,6 +1598,7 @@ async function loadSettingsData() {
     document.getElementById('s-pickup-addr').value  = d.pickup_address || '';
     document.getElementById('s-delivery-area').value = d.delivery_area || '';
     UrnikPolja.izrisi('s-urnik', d.urnik);
+    DostavaPolja.izrisi('s-zone', d.delivery_zones);
     // Predogled sporočila „lokal zaprt" vsebuje urnik — osveži ga ob spremembi
     document.getElementById('s-urnik').addEventListener('change', function () {
       if (document.getElementById('bm-bub-closed')) bmInput('closed');
@@ -2116,6 +2126,7 @@ async function saveSettings() {
         pickup_address:document.getElementById('s-pickup-addr').value.trim(),
         delivery_area:document.getElementById('s-delivery-area').value.trim(),
         working_hours:UrnikPolja.zberi('s-urnik'),
+        delivery_zones:DostavaPolja.zberi('s-zone'),
         review_enabled:document.getElementById('s-review-on').checked,
         review_link:document.getElementById('s-review-link').value.trim(),
         review_delay_hours:parseInt(document.getElementById('s-review-delay').value)||2,

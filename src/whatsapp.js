@@ -435,7 +435,9 @@ function deliveryConfirmButtons(to, cartText, address, total) {
     messaging_product: 'whatsapp', to, type: 'interactive',
     interactive: {
       type: 'button',
-      body: { text: '📋 *Pregled naročila:*\n\n' + cartText + '\n\n📍 Naslov: ' + address + '\n💰 Skupaj: ' + total + ' €\n\nPotrjujete naročilo?' },
+      // `total` je ze oblikovan znesek (lahko "32.00 € + dostava"),
+      // zato tu ne pripenjamo enote.
+      body: { text: '📋 *Pregled naročila:*\n\n' + cartText + '\n\n📍 Naslov: ' + address + '\n💰 Skupaj: ' + total + '\n\nPotrjujete naročilo?' },
       action: {
         buttons: [
           { type: 'reply', reply: { id: 'delivery_confirm', title: '✅ Potrdi' } },
