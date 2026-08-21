@@ -1372,7 +1372,6 @@ app.get('/api/settings', async (req, res) => {
       notify_email: salon.notify_email !== false,
       packaging_price: parseFloat(salon.packaging_price || 0),
       delivery_fee: parseFloat(salon.delivery_fee || 0),
-      delivery_per_item: salon.delivery_per_item === true,
       min_order: parseFloat(salon.min_order || 0),
       subscription_plan: salon.subscription_plan || 'ai',
       subscription_status: salon.subscription_status || 'trial',
@@ -1427,7 +1426,7 @@ app.patch('/api/settings', async (req, res) => {
       'working_hours_end', 'working_hours', 'booking_interval_minutes', 'break_between_minutes', 'max_advance_days',
       'booking_mode', 'datetime_position', 'form_fields', 'inquiry_confirmation_message',
       'pos_type', 'pos_token', 'pos_account', 'pos_spot_id',
-      'packaging_price', 'delivery_fee', 'delivery_per_item', 'min_order',
+      'packaging_price', 'delivery_fee', 'min_order',
       'allow_delivery', 'allow_pickup', 'pickup_packaging', 'pickup_address', 'bot_messages', 'bot_active', 'delivery_area',
       'notify_whatsapp', 'notify_email', 'auto_confirm', 'review_link', 'review_message', 'reactivation_message', 'booking_confirmation_message',
       'review_enabled', 'review_delay_hours', 'listed_public', 'ai_instructions',
@@ -1942,12 +1941,27 @@ app.get('/api/settings/customers', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// Cena embalaže artikla: prazno = velja enotna cena lokala, 0 = brez embalaže.
+// Vrne { napaka } ali { vrednost }.
+function cenaEmbalaze(v) {
+  if (v === null || String(v).trim() === '') return { vrednost: null };
+  const n = parseFloat(String(v).replace(',', '.'));
+  if (isNaN(n) || n < 0 || n > 100) return { napaka: 'Cena embalaže mora biti med 0 in 100 € (ali prazna)' };
+  return { vrednost: Math.round(n * 100) / 100 };
+}
+
 // POST /api/settings/services — nova storitev
 app.post('/api/settings/services', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  const { name, price, duration_minutes, description, category, tags } = req.body;
+  const { name, price, duration_minutes, description, category, tags, packaging_price } = req.body;
   if (!name) return res.status(400).json({ error: 'Ime storitve je obvezno' });
+  let emb = null;
+  if (packaging_price !== undefined) {
+    const p = cenaEmbalaze(packaging_price);
+    if (p.napaka) return res.status(400).json({ error: p.napaka });
+    emb = p.vrednost;
+  }
   try {
     const svc = await db.createService(salon.id, {
       name: name.trim(),
@@ -1956,6 +1970,7 @@ app.post('/api/settings/services', async (req, res) => {
       description: description || '',
       category: category || 'Ostalo',
       tags: Array.isArray(tags) ? tags : [],
+      packaging_price: emb,
       is_active: true
     });
     res.json(svc);
@@ -1980,7 +1995,7 @@ app.post('/api/settings/services/reorder', async (req, res) => {
 app.patch('/api/settings/services/:id', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
-  const { name, price, duration_minutes, description, category, tags } = req.body;
+  const { name, price, duration_minutes, description, category, tags, packaging_price } = req.body;
   try {
     const svc = await db.getServiceById(salon.id, req.params.id);
     if (!svc) return res.status(404).json({ error: 'Storitev ni najdena' });
@@ -1991,6 +2006,11 @@ app.patch('/api/settings/services/:id', async (req, res) => {
     if (description !== undefined) fields.description = description;
     if (category !== undefined) fields.category = category;
     if (Array.isArray(tags)) fields.tags = tags;
+    if (packaging_price !== undefined) {
+      const p = cenaEmbalaze(packaging_price);
+      if (p.napaka) return res.status(400).json({ error: p.napaka });
+      fields.packaging_price = p.vrednost;
+    }
     await db.patchService(svc.id, fields);
     res.json({ success: true });
   } catch (err) { res.status(500).json({ error: err.message }); }

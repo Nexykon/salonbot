@@ -20,7 +20,8 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 | `002-preklic-sej.sql` | ✔ pognana. Doda `sessions_valid_from` za preklic sej ob odjavi |
 | `003-odstrani-postgis.sql` | ✖ **ne poganjaj** — PostGIS uporablja druga aplikacija v isti bazi |
 | `004-rls-samo-nase-tabele.sql` | ✔ ni potrebna (preverjeno). Korak 1 je uporaben kot pregled stanja RLS |
-| `005-urnik-po-dnevih.sql` | ⏳ **za pognati.** Doda `sb_salons.working_hours` za odpiralni čas po dnevih |
+| `005-urnik-po-dnevih.sql` | ✔ pognana. Doda `sb_salons.working_hours` za odpiralni čas po dnevih |
+| `006-embalaza-po-artiklu.sql` | ⏳ **za pognati.** Doda `sb_services.packaging_price` za ceno embalaže pri posameznem artiklu |
 
 ## V tej bazi ni samo FlowTiq
 

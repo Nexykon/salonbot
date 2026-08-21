@@ -49,21 +49,71 @@ const TOOLS = [
 ];
 
 // Izračun zneskov — VEDNO deterministična koda, nikoli AI
+// ─── Embalaža ─────────────────────────────────────────────────────────────
+// Cena embalaže je lahko določena na artikel (sb_services.packaging_price):
+// pica 0,60 €, dodatek 0,40 €, pijača 0. Kadar artikel svoje cene nima,
+// velja enotna cena lokala (sb_salons.packaging_price). Znesek je zato vsota
+// po vrsticah in ne "kosov × ena cena".
+//
+// Cena je na artiklu zapisana kot `pack` in se vpiše, ko gre artikel v
+// košarico. Če je `pack` neznan (stara seja), pade na enotno ceno lokala.
+function packUnitFor(salon, item) {
+  var lastna = item ? item.pack : undefined;
+  if (lastna !== undefined && lastna !== null && lastna !== '') {
+    const v = parseFloat(lastna);
+    if (!isNaN(v) && v >= 0) return v;
+  }
+  const g = parseFloat(salon.packaging_price || 0);
+  return isNaN(g) || g < 0 ? 0 : g;
+}
+
 function computeTotals(salon, cart, mode) {
   const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
-  const packUnit = parseFloat(salon.packaging_price || 0);
   const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
-  const packFee = chargePack ? +(packUnit * kosov).toFixed(2) : 0;
-  const delUnit = parseFloat(salon.delivery_fee || 0);
-  const delPerItem = salon.delivery_per_item === true;
-  const delFee = mode === 'dostava' ? (delPerItem ? +(delUnit * kosov).toFixed(2) : delUnit) : 0;
+
+  let packFee = 0;
+  const enote = new Set();
+  for (const i of cart) {
+    const u = packUnitFor(salon, i);
+    enote.add(u.toFixed(2));
+    if (chargePack) packFee += u * (i.qty || 1);
+  }
+  packFee = +packFee.toFixed(2);
+
+  // Dostava je vedno na naročilo (možnost "na vsak artikel" je bila odstranjena
+  // — nobenemu lokalu ni nič spremenila, saj je nihče ni uporabljal s ceno).
+  const delFee = mode === 'dostava' ? (parseFloat(salon.delivery_fee || 0) || 0) : 0;
+
   const itemsTotal = cart.reduce((s, i) => s + parseFloat(i.price || 0) * (i.qty || 1), 0);
   const grand = (itemsTotal + packFee + delFee).toFixed(2);
+
+  // Kadar imajo vsi artikli isto ceno embalaže, je razčlenitev "3 × 0,60 €"
+  // razumljivejša; ko se cene razlikujejo, bi bila napačna, zato le vsota.
+  const enotna = enote.size === 1 && parseFloat([...enote][0]) > 0;
+  const packText = enotna
+    ? `${kosov} × ${[...enote][0]} € = ${packFee.toFixed(2)} €`
+    : `${packFee.toFixed(2)} €`;
+
   const parts = [`Artikli: ${itemsTotal.toFixed(2)} €`];
-  if (packFee > 0) parts.push(`Embalaža: ${kosov} × ${packUnit.toFixed(2)} € = ${packFee.toFixed(2)} €`);
-  if (delFee > 0) parts.push(delPerItem ? `Dostava: ${kosov} × ${delUnit.toFixed(2)} € = ${delFee.toFixed(2)} €` : `Dostava: ${delFee.toFixed(2)} €`);
+  if (packFee > 0) parts.push(`Embalaža: ${packText}`);
+  if (delFee > 0) parts.push(`Dostava: ${delFee.toFixed(2)} €`);
   parts.push(`SKUPAJ: ${grand} €`);
-  return { itemsTotal, packFee, delFee, grand, text: parts.join(' · ') + '.' };
+
+  // Razčlenitev za WhatsApp — en vir za vse korake zaključka.
+  const vrstice = [`💰 Artikli: ${itemsTotal.toFixed(2)} €`];
+  if (packFee > 0) vrstice.push(`📦 Embalaža: ${packText}`);
+  if (delFee > 0) vrstice.push(`🚗 Dostava:  ${delFee.toFixed(2)} €`);
+
+  return { itemsTotal, packFee, delFee, grand, packText, vrstice, text: parts.join(' · ') + '.' };
+}
+
+// Cena embalaže artikla iz menija; null pomeni "uporabi enotno ceno lokala".
+function packOfService(svc) {
+  if (!svc) return null;
+  const v = svc.packaging_price;
+  if (v === undefined || v === null || v === '') return null;
+  const n = parseFloat(v);
+  return (isNaN(n) || n < 0) ? null : n;
 }
 
 // Toleranca ene napačne črke ("kola" najde "Cola", "margarita" -> "Margerita")
@@ -152,7 +202,13 @@ async function askOrderAI({ message, salon, services, cart, history, phone, pend
   const _minOrd = parseFloat(salon.min_order || 0);
   const minLine = _minOrd > 0 ? `\nMINIMALNO NAROČILO ZA DOSTAVO: ${_minOrd.toFixed(2)} € (velja za artikle brez dostave/embalaže). Če stranka vpraša ali če je pod tem zneskom pri dostavi, jo prijazno opozori.` : '';
   const _delU = parseFloat(salon.delivery_fee || 0);
-  const feeLine = _delU > 0 ? `\nSTROŠEK DOSTAVE: ${_delU.toFixed(2)} €${salon.delivery_per_item ? ' na artikel' : ' na naročilo'} (doda se ob zaključku).` : '';
+  const feeLine = _delU > 0 ? `\nSTROŠEK DOSTAVE: ${_delU.toFixed(2)} € na naročilo (doda se ob zaključku).` : '';
+  // Embalaža ima lahko svojo ceno pri vsakem artiklu; zneskov ne sme ugibati AI.
+  const _emb = services.map(s => packOfService(s)).filter(v => v !== null && v > 0);
+  const _embG = parseFloat(salon.packaging_price || 0) || 0;
+  const embLine = (_emb.length || _embG > 0)
+    ? `\nEMBALAŽA: se doda ob zaključku glede na naročene artikle. Zneskov NE računaj in NE ugibaj — izračuna jih sistem. Če stranka vpraša, povej le, da se embalaža obračuna po artiklih in bo prikazana v povzetku.`
+    : '';
   // Zavedanje datuma/ure (slovenski čas)
   const _now = new Date();
   let _danes;
@@ -204,7 +260,7 @@ ZANESLJIVOST (ZELO POMEMBNO):
 - Nikoli si ne izmišljuj cen ali zneskov; če te stranka med naročanjem vpraša za ceno, povej znesek artiklov iz rezultatov orodij.
 MENI:
 ${menuText}
-TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine + hoursLine + minLine + feeLine
+TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).join(', ') : 'prazna'}` + areaLine + hoursLine + minLine + feeLine + embLine
     + `\nNAČINI PREVZEMA: ${[salon.allow_delivery !== false ? 'dostava' : null, salon.allow_pickup !== false ? 'osebni prevzem' : null].filter(Boolean).join(' ali ')}${salon.pickup_address ? ` (prevzem na: ${salon.pickup_address})` : ''}`
     + `\nOPOMBA STRANKE: ${note || '—'}`
     + `\nSTANJE ZAKLJUČKA: način=${order.mode || 'še ni izbran'}, ime=${order.name || 'še ni podano'}, naslov=${order.address || 'še ni podan'}`
@@ -244,7 +300,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           if (pend) {
             const q = Math.min(Math.max(parseInt(input.qty) || 1, 1), 50);
             const nb = ('brez ' + String(input.item).trim()).slice(0, 200);
-            newCart.push({ id: pend.id, name: pend.name, price: pend.price || 0, qty: q, note: nb });
+            newCart.push({ id: pend.id, name: pend.name, price: pend.price || 0, qty: q, note: nb, pack: packOfService(pend) });
             added.push({ id: pend.id, note: nb });
             action = action || 'show_cart';
             result = `Dodano: ${pend.name} x${q} (${nb}) (${pend.price} €/kos). Košarica: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}.`;
@@ -259,11 +315,11 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
         const itemNote = String(input.note || '').trim().slice(0, 200);
         // Če ima artikel opombo, vedno dodaj kot ločen vnos (ne združuj z obstoječim)
         if (itemNote) {
-          newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty, note: itemNote });
+          newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty, note: itemNote, pack: packOfService(svc) });
         } else {
           const ex = newCart.find(c => String(c.id) === String(svc.id) && !c.note);
           if (ex) ex.qty = (ex.qty || 1) + qty;
-          else newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty });
+          else newCart.push({ id: svc.id, name: svc.name, price: svc.price || 0, qty, pack: packOfService(svc) });
         }
         added.push({ id: svc.id, note: itemNote || null });
         action = action || 'show_cart';
@@ -286,7 +342,9 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
           const key = it.service_id || it.name;
           const ex = newCart.find(c => String(c.id) === String(key));
           if (ex) ex.qty = (ex.qty || 1) + (it.quantity || 1);
-          else newCart.push({ id: key, name: it.name, price: parseFloat(it.price) || 0, qty: it.quantity || 1 });
+          // Cena embalaze se vzame iz TRENUTNEGA menija, ne iz starega narocila.
+          else newCart.push({ id: key, name: it.name, price: parseFloat(it.price) || 0, qty: it.quantity || 1,
+            pack: packOfService(services.find(v => String(v.id) === String(key)) || findService(services, it.name)) });
         }
         action = action || 'show_cart';
         result = `Dodano zadnje naročilo: ${items.map(i => `${i.name} x${i.quantity || 1}`).join(', ')}.`;
@@ -422,4 +480,11 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
   return done();
 }
 
-module.exports = { askOrderAI, findService, computeTotals, aiConfigured };
+// Ali bo k narocilu poleg artiklov prislo se kaj (embalaza ali dostava)?
+// Z ceno embalaze po artiklu enotna cena lokala ni vec zadosten pokazatelj.
+function hasExtras(salon, cart) {
+  const t = computeTotals(salon, cart || [], 'dostava');
+  return t.packFee > 0 || t.delFee > 0;
+}
+
+module.exports = { askOrderAI, findService, computeTotals, aiConfigured, packOfService, hasExtras };

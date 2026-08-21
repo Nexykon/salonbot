@@ -8,7 +8,7 @@ const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } =
 const t = require('./time');
 const urnik = require('./urnik');
 const { botMsg } = require('./botmsg');
-const { askOrderAI, computeTotals, aiConfigured, findService } = require('./ai-order');
+const { askOrderAI, computeTotals, aiConfigured, findService, packOfService, hasExtras } = require('./ai-order');
 const { planLimit } = require('./presets');
 
 function fmtDate(dateStr) {
@@ -740,7 +740,7 @@ async function handleMessage(msgObj, salon) {
       const cart = sess.cart || [];
       const existing = cart.find(c => String(c.id) === String(item.id));
       if (existing) existing.qty = (existing.qty || 1) + qty;
-      else cart.push({ ...item, qty });
+      else cart.push({ ...item, qty, pack: packOfService(item) });
       session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
       await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(cart), cartTotal(cart)));
     };
@@ -764,9 +764,9 @@ async function handleMessage(msgObj, salon) {
           const cart = sess.cart || [];
           const ex = cart.find(c => String(c.id) === String(item.id) && !c.note);
           if (ex) ex.qty = (ex.qty || 1) + qty306;
-          else cart.push({ ...item, qty: qty306 });
+          else cart.push({ ...item, qty: qty306, pack: packOfService(item) });
           session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
-          const feeNote = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
+          const feeNote = hasExtras(salon, cart)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
             `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart)} €*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
@@ -793,17 +793,13 @@ async function handleMessage(msgObj, salon) {
     const askNoteForMode = async (mode) => {
       const sessNow = session.get(skey);
       const cart = sessNow.cart || sess.cart || [];
-      const packUnit = parseFloat(salon.packaging_price || 0);
-      const kosov = cart.reduce((s, i) => s + (i.qty || 1), 0);
-      const chargePack = mode === 'dostava' || salon.pickup_packaging !== false;
-      const packFee = chargePack ? +(packUnit * kosov).toFixed(2) : 0;
-      const delFee = mode === 'dostava' ? parseFloat(salon.delivery_fee || 0) : 0;
-      const itemsTotal = parseFloat(cartTotal(cart));
-      const grandTotal = (itemsTotal + packFee + delFee).toFixed(2);
+      // Zneski iz enega vira (computeTotals) — embalaža je lahko po artiklu.
+      const totN = computeTotals(salon, cart, mode);
+      const packFee = totN.packFee;
+      const delFee = totN.delFee;
+      const grandTotal = totN.grand;
       const priceBreakdown = [
-        `💰 Artikli: ${itemsTotal.toFixed(2)} €`,
-        ...(packFee > 0 ? [`📦 Embalaža: ${kosov} × ${packUnit.toFixed(2)} € = ${packFee.toFixed(2)} €`] : []),
-        ...(delFee  > 0 ? [`🚗 Dostava:  ${delFee.toFixed(2)} €`]  : []),
+        ...totN.vrstice,
         `──────────────`,
         `💵 *SKUPAJ: ${grandTotal} €*`,
       ].join('\n');
@@ -971,16 +967,13 @@ async function handleMessage(msgObj, salon) {
         // Osebni prevzem: brez naslova, direktno na potrditev
         const cart = sess.cart || [];
         const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
-        const pFee = parseFloat(sess.packFee || 0);
-        const iTotal = parseFloat(cartTotal(cart));
-        const gTotal = sess.grandTotal || (iTotal + pFee).toFixed(2);
-        const kosovP = cart.reduce((sm, i) => sm + (i.qty || 1), 0);
-        const pUnit = parseFloat(salon.packaging_price || 0);
+        const totP = computeTotals(salon, cart, 'prevzem');
+        const pFee = totP.packFee;
+        const gTotal = totP.grand;
         const breakdownTxt = [
           fmtCart(cart) + opombaTxt,
           '',
-          `💰 Artikli: ${iTotal.toFixed(2)} €`,
-          ...(pFee > 0 ? [`📦 Embalaža: ${kosovP} × ${pUnit.toFixed(2)} € = ${pFee.toFixed(2)} €`] : []),
+          ...totP.vrstice,
         ].join('\n');
         const pickupLabel = '🏃 Osebni prevzem' + (salon.pickup_address ? ` — ${salon.pickup_address}` : '');
         session.set(skey, { ...sess, step: 305, customerName, deliveryAddress: '', grandTotal: gTotal, packFee: pFee, delFee: 0 });
@@ -999,19 +992,14 @@ async function handleMessage(msgObj, salon) {
       const cart = sess.cart || [];
       const opombaTxt = sess.opomba ? `\n📝 Opomba: ${sess.opomba}` : '';
       const sessF = session.get(skey);
-      const pUnit = parseFloat(salon.packaging_price || 0);
-      const kosovS = cart.reduce((sm, i) => sm + (i.qty || 1), 0);
-      const pFee = sessF.packFee !== undefined ? parseFloat(sessF.packFee) : +(pUnit * kosovS).toFixed(2);
-      const dUnit = parseFloat(salon.delivery_fee || 0);
-      const dFee = sessF.delFee  !== undefined ? parseFloat(sessF.delFee)  : (salon.delivery_per_item === true ? +(dUnit * kosovS).toFixed(2) : dUnit);
-      const iTotal = parseFloat(cartTotal(cart));
-      const gTotal = (iTotal + pFee + dFee).toFixed(2);
+      const totD = computeTotals(salon, cart, 'dostava');
+      const pFee = totD.packFee;
+      const dFee = totD.delFee;
+      const gTotal = totD.grand;
       const breakdownTxt = [
         fmtCart(cart) + opombaTxt,
         '',
-        `💰 Artikli: ${iTotal.toFixed(2)} €`,
-        ...(pFee > 0 ? [`📦 Embalaža: ${kosovS} × ${pUnit.toFixed(2)} € = ${pFee.toFixed(2)} €`] : []),
-        ...(dFee > 0 ? [`🚗 Dostava:  ${dFee.toFixed(2)} €`]  : []),
+        ...totD.vrstice,
       ].join('\n');
       session.set(skey, { ...sessF, step: 305, deliveryAddress: address, grandTotal: gTotal, packFee: pFee, delFee: dFee });
       await wa.send(phoneId, token, wa.deliveryConfirmButtons(
@@ -1172,7 +1160,7 @@ async function handleMessage(msgObj, salon) {
         if (line) {
           line.qty = qp.q; // nastavi TOČNO količino (ne +)
           session.set(skey, { ...cur, cart: cur.cart, lastAdded: null });
-          const feeN = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
+          const feeN = hasExtras(salon, cur.cart)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
             `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cur.cart)} €*${feeN}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
@@ -1211,7 +1199,7 @@ async function handleMessage(msgObj, salon) {
           if (wantsMore) line2.qty = (line2.qty || 1) + qp2.q; // "še en" -> +1
           else line2.qty = qp2.q;                              // popravek količine -> točno
           session.set(skey, { ...cur, step: 301, cart: cart2, lastAdded: [{ id: svcHit.id, note: null }] });
-          const feeN2 = (parseFloat(salon.packaging_price || 0) > 0 || parseFloat(salon.delivery_fee || 0) > 0)
+          const feeN2 = hasExtras(salon, cart2)
             ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
           await wa.send(phoneId, token, wa.textMsg(from,
             `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${cartTotal(cart2)} €*${feeN2}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`

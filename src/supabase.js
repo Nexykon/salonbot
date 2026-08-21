@@ -59,6 +59,13 @@ async function createService(salonId, service) {
     duration_minutes: Math.round(Number(service.duration_minutes || 0)),
     description: service.description || '',
     category: service.category || 'Ostalo',
+    // tags se doslej ni prenašal — oznake novega artikla so se tiho izgubile
+    tags: Array.isArray(service.tags) ? service.tags : [],
+    // Stolpec omenimo samo, kadar je cena res podana — sicer bi vstavljanje
+    // pred migracijo 006 padlo, ker stolpca še ni. Manjkajoča vrednost
+    // pomeni "uporabi enotno ceno lokala".
+    ...(service.packaging_price === undefined || service.packaging_price === null
+      ? {} : { packaging_price: Number(service.packaging_price) }),
     sort_order: service.sort_order || 0,
     is_active: service.is_active !== false
   }, { headers: HEADERS });
@@ -491,6 +498,19 @@ async function updateServiceById(serviceId, price, durationMinutes, name, sortOr
   return updates;
 }
 
+// Posodobi poljubna polja artikla (meni restavracije: opis, kategorija,
+// oznake, cena embalaže). Klicana je bila iz PATCH /api/settings/services/:id,
+// a ni obstajala — urejanje artikla je zato vračalo 500.
+async function patchService(serviceId, fields) {
+  if (!serviceId || !fields || !Object.keys(fields).length) return null;
+  await axios.patch(
+    `${BASE}/sb_services?id=eq.${serviceId}`,
+    fields,
+    { headers: { ...HEADERS, Prefer: 'return=minimal' } }
+  );
+  return fields;
+}
+
 async function setServiceActive(serviceId, isActive) {
   await axios.patch(
     `${BASE}/sb_services?id=eq.${serviceId}`,
@@ -850,7 +870,7 @@ module.exports = {
   getBooking, getBookingById, getBookingForSalon, getActiveBookingByPhone, getLastOrderItemsByPhone, getLastCustomerByPhone, getMonthlyOrderCount, updateBookingStatus, markDelivered, updateBookingNotes, getCustomerEmailByPhone,
   getTodayBookings, getBookingsByDate, getBookingsForRange, getBookingsByPhone, listBookings,
   getSlotsByDate, addManualBooking, getBookingByName, markSlotFree,
-  updateServiceById, setServiceActive, updateService, deleteServiceById,
+  updateServiceById, patchService, setServiceActive, updateService, deleteServiceById,
   addSlot, removeSlot, getPendingBookings,
   getKnowledge, addKnowledge, deleteKnowledge,
   getDailyStats, getBookedTimesForDate,
