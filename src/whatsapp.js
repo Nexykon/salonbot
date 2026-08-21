@@ -408,7 +408,8 @@ function deliveryWelcome(salon, customerName) {
     ? 'Pozdravljeni, *' + firstName + '*! Lepo, da ste spet pri *' + name + '*.'
     : 'Pozdravljeni v *' + name + '*.';
   if (info.length) txt += '\n\n' + info.join('\n');
-  txt += '\n\nNaročilo lahko kadar koli prekličete – dovolj je, da napišete *prekliči*.';
+  // Vrstica o preklicu je bila odstranjena: stranko je ob prvem stiku bolj
+  // zmedla kot pomagala. Beseda "prekliči" seveda še vedno deluje.
   txt += '\n\nBi si želeli kaj naročiti?';
   return txt;
 }
