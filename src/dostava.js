@@ -22,12 +22,16 @@ const OKRAJSAVE = {
   sv: 'sveti'
 };
 
-// Brez šumnikov, male črke, vse nečrkovno v presledek.
+// Brez šumnikov, male črke, vse nečrkovno v presledek. Hišno številko, zlepljeno
+// z imenom, ločimo: "Dvorje15" → "dvorje 15". Brez tega tipkarska napaka ob
+// zlepljeni številki ni ujeta — v pravih naročilih se je pojavil "Dvprje15".
 function normaliziraj(s) {
   return String(s == null ? '' : s)
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/([a-z])(\d)/g, '$1 $2')
+    .replace(/(\d)([a-z])/g, '$1 $2')
     .trim();
 }
 

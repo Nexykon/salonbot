@@ -115,6 +115,22 @@ console.log('\n6) Skloni');
   je('na Pšati → 6 €', cena('Pšati 9'), 6);
 }
 
+console.log('\n6b) Hišna številka, zlepljena z imenom, in tipkarske napake strank');
+{
+  // Iz pravih naročil: stranka je napisala "Dvprje15" — napaka IN brez presledka
+  je('Dvorje15 (brez presledka)', cena('Dvorje15'), 3);
+  je('Dvprje15 (napaka + brez presledka)', cena('Dvprje15'), 3);
+  je('Dvprje 15 (napaka s presledkom)', cena('Dvprje 15'), 3);
+  je('Vodice12', cena('Vodice12'), 2);
+  je('Komenda,5', cena('Komenda,5'), 2);
+  je('Kamnik3a', cena('Kamnik3a'), 5);
+  je('poštna številka ne moti', cena('Dvorje 14 4207 cerklje'), 3);
+  // Napaka ne sme ujeti napačnega kraja
+  je('Vodce 4 → Vodice', kraj('Vodce 4'), 'Vodice');
+  je('Kamnk 2 → Kamnik', kraj('Kamnk 2'), 'Kamnik');
+  je('Dolske 1 → Dolsko', kraj('Dolske 1'), 'Dolsko');
+}
+
 console.log('\n7) Neznan kraj');
 {
   je('Ljubljana Bežigrad → neznana', cena('Ljubljana Bežigrad, Vojkova 5'), 'neznana');
