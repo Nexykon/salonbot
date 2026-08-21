@@ -544,6 +544,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
   .pc-ask:hover { background: var(--surface2); }
 </style>
 <script src="/urnik-vmesnik.js"></script>
+<script src="/pomoc.js"></script>
 </head>
 <body>
 
@@ -785,7 +786,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
           <label for="s-review-on" style="margin:0;cursor:pointer">Po naročilu pošlji stranki prošnjo za Google oceno</label>
         </div>
         <div class="s-row">
-          <label>Povezava do Google ocene</label>
+          <label>Povezava do Google ocene<button type="button" class="pomoc-gumb" data-pomoc="google-ocena" aria-label="Kako dobim pravo povezavo do Google ocene" title="Kako dobim pravo povezavo?">?</button></label>
           <input type="text" id="s-review-link" placeholder="npr. https://g.page/r/..../review">
         </div>
         <div class="s-row">
@@ -796,7 +797,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
           <label>Besedilo prošnje <span style="color:var(--muted);font-weight:400">(prazno = privzeto)</span></label>
           <textarea id="s-review-msg" rows="3" placeholder="Hvala za naročilo! Bi nam pomagali z oceno na Google?"></textarea>
         </div>
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">Bot samodejno pošlje povezavo izbrano število ur po naročilu (znotraj 24 ur, brez dodatnih stroškov). Google povezavo dobiš v Google Business profilu → gumb „Prosi za mnenja".</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">Bot samodejno pošlje povezavo izbrano število ur po naročilu (znotraj 24 ur, brez dodatnih stroškov). Kje dobiš pravo Google povezavo, pove gumb <b>?</b> ob polju.</div>
       </div>
 
       <div class="settings-card" style="margin-top:16px">
