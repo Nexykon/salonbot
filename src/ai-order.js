@@ -47,7 +47,9 @@ const TOOLS = [
   { type: 'function', function: { name: 'remove_from_cart', description: 'Odstrani artikel iz košarice', parameters: { type: 'object', properties: { item: { type: 'string' } }, required: ['item'] } } },
   { type: 'function', function: { name: 'repeat_last_order', description: 'Dodaj artikle zadnjega naročila stranke ("enako kot zadnjič")', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'add_note', description: 'Zapiši posebno željo ali opombo k naročilu (npr. "brez gob", "bolj pikantno", alergije)', parameters: { type: 'object', properties: { note: { type: 'string' } }, required: ['note'] } } },
-  { type: 'function', function: { name: 'checkout', description: 'Pokliči, ko stranka pove, da je to vse / želi zaključiti. Zaključek (način, ime, naslov, povzetek, potrditev) nato vodi sistem — ti samo pokliči to orodje.', parameters: { type: 'object', properties: {} } } }
+  { type: 'function', function: { name: 'checkout', description: 'Pokliči, ko stranka pove, da je to vse / želi zaključiti. Zaključek (način, ime, naslov, povzetek, potrditev) nato vodi sistem — ti samo pokliči to orodje.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'set_mode', description: 'Zabeleži način prevzema. Uporabi SAMO, kadar se je stranka SAMA ODLOČILA in to povedala (npr. "dostava v Suhadole 59b", "prišel bom po naročilo", "za odnest"). NE uporabi, kadar o tem samo SPRAŠUJE ("ali dostavljate?", "koliko je dostava?", "do kdaj lahko pridem?") — na vprašanje odgovori z besedilom. NIKOLI ne ugibaj iz konteksta in NIKOLI ne sprašuj po načinu; če stranka ni povedala, tega orodja ne kliči.', parameters: { type: 'object', properties: { mode: { type: 'string', description: '"dostava" ali "prevzem"' } }, required: ['mode'] } } },
+  { type: 'function', function: { name: 'set_address', description: 'Zabeleži naslov za dostavo. Uporabi SAMO, kadar je stranka naslov NAPISALA SAMA (npr. "dostava v Suhadole 59b"). Zapiši ga TOČNO tako, kot ga je napisala — brez dodajanja kraja, poštne številke ali popravkov. NIKOLI ne ugibaj in NIKOLI ne sprašuj po naslovu.', parameters: { type: 'object', properties: { address: { type: 'string' } }, required: ['address'] } } }
 ];
 
 // Izračun zneskov — VEDNO deterministična koda, nikoli AI
@@ -296,6 +298,7 @@ POTEK POGOVORA:
 6) Če reče "enako kot zadnjič" ali podobno, uporabi repeat_last_order.
 7) Splošno željo za celotno naročilo prav tako zabeleži z add_note — NE prikazuj menija.
 8) Cene embalaže in dostave se dodajo ob zaključku — če stranka vpraša za skupno ceno, povej znesek artiklov in omeni, da se to doda ob zaključku.
+8b) Kadar stranka NAČIN PREVZEMA ali NASLOV pove SAMA, še preden bi jo kdo vprašal (npr. "eno klasiko in tatarsko omako, dostava v Suhadole 59b"), to v istem koraku zabeleži s set_mode oziroma set_address — poleg add_to_cart za artikle. Zabeleži IZKLJUČNO to, kar je stranka sama napisala; nikoli ne ugibaj in nikoli ne sprašuj. Ko sta način in (pri dostavi) naslov zabeležena, nadaljuje sistem sam s povzetkom in potrditvijo: ne delaj povzetka, ne navajaj zneskov in ne vprašaj "želite še kaj".
 9) Ko stranka pove, da je to vse oz. želi zaključiti (npr. "to je vse", "zaključi", "to bo vse"), POKLIČI orodje checkout in NE pošlji nobenega drugega besedila. Zaključek (način prevzema, ime, naslov, povzetek in potrditev) v celoti vodi sistem — TI NE sprašuj po načinu prevzema, imenu ali naslovu, NE delaj povzetka in NE potrjuj naročila.
 Nikoli si ne izmišljuj artiklov ali cen — ponujaš samo z menija. Ne obljubljaj časov dostave in ne izmišljuj akcij.
 ZANESLJIVOST (ZELO POMEMBNO):
@@ -413,10 +416,11 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
         if (m === 'dostava' && salon.allow_delivery === false) { result = 'Dostava ni na voljo — ponudi osebni prevzem.'; break; }
         if (m === 'prevzem' && salon.allow_pickup === false) { result = 'Osebni prevzem ni na voljo — ponudi dostavo.'; break; }
         newOrder.mode = m;
-        const tt = computeTotals(salon, newCart, m, services, newOrder.address);
+        // Naprej pelje deterministični trak (povzetek, ime, naslov, potrditev),
+        // zato AI po tem NE sprašuje in NE povzema — sicer bi bila dva povzetka.
         result = m === 'prevzem'
-          ? `Način zabeležen: osebni prevzem. ${salon.pickup_address ? `POVEJ stranki: "Prevzem bo na naslovu ${salon.pickup_address}." ` : ''}NIKOLI ne sprašuj stranke za naslov prevzema. ${tt.text} Zdaj vprašaj SAMO za ime in priimek.`
-          : `Način zabeležen: dostava. ${tt.text} Zdaj vprašaj SAMO za ime in priimek — brez omembe območja dostave.`;
+          ? 'Način zabeležen: osebni prevzem. Ne sprašuj za naslov prevzema. Zaključek vodi sistem — ne delaj povzetka in ne navajaj zneskov.'
+          : 'Način zabeležen: dostava. Zaključek vodi sistem — ne delaj povzetka in ne navajaj zneskov.';
         break;
       }
       case 'set_name': {
@@ -432,7 +436,7 @@ TRENUTNA KOŠARICA: ${cart.length ? cart.map(i => `${i.name} x${i.qty || 1}`).jo
         const ad = String(input.address || '').trim().slice(0, 200);
         if (!ad) { result = 'Naslov je prazen — vprašaj znova.'; break; }
         newOrder.address = ad;
-        result = `Naslov zabeležen. NAROČILO: ${newCart.map(i => `${i.name} x${i.qty || 1}${i.note ? ` (${i.note})` : ''}`).join(', ')}. ${computeTotals(salon, newCart, newOrder.mode || 'dostava', services, newOrder.address).text} Povzemi TOČNO te postavke (s posebnostmi), naslov in TOČNO te zneske (Artikli/Embalaža/Dostava/SKUPAJ) ter vprašaj: "Potrjujete naročilo?"`;
+        result = 'Naslov zabeležen. Zaključek vodi sistem — ne delaj povzetka, ne navajaj zneskov in ne vprašaj "želite še kaj".';
         break;
       }
       case 'confirm_order': {

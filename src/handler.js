@@ -1499,12 +1499,20 @@ async function handleMessage(msgObj, salon) {
         ].slice(-60);
         const mergedNote = result.note ? [sess.opomba, result.note].filter(Boolean).join('; ') : (sess.opomba || '');
         const ord = result.order || {};
+        // Je stranka v TEM sporočilu sama povedala način oziroma naslov?
+        // (Samo takrat gremo naravnost na povzetek — drugače bi vsako kasnejše
+        //  vprašanje o ceni prekinili s ponovnim povzetkom.)
+        const povedalaSama = (!!ord.mode && !sess.orderMode) || (!!ord.address && !sess.deliveryAddress);
+        // Naslov brez načina pomeni dostavo — "eno klasiko na Vodice 3" ne
+        // potrebuje še vprašanja, ali gre za dostavo.
+        const nacinIzNaslova = (!ord.mode && !sess.orderMode && ord.address && salon.allow_delivery !== false)
+          ? 'dostava' : null;
         session.set(skey, {
           ...sess, step: result.cart.length ? 301 : (sess.step || 300),
           hintShown: sess.hintShown || isFirstTurn,
           areaShown: sess.areaShown || (welcomeShown && salon.allow_delivery !== false && !!salon.delivery_area),
           cart: result.cart, aiHistory: newHistory, pendingItem: null, opomba: mergedNote,
-          orderMode: ord.mode || sess.orderMode || null,
+          orderMode: ord.mode || nacinIzNaslova || sess.orderMode || null,
           customerName: ord.name || sess.customerName || null,
           deliveryAddress: ord.address || sess.deliveryAddress || null
         });
@@ -1526,7 +1534,14 @@ async function handleMessage(msgObj, salon) {
         // (orodje checkout), preda krmilo traku (promptForStage). AI med zaključkom ne govori.
         {
           const stHand = session.get(skey);
-          if (result.checkoutStarted || stHand.checkoutStage) {
+          // "En šus": artikli + način (+ naslov pri dostavi) so prišli v enem
+          // sporočilu, zato ni česa več vprašati — takoj povzetek in gumba.
+          const enSus = povedalaSama && (stHand.cart || []).length && stHand.orderMode
+            && (stHand.orderMode !== 'dostava' || stHand.deliveryAddress);
+          if (result.checkoutStarted || stHand.checkoutStage || enSus) {
+            // Dobrodošlica (urnik, naslov prevzema) mora priti tudi takrat,
+            // kadar je prvo sporočilo že celo naročilo.
+            if (welcomeShown) await wa.send(phoneId, token, wa.textMsg(from, wa.deliveryWelcome(salon, sess.knownName)));
             await promptForStage(stHand);
             return;
           }
