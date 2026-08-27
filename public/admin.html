@@ -301,6 +301,12 @@
     background: var(--bg3); color: var(--text); outline: none;
   }
   .service-row input:focus { border-color: var(--accent); }
+  /* Restavracija trajanja storitve ne pozna — bot ne razporeja terminov,
+     ampak sprejema narocila. Stolpec zato izpade, polje pa ostane v DOM,
+     da se shranjevanje ne spremeni. */
+  .brez-trajanja .service-grid-head,
+  .brez-trajanja .service-row { grid-template-columns: minmax(180px, 1fr) 96px 42px; }
+  .brez-trajanja .bs-trajanje { display: none; }
   .icon-btn {
     width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.25);
     background: rgba(239,68,68,0.08); color: var(--red); cursor: pointer; font-size: 18px;
@@ -844,6 +850,8 @@
     .studio-preview { grid-column: 1; grid-row: 2; border-left: none; border-top: 1px solid var(--border); overflow: visible; }
     .service-grid-head { grid-template-columns: 1fr 80px 90px 40px; }
     .service-row { grid-template-columns: 1fr 80px 90px 40px; }
+    .brez-trajanja .service-grid-head,
+    .brez-trajanja .service-row { grid-template-columns: 1fr 80px 40px; }
   }
 
   /* ═══════════ MOBILE RESPONSIVE ═══════════ */
@@ -1555,7 +1563,7 @@
               <div id="bs-urnik"></div>
               <div style="font-size:12px;color:var(--muted);margin-top:8px">Zaprt dan pomeni, da bot na ta dan ne ponuja terminov in ne sprejema naročil.</div>
             </div>
-            <div class="form-row" style="margin-bottom:0">
+            <div class="form-row" style="margin-bottom:0" id="bs-razpored-vrstica">
               <div class="form-group">
                 <label>Interval med termini</label>
                 <select id="bs-interval">
@@ -1577,25 +1585,29 @@
         </div>
 
         <!-- ── SECTION 4: STORITVE ── -->
-        <div class="studio-section">
+        <div class="studio-section" id="bs-services-section">
           <div class="studio-section-head">
             <div class="studio-section-icon" style="font-size:0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5H6l4 5-4 5h1.5a2.5 2.5 0 010 5H6m6-14h8m-8 5h8m-8 5h8m-8 5h8"/></svg></div>
             <div class="studio-section-info">
-              <div class="studio-section-title">Storitve</div>
-              <div class="studio-section-desc">Kaj bot ponudi stranki — naziv, cena in trajanje</div>
+              <div class="studio-section-title" id="bs-services-title">Storitve</div>
+              <div class="studio-section-desc" id="bs-services-desc">Kaj bot ponudi stranki — naziv, cena in trajanje</div>
             </div>
           </div>
           <div class="studio-section-body">
             <div class="service-grid-head">
-              <div>Ime storitve</div>
+              <div id="bs-services-col-name">Ime storitve</div>
               <div>Cena EUR</div>
-              <div>Trajanje min</div>
+              <div class="bs-trajanje">Trajanje min</div>
               <div></div>
             </div>
             <div class="service-editor-list" id="bs-services"></div>
             <div class="studio-actions" style="margin-top:14px">
-              <button class="btn-soft" onclick="addBotStudioService()">+ Dodaj storitev</button>
+              <button class="btn-soft" id="bs-add-service" onclick="addBotStudioService()">+ Dodaj storitev</button>
               <button class="btn-soft" onclick="applyBotStudioPreset()">🎯 Preset panoge</button>
+            </div>
+            <div id="bs-meni-namig" style="display:none;margin-top:14px;padding:12px 13px;border:1px dashed var(--border);border-radius:11px;font-size:12.5px;color:var(--text2);line-height:1.55">
+              Tu urejaš samo ime in ceno. Kategorije, opise, prehranske oznake in <b>ceno embalaže</b> urejaš v lastnikovi plošči.
+              <div style="margin-top:10px"><button class="btn-soft" onclick="odpriMeniLokala()">Odpri meni lokala →</button></div>
             </div>
           </div>
         </div>
@@ -2757,6 +2769,12 @@ const BOOKING_MODES = [
     desc: 'Bot vpraša samo za mesec — brez dneva ali ure. Primerno za dolgoročne projekte ali sezone.'
   },
   {
+    value: 'delivery',
+    icon: '🚗',
+    title: 'Naročanje in dostava',
+    desc: 'Bot sprejema naročila iz menija, vpraša za dostavo ali prevzem in izračuna zneske. Za restavracije, picerije in dostavo hrane.'
+  },
+  {
     value: 'pos_order',
     icon: '🍽️',
     title: 'POS naročanje',
@@ -2781,12 +2799,73 @@ function renderBookingModeCards(selectedMode) {
 function selectBookingMode(el) {
   document.querySelectorAll('.booking-mode-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
+  bsPrilagodiPanogi();
   updateBotStudioPreview();
 }
 
+/*
+  ── Okno "Uredi" se prilagodi dejavnosti ────────────────────────────────────
+  Trajanje storitve je bistveno za frizerja: iz njega bot ve, kdaj je naslednji
+  termin prost. Za restavracijo ne pomeni nič — bot ne razporeja terminov,
+  ampak sprejema naročila, zato je bilo pri vseh jedeh 0 in je samo motilo.
+
+  Merilo je NAČIN NAROČANJA, ker po njem se ravna bot: dostava in POS jemljeta
+  naročila, ostalo so rezervacije. Ker se način v tem oknu lahko spremeni, se
+  prilagoditev ob spremembi ponovi.
+*/
+function bsJemljeNarocila() {
+  const nacin = (document.querySelector('.booking-mode-card.selected')
+    ? getSelectedBookingMode()
+    : ((botStudio && botStudio.settings && botStudio.settings.booking_mode) || 'exact_time'));
+  return nacin === 'delivery' || nacin === 'pos_order';
+}
+
+function bsPrilagodiPanogi() {
+  const narocila = bsJemljeNarocila();
+  const pokazi = (id, vidno) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = vidno ? '' : 'none';
+  };
+  const razdelek = document.getElementById('bs-services-section');
+  if (razdelek) razdelek.classList.toggle('brez-trajanja', narocila);
+
+  const naslov = document.getElementById('bs-services-title');
+  const opis = document.getElementById('bs-services-desc');
+  const stolpec = document.getElementById('bs-services-col-name');
+  const gumbDodaj = document.getElementById('bs-add-service');
+  if (naslov) naslov.textContent = narocila ? 'Meni' : 'Storitve';
+  if (opis) opis.textContent = narocila
+    ? 'Kaj bot ponudi stranki — jed in cena'
+    : 'Kaj bot ponudi stranki — naziv, cena in trajanje';
+  if (stolpec) stolpec.textContent = narocila ? 'Ime jedi' : 'Ime storitve';
+  if (gumbDodaj) gumbDodaj.textContent = narocila ? '+ Dodaj jed' : '+ Dodaj storitev';
+
+  // Rezervacijske nastavitve pri naročanju nimajo pomena, POS pa nasprotno.
+  pokazi('bs-razpored-vrstica', !narocila);
+  pokazi('bs-booking-config-section', !narocila);
+  pokazi('bs-pos-section', narocila);
+  pokazi('bs-meni-namig', narocila);
+}
+
+// Cel meni (kategorije, opisi, cena embalaže) se ureja v lastnikovi plošči.
+function odpriMeniLokala() {
+  if (!botStudio || !botStudio.salonId) return;
+  const url = '/delivery.html?master_token=' + encodeURIComponent(masterToken)
+    + '&salonId=' + encodeURIComponent(botStudio.salonId);
+  window.open(url, '_blank', 'noopener');
+}
+
+/*
+  Izbran način. Če ni izbrana nobena kartica — kar se zgodi, kadar je v bazi
+  način, ki ga v izbirniku ni — vrnemo TISTEGA IZ BAZE in ne 'exact_time'.
+  Shranjevanje to vrednost pošlje naprej, zato bi sicer odprtje in shranjevanje
+  okna restavracijo tiho spremenilo v bota za rezervacije.
+*/
 function getSelectedBookingMode() {
   const el = document.querySelector('.booking-mode-card.selected');
-  return el ? el.dataset.mode : 'exact_time';
+  if (el) return el.dataset.mode;
+  const izBaze = botStudio && botStudio.settings && botStudio.settings.booking_mode;
+  return izBaze || 'exact_time';
 }
 
 function updateClosingPreview() {
@@ -2840,6 +2919,8 @@ async function openManageSalon(id) {
     document.getElementById('bs-interval').value = String(settings.booking_interval_minutes || 30);
     document.getElementById('bs-max-days').value = settings.max_advance_days || 30;
     renderBookingModeCards(settings.booking_mode || 'exact_time');
+    // Kartice načina morajo biti izrisane prej — prilagoditev bere izbrano.
+    bsPrilagodiPanogi();
     document.getElementById('bs-inquiry-message').value = settings.inquiry_confirmation_message || '';
     updateClosingPreview();
     renderBotStudioServices();
@@ -2906,14 +2987,21 @@ function renderBotStudioServices() {
     <div class="service-row" data-id="${esc(s.id || '')}" data-local-id="${esc(s._localId)}">
       <input data-field="name" type="text" value="${esc(s.name)}" placeholder="Storitev" oninput="updateBotStudioPreview()">
       <input data-field="price" type="number" min="0" step="1" value="${esc(s.price ?? 0)}" placeholder="Cena EUR" title="Cena v EUR" oninput="updateBotStudioPreview()">
-      <input data-field="duration" type="number" min="5" max="480" step="5" value="${esc(s.duration_minutes ?? 60)}" placeholder="Trajanje min" title="Trajanje storitve v minutah" oninput="updateBotStudioPreview()">
+      <input class="bs-trajanje" data-field="duration" type="number" min="5" max="480" step="5" value="${esc(s.duration_minutes ?? 60)}" placeholder="Trajanje min" title="Trajanje storitve v minutah" oninput="updateBotStudioPreview()">
       <button class="icon-btn" title="Skrij storitev" onclick="removeBotStudioService('${esc(s._localId)}')">×</button>
     </div>
   `).join('');
 }
 
 function addBotStudioService() {
-  botStudio.services.push({ _localId: localId(), name: 'Nova storitev', price: 0, duration_minutes: 60 });
+  // Restavraciji trajanje nic ne pomeni, zato 0; frizerju privzeto 60 minut.
+  const jemljeNarocila = bsJemljeNarocila();
+  botStudio.services.push({
+    _localId: localId(),
+    name: jemljeNarocila ? 'Nova jed' : 'Nova storitev',
+    price: 0,
+    duration_minutes: jemljeNarocila ? 0 : 60
+  });
   renderBotStudioServices();
   updateBotStudioPreview();
 }
