@@ -180,6 +180,28 @@ const gumbi = (p) => {
   je('pove, da ceno sporočijo ob potrditvi', /sporočimo ob potrditvi/.test(vse(p)), true);
   je('skupaj ima pripis "+ dostava"', /\+ dostava/.test(vse(p)), true);
 
+  console.log('\n── 9) Seja že čaka na način (kot v pravem pogovoru) ───────');
+  // Točno to se je zgodilo v živo: bot je prej vprašal "Kako želite prevzeti
+  // naročilo?", stranka pa je odgovorila s celim stavkom z naslovom. Sporočilo
+  // v tem koraku ne gre k AI-ju, zato se je naslov prej zavrgel.
+  session.clear(skey);
+  await poslji('eno klasiko', { cart: [KOSARICA[0]], reply: 'Dodano.' });
+  let p9 = await poslji('zaključi', null);
+  je('bot vpraša za način', gumbi(p9), ['aimode_dostava', 'aimode_prevzem']);
+  p9 = await poslji('narocil bi eno klasiko pico in tatarsko, dostava v suhadole 59b', null);
+  je('naslov iz istega stavka je prepoznan', /Suhadole 59b|suhadole 59b/.test(vse(p9)), true);
+  je('ne vpraša več po naslovu', /napišite naslov/i.test(vse(p9)), false);
+  je('takoj povzetek z gumboma', gumbi(p9), ['aiok_potrdi', 'aiok_popravi']);
+  je('dostava je obračunana', /Dostava: 3,00 € \(Suhadole\)/.test(vse(p9)), true);
+
+  console.log('\n── 10) Način brez naslova še vedno vpraša po naslovu ──────');
+  session.clear(skey);
+  await poslji('eno klasiko', { cart: [KOSARICA[0]], reply: 'Dodano.' });
+  await poslji('zaključi', null);
+  const p10 = await poslji('dostava prosim', null);
+  je('vpraša za naslov', /napišite naslov/i.test(vse(p10)), true);
+  je('brez izmišljenega naslova', /Suhadole|Vodice/.test(vse(p10)), false);
+
   console.log('\n' + (ni ? '✖ ' + ni + ' od ' + (ok + ni) + ' ni v redu' : '✔ vse v redu (' + ok + ')'));
   process.exit(ni ? 1 : 0);
 })();

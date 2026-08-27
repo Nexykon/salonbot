@@ -262,6 +262,61 @@ function kandidatKraja(naslov) {
   return null;
 }
 
+/*
+  Naslov, ki ga je stranka napisala sredi stavka.
+
+  Zakaj: "narocil bi eno klasiko pico in tatarsko, dostava v suhadole 59b"
+  je doslej dal samo način prevzema, naslov pa se je zavrgel in bot je zanj
+  vprašal še enkrat — čeprav ga je stranka pravkar napisala.
+
+  Vrne null, kadar ni prepričan. Boljše je eno vprašanje več kot izmišljen
+  naslov, zato zahtevamo HIŠNO ŠTEVILKO in zavrnemo ure, zneske in količine.
+*/
+const VODILNE = new Set([
+  'dostava', 'dostavo', 'dostavi', 'dostavite', 'dostavil', 'prinesite', 'prinesi',
+  'poslji', 'posljite', 'posljete', 'naslov', 'naslovu', 'je', 'na', 'v', 'do', 'za',
+  'pri', 'prosim', 'lahko', 'bi', 'mi', 'nam', 'me', 'in', 'pa', 'so', 'sem'
+]);
+const KLJUC_DOSTAVE = /(dostav\w*|na dom|prines\w*|po[šs]lj\w*|naslov\w*)/gi;
+const URA_ZNESEK = /(\d{1,2}[:.]\d{2}|\d+\s*(€|eur|min\b|minut\w*|kos\w*|x\b))/i;
+const HISNA = /\b\d{1,4}\s?[a-zA-Z]?\b/;
+
+function naslovIzStavka(salon, besedilo) {
+  const vhod = String(besedilo || '').trim();
+  if (!vhod || vhod.length > 300) return null;
+
+  let najboljsi = null;
+  const kosi = vhod.split(/[,;\n]/);
+  for (let i = 0; i < kosi.length; i++) {
+    let del = kosi[i].trim();
+    if (!del) continue;
+
+    // Za ključem dostave stoji naslov: "dostava v suhadole 59b" → "suhadole 59b"
+    let zad = null, m;
+    KLJUC_DOSTAVE.lastIndex = 0;
+    while ((m = KLJUC_DOSTAVE.exec(del)) !== null) zad = m.index + m[0].length;
+    const jeKljuc = zad !== null;
+    if (jeKljuc) del = del.slice(zad).trim();
+
+    // Odreži vodilne mašila ("v", "na", "prosim" ...)
+    const besede = del.split(/\s+/).filter(Boolean);
+    while (besede.length && VODILNE.has(normaliziraj(besede[0]))) besede.shift();
+    const kandidat = besede.join(' ').replace(/[.!?]+$/, '').trim();
+    if (kandidat.length < 4 || kandidat.length > 200) continue;
+
+    // Ure, zneski in količine niso naslovi
+    if (URA_ZNESEK.test(kandidat)) continue;
+    if (!HISNA.test(kandidat)) continue;
+    if (!/[a-zA-ZčČšŠžŽćĆđĐ]{3,}/.test(kandidat)) continue;
+
+    const kraj = strosek(salon, kandidat).kraj;
+    const tocke = (kraj ? 4 : 0) + (jeKljuc ? 2 : 0);
+    if (!tocke) continue;                       // brez znanega kraja in brez ključa ne ugibamo
+    if (!najboljsi || tocke > najboljsi.tocke) najboljsi = { naslov: kandidat, tocke, kraj };
+  }
+  return najboljsi ? najboljsi.naslov : null;
+}
+
 // Naslov dostave iz zapisa naročila (form_answers ali opomba).
 function naslovNarocila(booking) {
   if (!booking) return null;
@@ -324,6 +379,6 @@ function poCenah(salon) {
 module.exports = {
   normaliziraj, besede, lev, besedaUjema,
   varneZone, zoneLokala, poKrajih, najdiKraj, strosek, poCenah,
-  kandidatKraja, naslovNarocila, neznaniKraji,
+  kandidatKraja, naslovNarocila, neznaniKraji, naslovIzStavka,
   MAX_KRAJEV
 };

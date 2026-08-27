@@ -10,6 +10,7 @@ const urnik = require('./urnik');
 const { botMsg } = require('./botmsg');
 const { evri } = require('./denar');
 const besede = require('./besede');
+const dostavaMod = require('./dostava');
 const { askOrderAI, computeTotals, aiConfigured, findService, packOfService, hasExtras } = require('./ai-order');
 const { planLimit } = require('./presets');
 
@@ -1359,7 +1360,15 @@ async function handleMessage(msgObj, salon) {
       const canPick = salon.allow_pickup !== false;
       if (stage === 'mode') {
         const mLow = msgText.toLowerCase();
-        if (canDel && /dostav|na dom|prinesite|pošljite|poslite|dostavite/.test(mLow)) { await aiSetModeDeterministic('dostava'); return; }
+        if (canDel && /dostav|na dom|prinesite|pošljite|poslite|dostavite/.test(mLow)) {
+          // Če je stranka v istem stavku napisala tudi naslov ("dostava v
+          // Suhadole 59b"), ga zabeležimo — sicer bi ga zavrgli in zanj
+          // vprašali še enkrat.
+          const izStavka = dostavaMod.naslovIzStavka(salon, msgText);
+          if (izStavka && !sess.deliveryAddress) session.set(skey, { ...session.get(skey), deliveryAddress: izStavka });
+          await aiSetModeDeterministic('dostava');
+          return;
+        }
         if (canPick && /prevzem|osebn|pridem|sam bom|sama bom|pickup|take ?away|v lokalu|pri vas|k vam/.test(mLow)) { await aiSetModeDeterministic('prevzem'); return; }
         const modes = [canDel ? 'dostava' : null, canPick ? 'osebni prevzem' : null].filter(Boolean).join(' ali ');
         await wa.send(phoneId, token, wa.textMsg(from, `Prosim, izberite: ${modes}?`));

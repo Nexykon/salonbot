@@ -365,5 +365,41 @@ console.log('\n13) Zneski skupaj z embalažo (prava koda computeTotals)');
   je('… brez imena kraja v razčlenitvi', s.vrstice[2], '🚗 Dostava:  3,00 €');
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Naslov, ki ga stranka napiše sredi stavka
+// ─────────────────────────────────────────────────────────────────────────
+{
+  console.log('\n── Naslov iz stavka ────────────────────────────────────────');
+  const iz = (s) => d.naslovIzStavka(salon, s);
+
+  console.log('  prepozna:');
+  je('naročilo in dostava v enem stavku',
+    iz('narocil bi eno klasiko pico in tatarsko, dostava v suhadole 59b'), 'suhadole 59b');
+  je('brez vejice', iz('eno klasiko dostava na Suhadole 59b'), 'Suhadole 59b');
+  je('"na dom"', iz('dve pici na dom, Vodice 12'), 'Vodice 12');
+  je('"prinesite"', iz('prinesite mi na Kamniška cesta 4'), 'Kamniška cesta 4');
+  je('beseda naslov', iz('naslov je Dvorje 15'), 'Dvorje 15');
+  je('velika začetnica in pika', iz('Dostava na Suhadole 59b.'), 'Suhadole 59b');
+  // Brez ključne besede se naslov vzame le, kadar je kraj v ceniku lokala.
+  je('naslov brez ključa, a z znanim krajem', iz('Vodice 12'), 'Vodice 12');
+  je('… kraj iz cenika tudi v sklonu', iz('Kamniku 7'), 'Kamniku 7');
+
+  console.log('  ne ugiba:');
+  je('samo način brez naslova', iz('dostava prosim'), null);
+  je('naslov brez hišne številke', iz('dostava v Suhadole'), null);
+  je('ura ni naslov', iz('dostava po 20:30'), null);
+  je('znesek ni naslov', iz('dostava za 3 €'), null);
+  je('količina ni naslov', iz('dostava, 2 kosa'), null);
+  je('minute niso naslov', iz('dostava v 30 minutah'), null);
+  je('prazno', iz(''), null);
+  je('neznan kraj brez ključa se ne ugane', iz('Trubarjeva 5'), null);
+  je('neznan kraj S ključem se vzame', iz('dostava na Trubarjeva 5'), 'Trubarjeva 5');
+
+  console.log('  izbere pravi del:');
+  je('znan kraj pretehta', iz('pico in colo, prinesite na Vodice 12'), 'Vodice 12');
+  je('artikel s številko ne postane naslov',
+    iz('2 pici, dostava v Suhadole 59b'), 'Suhadole 59b');
+}
+
 console.log('\n' + (ni ? '✖ ' + ni + ' od ' + (ok + ni) + ' ni v redu' : '✔ vse v redu (' + ok + ')'));
 process.exit(ni ? 1 : 0);
