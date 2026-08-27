@@ -161,6 +161,33 @@ function finalConfirmButtons(to, date, time, name, serviceName) {
   };
 }
 
+/*
+  Splošni gumbi (interactive reply buttons).
+  Meta dovoli največ 3 gumbe, naslov 20 znakov in telo 1024 znakov; gumbi
+  delujejo samo znotraj 24-urnega okna, kar pri nas vedno velja, ker stranka
+  piše prva.
+
+  Naslove gumbov skrajšamo, TELESA PA NE — če je predolgo, mora klicatelj to
+  razrešiti sam (povzetek kot besedilo, gumbi v kratkem sporočilu za njim).
+  Tiho rezanje bi odrezalo prav zneske na koncu povzetka.
+*/
+const BTN_NASLOV = 20, BTN_TELO = 1024;
+function gumbi(to, besedilo, seznam) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text: String(besedilo).substring(0, BTN_TELO) },
+      action: {
+        buttons: seznam.slice(0, 3).map(g => ({
+          type: 'reply',
+          reply: { id: g.id, title: String(g.naslov).substring(0, BTN_NASLOV) }
+        }))
+      }
+    }
+  };
+}
+
 // Fallback: interactive gumbi (samo znotraj 24h seje)
 function adminBookingNotifSession(to, customerName, phone, date, time, ref6) {
   return {
@@ -528,4 +555,4 @@ function posAdminNotif(to, customerPhone, cartText, comment, total, ref6) {
   };
 }
 
-module.exports = { send, textMsg, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryWelcome, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };
+module.exports = { send, textMsg, gumbi, BTN_TELO, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryWelcome, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };

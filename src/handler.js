@@ -710,8 +710,11 @@ async function handleMessage(msgObj, salon) {
       if (['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)) {
         const pending = { id: svc.id, name: svc.name, price: svc.price || 0 };
         session.set(skey, { ...sess, step: 306, pendingItem: pending });
-        await wa.send(phoneId, token, wa.textMsg(from,
-          `Koliko *${svc.name}* želite? Če želite kakšno prilagoditev (npr. brez gob), kar pripišite.`
+        // Gumbi za najpogostejše količine; vpisano besedilo ("2, ena brez gob")
+        // še vedno obravnava AI, zato je to samo bližnjica, ne omejitev.
+        await wa.send(phoneId, token, wa.gumbi(from,
+          `Koliko *${svc.name}* želite?\n_Če želite prilagoditev (npr. brez gob), jo kar pripišite._`,
+          [{ id: 'aiqty_1', naslov: '1' }, { id: 'aiqty_2', naslov: '2' }, { id: 'aiqty_3', naslov: '3' }]
         ));
         return;
       }
@@ -746,8 +749,27 @@ async function handleMessage(msgObj, salon) {
       await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(cart), cartTotal(cart)));
     };
 
+    // AI tok ima svojo košarico (brez klasičnih gumbov) — ista pot za gumb in za vpisano število.
+    const addQtyAi = async (item, qty) => {
+      const cart = sess.cart || [];
+      const ex = cart.find(c => String(c.id) === String(item.id) && !c.note);
+      if (ex) ex.qty = (ex.qty || 1) + qty;
+      else cart.push({ ...item, qty, pack: packOfService(item) });
+      session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
+      const feeNote = hasExtras(salon, cart, services)
+        ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
+      await wa.send(phoneId, token, wa.textMsg(from,
+        `*${item.name}* x${qty} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cart))}*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
+      ));
+    };
+
     if (iId.startsWith('dqty_') && sess.pendingItem) {
       await addQtyToCart(parseInt(iId.replace('dqty_', '')) || 1);
+      return;
+    }
+
+    if (iId.startsWith('aiqty_') && sess.pendingItem) {
+      await addQtyAi(sess.pendingItem, parseInt(iId.replace('aiqty_', '')) || 1);
       return;
     }
 
@@ -761,17 +783,7 @@ async function handleMessage(msgObj, salon) {
       if (canAddDet) {
         const qty306 = qtyParsed.q;
         if (isAiPlan) {
-          const item = sess.pendingItem;
-          const cart = sess.cart || [];
-          const ex = cart.find(c => String(c.id) === String(item.id) && !c.note);
-          if (ex) ex.qty = (ex.qty || 1) + qty306;
-          else cart.push({ ...item, qty: qty306, pack: packOfService(item) });
-          session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
-          const feeNote = hasExtras(salon, cart, services)
-            ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
-          await wa.send(phoneId, token, wa.textMsg(from,
-            `*${item.name}* x${qty306} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cart))}*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
-          ));
+          await addQtyAi(sess.pendingItem, qty306);
         } else {
           await addQtyToCart(qty306);
         }
@@ -880,12 +892,21 @@ async function handleMessage(msgObj, salon) {
         '',
         modeS === 'dostava' ? `Dostava na: ${cur.deliveryAddress}` : `Osebni prevzem${salon.pickup_address ? ` — ${salon.pickup_address}` : ''}`,
         `Ime: ${cur.customerName}`,
-        '',
-        'Potrjujete naročilo? (da / ne)',
-        '_Če ime ali naslov ni pravilen, napišite npr. „ime Janez Novak"._'
+        ''
       ].filter(l => l !== null).join('\n');
       session.set(skey, { ...cur, checkoutStage: 'confirm', step: 305, grandTotal: tot.grand, packFee: tot.packFee, delFee: tot.delFee });
-      await wa.send(phoneId, token, wa.textMsg(from, lines));
+      const vprasanje = 'Potrjujete naročilo?\n_Če ime ali naslov ni pravilen, napišite npr. „ime Janez Novak"._';
+      const gumbiPotrditve = [
+        { id: 'aiok_potrdi', naslov: '✅ Potrdi' },
+        { id: 'aiok_popravi', naslov: '✏️ Popravi' }
+      ];
+      // Dolg povzetek ne sme v telo gumbov — 1024 znakov bi odrezalo prav zneske.
+      if ((lines + vprasanje).length <= wa.BTN_TELO) {
+        await wa.send(phoneId, token, wa.gumbi(from, lines + vprasanje, gumbiPotrditve));
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, lines));
+        await wa.send(phoneId, token, wa.gumbi(from, vprasanje, gumbiPotrditve));
+      }
     };
     const aiSetModeDeterministic = async (mode) => {
       const cur = session.get(skey);
@@ -913,7 +934,10 @@ async function handleMessage(msgObj, salon) {
       const canPick = salon.allow_pickup !== false;
       if (canDel && canPick) {
         session.set(skey, { ...cur, checkoutStage: 'mode' });
-        await wa.send(phoneId, token, wa.textMsg(from, 'Odlično! Dostava ali osebni prevzem?'));
+        await wa.send(phoneId, token, wa.gumbi(from, botMsg(salon, 'mode_question'), [
+          { id: 'aimode_dostava', naslov: '🚗 Dostava' },
+          { id: 'aimode_prevzem', naslov: '🏃 Osebni prevzem' }
+        ]));
       } else {
         await aiSetModeDeterministic(canDel ? 'dostava' : 'prevzem');
       }
@@ -951,6 +975,17 @@ async function handleMessage(msgObj, salon) {
         return;
       }
       await askNoteForMode(iId === 'dmode_prevzem' ? 'prevzem' : 'dostava');
+      return;
+    }
+
+    // ── Izbran način prevzema v AI toku (drug zaključek kot klasični dmode_*)
+    if (iId === 'aimode_dostava' || iId === 'aimode_prevzem') {
+      if (!sess.cart || !sess.cart.length) {
+        session.clear(skey);
+        await wa.send(phoneId, token, wa.textMsg(from, 'Seja je potekla. Začnite znova.'));
+        return;
+      }
+      await aiSetModeDeterministic(iId === 'aimode_prevzem' ? 'prevzem' : 'dostava');
       return;
     }
 
@@ -1042,9 +1077,11 @@ async function handleMessage(msgObj, salon) {
       const totFin = computeTotals(salon, cart, isPickup ? 'prevzem' : 'dostava', services, s.deliveryAddress);
       if (!isPickup && !s.payment) {
         session.set(skey, { ...s, awaitingPayment: true });
-        await wa.send(phoneId, token, wa.textMsg(from,
-          'Še zadnje — kako boste plačali ob dostavi? Napišite *gotovina* ali *kartica*. 💶💳'
-          + (totFin.delNeznana ? '\n_Strošek dostave za vaš kraj vam sporočimo ob potrditvi naročila._' : '')));
+        await wa.send(phoneId, token, wa.gumbi(from,
+          'Še zadnje — kako boste plačali ob dostavi?'
+          + (totFin.delNeznana ? '\n_Strošek dostave za vaš kraj vam sporočimo ob potrditvi naročila._' : ''),
+          [{ id: 'pay_gotovina', naslov: '💶 Gotovina' }, { id: 'pay_kartica', naslov: '💳 Kartica' }]
+        ));
         return;
       }
       const total = s.grandTotal || cartTotal(cart);
@@ -1100,6 +1137,45 @@ async function handleMessage(msgObj, salon) {
     };
     if (iId === 'delivery_confirm') { await finalizeOrder(); return; }
 
+    // ── Način plačila z gumbom (vpisano besedilo obravnava veja nižje)
+    if (iId === 'pay_gotovina' || iId === 'pay_kartica') {
+      if (!(sess.cart || []).length) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'To naročilo je že zaključeno. Če želite novo, napišite *meni*.'));
+        return;
+      }
+      session.set(skey, { ...sess, payment: iId === 'pay_kartica' ? 'Kartica 💳' : 'Gotovina 💶', awaitingPayment: false });
+      await finalizeOrder();
+      return;
+    }
+
+    // ── Gumba pod povzetkom v AI toku. Pogoj checkoutStage === 'confirm' je
+    //    varovalka pred dvojno oddajo, če stranka klikne star gumb v pogovoru.
+    if (iId === 'aiok_potrdi' || iId === 'aiok_popravi') {
+      if (sess.checkoutStage !== 'confirm' || !(sess.cart || []).length) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'To naročilo je že zaključeno. Če želite novo, napišite *meni*.'));
+        return;
+      }
+      if (iId === 'aiok_popravi') {
+        session.set(skey, { ...sess, checkoutStage: null, step: 301 });
+        await wa.send(phoneId, token, wa.textMsg(from, 'V redu. Povejte, kaj želite spremeniti (artikle, način, ime ali naslov), ali napišite *zaključi* za ponoven zaključek.'));
+        return;
+      }
+      const totOk = computeTotals(salon, sess.cart, sess.orderMode, services, sess.deliveryAddress);
+      session.set(skey, { ...sess, step: 305, grandTotal: totOk.grand, packFee: totOk.packFee, delFee: totOk.delFee });
+      await finalizeOrder();
+      return;
+    }
+
+    // ── Star gumb iz prejšnjega pogovora ──
+    // Gumbi ostanejo v zgodovini klepeta za vedno, zato jih stranka lahko
+    // pritisne dan pozneje, ko seje ni več. Brez tega bi klik ostal brez
+    // odgovora — kar je videti, kot da bot ne dela.
+    if (iId && /^(aiqty_|dqty_|aimode_|dmode_)/.test(iId)) {
+      await wa.send(phoneId, token, wa.textMsg(from,
+        'Ta gumb je iz starejšega pogovora. Napišite *meni*, da začnemo znova. 🙂'));
+      return;
+    }
+
     // ── Stranka napiše "prekliči" ──
     if ((iId === 'cancel_request') || (msgText && !iId && /^\s*(prekli[čc]\w*|storno|cancel)\b/i.test(msgText))) {
       // Med aktivnim pogovorom/naročanjem (meni prikazan, košarica ali zaključek v teku): prekliči sejo.
@@ -1146,7 +1222,7 @@ async function handleMessage(msgObj, salon) {
       const low = msgText.toLowerCase();
       let pay = null;
       if (/gotovin|gotov|cash|kesh|kes\b/i.test(low)) pay = 'Gotovina 💶';
-      else if (/kartic|karto|card|kredit|banко|plač.*kart|na kartic/i.test(low)) pay = 'Kartica 💳';
+      else if (/kartic|karto|card|kredit|bank|plač.*kart|na kartic/i.test(low)) pay = 'Kartica 💳';
       if (!pay) {
         await wa.send(phoneId, token, wa.textMsg(from,
           'Prosim, napišite *gotovina* ali *kartica* za način plačila. 💶💳'));
@@ -1159,7 +1235,9 @@ async function handleMessage(msgObj, salon) {
 
     // ── "zaključi" gre direktno v zaključek (brez AI ovinka) ──
     if (msgText && !iId && /^\s*zaklju[čc]i?\b/i.test(msgText) && (sess.cart || []).length) {
-      if (['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)) { await startAiCheckout(); } else { await startCheckout(); }
+      // promptForStage vpraša samo za PRVI manjkajoči podatek — po gumbu "Popravi"
+      // torej ne sprašuje spet po načinu in imenu, ki sta že znana.
+      if (['ai_start', 'ai', 'premium'].includes(salon.subscription_plan)) { await promptForStage(sess); } else { await startCheckout(); }
       return;
     }
 
