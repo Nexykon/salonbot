@@ -22,7 +22,8 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 | `004-rls-samo-nase-tabele.sql` | ✔ ni potrebna (preverjeno). Korak 1 je uporaben kot pregled stanja RLS |
 | `005-urnik-po-dnevih.sql` | ✔ pognana. Doda `sb_salons.working_hours` za odpiralni čas po dnevih |
 | `006-embalaza-po-artiklu.sql` | ✔ pognana. Doda `sb_services.packaging_price` za ceno embalaže pri posameznem artiklu |
-| `007-dostava-po-krajih.sql` | ⏳ **za pognati.** Doda `sb_salons.delivery_zones` za ceno dostave po kraju |
+| `007-dostava-po-krajih.sql` | ✔ pognana. Doda `sb_salons.delivery_zones` za ceno dostave po kraju |
+| `008-ponastavitev-gesla-lastnika.sql` | ⏳ **za pognati.** Doda `owner_reset_token_hash` in `owner_reset_expires_at` za pozabljeno geslo |
 
 ## V tej bazi ni samo FlowTiq
 

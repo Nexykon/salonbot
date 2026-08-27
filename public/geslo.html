@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Ponastavitev gesla — FlowTiq</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root {
+    --cream: #FBF8F1; --cream-2: #F4EDE4; --ink: #101E2B; --muted: #5A6875;
+    --line: #E3D9CB; --green: #16A34A; --green-dark: #0E7A38; --rust: #B4442E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--cream); color: var(--ink);
+    font-family: 'Fira Sans', system-ui, -apple-system, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .kartica {
+    width: 100%; max-width: 440px; background: #fff;
+    border: 2px solid var(--ink); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--ink); padding: 30px 26px;
+  }
+  .logo { display: block; margin: 0 auto 18px; height: 34px; }
+  h1 { margin: 0 0 6px; font-size: 22px; line-height: 1.2; text-align: center; }
+  .pod { margin: 0 0 20px; font-size: 14px; line-height: 1.55; color: var(--muted); text-align: center; }
+  label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 12px 13px; font: inherit; font-size: 15px;
+    background: var(--cream-2); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 12px; outline: none;
+  }
+  input:focus { border-color: var(--green-dark); }
+  .polje { margin-bottom: 14px; }
+  .namig { margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  button {
+    width: 100%; margin-top: 6px; padding: 13px 16px; font: inherit; font-size: 15px; font-weight: 700;
+    background: var(--green); color: #fff; border: 2px solid var(--ink); border-radius: 12px;
+    box-shadow: 3px 3px 0 var(--ink); cursor: pointer;
+  }
+  button:hover { background: var(--green-dark); }
+  button:disabled { opacity: .6; cursor: default; box-shadow: none; }
+  .sporocilo {
+    margin-top: 16px; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 12px;
+    font-size: 14px; line-height: 1.55; display: none;
+  }
+  .sporocilo.ok { background: rgba(22,163,74,.10); }
+  .sporocilo.napaka { background: rgba(180,68,46,.10); color: var(--rust); }
+  .nazaj { margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--line); text-align: center; }
+  .nazaj a { color: var(--muted); font-size: 13.5px; font-weight: 600; text-decoration: none; }
+  .nazaj a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="kartica">
+  <img class="logo" src="/logo.svg" alt="FlowTiq" onerror="this.style.display='none'">
+
+  <!-- 1. korak: zahteva za povezavo -->
+  <div id="korak-zahteva">
+    <h1>Pozabljeno geslo</h1>
+    <p class="pod">Vpišite e-naslov, s katerim se prijavljate. Poslali vam bomo povezavo za nastavitev novega gesla.</p>
+    <div class="polje">
+      <label for="email">E-naslov</label>
+      <input type="email" id="email" placeholder="ana@lokal.si" autocomplete="username" autofocus>
+    </div>
+    <button id="gumb-zahteva" onclick="posljiPovezavo()">Pošlji povezavo</button>
+  </div>
+
+  <!-- 2. korak: novo geslo (ko je v naslovu ?reset=…) -->
+  <div id="korak-geslo" style="display:none">
+    <h1>Novo geslo</h1>
+    <p class="pod">Vpišite novo geslo. Povezava velja 30 minut.</p>
+    <div class="polje">
+      <label for="geslo">Novo geslo</label>
+      <input type="password" id="geslo" placeholder="vsaj 8 znakov" autocomplete="new-password" autofocus>
+      <div class="namig">Vsaj 8 znakov. Ob shranjevanju vas bo iz vseh naprav odjavilo.</div>
+    </div>
+    <div class="polje">
+      <label for="geslo2">Ponovite geslo</label>
+      <input type="password" id="geslo2" placeholder="še enkrat" autocomplete="new-password">
+    </div>
+    <button id="gumb-geslo" onclick="shraniGeslo()">Shrani geslo</button>
+  </div>
+
+  <div class="sporocilo" id="sporocilo"></div>
+
+  <div class="nazaj"><a href="/salon.html">← Nazaj na prijavo</a></div>
+</div>
+
+<script>
+var zeton = new URLSearchParams(location.search).get('reset') || '';
+if (zeton) {
+  document.getElementById('korak-zahteva').style.display = 'none';
+  document.getElementById('korak-geslo').style.display = 'block';
+  document.getElementById('geslo').focus();
+}
+
+function povej(besedilo, jeNapaka) {
+  var el = document.getElementById('sporocilo');
+  el.textContent = besedilo;
+  el.className = 'sporocilo ' + (jeNapaka ? 'napaka' : 'ok');
+  el.style.display = 'block';
+}
+
+async function posljiPovezavo() {
+  var email = document.getElementById('email').value.trim();
+  if (!email || email.indexOf('@') < 0) { povej('Vpišite veljaven e-naslov.', true); return; }
+  var gumb = document.getElementById('gumb-zahteva');
+  gumb.disabled = true; gumb.textContent = 'Pošiljam…';
+  try {
+    var r = await fetch('/api/auth/owner-forgot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) { povej(d.error || 'Pošiljanje ni uspelo. Poskusite pozneje.', true); return; }
+    // Odgovor je enak, tudi če e-naslova ni — obrazec ne sme razkriti, kdo je v sistemu.
+    povej('Če ta e-naslov obstaja v sistemu, je povezava poslana. Preverite tudi mapo z neželeno pošto. Povezava velja 30 minut.', false);
+    document.getElementById('korak-zahteva').style.display = 'none';
+  } catch (e) {
+    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
+  } finally {
+    gumb.disabled = false; gumb.textContent = 'Pošlji povezavo';
+  }
+}
+
+async function shraniGeslo() {
+  var g1 = document.getElementById('geslo').value;
+  var g2 = document.getElementById('geslo2').value;
+  if (g1.length < 8) { povej('Geslo mora imeti vsaj 8 znakov.', true); return; }
+  if (g1 !== g2) { povej('Gesli se ne ujemata.', true); return; }
+  var gumb = document.getElementById('gumb-geslo');
+  gumb.disabled = true; gumb.textContent = 'Shranjujem…';
+  try {
+    var r = await fetch('/api/auth/owner-reset', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: zeton, password: g1 })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) {
+      povej(d.error || 'Gesla ni bilo mogoče shraniti.', true);
+      return;
+    }
+    document.getElementById('korak-geslo').style.display = 'none';
+    povej('Geslo je nastavljeno. Zdaj se lahko prijavite z njim.', false);
+    setTimeout(function () { location.href = '/salon.html'; }, 2500);
+  } catch (e) {
+    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
+  } finally {
+    gumb.disabled = false; gumb.textContent = 'Shrani geslo';
+  }
+}
+
+// Enter v poljih sproži isto kot gumb
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  if (zeton) shraniGeslo(); else posljiPovezavo();
+});
+</script>
+</body>
+</html>

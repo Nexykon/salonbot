@@ -33,6 +33,8 @@ app.get('/settings.html', (req, res) => { const qs = req.originalUrl.split('?')[
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/restavracije', (req, res) => res.sendFile(path.join(__dirname, 'public', 'restavracije.html')));
 app.get('/voznik', (req, res) => res.sendFile(path.join(__dirname, 'public', 'voznik.html')));
+// Ponastavitev pozabljenega gesla — ena stran za zahtevo in za novo geslo.
+app.get('/geslo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'geslo.html')));
 
 function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
@@ -2200,6 +2202,82 @@ app.post('/api/auth/login', ...omejiPrijavo('email'), async (req, res) => {
   } catch (err) {
     console.error('Owner login error:', err.message);
     res.status(500).json({ error: 'Prijava trenutno ni uspela' });
+  }
+});
+
+/*
+  ─── Pozabljeno geslo lastnika ─────────────────────────────────────────────
+  Enak vzorec kot pri master adminu, z dvema razlikama:
+
+  1. En lastnik ima lahko VEČ lokalov in geslo je skupno (prijava preveri
+     geslo pri katerem koli njegovem lokalu). Zato se žeton in novo geslo
+     zapišeta pri VSEH njegovih lokalih — sicer bi staro geslo pri drugem
+     lokalu še naprej delovalo.
+  2. Ob ponastavitvi prekličemo obstoječe seje (sessions_valid_from). Kdor je
+     geslo pozabil, mora tudi kogar koli drugega izbiti iz že odprtih sej.
+
+  Odgovor je vedno enak, ne glede na to, ali email obstaja — sicer bi obrazec
+  razkril, kateri e-naslovi so v sistemu.
+*/
+app.post('/api/auth/owner-forgot',
+  rateLimit(5, 60 * 60 * 1000, poEposti('email')),
+  rateLimit(15, 60 * 60 * 1000, poIp()), async (req, res) => {
+  const email = String(req.body.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Email je obvezen' });
+  const enakOdgovor = { success: true, message: 'Če email obstaja, je povezava za ponastavitev poslana.' };
+  try {
+    const lokali = (await db.getSalonsByOwnerEmail(email)) || [];
+    // Brez gesla ni česa ponastaviti; takim lokalom geslo nastavi administrator.
+    const zGeslom = lokali.filter(s => s.owner_password_hash);
+    if (!zGeslom.length) return res.json(enakOdgovor);
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const odtis = ownerAuth.hashToken(token);
+    const velja = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    for (const s of zGeslom) {
+      await db.updateSalonSettings(s.id, { owner_reset_token_hash: odtis, owner_reset_expires_at: velja });
+    }
+    const povezava = `${req.protocol}://${req.get('host')}/geslo?reset=${token}`;
+    await mail.sendPasswordReset(email, povezava);
+    console.log('[owner-forgot] povezava poslana:', email, '(' + zGeslom.length + ' lokalov)');
+    res.json(enakOdgovor);
+  } catch (err) {
+    console.error('[owner-forgot]', err.message);
+    res.status(500).json({ error: 'Ponastavitev trenutno ni uspela' });
+  }
+});
+
+app.post('/api/auth/owner-reset', rateLimit(10, 60 * 60 * 1000, poIp()), async (req, res) => {
+  const token = String(req.body.token || '').trim();
+  const geslo = String(req.body.password || '');
+  if (!token) return res.status(400).json({ error: 'Povezava ni veljavna' });
+  if (geslo.length < 8) return res.status(400).json({ error: 'Geslo mora imeti vsaj 8 znakov' });
+  try {
+    const najdeni = await db.getSalonsByOwnerResetTokenHash(ownerAuth.hashToken(token));
+    const velja = najdeni.filter(s => s.owner_reset_expires_at
+      && new Date(s.owner_reset_expires_at).getTime() > Date.now());
+    if (!velja.length) return res.status(401).json({ error: 'Povezava je potekla ali ni veljavna' });
+
+    const zdaj = new Date().toISOString();
+    const odtisGesla = ownerAuth.hashPassword(geslo);
+    // Vsi lokali istega lastnika: novo geslo, žeton pobrisan, seje preklicane.
+    const email = String(velja[0].owner_email || '').trim().toLowerCase();
+    const vsi = email ? ((await db.getSalonsByOwnerEmail(email)) || []).filter(s => s.owner_password_hash) : velja;
+    const cilji = vsi.length ? vsi : velja;
+    for (const s of cilji) {
+      await db.updateSalonSettings(s.id, {
+        owner_password_hash: odtisGesla,
+        owner_password_set_at: zdaj,
+        owner_reset_token_hash: null,
+        owner_reset_expires_at: null,
+        sessions_valid_from: zdaj
+      });
+    }
+    console.log('[owner-reset] geslo ponastavljeno:', email || velja[0].id, '(' + cilji.length + ' lokalov)');
+    res.json({ success: true, lokalov: cilji.length });
+  } catch (err) {
+    console.error('[owner-reset]', err.message);
+    res.status(500).json({ error: 'Gesla ni bilo mogoče ponastaviti' });
   }
 });
 

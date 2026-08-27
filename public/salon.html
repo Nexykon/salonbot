@@ -592,7 +592,10 @@
       <input type="text" id="login-code" placeholder="123456" inputmode="numeric" maxlength="6">
     </div>
     <button class="btn btn-primary" onclick="verifyOtp()" id="otp-verify-btn" style="display:none;margin-top:8px">Vstopi</button>
-    <div id="login-error" style="color:var(--red);font-size:0.85rem;margin-top:12px;display:none">Salon s to številko ni najden.</div>
+    <div id="login-error" style="color:var(--red);font-size:0.85rem;margin-top:12px;display:none"></div>
+    <div style="margin-top:14px;text-align:center">
+      <a href="/geslo" style="color:var(--muted);font-size:0.85rem;font-weight:600;text-decoration:none">Ste pozabili geslo?</a>
+    </div>
     <div style="margin-top:22px;padding-top:18px;border-top:1px solid var(--border)">
       <a href="/voznik" style="display:inline-block;color:var(--muted);font-size:0.85rem;font-weight:600;text-decoration:none">🛵 Ste voznik? Prijava za voznike →</a>
     </div>
@@ -1253,7 +1256,9 @@ async function loginWithPassword() {
     }
     loadUI(await loadSettings());
   } catch (e) {
-    document.getElementById('login-error').style.display = 'block';
+    const el = document.getElementById('login-error');
+    el.textContent = e.message || 'Prijava ni uspela.';
+    el.style.display = 'block';
     showToast(e.message, 'error');
   }
 }
@@ -1267,7 +1272,12 @@ async function requestOtp() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone })
     });
-    if (!r.ok) { document.getElementById('login-error').style.display = 'block'; return; }
+    if (!r.ok) {
+      const el = document.getElementById('login-error');
+      el.textContent = 'Lokal s to telefonsko številko ni najden.';
+      el.style.display = 'block';
+      return;
+    }
     salonPhone = phone;
     document.getElementById('otp-group').style.display = 'block';
     document.getElementById('otp-verify-btn').style.display = 'block';

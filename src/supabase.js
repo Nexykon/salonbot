@@ -688,8 +688,18 @@ async function updateSalonSettings(salonId, settings) {
   } catch (e) {
     // Manjkajoč stolpec da nerazumljivo sporočilo; povejmo, kaj je treba narediti.
     const opis = (e.response && e.response.data && (e.response.data.message || e.response.data.hint)) || '';
-    if (/working_hours/.test(opis) && /column|stolpec/i.test(opis)) {
-      throw new Error('Urnika ni mogoče shraniti: v bazi manjka stolpec working_hours. Poženi migracijo migracije/005-urnik-po-dnevih.sql.');
+    const MIGRACIJE = {
+      working_hours: '005-urnik-po-dnevih.sql',
+      delivery_zones: '007-dostava-po-krajih.sql',
+      owner_reset_token_hash: '008-ponastavitev-gesla-lastnika.sql',
+      owner_reset_expires_at: '008-ponastavitev-gesla-lastnika.sql'
+    };
+    if (/column/i.test(opis)) {
+      for (const [stolpec, datoteka] of Object.entries(MIGRACIJE)) {
+        if (opis.includes(stolpec)) {
+          throw new Error(`V bazi manjka stolpec ${stolpec}. Poženi migracijo migracije/${datoteka}.`);
+        }
+      }
     }
     throw e;
   }
@@ -705,6 +715,21 @@ async function getMasterAdminByEmail(email) {
 // Vsi master admini — samo polja, ki jih rabi predpomnilnik preklicanih sej.
 async function getMasterAdmins() {
   const r = await axios.get(`${BASE}/sb_master_admins?select=id,email,sessions_valid_from`, { headers: HEADERS });
+  return r.data || [];
+}
+
+/*
+  Lokali z danim odtisom žetona za ponastavitev gesla lastnika.
+  Vrne POLJE: en lastnik ima lahko več lokalov in geslo je skupno, zato je isti
+  odtis zapisan pri vseh njegovih lokalih in se pri vseh tudi ponastavi.
+*/
+async function getSalonsByOwnerResetTokenHash(tokenHash) {
+  const clean = String(tokenHash || '').trim();
+  if (!clean) return [];
+  const r = await axios.get(
+    `${BASE}/sb_salons?owner_reset_token_hash=eq.${encodeURIComponent(clean)}&limit=20`,
+    { headers: HEADERS }
+  );
   return r.data || [];
 }
 
@@ -881,6 +906,7 @@ module.exports = {
   logError, getRecentErrors, getRecentLogs, clearErrors,
   getSalonByAdminPhone, getSalonByOwnerEmail, getSalonsByOwnerEmail, getSalonByToken,
   updateSalonSettings,
+  getSalonsByOwnerResetTokenHash,
   getMasterAdminByEmail, getMasterAdmins, getMasterAdminByResetTokenHash, updateMasterAdmin,
   saveAiSession, loadAiSession, clearAiSession,
   logAiMiss, getAiMissesSince
