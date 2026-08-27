@@ -895,6 +895,85 @@ app.post('/api/admin/mark-paid/:id', async (req, res) => {
 });
 
 
+/*
+  POST /api/admin/salons/:id/podaljsaj
+  Ročno podaljšanje naročnine: administrator lokalu doda N mesecev izbranega
+  paketa, brez predračuna in brez Stripa. Za primere, ko se plača drugače
+  (nakazilo, dogovor, dobropis) ali ko naročnina poteče prej, kot pride plačilo.
+
+  Telo: { mesecev: 1–24, plan?: 'ai_start'|'ai'|'premium' }
+
+  Podaljša od MAKSIMUMA obstoječe veljavnosti in današnjega dneva, zato
+  podaljšanje pred iztekom ne izgubi preostalih dni.
+*/
+app.post('/api/admin/salons/:id/podaljsaj', async (req, res) => {
+  if (!adminAuth(req, res)) return;
+  const mesecev = parseInt(req.body?.mesecev, 10);
+  if (!Number.isInteger(mesecev) || mesecev < 1 || mesecev > 24) {
+    return res.status(400).json({ error: 'Število mesecev mora biti med 1 in 24' });
+  }
+  const zeljenPaket = req.body?.plan;
+  if (zeljenPaket !== undefined && zeljenPaket !== null && zeljenPaket !== '' && !plans.isPlan(zeljenPaket)) {
+    return res.status(400).json({ error: 'Neveljaven paket' });
+  }
+  try {
+    const salon = await db.getSalonById(req.params.id);
+    if (!salon) return res.status(404).json({ error: 'Lokal ne obstaja' });
+
+    const zdaj = new Date();
+    const veljaSe = salon.valid_until && new Date(salon.valid_until) > zdaj;
+    const osnova = veljaSe ? new Date(salon.valid_until) : new Date(zdaj);
+    osnova.setMonth(osnova.getMonth() + mesecev);
+
+    const paket = plans.isPlan(zeljenPaket) ? zeljenPaket : salon.subscription_plan;
+    const updates = {
+      subscription_plan: paket,
+      subscription_status: 'active',
+      billing_status: 'paid',
+      paid_at: zdaj.toISOString(),
+      valid_until: osnova.toISOString(),
+      renewal_reminded_at: null,
+      grace_notified_at: null,
+      paused_notified_at: null,
+      renewal_requested_plan: null,
+      renewal_requested_at: null
+    };
+    // Bota vklopimo samo, kadar je WhatsApp res priklopljen — enako, kot
+    // presoja plačilo prek Stripa. Sicer bi obljubili delujočega bota.
+    const waDela = stripeSync.waPriklopljen(salon);
+    if (waDela) {
+      updates.bot_active = true;
+      updates.signup_status = 'active';
+      if (!salon.activated_at) updates.activated_at = zdaj.toISOString();
+    }
+
+    await db.updateSalonSettings(salon.id, updates);
+
+    // Opozoril je lahko več in so neodvisna — zato seznam in ne eno polje.
+    const opozorila = [];
+    if (!!salon.stripe_subscription_id && salon.subscription_status === 'active') {
+      opozorila.push('Lokal ima aktivno Stripe naročnino — urna uskladitev bo veljavnost vzela iz Stripa in to podaljšanje povozila.');
+    }
+    if (!waDela) {
+      opozorila.push('WhatsApp ni priklopljen, zato bot ni vklopljen. Naročnina je podaljšana.');
+    }
+
+    console.log('[podaljsaj]', salon.name, paket, '+' + mesecev + ' mes →', updates.valid_until);
+    res.json({
+      success: true,
+      paket,
+      mesecev,
+      valid_until: updates.valid_until,
+      podaljsano_od: veljaSe ? 'obstoječe veljavnosti' : 'danes',
+      bot_vklopljen: waDela,
+      opozorila
+    });
+  } catch (err) {
+    console.error('[podaljsaj]', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── Zahteva lastnika za podaljšanje/nadgradnjo naročnine ──────
 app.post('/api/settings/request-renewal', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);

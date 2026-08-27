@@ -2186,6 +2186,14 @@ function renderTable() {
             <option value="monthly" ${s.billing_period!=='yearly'?'selected':''}>Mesečno</option>
             <option value="yearly" ${s.billing_period==='yearly'?'selected':''}>Letno −30 %</option>
           </select>
+          <select class="plan-select" id="ext-${s.id}" title="Koliko mesecev naročnine dodati">
+            <option value="1">＋1 mesec</option>
+            <option value="2">＋2 meseca</option>
+            <option value="3">＋3 mesece</option>
+            <option value="6">＋6 mesecev</option>
+            <option value="12">＋12 mesecev</option>
+          </select>
+          <button class="btn-action" style="color:#059669;border-color:rgba(5,150,105,.3);background:rgba(5,150,105,.08)" onclick="podaljsajSalon('${s.id}')" title="Ročno podaljšaj naročnino izbranega paketa">Podaljšaj</button>
           <span class="usage-cell" data-salon="${s.id}" style="font-size:12px;color:var(--text2);font-weight:700" title="Naročila prek bota ta mesec">📦 —</span>
           <!-- Napolni fillWaCells(), ko odgovori Meta. Ko je vse v redu, ostane prazna. -->
           <span class="wa-cell" data-salon="${s.id}" style="font-size:12px"></span>
@@ -2210,7 +2218,12 @@ function renderTable() {
 
   // Povzetek pokvarjenih WhatsApp povezav nad seznam, da ga ni mogoče spregledati.
   box.insertAdjacentHTML('afterbegin', opozoriloWa());
+  // Vrstice so pravkar nastale na novo, zato je treba znova napolniti vse, kar
+  // pride po svoji poti. Brez tega je štetje naročil kazalo "📦 —", ker
+  // loadWaStanje() (Metine poizvedbe, nekaj sekund) tabelo preriše po tem, ko
+  // je loadUsage() celice že napolnil.
   fillWaCells();
+  fillUsageCells();
 }
 
 // ── ACTIONS ───────────────────────────────────────────────
@@ -2392,6 +2405,51 @@ function opozoriloWa() {
     + 'Bot pri teh lokalih ne more pošiljati sporočil. Ob blokadi pri Meti se to '
     + 'ne pokaže med napakami spodaj, ker webhooki ne prihajajo — zato preverjamo žeton neposredno. '
     + 'Podrobnosti dobiš, če greš z miško na značko v vrstici lokala.</div></div>';
+}
+
+/*
+  Ročno podaljšanje naročnine. Paket je tisti, ki je izbran v spustnem seznamu
+  poleg — tako je vidno, kaj se podaljšuje, in ni druge izbire za isto stvar.
+  Podaljša od maksimuma obstoječe veljavnosti in danes, zato se preostali dnevi
+  ne izgubijo.
+*/
+async function podaljsajSalon(id) {
+  const salon = salonsData.find(s => s.id === id);
+  const sel = document.getElementById('ext-' + id);
+  const mesecev = parseInt(sel && sel.value, 10) || 1;
+  const paket = salon ? salon.subscription_plan : null;
+  const oznaka = (CENIK.find(p => p.id === paket) || {}).label || paket || 'trenutni paket';
+  const doKdaj = salon && salon.valid_until
+    ? new Date(salon.valid_until).toLocaleDateString('sl-SI')
+    : 'danes';
+
+  const besede = mesecev === 1 ? 'mesec' : mesecev === 2 ? 'meseca' : mesecev < 5 ? 'mesece' : 'mesecev';
+  if (!confirm(`${salon ? salon.name : 'Lokal'} — dodaj ${mesecev} ${besede} paketa ${oznaka}?\n\n`
+    + `Veljavnost se podaljša od ${doKdaj}.\nČe je WhatsApp priklopljen, se bot vklopi.`)) return;
+
+  try {
+    const res = await apiFetch(`/api/admin/salons/${id}/podaljsaj`, {
+      method: 'POST',
+      body: JSON.stringify({ mesecev, plan: paket })
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast('Napaka: ' + (d.error || res.status), 'error'); return; }
+    if (salon) {
+      salon.valid_until = d.valid_until;
+      salon.subscription_status = 'active';
+      salon.billing_status = 'paid';
+      if (d.bot_vklopljen) { salon.signup_status = 'active'; }
+    }
+    renderAll();
+    showToast(`✅ ${salon ? salon.name : 'Lokal'} velja do `
+      + new Date(d.valid_until).toLocaleDateString('sl-SI'), 'success');
+    // Opozoril je lahko več (Stripe povozi veljavnost, WhatsApp ni priklopljen).
+    if (d.opozorila && d.opozorila.length) {
+      alert((d.opozorila.length === 1 ? 'Opozorilo:' : 'Opozorila:') + '\n\n· ' + d.opozorila.join('\n\n· '));
+    }
+  } catch (e) {
+    showToast('Napaka: ' + e.message, 'error');
+  }
 }
 
 async function changePlan(id, plan) {
