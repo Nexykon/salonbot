@@ -9,6 +9,7 @@ const t = require('./time');
 const urnik = require('./urnik');
 const { botMsg } = require('./botmsg');
 const { evri } = require('./denar');
+const besede = require('./besede');
 const { askOrderAI, computeTotals, aiConfigured, findService, packOfService, hasExtras } = require('./ai-order');
 const { planLimit } = require('./presets');
 
@@ -713,7 +714,7 @@ async function handleMessage(msgObj, salon) {
         // Gumbi za najpogostejše količine; vpisano besedilo ("2, ena brez gob")
         // še vedno obravnava AI, zato je to samo bližnjica, ne omejitev.
         await wa.send(phoneId, token, wa.gumbi(from,
-          `Koliko *${svc.name}* želite?\n_Če želite prilagoditev (npr. brez gob), jo kar pripišite._`,
+          `${besede.vprasajKolicino(svc.name, svc.category)}\n💰 ${evri(svc.price || 0)}\n_Če želite prilagoditev (npr. brez gob), jo kar pripišite._`,
           [{ id: 'aiqty_1', naslov: '1' }, { id: 'aiqty_2', naslov: '2' }, { id: 'aiqty_3', naslov: '3' }]
         ));
         return;
@@ -725,7 +726,7 @@ async function handleMessage(msgObj, salon) {
         type: 'interactive',
         interactive: {
           type: 'button',
-          body: { text: `*${svc.name}*\n💰 ${svc.price || 0} €\n\nKoliko kosov?\n_(ali vpišite številko, npr. 5)_` },
+          body: { text: `*${svc.name}*\n💰 ${evri(svc.price || 0)}\n\nKoliko ${besede.kolicinsko(svc.category, svc.name) || 'kosov'}?\n_(ali vpišite številko, npr. 5)_` },
           action: {
             buttons: [
               { type: 'reply', reply: { id: 'dqty_1', title: '1 kos' } },

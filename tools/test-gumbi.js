@@ -127,7 +127,8 @@ function preveriOmejitve(poslano, kje) {
   let g = gumbiIz(p);
   je('po izbiri z menija pridejo gumbi', g && g.map(x => x.id), ['aiqty_1', 'aiqty_2', 'aiqty_3']);
   je('naslovi so 1 2 3', g && g.map(x => x.title), ['1', '2', '3']);
-  je('vprašanje imenuje jed', /Koliko \*Kmečka\* želite\?/.test(teloIz(p) || ''), true);
+  je('vprašanje pove vrsto jedi in ime', /Koliko pic \*Kmečka\* želite\?/.test(teloIz(p) || ''), true);
+  je('vprašanje pove ceno', /12,00 €|9,50 €/.test(teloIz(p) || ''), true);
   je('še vedno povabi k prilagoditvi', /brez gob/.test(teloIz(p) || ''), true);
 
   p = await poslji(klik('aiqty_2'));
