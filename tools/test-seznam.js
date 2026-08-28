@@ -34,6 +34,49 @@ const vrstice = () => {
 // Beseda brez ločil na koncu — rez namenoma odstrani vejico ("hobotnica," → "hobotnica")
 const brezLocil = w => w.replace(/^[\s,;:.()-]+|[\s,;:.()-]+$/g, '');
 
+// ── Nazaj na kategorije + meja 10 vrstic pri velikem meniju ────────────────
+{
+  console.log('\n0) Vrnitev iz kategorije nazaj na kategorije');
+  const veliko = [];
+  for (let i = 0; i < 26; i++) veliko.push({ id: 'p' + i, name: 'Pizza ' + i, price: 10, category: 'Pizze' });
+  for (let i = 0; i < 9; i++) veliko.push({ id: 's' + i, name: 'Solata ' + i, price: 8, category: 'Solate' });
+  for (let i = 0; i < 3; i++) veliko.push({ id: 'd' + i, name: 'Sladica ' + i, price: 4, category: 'Sladice' });
+  const vrstic = (m) => m.interactive.action.sections.reduce((n, s) => n + s.rows.length, 0);
+  const idji = (m) => m.interactive.action.sections.flatMap(s => s.rows.map(r => r.id));
+
+  const kategorije = wa.deliveryMenuList('386', veliko, {}, null, null, 0);
+  je('brez kategorije se pokažejo kategorije', idji(kategorije).filter(i => i.startsWith('cat_') && i !== 'cat_ALL').sort(),
+    ['cat_Pizze', 'cat_Sladice', 'cat_Solate']);
+  je('kategorije: največ 10 vrstic', vrstic(kategorije) <= 10, true);
+  je('na seznamu kategorij ni vrstice nazaj', idji(kategorije).includes('catspage_0'), false);
+
+  const pice1 = wa.deliveryMenuList('386', veliko, {}, null, 'Pizze', 0);
+  je('v kategoriji: največ 10 vrstic', vrstic(pice1) <= 10, true);
+  je('zadnja vrstica je nazaj na kategorije', idji(pice1).slice(-1), ['catspage_0']);
+  je('predzadnja je naslednja stran', idji(pice1).slice(-2, -1), ['catpage_1_Pizze']);
+  je('osem jedi na strani', idji(pice1).filter(i => i.startsWith('menu_')).length, 8);
+
+  const pice4 = wa.deliveryMenuList('386', veliko, {}, null, 'Pizze', 3);
+  je('zadnja stran: brez "prikaži več"', idji(pice4).includes('catpage_4_Pizze'), false);
+  je('zadnja stran: nazaj je še vedno tu', idji(pice4).slice(-1), ['catspage_0']);
+  je('zadnja stran: največ 10 vrstic', vrstic(pice4) <= 10, true);
+
+  const solate = wa.deliveryMenuList('386', veliko, {}, null, 'Solate', 0);
+  je('kratka kategorija: vseh 9 jedi', idji(solate).filter(i => i.startsWith('menu_')).length, 9);
+  je('kratka kategorija: z nazaj je 10 vrstic', vrstic(solate), 10);
+
+  const brezKat = [{ id: 'x', name: 'Nekaj', price: 1, category: 'Vse' }];
+  const ena = wa.deliveryMenuList('386', brezKat, {}, null, 'Vse', 0);
+  je('pri eni sami kategoriji vrstice nazaj ni', idji(ena).includes('catspage_0'), false);
+
+  for (const m of [kategorije, pice1, pice4, solate, ena]) {
+    for (const sec of m.interactive.action.sections) for (const r of sec.rows) {
+      if ([...r.title].length > 24) { ni++; console.log('  ✖ predolg naslov vrstice: ' + r.title); }
+      if (r.description && [...r.description].length > 72) { ni++; console.log('  ✖ predolg opis vrstice'); }
+    }
+  }
+}
+
 console.log('\n1) Metine meje niso presežene');
 {
   const m = wa.deliveryMenuList('386', JEDI, {}, null, null, 0);

@@ -324,6 +324,7 @@ function groupByCategory(services) {
 // - brez izbrane kategorije + velik meni -> KATEGORIJE (ostranjene: "▶️ Več kategorij" / "📋 Cel meni")
 // - izbrana kategorija -> njeni artikli (ostranjeni: "▶️ Prikaži več")
 // Tako podpira poljubno velike menije (100+ jedi).
+const MAX_ROWS = 10;        // Metina meja za seznam — enajsta vrstica zavrne sporočilo
 const CATS_PER_PAGE = 9;
 const ITEMS_PER_PAGE = 9;
 // Opis vrstice v WhatsApp seznamu (meja 72 znakov). Cena je VEDNO spredaj,
@@ -411,11 +412,17 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
   const cat = (categoryFilter && categoryFilter !== 'ALL') ? categoryFilter : null;
   const flat = [];
   for (const c of orderedCats) for (const s of grouped[c]) flat.push({ s, c });
+  // Znotraj kategorije zadnjo vrstico porabi "nazaj", zato je za jedi eno mesto
+  // manj — Meta dovoli natanko 10 vrstic in enajsta zavrne celo sporočilo.
+  const vsehKategorij = new Set((services || []).map(s => s.category || 'Ostalo')).size;
+  const nazajVrstica = !!cat && vsehKategorij > 1;
+  const prostor = MAX_ROWS - (nazajVrstica ? 1 : 0);
   let pageItems, hasMore;
-  if (flat.length <= 10) { pageItems = flat; hasMore = false; }
+  if (flat.length <= prostor) { pageItems = flat; hasMore = false; }
   else {
-    const start = page * ITEMS_PER_PAGE;
-    pageItems = flat.slice(start, start + ITEMS_PER_PAGE);
+    const naStran = prostor - 1;                 // ena vrstica za "Prikaži več"
+    const start = page * naStran;
+    pageItems = flat.slice(start, start + naStran);
     hasMore = flat.length > start + pageItems.length;
   }
   // sekcije po kategorijah (znotraj strani), ohrani vrstni red
@@ -433,6 +440,9 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
   if (hasMore && sections.length) {
     const nextId = cat ? ('catpage_' + (page + 1) + '_' + cat) : ('menupage_' + (page + 1));
     sections[sections.length - 1].rows.push({ id: nextId, title: '▶️ Prikaži več', description: 'Naslednja stran' });
+  }
+  if (nazajVrstica && sections.length) {
+    sections[sections.length - 1].rows.push({ id: 'catspage_0', title: '⬅️ Vse kategorije', description: 'Nazaj na seznam kategorij' });
   }
   sections.forEach(sec => delete sec._c);
   const bodyText = cartSummary ? cartLine + 'Izberite še artikel:' : (cat ? cat + ':' : defaultGreeting);
