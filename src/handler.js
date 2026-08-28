@@ -751,6 +751,21 @@ async function handleMessage(msgObj, salon) {
       await wa.send(phoneId, token, wa.deliveryCartButtons(from, fmtCart(cart), cartTotal(cart)));
     };
 
+    /*
+      Sporočilo o košarici v AI toku. Gumba sta bližnjici za dvoje, kar stranka
+      v tem koraku skoraj vedno hoče; tipkanje "zaključi" ali "meni" dela naprej.
+    */
+    const posljiKosarico = async (cart, uvod) => {
+      const feeNote = hasExtras(salon, cart, services)
+        ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
+      const vrstice = cart.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ');
+      await wa.send(phoneId, token, wa.gumbi(from,
+        (uvod ? uvod + '\n\n' : '')
+        + `Košarica: ${vrstice} — artikli skupaj *${evri(cartTotal(cart))}*${feeNote}\n\nŽelite še kaj?`,
+        [{ id: 'ai_zakljuci', naslov: '✅ Zaključi' }, { id: 'ai_meni', naslov: '📋 Meni' }]
+      ));
+    };
+
     // AI tok ima svojo košarico (brez klasičnih gumbov) — ista pot za gumb in za vpisano število.
     const addQtyAi = async (item, qty) => {
       const cart = sess.cart || [];
@@ -758,11 +773,7 @@ async function handleMessage(msgObj, salon) {
       if (ex) ex.qty = (ex.qty || 1) + qty;
       else cart.push({ ...item, qty, pack: packOfService(item) });
       session.set(skey, { ...sess, step: 301, cart, pendingItem: null });
-      const feeNote = hasExtras(salon, cart, services)
-        ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
-      await wa.send(phoneId, token, wa.textMsg(from,
-        `*${item.name}* x${qty} je v košarici.\n\nKošarica: ${cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cart))}*${feeNote}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
-      ));
+      await posljiKosarico(cart, `*${item.name}* x${qty} je v košarici.`);
     };
 
     if (iId.startsWith('dqty_') && sess.pendingItem) {
@@ -1168,11 +1179,26 @@ async function handleMessage(msgObj, salon) {
       return;
     }
 
+    // ── Gumba pod košarico v AI toku ──
+    if (iId === 'ai_zakljuci' || iId === 'ai_meni') {
+      if (!(sess.cart || []).length) {
+        await wa.send(phoneId, token, wa.textMsg(from, 'Košarica je prazna. Izvolite meni:'));
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, null));
+        return;
+      }
+      if (iId === 'ai_meni') {
+        await wa.send(phoneId, token, wa.deliveryMenuList(from, services, salon, cartSummaryShort(sess.cart)));
+        return;
+      }
+      await promptForStage(sess);
+      return;
+    }
+
     // ── Star gumb iz prejšnjega pogovora ──
     // Gumbi ostanejo v zgodovini klepeta za vedno, zato jih stranka lahko
     // pritisne dan pozneje, ko seje ni več. Brez tega bi klik ostal brez
     // odgovora — kar je videti, kot da bot ne dela.
-    if (iId && /^(aiqty_|dqty_|aimode_|dmode_)/.test(iId)) {
+    if (iId && /^(aiqty_|dqty_|aimode_|dmode_|ai_zakljuci|ai_meni)/.test(iId)) {
       await wa.send(phoneId, token, wa.textMsg(from,
         'Ta gumb je iz starejšega pogovora. Napišite *meni*, da začnemo znova. 🙂'));
       return;
@@ -1254,11 +1280,7 @@ async function handleMessage(msgObj, salon) {
         if (line) {
           line.qty = qp.q; // nastavi TOČNO količino (ne +)
           session.set(skey, { ...cur, cart: cur.cart, lastAdded: null });
-          const feeN = hasExtras(salon, cur.cart, services)
-            ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
-          await wa.send(phoneId, token, wa.textMsg(from,
-            `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.\n\nKošarica: ${cur.cart.map(i => `${i.name} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cur.cart))}*${feeN}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
-          ));
+          await posljiKosarico(cur.cart, `*${line.name}${line.note ? ` (${line.note})` : ''}* x${qp.q} je v košarici.`);
           return;
         }
       }
@@ -1293,11 +1315,7 @@ async function handleMessage(msgObj, salon) {
           if (wantsMore) line2.qty = (line2.qty || 1) + qp2.q; // "še en" -> +1
           else line2.qty = qp2.q;                              // popravek količine -> točno
           session.set(skey, { ...cur, step: 301, cart: cart2, lastAdded: [{ id: svcHit.id, note: null }] });
-          const feeN2 = hasExtras(salon, cart2, services)
-            ? ' _(embalaža in dostava se dodata ob zaključku)_' : '';
-          await wa.send(phoneId, token, wa.textMsg(from,
-            `Košarica: ${cart2.map(i => `${i.name}${i.note ? ` (${i.note})` : ''} x${i.qty || 1}`).join(', ')} — artikli skupaj *${evri(cartTotal(cart2))}*${feeN2}\n\nŽelite še kaj? Napišite *zaključi* ali izberite iz menija.`
-          ));
+          await posljiKosarico(cart2, null);
           return;
         }
       }

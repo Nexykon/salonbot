@@ -134,6 +134,19 @@ function preveriOmejitve(poslano, kje) {
   p = await poslji(klik('aiqty_2'));
   je('klik na 2 doda dva kosa', /\*Kmečka\* x2 je v košarici/.test(besediloIz(p)), true);
   je('košarica pokaže znesek 19,00 €', /19,00/.test(besediloIz(p)), true);
+  preveriOmejitve(p, 'košarica');
+  g = gumbiIz(p);
+  je('pod košarico sta gumba', g && g.map(x => x.id), ['ai_zakljuci', 'ai_meni']);
+  je('naslova sta kratka', g && g.map(x => x.title), ['✅ Zaključi', '📋 Meni']);
+  je('ne sili več v tipkanje', /Napišite \*zaključi\*/.test(besediloIz(p)), false);
+
+  console.log('\n── 1b) Gumba pod košarico delujeta ──────────────────────');
+  p = await poslji(klik('ai_meni'));
+  const seznam = p.filter(m => m.interactive && m.interactive.type === 'list').pop();
+  je('gumb Meni odpre seznam', !!seznam, true);
+  je('gumb seznama se imenuje Meni', seznam && seznam.interactive.action.button, 'Meni');
+  p = await poslji(klik('ai_zakljuci'));
+  je('gumb Zaključi pelje na način prevzema', gumbiIz(p) && gumbiIz(p).map(x => x.id), ['aimode_dostava', 'aimode_prevzem']);
 
   console.log('\n── 2) Vpisano besedilo dela naprej ────────────────────');
   await poslji(klikSeznam('menu_m2'));

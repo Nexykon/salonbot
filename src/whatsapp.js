@@ -404,7 +404,7 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
     const rows = pageCats.map(cat => ({ id: 'cat_' + cat, title: rowTitle(cat), description: nItems(grouped[cat].length) }));
     if (moreCats) rows.push({ id: 'catspage_' + (page + 1), title: '▶️ Več kategorij', description: 'Naslednja stran' });
     else rows.push({ id: 'cat_ALL', title: '📋 Cel meni', description: 'Prikaži vse kot besedilo' });
-    return listMsg(cartLine + (cartSummary ? 'Izberite kategorijo:' : defaultGreeting), 'Kategorije', [{ title: 'Kategorije', rows }]);
+    return listMsg(cartLine + (cartSummary ? 'Izberite kategorijo:' : defaultGreeting), 'Meni', [{ title: 'Kategorije', rows }]);
   }
 
   // ── ARTIKLI (izbrana kategorija ali majhen meni) — ostranjeno, vedno <=10 vrstic ──
@@ -436,7 +436,7 @@ function deliveryMenuList(to, services, salon, cartSummary, categoryFilter, page
   }
   sections.forEach(sec => delete sec._c);
   const bodyText = cartSummary ? cartLine + 'Izberite še artikel:' : (cat ? cat + ':' : defaultGreeting);
-  return listMsg(bodyText, cat ? cat : 'Odpri meni', sections.length ? sections : [{ title: 'Meni', rows: [] }]);
+  return listMsg(bodyText, cat ? cat : 'Meni', sections.length ? sections : [{ title: 'Meni', rows: [] }]);
 }
 
 // Cel meni kot besedilo — razbito na več sporočil, če je predolgo (WhatsApp meja ~4096 znakov).
