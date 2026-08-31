@@ -37,7 +37,13 @@ app.get('/voznik', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vo
 app.get('/geslo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'geslo.html')));
 // Čista naslova za prijavo in registracijo.
 app.get('/prijava', (req, res) => res.sendFile(path.join(__dirname, 'public', 'prijava.html')));
-app.get('/registracija', (req, res) => res.sendFile(path.join(__dirname, 'public', 'registracija.html')));
+/*
+  Samostrežne registracije ni — priklop ni avtomatiziran, zato je edina pot do
+  računa obrazec na /kontakt.html. Stara naslova se preusmerita tja, da nobena
+  že poslana povezava ne obvisi v zraku.
+*/
+app.get('/registracija', (req, res) => res.redirect(302, '/kontakt.html'));
+app.get('/registracija.html', (req, res) => res.redirect(302, '/kontakt.html'));
 
 function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
@@ -695,7 +701,20 @@ app.get('/api/plans', (req, res) => {
 // ─── Javna samopostrežna registracija ──────────────────────────
 // Ustvari salon v statusu "čaka na priklop" (bot ugasnjen). AI paketi nimajo
 // brezplačnega testa -> billing_status='awaiting' (plačilo predračuna pred priklopom).
-app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
+/*
+  UGASNJENO. Samostrežna registracija je bila edini odjemalec te poti, stran pa
+  je odstranjena, ker priklop ni avtomatiziran. Pot je bila nepooblaščena in je
+  ustvarjala lokale v bazi, pošiljala e-pošto in odpirala Stripe seje — brez
+  strani za njo bi to ostala odprta vrata brez namena.
+
+  Koda spodaj je ohranjena. Za vrnitev samopostrežbe je treba odstraniti ta
+  odgovor in vrniti stran.
+*/
+app.post('/api/signup', (req, res) => res.status(410).json({
+  error: 'Samostrežna registracija ni v uporabi. Račun odpremo na podlagi obrazca na /kontakt.html.'
+}));
+
+app.post('/api/signup-neuporabljeno', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
   try {
     const b = req.body || {};
     if (b.website) return res.json({ success: true }); // honeypot (boti izpolnijo skrito polje)
@@ -813,7 +832,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
             metadata: { salon_id: salon.id, plan },
             allow_promotion_codes: true,
             success_url: `${baseUrl}/${returnPage}?billing=success`,
-            cancel_url: `${baseUrl}/registracija.html?billing=cancel`
+            cancel_url: `${baseUrl}/kontakt.html?billing=cancel`
           });
           checkoutUrl = cs.url;
         } catch (e) {

@@ -79,7 +79,7 @@
     <a href="/voznik">🛵 Ste voznik? Prijava za voznike →</a>
   </div>
   <div class="nazaj" style="border-top:0;padding-top:0;margin-top:2px">
-    <a href="/registracija.html">Še niste v FlowTiq? Registracija →</a>
+    <a href="/kontakt.html">Še niste v FlowTiq? Odprite račun →</a>
   </div>
 </div>
 
@@ -99,10 +99,10 @@
 var params = new URLSearchParams(location.search);
 
 // Stara povezava iz Stripa (preklic plačila) je kazala na to stran, ko je bila
-// še registracija. Da tak obiskovalec ne pristane na prijavi, ga pošljemo tja,
-// kjer je obrazec zdaj.
+// še registracija. Samostrežne registracije ni več, zato tak obiskovalec gre
+// na obrazec za odprtje računa.
 if (params.get('billing')) {
-  location.replace('/registracija.html' + location.search);
+  location.replace('/kontakt.html' + location.search);
 }
 
 // Kam po prijavi, če je plošča poslala uporabnika sem (?nazaj=/delivery.html…).

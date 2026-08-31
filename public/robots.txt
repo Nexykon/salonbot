@@ -16,7 +16,6 @@ Disallow: /leads.html
 Disallow: /book.html
 Disallow: /setup.html
 Disallow: /prijava.html
-Disallow: /registracija.html
 Disallow: /dashboard.html
 Disallow: /settings.html
 
@@ -67,7 +66,6 @@ Disallow: /leads.html
 Disallow: /book.html
 Disallow: /setup.html
 Disallow: /prijava.html
-Disallow: /registracija.html
 Disallow: /dashboard.html
 Disallow: /settings.html
 Disallow: /api/

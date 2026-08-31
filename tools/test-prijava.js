@@ -1,6 +1,6 @@
 /*
-  Preizkus ene prijave: /prijava.html je vpis, /registracija.html je vpis v
-  sistem, stari naslovi še naprej delujejo.
+  Preizkus ene prijave: /prijava.html je vpis, edini poziv k odprtju računa je
+  /kontakt.html, stari naslovi še naprej delujejo.
 
     node tools/test-prijava.js
 
@@ -22,6 +22,7 @@ function je(opis, dobil, pricakoval) {
   else { ni++; console.log('  ✖ ' + opis + '\n      dobil:      ' + a + '\n      pričakoval: ' + b); }
 }
 
+const robots = beri('public/robots.txt');
 const javne = fs.readdirSync(PUB).filter(f => f.endsWith('.html')).map(f => 'public/' + f)
   .concat(fs.readdirSync(path.join(PUB, 'panoga')).map(f => 'public/panoga/' + f));
 
@@ -43,9 +44,9 @@ je('ni za iskalnike', /name="robots" content="noindex/.test(p), true);
 je('geslo in e-naslov', /id="email"/.test(p) && /id="geslo"/.test(p), true);
 /*
   Prijavna stran ne sme biti strožja od strežnika: /api/auth/login primerja
-  owner_email kot navaden niz, v bazi pa je lokal, čigar prijavno ime ni
-  e-naslov ("test" pri Test Piceriji). Zahteva po znaku "@" ali type="email"
-  bi takega uporabnika zaklenila zunaj.
+  owner_email kot navaden niz. Test Picerija je imela zapisano "test" in se
+  zaradi zahteve po znaku "@" ni mogla prijaviti; e-naslov je od takrat
+  popravljen, pravilo pa velja naprej za vsak tak zapis.
 */
 je('polje za prijavo ni type="email"', /id="email"[^>]*type="email"|type="email"[^>]*id="email"/.test(p), false);
 je('ne zahteva znaka @', /email\.indexOf\('@'\)/.test(p), false);
@@ -62,32 +63,22 @@ const pKoda = p.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 je('žetona ne dodaja v naslov', /\?token=/.test(pKoda), false);
 je('zapiše ključ za dostavno ploščo', /ft_delivery_token/.test(p), true);
 je('povezava na pozabljeno geslo', /href="\/geslo"/.test(p), true);
-je('povezava na registracijo', /href="\/registracija\.html"/.test(p), true);
 je('stara Stripe povezava se preusmeri', /params\.get\('billing'\)/.test(p), true);
 je('varovalka pred odprto preusmeritvijo', /charAt\(1\) === '\/'/.test(p), true);
 
-console.log('\n4) Registracija');
-const r = beri('public/registracija.html');
-je('obrazec oddaja na /api/signup', /\/api\/signup/.test(r), true);
-je('kanonični naslov je popravljen', /canonical" href="https:\/\/flowtiq\.si\/registracija\.html"/.test(r), true);
-je('nikjer več ne kaže nase kot prijava', /flowtiq\.si\/prijava\.html/.test(r), false);
-// Vsa polja, ki jih bere /api/signup — preoblikovanje ne sme nobenega spustiti.
-const POLJA = ['company_name', 'vat_id', 'address', 'contact_person', 'owner_email',
-  'password', 'password2', 'phone', 'business_type', 'website',
-  'plans', 'period', 'paymethod', 'payHint', 'submitBtn', 'msg', 'formCard', 'successBox', 'successMsg', 'loginBtn'];
-je('vsa polja in deli obrazca so na strani', POLJA.filter(id => !new RegExp('id="' + id + '"').test(r)), []);
-je('past proti robotom je nevidna', /class="past"/.test(r) && /\.past\s*\{[^}]*left:-9999px/.test(r), true);
-je('trije paketi z cenami', /89/.test(r) && /159\.99/.test(r) && /299/.test(r), true);
-je('dejavnosti bere iz strežnika', /\/api\/business-types/.test(r), true);
-je('po registraciji pelje na skupno prijavo', /id="loginBtn" href="\/prijava\.html"/.test(r), true);
-je('preklic plačila je pojasnjen', /obvestilo-preklic/.test(r) && /billing'\) === 'cancel'/.test(r), true);
-
-console.log('\n4b) Registracija je v oblikovanju strani');
-je('uporablja skupni slog', /href="\/flowtiq-site\.css"/.test(r), true);
-je('ima glavo strani', /class="site-head"/.test(r), true);
-je('ima nogo strani', /class="site-foot"/.test(r), true);
-je('brez stare palete', /#f8f7ff|#25D366/.test(r), false);
-je('ni za iskalnike', /name="robots" content="noindex/.test(r), true);
+console.log('\n4) Samostrežne registracije ni');
+/*
+  Priklop ni avtomatiziran, zato je edina pot do računa obrazec na
+  /kontakt.html. Stran /registracija.html je odstranjena, njena pot se
+  preusmerja, /api/signup pa odgovarja 410 — nepooblaščena pot, ki je
+  ustvarjala lokale in odpirala Stripe seje, brez strani za njo ne sme
+  ostati odprta.
+*/
+je('strani ni več', fs.existsSync(path.join(PUB, 'registracija.html')), false);
+je('nobena stran ne kaže nanjo', javne.filter(f => /registracija\.html/.test(beri(f))), []);
+je('prijava pelje na kontakt', /href="\/kontakt\.html">Še niste v FlowTiq/.test(p), true);
+je('preklic plačila pelje na kontakt', /location\.replace\('\/kontakt\.html'/.test(p), true);
+je('robots.txt je ne omenja', /registracija/.test(robots), false);
 
 console.log('\n5) Plošče pošljejo brez žetona na skupno prijavo');
 for (const [ime, f] of [['salon', 'public/salon.html'], ['dostava', 'public/delivery.html'], ['skrbnik', 'public/admin.html']]) {
@@ -109,8 +100,10 @@ je('kliče owner-forgot in owner-reset', /owner-forgot/.test(g) && /owner-reset/
 console.log('\n7) Strežnik');
 const s = beri('server.js');
 je('čist naslov /prijava', /app\.get\('\/prijava',/.test(s), true);
-je('čist naslov /registracija', /app\.get\('\/registracija',/.test(s), true);
-je('Stripe preklic na registracijo', /cancel_url: `\$\{baseUrl\}\/registracija\.html\?billing=cancel`/.test(s), true);
+je('/registracija se preusmeri na kontakt', /app\.get\('\/registracija', \(req, res\) => res\.redirect\(302, '\/kontakt\.html'\)\)/.test(s), true);
+je('/registracija.html se preusmeri na kontakt', /app\.get\('\/registracija\.html', \(req, res\) => res\.redirect\(302, '\/kontakt\.html'\)\)/.test(s), true);
+je('Stripe preklic pelje na kontakt', /cancel_url: `\$\{baseUrl\}\/kontakt\.html\?billing=cancel`/.test(s), true);
+je('/api/signup odgovarja 410', /app\.post\('\/api\/signup', \(req, res\) => res\.status\(410\)/.test(s), true);
 je('povezava za vpis v e-pošti je skupna', /const loginUrl = `\$\{baseUrl\}\/prijava\.html`/.test(s), true);
 je('login_url v odgovoru je skupna', /login_url: '\/prijava\.html'/.test(s), true);
 je('stari /dashboard.html se preusmerja', /app\.get\('\/dashboard\.html'/.test(s), true);
