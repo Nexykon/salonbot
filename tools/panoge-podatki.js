@@ -4,6 +4,7 @@
 module.exports = [
   {
     slug: "restavracije", mono: "RE", ime: "Restavracije in picerije",
+    za: "restavracije in picerije",
     kratko: "Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.",
     naslov: "Naročila brez zvonjenja.\nIn brez 28 % provizije.",
     podnaslov: "Gost napiše na WhatsApp, FlowTiq mu pokaže meni, sestavi naročilo in ga pošlje v kuhinjo. Ti kuhaš naprej.",
@@ -41,6 +42,7 @@ module.exports = [
   },
   {
     slug: "frizerski-saloni", mono: "FR", ime: "Frizerski saloni",
+    za: "frizerske salone",
     kratko: "Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.",
     naslov: "Strižeš.\nTermini se polnijo sami.",
     podnaslov: "Stranka napiše na WhatsApp, FlowTiq pogleda tvoj koledar in ji da prost termin. Brez prekinjanja dela.",
@@ -76,6 +78,7 @@ module.exports = [
   },
   {
     slug: "kozmetika", mono: "KO", ime: "Kozmetika in nohti",
+    za: "kozmetiko in nohte",
     kratko: "Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.",
     naslov: "Nohti so tvoje delo.\nUrnik naj bo naš.",
     podnaslov: "FlowTiq pozna vse tvoje storitve, njihove dolžine in navodila pred obiskom. Stranki jih pošlje sam.",
@@ -111,6 +114,7 @@ module.exports = [
   },
   {
     slug: "tattoo", mono: "TA", ime: "Tattoo in piercing",
+    za: "tattoo in piercing studie",
     kratko: "Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.",
     naslov: "Manj dopisovanja.\nVeč časa za iglo.",
     podnaslov: "FlowTiq zbere vse, kar rabiš za oceno: motiv, velikost, mesto na telesu in sliko. Ti samo potrdiš termin.",
@@ -146,6 +150,7 @@ module.exports = [
   },
   {
     slug: "wellness", mono: "WE", ime: "Masaže in wellness",
+    za: "masaže in wellness",
     kratko: "Termini, paketi in darilni boni — brez motenja med masažo.",
     naslov: "Med masažo\nne dvigaš telefona.",
     podnaslov: "FlowTiq sprejema rezervacije, prodaja darilne bone in opominja stranke, ko se paket izteka.",
@@ -181,6 +186,7 @@ module.exports = [
   },
   {
     slug: "zobozdravniki", mono: "ZD", ime: "Zobozdravniki in ambulante",
+    za: "zobozdravnike in ambulante",
     kratko: "Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.",
     naslov: "Linija ni več zasedena.",
     podnaslov: "FlowTiq sprejme naročilo, pošlje opomnik in nujne primere takoj označi, da jih vidiš prvi.",
@@ -216,6 +222,7 @@ module.exports = [
   },
   {
     slug: "avtoservisi", mono: "AV", ime: "Avtoservisi in vulkanizerji",
+    za: "avtoservise in vulkanizerje",
     kratko: "Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.",
     naslov: "Roke v olju.\nTermini vseeno urejeni.",
     podnaslov: "Stranka napiše registrsko in kaj potrebuje, FlowTiq ji da termin. Ko je avto gotov, jo obvesti.",
@@ -251,6 +258,7 @@ module.exports = [
   },
   {
     slug: "veterina", mono: "VE", ime: "Veterinarske ambulante",
+    za: "veterinarske ambulante",
     kratko: "Termini po živali, opomniki na cepljenja in obvladana nujnost.",
     naslov: "Za vsako tačko\nsvoj termin.",
     podnaslov: "FlowTiq si zapomni žival, njeno vrsto in datum zadnjega cepljenja — in lastnika sam povabi, ko pride čas.",
@@ -286,6 +294,7 @@ module.exports = [
   },
   {
     slug: "fotografi", mono: "FO", ime: "Fotografi",
+    za: "fotografe",
     kratko: "Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.",
     naslov: "Povpraševanja urejena.\nDatumi potrjeni.",
     podnaslov: "FlowTiq zbere vrsto snemanja, datum, lokacijo in število oseb, pošlje cenik in rezervira datum z avansom.",
@@ -321,6 +330,7 @@ module.exports = [
   },
   {
     slug: "trenerji", mono: "TR", ime: "Osebni trenerji in fitnes",
+    za: "osebne trenerje in fitnes",
     kratko: "Termini, skupinske vadbe z omejenimi mesti in paketi treningov.",
     naslov: "Ti trenirate.\nUrnik se ureja sam.",
     podnaslov: "FlowTiq vodi individualne termine in skupinske vadbe z omejenim številom mest, šteje pa tudi porabljene treninge iz paketa.",
@@ -356,6 +366,7 @@ module.exports = [
   },
   {
     slug: "hoteli", mono: "HO", ime: "Hoteli in apartmaji",
+    za: "hotele in apartmaje",
     kratko: "Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.",
     naslov: "Direktne rezervacije.\nBrez 15 % portalu.",
     podnaslov: "FlowTiq odgovori na povpraševanje v sekundi, pove ceno in razpoložljivost ter potrdi direktno rezervacijo.",
@@ -391,6 +402,7 @@ module.exports = [
   },
   {
     slug: "sole", mono: "ŠO", ime: "Šole in inštrukcije",
+    za: "šole in inštrukcije",
     kratko: "Prijave na termine in tečaje, obveščanje staršev, evidenca obiskov.",
     naslov: "Prijave brez\nsedmih klicev staršem.",
     podnaslov: "FlowTiq sprejme prijavo, pove urnik in ceno, opomni pred uro ter starše obvesti o spremembah.",

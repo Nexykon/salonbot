@@ -205,6 +205,15 @@ async function handleMessage(msgObj, salon) {
   // rezervira termin za jutri. Lastnik dela naprej.
   const JEMLJE_NAROCILA = ['delivery', 'pos_order'];
   if (!isAdmin && JEMLJE_NAROCILA.includes(salon.booking_mode) && !urnik.jeOdprto(salon).odprto) {
+    // Preklic mora delovati tudi ob zaprtem lokalu. Zapora je pred vejo za
+    // preklic, zato je "prekliči" doslej dobil odgovor "imamo zaprto" in
+    // seja je ostala napol dokončana do naslednjega dne — naslednje
+    // sporočilo je nato padlo v korak, ki je čakal odgovor od prej.
+    if ((iId === 'cancel_request') || (msgText && /^\s*(prekli[čc]\w*|storno|cancel)\b/i.test(msgText))) {
+      session.clear(skey);
+      await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'cancelled')));
+      return;
+    }
     const n = urnik.naslednjeOdprtje(salon);
     await wa.send(phoneId, token, wa.textMsg(from, botMsg(salon, 'closed', {
       urnik: urnik.besedilo(salon),

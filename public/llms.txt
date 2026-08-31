@@ -31,18 +31,18 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 ## Za katero dejavnost
 
 - [Za koga je FlowTiq — 12 obrti, ki naročanje prepustijo WhatsAppu](https://flowtiq.si/panoge.html): Restavracije, saloni, ambulante, servisi, studii. Poglej, kako FlowTiq deluje v tvoji obrti — s konkretnimi primeri pogovorov.
-- [FlowTiq za avtoservisi in vulkanizerji — WhatsApp pomočnik](https://flowtiq.si/panoga/avtoservisi.html): FlowTiq za avtoservisi in vulkanizerji: Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.
-- [FlowTiq za fotografi — WhatsApp pomočnik](https://flowtiq.si/panoga/fotografi.html): FlowTiq za fotografi: Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.
-- [FlowTiq za frizerski saloni — WhatsApp pomočnik](https://flowtiq.si/panoga/frizerski-saloni.html): FlowTiq za frizerski saloni: Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.
-- [FlowTiq za hoteli in apartmaji — WhatsApp pomočnik](https://flowtiq.si/panoga/hoteli.html): FlowTiq za hoteli in apartmaji: Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.
-- [FlowTiq za kozmetika in nohti — WhatsApp pomočnik](https://flowtiq.si/panoga/kozmetika.html): FlowTiq za kozmetika in nohti: Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.
+- [FlowTiq za avtoservise in vulkanizerje — WhatsApp pomočnik](https://flowtiq.si/panoga/avtoservisi.html): FlowTiq za avtoservise in vulkanizerje: Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.
+- [FlowTiq za fotografe — WhatsApp pomočnik](https://flowtiq.si/panoga/fotografi.html): FlowTiq za fotografe: Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.
+- [FlowTiq za frizerske salone — WhatsApp pomočnik](https://flowtiq.si/panoga/frizerski-saloni.html): FlowTiq za frizerske salone: Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.
+- [FlowTiq za hotele in apartmaje — WhatsApp pomočnik](https://flowtiq.si/panoga/hoteli.html): FlowTiq za hotele in apartmaje: Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.
+- [FlowTiq za kozmetiko in nohte — WhatsApp pomočnik](https://flowtiq.si/panoga/kozmetika.html): FlowTiq za kozmetiko in nohte: Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.
 - [FlowTiq za restavracije in picerije — WhatsApp pomočnik](https://flowtiq.si/panoga/restavracije.html): FlowTiq za restavracije in picerije: Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.
 - [FlowTiq za šole in inštrukcije — WhatsApp pomočnik](https://flowtiq.si/panoga/sole.html): FlowTiq za šole in inštrukcije: Prijave na termine in tečaje, obveščanje staršev, evidenca obiskov.
-- [FlowTiq za tattoo in piercing — WhatsApp pomočnik](https://flowtiq.si/panoga/tattoo.html): FlowTiq za tattoo in piercing: Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.
-- [FlowTiq za osebni trenerji in fitnes — WhatsApp pomočnik](https://flowtiq.si/panoga/trenerji.html): FlowTiq za osebni trenerji in fitnes: Termini, skupinske vadbe z omejenimi mesti in paketi treningov.
+- [FlowTiq za tattoo in piercing studie — WhatsApp pomočnik](https://flowtiq.si/panoga/tattoo.html): FlowTiq za tattoo in piercing studie: Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.
+- [FlowTiq za osebne trenerje in fitnes — WhatsApp pomočnik](https://flowtiq.si/panoga/trenerji.html): FlowTiq za osebne trenerje in fitnes: Termini, skupinske vadbe z omejenimi mesti in paketi treningov.
 - [FlowTiq za veterinarske ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/veterina.html): FlowTiq za veterinarske ambulante: Termini po živali, opomniki na cepljenja in obvladana nujnost.
 - [FlowTiq za masaže in wellness — WhatsApp pomočnik](https://flowtiq.si/panoga/wellness.html): FlowTiq za masaže in wellness: Termini, paketi in darilni boni — brez motenja med masažo.
-- [FlowTiq za zobozdravniki in ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/zobozdravniki.html): FlowTiq za zobozdravniki in ambulante: Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.
+- [FlowTiq za zobozdravnike in ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/zobozdravniki.html): FlowTiq za zobozdravnike in ambulante: Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.
 
 ## Razvoj po meri
 

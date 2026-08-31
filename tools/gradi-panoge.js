@@ -62,6 +62,7 @@ const noga = `<footer class="site-foot">
       <div class="foot-label">Podjetje</div>
       <div class="foot-links">
         <a href="/o-nas.html">O nas</a>
+        <a href="/ai-resitve.html">Razvoj AI rešitev po meri</a>
         <a href="/zgodbe.html">Primeri iz prakse</a>
         <a href="/nasveti.html">Nasveti</a>
         <a href="/varnost.html">Varnost in zasebnost</a>
@@ -96,7 +97,7 @@ const noga = `<footer class="site-foot">
   </div>
   <div class="foot-bottom">
     <div>© 2026 FlowTiq — Webacus, Valentin Iljaž s.p. · Davčna št.: 35880643</div>
-    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a></div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a><a href="/llms.txt" title="Povzetek strani za jezikovne modele in AI iskalnike">llms.txt</a></div>
   </div>
 </footer>`;
 
@@ -129,18 +130,26 @@ function stran(p, vse) {
     `<a class="card" href="/panoga/${x.slug}.html" style="padding:9px 15px;font-size:14.5px;font-weight:500;color:var(--ink)">${esc(x.ime)}</a>`
   ).join('\n        ');
 
-  const opisMeta = `FlowTiq za ${p.ime.toLowerCase()}: ${p.kratko}`;
+  /*
+    "za" je TOŽILNIK ("za avtoservise"), ne imenovalnik ("za avtoservisi").
+    Sklanjatve iz imena ni mogoče izpeljati s pravilom — ženske oblike so
+    enake imenovalniku, moške ne — zato je oblika zapisana pri vsaki panogi.
+    Če manjka, se gradnja ustavi: napačen sklon v naslovu strani je tisto,
+    kar navajata Google in AI iskalniki.
+  */
+  if (!p.za) throw new Error('panoga "' + p.slug + '" nima polja "za" (tožilnik za naslov)');
+  const opisMeta = `FlowTiq za ${p.za}: ${p.kratko}`;
 
   return `<!DOCTYPE html>
 <html lang="sl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FlowTiq za ${esc(p.ime.toLowerCase())} — WhatsApp pomočnik</title>
+<title>FlowTiq za ${esc(p.za)} — WhatsApp pomočnik</title>
 <meta name="description" content="${esc(opisMeta)}">
 <link rel="canonical" href="https://flowtiq.si/panoga/${p.slug}.html">
 <meta property="og:url" content="https://flowtiq.si/panoga/${p.slug}.html">
-<meta property="og:title" content="FlowTiq za ${esc(p.ime.toLowerCase())}">
+<meta property="og:title" content="FlowTiq za ${esc(p.za)}">
 <meta property="og:description" content="${esc(p.podnaslov)}">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="sl_SI">

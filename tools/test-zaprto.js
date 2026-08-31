@@ -143,6 +143,20 @@ async function poskus(opis, salon, msg) {
   je('pove, kdaj spet odprejo', /po \d{2}:\d{2}/.test(txt), true);
   je('ne vsebuje nezamenjanih oznak', /\{urnik\}|\{odprtje\}/.test(txt), false);
 
+  console.log('\n── 5b) "Prekliči" deluje tudi ob zaprtem lokalu ─────────────');
+  // Brez tega je stranka ostala ujeta v napol dokončanem naročilu do jutri.
+  POSLANO = [];
+  const zaprt = lokal({ working_hours: urnikZaprtoZdaj() });
+  try { await handleMessage({ from: '38641111111', type: 'text', text: { body: 'prekličite' } }, zaprt); } catch (e) {}
+  je('preklic ne dobi odgovora o zaprtem lokalu', /imamo zaprto/i.test(POSLANO[0] || ''), false);
+  je('preklic je potrjen', /preklican/i.test(POSLANO[0] || ''), true);
+  POSLANO = [];
+  try { await handleMessage({ from: '38641111111', type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'cancel_request', title: 'x' } } }, zaprt); } catch (e) {}
+  je('enako za gumb za preklic', /preklican/i.test(POSLANO[0] || ''), true);
+  POSLANO = [];
+  try { await handleMessage({ from: '38641111111', type: 'text', text: { body: 'eno pico' } }, zaprt); } catch (e) {}
+  je('drugo sporočilo še naprej pove, da je zaprto', /imamo zaprto/i.test(POSLANO[0] || ''), true);
+
   console.log('\n── 6) Bot izklopljen ima prednost pred urnikom ───────────────');
   POSLANO = [];
   try { await handleMessage(sporocilo(), lokal({ bot_active: false, working_hours: urnikZaprtoZdaj() })); } catch (e) {}
