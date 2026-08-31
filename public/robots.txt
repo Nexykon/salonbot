@@ -28,4 +28,50 @@ Disallow: /salons
 Disallow: /*?token=
 Disallow: /*?reset=
 
+# ── AI iskalniki in jezikovni modeli ─────────────────────────────────
+# Zgornje pravilo "User-agent: *" jih že spušča naprej; tu so napisani
+# izrecno, ker se več teh obiskovalcev ozira samo na svoje ime. Javno
+# vsebino hočemo v njihovih odgovorih — z navedbo vira.
+#
+# Povzetek strani zanje: https://flowtiq.si/llms.txt
+
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Google-Extended
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: Bingbot
+User-agent: CCBot
+User-agent: meta-externalagent
+User-agent: MistralAI-User
+User-agent: DuckAssistBot
+User-agent: YouBot
+Allow: /
+
+# Isti zapori kot zgoraj: pajek, ki najde svoje ime, pravila iz "*"
+# prezre, zato morajo biti tu ponovljena v celoti.
+Disallow: /admin.html
+Disallow: /salon.html
+Disallow: /delivery.html
+Disallow: /voznik.html
+Disallow: /voznik
+Disallow: /leads.html
+Disallow: /book.html
+Disallow: /setup.html
+Disallow: /prijava.html
+Disallow: /dashboard.html
+Disallow: /settings.html
+Disallow: /api/
+Disallow: /onboard
+Disallow: /salons
+Disallow: /*?token=
+Disallow: /*?reset=
+
 Sitemap: https://flowtiq.si/sitemap.xml
