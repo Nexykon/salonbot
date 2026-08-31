@@ -59,7 +59,7 @@ je('vsaka stran iz sitemapa je v llms.txt', manjkaVLlms, []);
 je('llms.txt ne kaže na strani, ki jih v sitemapu ni', odvecVLlms, []);
 
 console.log('\n4) llms.txt ne razkriva zaprtih strani');
-const ZAPRTE = ['/admin.html', '/salon.html', '/delivery.html', '/leads.html', '/book.html', '/setup.html', '/prijava.html', '/geslo.html'];
+const ZAPRTE = ['/admin.html', '/salon.html', '/delivery.html', '/leads.html', '/book.html', '/setup.html', '/prijava.html', '/registracija.html', '/geslo.html'];
 for (const z of ZAPRTE) je('ni povezave na ' + z, vLlms.includes(z), false);
 
 console.log('\n5) robots.txt');
@@ -127,7 +127,7 @@ for (const pot of ['/', '/llms.txt', '/sitemap.xml', '/cenik.html', '/panoga/res
   je(pot, skupine.every(s => dovoljeno(s, pot)), true);
 }
 console.log('  zaprto mora ostati zaprto:');
-for (const pot of ['/admin.html', '/salon.html', '/delivery.html', '/leads.html', '/api/salons', '/cenik.html?token=abc']) {
+for (const pot of ['/admin.html', '/salon.html', '/delivery.html', '/leads.html', '/prijava.html', '/registracija.html', '/api/salons', '/cenik.html?token=abc']) {
   je(pot, skupine.some(s => dovoljeno(s, pot)), false);
 }
 

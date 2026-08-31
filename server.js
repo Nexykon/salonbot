@@ -35,6 +35,9 @@ app.get('/restavracije', (req, res) => res.sendFile(path.join(__dirname, 'public
 app.get('/voznik', (req, res) => res.sendFile(path.join(__dirname, 'public', 'voznik.html')));
 // Ponastavitev pozabljenega gesla — ena stran za zahtevo in za novo geslo.
 app.get('/geslo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'geslo.html')));
+// Čista naslova za prijavo in registracijo.
+app.get('/prijava', (req, res) => res.sendFile(path.join(__dirname, 'public', 'prijava.html')));
+app.get('/registracija', (req, res) => res.sendFile(path.join(__dirname, 'public', 'registracija.html')));
 
 function cleanPhone(phone) {
   return String(phone || '').replace(/[^\d]/g, '');
@@ -810,7 +813,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
             metadata: { salon_id: salon.id, plan },
             allow_promotion_codes: true,
             success_url: `${baseUrl}/${returnPage}?billing=success`,
-            cancel_url: `${baseUrl}/prijava.html?billing=cancel`
+            cancel_url: `${baseUrl}/registracija.html?billing=cancel`
           });
           checkoutUrl = cs.url;
         } catch (e) {
@@ -825,7 +828,7 @@ app.post('/api/signup', rateLimit(5, 10 * 60 * 1000), async (req, res) => {
       ai: info.ai,
       email_sent: custEmail,
       checkout_url: checkoutUrl,
-      login_url: bookingMode === 'delivery' ? '/delivery.html' : '/salon.html',
+      login_url: '/prijava.html',
       message: checkoutUrl
         ? 'Preusmerjamo vas na varno plačilo s kartico…'
         : (info.ai
@@ -1172,7 +1175,9 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
     const salonName = salon.name || 'vaše podjetje';
     const contact = salon.contact_person || salon.owner_name || '';
     const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
-    const loginUrl = `${baseUrl}/${(salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html'}`;
+    // Ena prijava za vse — stran sama odpre pravo ploščo. Stara naslova
+    // (salon.html, delivery.html) ostaneta delujoča zaradi že poslanih e-pošt.
+    const loginUrl = `${baseUrl}/prijava.html`;
 
     const html = `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#f6f9f8;padding:0">

@@ -27,7 +27,7 @@ const glava = (p) => `<header class="site-head">
       <a href="/vprasanja.html">Vprašanja</a>
     </nav>
     <div class="head-actions">
-      <a class="btn btn--ghost btn--sm" href="/salon.html">Prijava</a>
+      <a class="btn btn--ghost btn--sm" href="/prijava.html">Prijava</a>
       <a class="btn btn--primary btn--sm" href="/kontakt.html">Odpri račun</a>
     </div>
   </div>

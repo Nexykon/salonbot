@@ -3483,6 +3483,8 @@ async function saveSalon() {
       localStorage.removeItem('master_token');
       localStorage.removeItem('api_key');
       localStorage.removeItem('ft_master_token');
+      // Skupna prijava; prijavni zaslon te strani ostaja za ponastavitev gesla.
+      location.replace('/prijava.html?nazaj=/admin.html');
     }
   }
 })();

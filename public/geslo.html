@@ -85,7 +85,8 @@
 
   <div class="sporocilo" id="sporocilo"></div>
 
-  <div class="nazaj"><a href="/salon.html">← Nazaj na prijavo</a></div>
+  <div class="nazaj"><a href="/prijava.html">← Nazaj na prijavo</a></div>
+  <p class="namig" style="text-align:center;margin-top:10px">Skrbniki FlowTiq geslo ponastavijo v <a href="/admin.html" style="color:inherit;font-weight:700">skrbniški plošči</a>.</p>
 </div>
 
 <script>
@@ -144,7 +145,7 @@ async function shraniGeslo() {
     }
     document.getElementById('korak-geslo').style.display = 'none';
     povej('Geslo je nastavljeno. Zdaj se lahko prijavite z njim.', false);
-    setTimeout(function () { location.href = '/salon.html'; }, 2500);
+    setTimeout(function () { location.href = '/prijava.html'; }, 2500);
   } catch (e) {
     povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
   } finally {

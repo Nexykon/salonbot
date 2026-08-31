@@ -2194,7 +2194,11 @@ function updateSettingsPreview(data){
   if (stored) {
     document.getElementById('auth-token').value = stored;
     doLogin(stored);
+    return;
   }
+  // Brez žetona ne prikazujemo več lastnega prijavnega zaslona, ampak
+  // pošljemo na skupno prijavo. Zaslon zgoraj ostaja samo kot rezerva.
+  location.replace('/prijava.html?nazaj=/salon.html');
 })();
 </script>
 </body>

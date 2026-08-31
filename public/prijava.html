@@ -1,251 +1,258 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="sl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Prijava — FlowTiq</title>
 <link rel="icon" type="image/png" href="/logo.png">
-<link rel="apple-touch-icon" href="/logo.png">
-<title>FlowTiq — Registracija</title>
-<link rel="canonical" href="https://flowtiq.si/prijava.html">
-<meta property="og:url" content="https://flowtiq.si/prijava.html">
-<meta name="description" content="Prijavni obrazec za FlowTiq. Povej nam, kaj delaš, in v dveh dneh pomočnik sprejema naročila na tvoji WhatsApp številki.">
-<meta property="og:title" content="FlowTiq — Registracija">
-<meta property="og:description" content="Prijavni obrazec za FlowTiq. Povej nam, kaj delaš, in v dveh dneh pomočnik sprejema naročila na tvoji WhatsApp številki.">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="sl_SI">
-<meta property="og:image" content="https://flowtiq.si/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="FlowTiq — naročila in termini na avtopilotu">
-<meta property="og:site_name" content="FlowTiq">
-<meta name="twitter:card" content="summary_large_image">
 <style>
-  :root{
-    --bg:#f8f7ff; --surface:#fff; --border:#e8e7f0; --text:#111118;
-    --muted:#6b7280; --accent:#25D366; --accent-dark:#1aab50; --green:#059669;
+  :root {
+    --cream: #FBF8F1; --cream-2: #F4EDE4; --ink: #101E2B; --muted: #5A6875;
+    --line: #E3D9CB; --green: #16A34A; --green-dark: #0E7A38; --rust: #B4442E;
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-       background:var(--bg);color:var(--text);line-height:1.5;padding:24px 16px}
-  .wrap{max-width:620px;margin:0 auto}
-  .logo{text-align:center;margin-bottom:8px}
-  .logo img{height:44px}
-  h1{font-size:26px;text-align:center;margin:12px 0 4px}
-  .sub{text-align:center;color:var(--muted);margin:0 0 28px;font-size:15px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;
-        box-shadow:0 4px 20px rgba(0,0,0,.04)}
-  label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
-  .req{color:var(--green)}
-  input,select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;
-        font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
-  input:focus,select:focus{outline:none;border-color:var(--accent)}
-  .hint{font-size:12px;color:var(--muted);margin-top:4px}
-  .plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
-  .plan{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.15s}
-  .plan:hover{border-color:var(--accent)}
-  .plan.sel{border-color:var(--accent);background:#f0fdf4}
-  .plan .pn{font-weight:700;font-size:15px}
-  .plan .pp{color:var(--green);font-weight:700;font-size:14px;margin-top:2px}
-  .plan .pd{font-size:12px;color:var(--muted);margin-top:4px}
-  .plan .badge{display:inline-block;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;
-        border-radius:6px;padding:1px 6px;margin-top:6px}
-  .plan .badge.free{background:#dcfce7;color:#166534}
-  .period{display:flex;gap:10px;margin-top:6px}
-  .period label{flex:1;margin:0;border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;
-        cursor:pointer;font-weight:600;font-size:14px}
-  .period input{display:none}
-  .period label.sel{border-color:var(--accent);background:#f0fdf4}
-  .hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
-  button.submit{width:100%;margin-top:22px;padding:15px;border:none;border-radius:12px;
-        background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
-  button.submit:hover{background:var(--accent-dark)}
-  button.submit:disabled{opacity:.6;cursor:not-allowed}
-  .msg{margin-top:16px;padding:14px;border-radius:10px;font-size:14px;display:none}
-  .msg.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;display:block}
-  .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;display:block}
-  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:20px}
-  .success-box{display:none;text-align:center;padding:10px}
-  .success-box .big{font-size:44px}
-  .success-box h2{margin:8px 0}
-  @media(max-width:520px){.plans{grid-template-columns:1fr}}
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--cream); color: var(--ink);
+    font-family: 'Fira Sans', system-ui, -apple-system, sans-serif;
+    display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .kartica {
+    width: 100%; max-width: 440px; background: #fff;
+    border: 2px solid var(--ink); border-radius: 18px;
+    box-shadow: 6px 6px 0 var(--ink); padding: 30px 26px;
+  }
+  .logo { display: block; margin: 0 auto 18px; height: 38px; }
+  h1 { margin: 0 0 6px; font-size: 22px; line-height: 1.2; text-align: center; }
+  .pod { margin: 0 0 20px; font-size: 14px; line-height: 1.55; color: var(--muted); text-align: center; }
+  label { display: block; font-size: 12.5px; font-weight: 700; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 12px 13px; font: inherit; font-size: 15px;
+    background: var(--cream-2); color: var(--ink);
+    border: 2px solid var(--ink); border-radius: 12px; outline: none;
+  }
+  input:focus { border-color: var(--green-dark); }
+  .polje { margin-bottom: 14px; }
+  .namig { margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  button {
+    width: 100%; margin-top: 6px; padding: 13px 16px; font: inherit; font-size: 15px; font-weight: 700;
+    background: var(--green); color: #fff; border: 2px solid var(--ink); border-radius: 12px;
+    box-shadow: 3px 3px 0 var(--ink); cursor: pointer;
+  }
+  button:hover { background: var(--green-dark); }
+  button:disabled { opacity: .6; cursor: default; box-shadow: none; }
+  button.drugotni { background: #fff; color: var(--ink); }
+  button.drugotni:hover { background: var(--cream-2); }
+  .sporocilo {
+    margin-top: 16px; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 12px;
+    font-size: 14px; line-height: 1.55; display: none;
+  }
+  .sporocilo.ok { background: rgba(22,163,74,.10); }
+  .sporocilo.napaka { background: rgba(180,68,46,.10); color: var(--rust); }
+  .locilo {
+    margin: 22px 0 18px; border-top: 2px solid var(--line); position: relative; text-align: center;
+  }
+  .locilo span {
+    position: relative; top: -11px; background: #fff; padding: 0 10px;
+    font-size: 12px; font-weight: 700; letter-spacing: .05em; color: var(--muted);
+  }
+  .nazaj { margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--line); text-align: center; }
+  .nazaj a { color: var(--muted); font-size: 13.5px; font-weight: 600; text-decoration: none; }
+  .nazaj a:hover { color: var(--ink); }
+  .vrstice { display: grid; gap: 8px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="logo"><img src="/flowtiq_logo.png" alt="FlowTiq" onerror="this.style.display='none'"></div>
-  <h1>Ustvarite račun</h1>
-  <p class="sub">Registrirajte se, mi pa vas kontaktiramo za priklop (aktivacijo).</p>
+<div class="kartica">
+  <a href="/" title="FlowTiq — domača stran"><img class="logo" src="/ft-logo.png" alt="FlowTiq"></a>
 
-  <div class="card" id="formCard">
-    <form id="signupForm" autocomplete="on">
-      <label>Izberite paket <span class="req">*</span></label>
-      <div class="plans" id="plans"></div>
+  <h1>Prijava</h1>
+  <p class="pod">Ena prijava za vse — sistem sam odpre pravo ploščo.</p>
 
-      <label>Obračun</label>
-      <div class="period" id="period">
-        <label class="sel"><input type="radio" name="billing_period" value="monthly" checked> Mesečno</label>
-        <label><input type="radio" name="billing_period" value="yearly"> Letno</label>
-      </div>
+  <div class="polje">
+    <label for="email">E-naslov</label>
+    <input type="email" id="email" placeholder="ana@lokal.si" autocomplete="username" autofocus>
+  </div>
+  <div class="polje">
+    <label for="geslo">Geslo</label>
+    <input type="password" id="geslo" placeholder="Vaše geslo" autocomplete="current-password">
+    <div class="namig">E-naslov in geslo sta ločena od WhatsApp številke bota.</div>
+  </div>
+  <button id="gumb-geslo" onclick="prijavaZGeslom()">Vstopi</button>
 
-      <label>Naziv firme <span class="req">*</span></label>
-      <input type="text" id="company_name" placeholder="npr. Gostilna Pri Lipi d.o.o." required>
+  <div class="locilo"><span>ALI</span></div>
 
-      <label>DDV / davčna številka</label>
-      <input type="text" id="vat_id" placeholder="npr. SI12345678">
-
-      <label>Naslov firme</label>
-      <input type="text" id="address" placeholder="Ulica in hišna št., pošta in kraj">
-
-      <label>Kontaktna oseba <span class="req">*</span></label>
-      <input type="text" id="contact_person" placeholder="Ime in priimek" required>
-
-      <label>Email <span class="req">*</span></label>
-      <input type="email" id="owner_email" placeholder="vas@email.si" required>
-
-      <label>Geslo <span class="req">*</span></label>
-      <input type="password" id="password" placeholder="Najmanj 8 znakov" minlength="8" required>
-      <div class="hint">S tem geslom se boste prijavili v nadzorno ploščo.</div>
-      <label style="margin-top:14px">Potrdi geslo <span class="req">*</span></label>
-      <input type="password" id="password2" placeholder="Ponovite geslo" minlength="8" required>
-
-      <label>Telefon</label>
-      <input type="tel" id="phone" placeholder="npr. 040 123 456">
-
-      <label>Dejavnost</label>
-      <select id="business_type"></select>
-
-      <label style="margin-top:14px">Način plačila <span class="req">*</span></label>
-      <div class="period" id="paymethod">
-        <label class="sel"><input type="radio" name="payment_method" value="card" checked> 💳 Kartica (takoj)</label>
-        <label><input type="radio" name="payment_method" value="proforma"> 🧾 Predračun (nakazilo)</label>
-      </div>
-      <div class="hint" id="payHint">Po plačilu s kartico vas priklopimo — običajno isti dan.</div>
-
-      <!-- honeypot proti botom -->
-      <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off">
-
-      <button type="submit" class="submit" id="submitBtn">Registracija</button>
-      <div class="msg" id="msg"></div>
-    </form>
+  <p class="pod" style="margin-bottom:14px">Vpišite WhatsApp številko, s katero ste registrirani, in poslali vam bomo kodo.</p>
+  <div class="polje">
+    <label for="telefon">Telefonska številka</label>
+    <input type="tel" id="telefon" placeholder="38641123456" inputmode="numeric" autocomplete="tel">
+    <div class="namig">Koda države + številka, brez plusa (npr. 38641123456).</div>
+  </div>
+  <div class="vrstice">
+    <button class="drugotni" id="gumb-koda" onclick="posljiKodo()">Pošlji WhatsApp kodo</button>
+    <div class="polje" id="polje-koda" style="display:none;margin-bottom:0">
+      <label for="koda">6-mestna koda</label>
+      <input type="text" id="koda" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+    </div>
+    <button id="gumb-vstopi-koda" onclick="preveriKodo()" style="display:none">Vstopi s kodo</button>
   </div>
 
-  <div class="card success-box" id="successBox">
-    <div class="big">✅</div>
-    <h2>Registracija uspešna!</h2>
-    <p id="successMsg"></p>
-    <a id="loginBtn" href="/salon.html" style="display:inline-block;margin-top:8px;padding:12px 22px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;font-weight:700">Prijava v nadzorno ploščo →</a>
-    <p class="hint" style="margin-top:12px">Prijavite se z zgornjim emailom in geslom.</p>
-  </div>
+  <div class="sporocilo" id="sporocilo"></div>
 
-  <p class="foot">Bot se aktivira po priklopu. Podatki so uporabljeni izključno za izvedbo storitve.</p>
+  <div class="nazaj">
+    <a href="/geslo">Ste pozabili geslo?</a>
+  </div>
+  <div class="nazaj" style="border-top:0;padding-top:6px;margin-top:6px">
+    <a href="/voznik">🛵 Ste voznik? Prijava za voznike →</a>
+  </div>
+  <div class="nazaj" style="border-top:0;padding-top:0;margin-top:2px">
+    <a href="/registracija.html">Še niste v FlowTiq? Registracija →</a>
+  </div>
 </div>
 
 <script>
-  const YEARLY_MULT = 12; // letno = 12x mesečno (brez popusta)
-  const PLANS = [
-    { id:'ai_start', name:'AI Start',   m:89,     desc:'AI naročanje + POS · do 500 naročil / mes',   free:false },
-    { id:'ai',       name:'AI Pro',     m:159.99, desc:'AI naročanje + POS · do 1.500 naročil / mes',  free:false },
-    { id:'premium',  name:'Premium',    m:299,    desc:'Vse + do 10.000 naročil / mes',               free:false }
-  ];
-  const eur = (n) => n.toLocaleString('sl-SI',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' €';
-  function billingPeriod(){ const el=document.querySelector('input[name=billing_period]:checked'); return el?el.value:'monthly'; }
-  function priceHtml(p){
-    return billingPeriod()==='yearly'
-      ? `${eur(p.m*YEARLY_MULT)}<span style="color:#6b7280;font-weight:400"> / leto</span>`
-      : `${eur(p.m)}<span style="color:#6b7280;font-weight:400"> / mes</span>`;
-  }
-  const params = new URLSearchParams(location.search);
-  let selectedPlan = PLANS.some(p=>p.id===params.get('plan')) ? params.get('plan') : 'ai';
+/*
+  Ena prijavna stran za vse tri plošče.
 
-  function renderPlans(){
-    document.getElementById('plans').innerHTML = PLANS.map(p => `
-      <div class="plan ${p.id===selectedPlan?'sel':''}" data-id="${p.id}">
-        <div class="pn">${p.name}</div>
-        <div class="pp">${priceHtml(p)}</div>
-        <div class="pd">${p.desc}</div>
-        <span class="badge">plačilo pred aktivacijo</span>
-      </div>`).join('');
-    document.querySelectorAll('.plan').forEach(el=>el.onclick=()=>{
-      selectedPlan = el.dataset.id; renderPlans();
+  Vloge ne ugotavlja ta stran, ampak strežnik: /api/auth/login vrne role in
+  salon.booking_mode, /api/auth/master-login pa role "master". Tu se samo
+  odloči, kam poslati uporabnika in kateri ključ zapisati v shrambo.
+
+  Žeton NE gre v naslov. Prej je salon.html preusmerjal na
+  /delivery.html?token=…, ker je tista plošča brala drug ključ; zato tu
+  zapišemo oba ključa, ki jih lastniški plošči poznata.
+*/
+var params = new URLSearchParams(location.search);
+
+// Stara povezava iz Stripa (preklic plačila) je kazala na to stran, ko je bila
+// še registracija. Da tak obiskovalec ne pristane na prijavi, ga pošljemo tja,
+// kjer je obrazec zdaj.
+if (params.get('billing')) {
+  location.replace('/registracija.html' + location.search);
+}
+
+// Kam po prijavi, če je plošča poslala uporabnika sem (?nazaj=/delivery.html…).
+// Dovoljene so samo poti do naših plošč — brez tega bi bila to odprta
+// preusmeritev na tuje strani.
+var DOVOLJENE = ['/salon.html', '/delivery.html', '/admin.html'];
+function zeljenaPot(vloga) {
+  var n = params.get('nazaj') || '';
+  if (!n || n.charAt(0) !== '/' || n.charAt(1) === '/') return null;
+  var pot = n.split('?')[0];
+  if (DOVOLJENE.indexOf(pot) < 0) return null;
+  if (vloga === 'master' && pot !== '/admin.html') return null;
+  if (vloga !== 'master' && pot === '/admin.html') return null;
+  return n;
+}
+
+function povej(besedilo, jeNapaka) {
+  var el = document.getElementById('sporocilo');
+  el.textContent = besedilo;
+  el.className = 'sporocilo ' + (jeNapaka ? 'napaka' : 'ok');
+  el.style.display = 'block';
+}
+
+function shrani(kljuc, zeton) {
+  try { sessionStorage.setItem(kljuc, zeton); } catch (_e) {}
+  try { localStorage.setItem(kljuc, zeton); } catch (_e) {}
+}
+
+// Skupna pot za oba načina prijave (geslo in WhatsApp koda).
+function vstopi(d) {
+  if (d.role === 'master') {
+    shrani('ft_master_token', d.token);
+    location.href = zeljenaPot('master') || '/admin.html';
+    return;
+  }
+  shrani('ft_owner_token', d.token);
+  var s = d.salon || {};
+  // Isto pravilo kot na strežniku (server.js:2443), da se plošči ujemata.
+  var jeLokal = s.booking_mode === 'delivery' || s.business_type === 'restaurant';
+  if (jeLokal) shrani('ft_delivery_token', d.token);   // ključ, ki ga bere delivery.html
+  location.href = zeljenaPot('owner') || (jeLokal ? '/delivery.html' : '/salon.html');
+}
+
+async function prijavaZGeslom() {
+  var email = document.getElementById('email').value.trim();
+  var geslo = document.getElementById('geslo').value;
+  if (!email || email.indexOf('@') < 0) { povej('Vpišite veljaven e-naslov.', true); return; }
+  if (!geslo) { povej('Vpišite geslo.', true); return; }
+  var gumb = document.getElementById('gumb-geslo');
+  gumb.disabled = true; gumb.textContent = 'Prijavljam…';
+  try {
+    var telo = JSON.stringify({ email: email, password: geslo });
+    var glave = { 'Content-Type': 'application/json' };
+    // Najprej lastnik, nato skrbnik. Prej je bil e-naslov skrbnika zapisan v
+    // kodi strani, da se je izbral vnaprej — tega ni več treba.
+    var r = await fetch('/api/auth/login', { method: 'POST', headers: glave, body: telo });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) {
+      var rm = await fetch('/api/auth/master-login', { method: 'POST', headers: glave, body: telo });
+      var dm = await rm.json().catch(function () { return {}; });
+      if (rm.ok) { vstopi(dm); return; }
+      povej(d.error || dm.error || 'Napačen e-naslov ali geslo.', true);
+      return;
+    }
+    vstopi(d);
+  } catch (e) {
+    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
+  } finally {
+    gumb.disabled = false; gumb.textContent = 'Vstopi';
+  }
+}
+
+async function posljiKodo() {
+  var telefon = document.getElementById('telefon').value.replace(/[^\d]/g, '');
+  if (telefon.length < 8) { povej('Vpišite veljavno telefonsko številko.', true); return; }
+  var gumb = document.getElementById('gumb-koda');
+  gumb.disabled = true; gumb.textContent = 'Pošiljam…';
+  try {
+    var r = await fetch('/api/auth/start', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: telefon })
     });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) { povej(d.error || 'Kode ni bilo mogoče poslati.', true); return; }
+    document.getElementById('polje-koda').style.display = 'block';
+    document.getElementById('gumb-vstopi-koda').style.display = 'block';
+    document.getElementById('koda').focus();
+    povej('Kodo smo poslali na WhatsApp. Velja nekaj minut.', false);
+  } catch (e) {
+    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
+  } finally {
+    gumb.disabled = false; gumb.textContent = 'Pošlji WhatsApp kodo';
   }
-  renderPlans();
+}
 
-  // period toggle
-  document.querySelectorAll('#period label').forEach(l=>l.onclick=()=>{
-    document.querySelectorAll('#period label').forEach(x=>x.classList.remove('sel'));
-    l.classList.add('sel');
-    const radio = l.querySelector('input'); if(radio) radio.checked = true;
-    renderPlans();
-  });
+async function preveriKodo() {
+  var telefon = document.getElementById('telefon').value.replace(/[^\d]/g, '');
+  var koda = document.getElementById('koda').value.replace(/[^\d]/g, '');
+  if (koda.length !== 6) { povej('Koda ima 6 številk.', true); return; }
+  var gumb = document.getElementById('gumb-vstopi-koda');
+  gumb.disabled = true; gumb.textContent = 'Preverjam…';
+  try {
+    var r = await fetch('/api/auth/verify', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: telefon, code: koda })
+    });
+    var d = await r.json().catch(function () { return {}; });
+    if (!r.ok) { povej(d.error || 'Koda ni pravilna ali je potekla.', true); return; }
+    vstopi(d);
+  } catch (e) {
+    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
+  } finally {
+    gumb.disabled = false; gumb.textContent = 'Vstopi s kodo';
+  }
+}
 
-  // način plačila toggle
-  document.querySelectorAll('#paymethod label').forEach(l=>l.onclick=()=>{
-    document.querySelectorAll('#paymethod label').forEach(x=>x.classList.remove('sel'));
-    l.classList.add('sel');
-    const radio = l.querySelector('input'); if(radio) radio.checked = true;
-    const m = document.querySelector('input[name=payment_method]:checked')?.value;
-    document.getElementById('payHint').textContent = m === 'proforma'
-      ? 'Na email prejmete predračun; po nakazilu vas priklopimo.'
-      : 'Po plačilu s kartico vas priklopimo — običajno isti dan.';
-  });
-
-  // business types
-  fetch('/api/business-types').then(r=>r.json()).then(list=>{
-    const sel = document.getElementById('business_type');
-    sel.innerHTML = list.map(t=>`<option value="${t.value}">${t.label}</option>`).join('');
-  }).catch(()=>{
-    document.getElementById('business_type').innerHTML = '<option value="custom">Druga dejavnost</option>';
-  });
-
-  const form = document.getElementById('signupForm');
-  const msg = document.getElementById('msg');
-  form.onsubmit = async (e) => {
-    e.preventDefault();
-    msg.className = 'msg';
-    const btn = document.getElementById('submitBtn');
-    const payload = {
-      plan: selectedPlan,
-      billing_period: document.querySelector('input[name=billing_period]:checked').value,
-      payment_method: (document.querySelector('input[name=payment_method]:checked')||{}).value || 'card',
-      company_name: document.getElementById('company_name').value.trim(),
-      vat_id: document.getElementById('vat_id').value.trim(),
-      address: document.getElementById('address').value.trim(),
-      contact_person: document.getElementById('contact_person').value.trim(),
-      owner_email: document.getElementById('owner_email').value.trim(),
-      password: document.getElementById('password').value,
-      phone: document.getElementById('phone').value.trim(),
-      business_type: document.getElementById('business_type').value,
-      website: document.getElementById('website').value
-    };
-    if(!payload.company_name || !payload.contact_person || !payload.owner_email){
-      msg.className='msg err'; msg.textContent='Prosimo, izpolnite obvezna polja (naziv, kontaktna oseba, email).'; return;
-    }
-    if((payload.password||'').length < 8){
-      msg.className='msg err'; msg.textContent='Geslo mora imeti vsaj 8 znakov.'; return;
-    }
-    if(payload.password !== document.getElementById('password2').value){
-      msg.className='msg err'; msg.textContent='Gesli se ne ujemata.'; return;
-    }
-    btn.disabled = true; btn.textContent = 'Pošiljam...';
-    try{
-      const r = await fetch('/api/signup', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-      });
-      const data = await r.json();
-      if(!r.ok || !data.success){ throw new Error(data.error || 'Napaka pri registraciji.'); }
-      // Kartično plačilo → preusmeri na Stripe Checkout
-      if(data.checkout_url){ btn.textContent='Preusmerjam na plačilo…'; window.location.href = data.checkout_url; return; }
-      document.getElementById('formCard').style.display='none';
-      document.getElementById('successBox').style.display='block';
-      document.getElementById('successMsg').textContent = data.message || 'Hvala za registracijo!';
-      if(data.login_url) document.getElementById('loginBtn').href = data.login_url;
-      window.scrollTo({top:0,behavior:'smooth'});
-    }catch(err){
-      msg.className='msg err'; msg.textContent = err.message;
-      btn.disabled=false; btn.textContent='Registracija';
-    }
-  };
+// Enter v polju sproži tisto, kar je pri tem polju logično.
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  var id = (document.activeElement || {}).id;
+  if (id === 'email' || id === 'geslo') prijavaZGeslom();
+  else if (id === 'telefon') posljiKodo();
+  else if (id === 'koda') preveriKodo();
+});
 </script>
 </body>
 </html>

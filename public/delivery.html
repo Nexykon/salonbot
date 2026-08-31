@@ -567,7 +567,7 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
     <div class="login-box">
       <div class="login-icon">🍕</div>
       <h2>Dostava portal</h2>
-      <p>Vpišite se z email naslovom in geslom, ki ste ju prejeli ob registraciji.</p>
+      <p>Vpišite se z email naslovom in geslom, ki ste ju prejeli ob registraciji. <a href="/prijava.html">Skupna prijava →</a></p>
       <div class="form-group">
         <label>Email</label>
         <input type="email" id="login-email" placeholder="vas@email.si" autocomplete="email">
@@ -1137,6 +1137,7 @@ async function doLogin() {
     }
     ownerToken = d.token;
     localStorage.setItem('ft_delivery_token', ownerToken);
+    localStorage.setItem('ft_owner_token', ownerToken);
     showApp(d.salon.name);
   } catch(e) {
     const el = document.getElementById('login-error');
@@ -1146,6 +1147,8 @@ async function doLogin() {
 
 function doLogout() {
   localStorage.removeItem('ft_delivery_token');
+  localStorage.removeItem('ft_owner_token');
+  try { sessionStorage.removeItem('ft_owner_token'); } catch(_e) {}
   clearInterval(pollInterval);
   clearInterval(countdownInterval);
   document.getElementById('app').style.display = 'none';
@@ -2621,16 +2624,25 @@ function sessionExpired(){
 
   const urlToken=params.get('token');
   if(urlToken){localStorage.setItem('ft_delivery_token',urlToken);history.replaceState({},'','/delivery.html');}
-  const saved=localStorage.getItem('ft_delivery_token');
-  if(saved){
-    ownerToken=saved;
-    fetch('/api/settings',{headers:{'Authorization':'Bearer '+saved}})
-      .then(r=>r.ok?r.json():null)
-      .then(d=>{
-        if(d&&d.booking_mode==='delivery') showApp(d.name);
-        else localStorage.removeItem('ft_delivery_token');
-      }).catch(()=>{});
-  }
+  /*
+    Ena prijavna stran (/prijava.html) zapiše ft_owner_token; stari ključ
+    beremo naprej, da odprte seje po objavi ne odletijo. Brez žetona ne
+    prikazujemo več lastnega prijavnega zaslona, ampak pošljemo na skupno
+    prijavo — zaslon spodaj ostaja samo kot rezerva.
+  */
+  const saved=localStorage.getItem('ft_delivery_token')
+    ||localStorage.getItem('ft_owner_token')
+    ||sessionStorage.getItem('ft_owner_token');
+  if(!saved){ location.replace('/prijava.html?nazaj=/delivery.html'); return; }
+  localStorage.setItem('ft_delivery_token',saved);
+  ownerToken=saved;
+  fetch('/api/settings',{headers:{'Authorization':'Bearer '+saved}})
+    .then(r=>r.ok?r.json():null)
+    .then(d=>{
+      if(d&&d.booking_mode==='delivery'){ showApp(d.name); return; }
+      localStorage.removeItem('ft_delivery_token');
+      location.replace('/prijava.html?nazaj=/delivery.html');
+    }).catch(()=>{});
   document.getElementById('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
 })();
 </script>
