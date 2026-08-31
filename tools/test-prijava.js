@@ -61,6 +61,23 @@ const r = beri('public/registracija.html');
 je('obrazec oddaja na /api/signup', /\/api\/signup/.test(r), true);
 je('kanonični naslov je popravljen', /canonical" href="https:\/\/flowtiq\.si\/registracija\.html"/.test(r), true);
 je('nikjer več ne kaže nase kot prijava', /flowtiq\.si\/prijava\.html/.test(r), false);
+// Vsa polja, ki jih bere /api/signup — preoblikovanje ne sme nobenega spustiti.
+const POLJA = ['company_name', 'vat_id', 'address', 'contact_person', 'owner_email',
+  'password', 'password2', 'phone', 'business_type', 'website',
+  'plans', 'period', 'paymethod', 'payHint', 'submitBtn', 'msg', 'formCard', 'successBox', 'successMsg', 'loginBtn'];
+je('vsa polja in deli obrazca so na strani', POLJA.filter(id => !new RegExp('id="' + id + '"').test(r)), []);
+je('past proti robotom je nevidna', /class="past"/.test(r) && /\.past\s*\{[^}]*left:-9999px/.test(r), true);
+je('trije paketi z cenami', /89/.test(r) && /159\.99/.test(r) && /299/.test(r), true);
+je('dejavnosti bere iz strežnika', /\/api\/business-types/.test(r), true);
+je('po registraciji pelje na skupno prijavo', /id="loginBtn" href="\/prijava\.html"/.test(r), true);
+je('preklic plačila je pojasnjen', /obvestilo-preklic/.test(r) && /billing'\) === 'cancel'/.test(r), true);
+
+console.log('\n4b) Registracija je v oblikovanju strani');
+je('uporablja skupni slog', /href="\/flowtiq-site\.css"/.test(r), true);
+je('ima glavo strani', /class="site-head"/.test(r), true);
+je('ima nogo strani', /class="site-foot"/.test(r), true);
+je('brez stare palete', /#f8f7ff|#25D366/.test(r), false);
+je('ni za iskalnike', /name="robots" content="noindex/.test(r), true);
 
 console.log('\n5) Plošče pošljejo brez žetona na skupno prijavo');
 for (const [ime, f] of [['salon', 'public/salon.html'], ['dostava', 'public/delivery.html'], ['skrbnik', 'public/admin.html']]) {

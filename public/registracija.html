@@ -2,15 +2,14 @@
 <html lang="sl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="icon" type="image/png" href="/logo.png">
-<link rel="apple-touch-icon" href="/logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <title>FlowTiq — Registracija</title>
 <link rel="canonical" href="https://flowtiq.si/registracija.html">
+<meta name="description" content="Registracija za FlowTiq. Izberite paket, vpišite podatke podjetja in v dveh dneh pomočnik sprejema naročila na vaši WhatsApp številki.">
 <meta property="og:url" content="https://flowtiq.si/registracija.html">
-<meta name="description" content="Prijavni obrazec za FlowTiq. Povej nam, kaj delaš, in v dveh dneh pomočnik sprejema naročila na tvoji WhatsApp številki.">
 <meta property="og:title" content="FlowTiq — Registracija">
-<meta property="og:description" content="Prijavni obrazec za FlowTiq. Povej nam, kaj delaš, in v dveh dneh pomočnik sprejema naročila na tvoji WhatsApp številki.">
+<meta property="og:description" content="Izberite paket, vpišite podatke podjetja in v dveh dneh pomočnik sprejema naročila na vaši WhatsApp številki.">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="sl_SI">
 <meta property="og:image" content="https://flowtiq.si/og-image.png">
@@ -19,126 +18,250 @@
 <meta property="og:image:alt" content="FlowTiq — naročila in termini na avtopilotu">
 <meta property="og:site_name" content="FlowTiq">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FBF8F1">
+<link rel="icon" type="image/png" href="/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flowtiq-site.css">
+<script src="/flowtiq-nav.js" defer></script>
 <style>
-  :root{
-    --bg:#f8f7ff; --surface:#fff; --border:#e8e7f0; --text:#111118;
-    --muted:#6b7280; --accent:#25D366; --accent-dark:#1aab50; --green:#059669;
+  /* Izbira paketa — kartice v mreži, izbrana dobi zeleno obrobo in senco. */
+  .paketi { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
+  .paket {
+    border:2px solid var(--ink); border-radius:var(--r); background:#fff;
+    padding:16px 18px; cursor:pointer; text-align:left;
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-       background:var(--bg);color:var(--text);line-height:1.5;padding:24px 16px}
-  .wrap{max-width:620px;margin:0 auto}
-  .logo{text-align:center;margin-bottom:8px}
-  .logo img{height:44px}
-  h1{font-size:26px;text-align:center;margin:12px 0 4px}
-  .sub{text-align:center;color:var(--muted);margin:0 0 28px;font-size:15px}
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;
-        box-shadow:0 4px 20px rgba(0,0,0,.04)}
-  label{display:block;font-weight:600;font-size:14px;margin:16px 0 6px}
-  .req{color:var(--green)}
-  input,select{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;
-        font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
-  input:focus,select:focus{outline:none;border-color:var(--accent)}
-  .hint{font-size:12px;color:var(--muted);margin-top:4px}
-  .plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
-  .plan{border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.15s}
-  .plan:hover{border-color:var(--accent)}
-  .plan.sel{border-color:var(--accent);background:#f0fdf4}
-  .plan .pn{font-weight:700;font-size:15px}
-  .plan .pp{color:var(--green);font-weight:700;font-size:14px;margin-top:2px}
-  .plan .pd{font-size:12px;color:var(--muted);margin-top:4px}
-  .plan .badge{display:inline-block;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;
-        border-radius:6px;padding:1px 6px;margin-top:6px}
-  .plan .badge.free{background:#dcfce7;color:#166534}
-  .period{display:flex;gap:10px;margin-top:6px}
-  .period label{flex:1;margin:0;border:1.5px solid var(--border);border-radius:10px;padding:10px;text-align:center;
-        cursor:pointer;font-weight:600;font-size:14px}
-  .period input{display:none}
-  .period label.sel{border-color:var(--accent);background:#f0fdf4}
-  .hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
-  button.submit{width:100%;margin-top:22px;padding:15px;border:none;border-radius:12px;
-        background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
-  button.submit:hover{background:var(--accent-dark)}
-  button.submit:disabled{opacity:.6;cursor:not-allowed}
-  .msg{margin-top:16px;padding:14px;border-radius:10px;font-size:14px;display:none}
-  .msg.err{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;display:block}
-  .msg.ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;display:block}
-  .foot{text-align:center;color:var(--muted);font-size:13px;margin-top:20px}
-  .success-box{display:none;text-align:center;padding:10px}
-  .success-box .big{font-size:44px}
-  .success-box h2{margin:8px 0}
-  @media(max-width:520px){.plans{grid-template-columns:1fr}}
+  .paket:hover { background:var(--cream-2); }
+  .paket.izbran { border-color:var(--green-dark); box-shadow:4px 4px 0 var(--green-dark); background:#fff; }
+  .paket .p-ime { font-weight:800; font-size:17px; }
+  .paket .p-cena { font-weight:800; font-size:16px; color:var(--green-dark); margin-top:3px; }
+  .paket .p-opis { font-size:13px; color:var(--muted); margin-top:6px; line-height:1.45; }
+  .paket .p-znacka {
+    display:inline-block; margin-top:9px; font-size:11px; font-weight:700; letter-spacing:.04em;
+    text-transform:uppercase; background:var(--cream-2); border:1.5px solid var(--ink);
+    border-radius:8px; padding:2px 7px;
+  }
+  /* Dvojna izbira (obračun, način plačila) — segmentirano stikalo. */
+  .izbira { display:flex; gap:10px; flex-wrap:wrap; }
+  .izbira label {
+    flex:1 1 160px; margin:0; border:2px solid var(--ink); border-radius:var(--r);
+    padding:12px 14px; text-align:center; cursor:pointer; font-weight:600; font-size:14.5px;
+    background:#fff;
+  }
+  .izbira label:hover { background:var(--cream-2); }
+  .izbira label.izbran { border-color:var(--green-dark); box-shadow:3px 3px 0 var(--green-dark); }
+  .izbira input { display:none; }
+  /* Past za robote — polje mora ostati v obrazcu, a nevidno. */
+  .past { position:absolute; left:-9999px; opacity:0; height:0; width:0; }
+  .obvestilo { display:none; }
+  .obvestilo.vidno { display:block; }
+  .uspeh { display:none; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="logo"><img src="/flowtiq_logo.png" alt="FlowTiq" onerror="this.style.display='none'"></div>
-  <h1>Ustvarite račun</h1>
-  <p class="sub">Registrirajte se, mi pa vas kontaktiramo za priklop (aktivacijo).</p>
 
-  <div class="card" id="formCard">
-    <form id="signupForm" autocomplete="on">
-      <label>Izberite paket <span class="req">*</span></label>
-      <div class="plans" id="plans"></div>
-
-      <label>Obračun</label>
-      <div class="period" id="period">
-        <label class="sel"><input type="radio" name="billing_period" value="monthly" checked> Mesečno</label>
-        <label><input type="radio" name="billing_period" value="yearly"> Letno</label>
-      </div>
-
-      <label>Naziv firme <span class="req">*</span></label>
-      <input type="text" id="company_name" placeholder="npr. Gostilna Pri Lipi d.o.o." required>
-
-      <label>DDV / davčna številka</label>
-      <input type="text" id="vat_id" placeholder="npr. SI12345678">
-
-      <label>Naslov firme</label>
-      <input type="text" id="address" placeholder="Ulica in hišna št., pošta in kraj">
-
-      <label>Kontaktna oseba <span class="req">*</span></label>
-      <input type="text" id="contact_person" placeholder="Ime in priimek" required>
-
-      <label>Email <span class="req">*</span></label>
-      <input type="email" id="owner_email" placeholder="vas@email.si" required>
-
-      <label>Geslo <span class="req">*</span></label>
-      <input type="password" id="password" placeholder="Najmanj 8 znakov" minlength="8" required>
-      <div class="hint">S tem geslom se boste prijavili v nadzorno ploščo.</div>
-      <label style="margin-top:14px">Potrdi geslo <span class="req">*</span></label>
-      <input type="password" id="password2" placeholder="Ponovite geslo" minlength="8" required>
-
-      <label>Telefon</label>
-      <input type="tel" id="phone" placeholder="npr. 040 123 456">
-
-      <label>Dejavnost</label>
-      <select id="business_type"></select>
-
-      <label style="margin-top:14px">Način plačila <span class="req">*</span></label>
-      <div class="period" id="paymethod">
-        <label class="sel"><input type="radio" name="payment_method" value="card" checked> 💳 Kartica (takoj)</label>
-        <label><input type="radio" name="payment_method" value="proforma"> 🧾 Predračun (nakazilo)</label>
-      </div>
-      <div class="hint" id="payHint">Po plačilu s kartico vas priklopimo — običajno isti dan.</div>
-
-      <!-- honeypot proti botom -->
-      <input class="hp" type="text" name="website" id="website" tabindex="-1" autocomplete="off">
-
-      <button type="submit" class="submit" id="submitBtn">Registracija</button>
-      <div class="msg" id="msg"></div>
-    </form>
+<header class="site-head">
+  <div class="head-inner">
+    <a class="head-logo" href="/"><img src="/ft-logo.png" width="188" height="55" alt="FlowTiq"></a>
+    <nav class="head-nav">
+      <a href="/panoge.html">Za koga</a>
+      <a href="/kako-deluje.html">Kako deluje</a>
+      <a href="/funkcije.html">Kaj zna</a>
+      <a href="/cenik.html">Cena</a>
+      <a href="/zgodbe.html">Primeri</a>
+      <a href="/vprasanja.html">Vprašanja</a>
+    </nav>
+    <div class="head-actions">
+      <a class="btn btn--ghost btn--sm" href="/prijava.html">Prijava</a>
+      <a class="btn btn--primary btn--sm" href="/kontakt.html">Odpri račun</a>
+    </div>
   </div>
+</header>
 
-  <div class="card success-box" id="successBox">
-    <div class="big">✅</div>
-    <h2>Registracija uspešna!</h2>
-    <p id="successMsg"></p>
-    <a id="loginBtn" href="/salon.html" style="display:inline-block;margin-top:8px;padding:12px 22px;background:var(--accent);color:#fff;border-radius:10px;text-decoration:none;font-weight:700">Prijava v nadzorno ploščo →</a>
-    <p class="hint" style="margin-top:12px">Prijavite se z zgornjim emailom in geslom.</p>
+<section class="sec sec--grad sec--tight">
+  <div class="wrap wrap-narrow">
+    <div class="pill">Registracija</div>
+    <h1 class="h-1 measure-20" style="margin-top:18px">Ustvarite račun.</h1>
+    <p class="lead-sm measure-50" style="margin-top:14px">Izberite paket in vpišite podatke podjetja. Po plačilu vas priklopimo — postavitev je brezplačna, vezave ni.</p>
+
+    <!-- Vrnitev iz Stripa po preklicu plačila: brez tega bi obiskovalec
+         pristal na praznem obrazcu in ne bi vedel, kaj se je zgodilo. -->
+    <div class="form-error obvestilo" id="obvestilo-preklic" style="margin-top:22px">
+      Plačilo je bilo preklicano — račun še ni ustvarjen. Obrazec je spodaj, podatki niso izgubljeni.
+      Če vam kartica ne ustreza, spodaj izberite <strong>Predračun</strong>.
+    </div>
   </div>
+</section>
 
-  <p class="foot">Bot se aktivira po priklopu. Podatki so uporabljeni izključno za izvedbo storitve.</p>
-</div>
+<section class="sec sec--sm">
+  <div class="wrap wrap-narrow">
+
+    <div class="card card--pad-lg" id="formCard">
+      <form id="signupForm" autocomplete="on">
+
+        <div class="mono-label">01 · Paket</div>
+        <div class="paketi" id="plans" style="margin-top:12px"></div>
+
+        <div style="margin-top:20px">
+          <div class="field"><label>Obračun</label></div>
+          <div class="izbira" id="period">
+            <label class="izbran"><input type="radio" name="billing_period" value="monthly" checked> Mesečno</label>
+            <label><input type="radio" name="billing_period" value="yearly"> Letno</label>
+          </div>
+        </div>
+
+        <div class="hair" style="margin:26px 0"></div>
+        <div class="mono-label">02 · Podjetje</div>
+
+        <div class="stack" style="gap:14px;margin-top:14px">
+          <div class="field">
+            <label for="company_name">Naziv firme *</label>
+            <input type="text" id="company_name" placeholder="npr. Gostilna Pri Lipi d.o.o." autocomplete="organization" required>
+          </div>
+          <div class="grid-even-20" style="gap:14px">
+            <div class="field">
+              <label for="vat_id">DDV / davčna številka</label>
+              <input type="text" id="vat_id" placeholder="npr. SI12345678">
+            </div>
+            <div class="field">
+              <label for="phone">Telefon</label>
+              <input type="tel" id="phone" placeholder="npr. 040 123 456" autocomplete="tel">
+            </div>
+          </div>
+          <div class="field">
+            <label for="address">Naslov firme</label>
+            <input type="text" id="address" placeholder="Ulica in hišna št., pošta in kraj" autocomplete="street-address">
+          </div>
+          <div class="field">
+            <label for="business_type">Dejavnost</label>
+            <select id="business_type"></select>
+          </div>
+        </div>
+
+        <div class="hair" style="margin:26px 0"></div>
+        <div class="mono-label">03 · Vaš dostop</div>
+
+        <div class="stack" style="gap:14px;margin-top:14px">
+          <div class="grid-even-20" style="gap:14px">
+            <div class="field">
+              <label for="contact_person">Kontaktna oseba *</label>
+              <input type="text" id="contact_person" placeholder="Ime in priimek" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="owner_email">E-pošta *</label>
+              <input type="email" id="owner_email" placeholder="vas@email.si" autocomplete="email" required>
+            </div>
+          </div>
+          <div class="grid-even-20" style="gap:14px">
+            <div class="field">
+              <label for="password">Geslo *</label>
+              <input type="password" id="password" placeholder="Najmanj 8 znakov" minlength="8" autocomplete="new-password" required>
+            </div>
+            <div class="field">
+              <label for="password2">Potrdi geslo *</label>
+              <input type="password" id="password2" placeholder="Ponovite geslo" minlength="8" autocomplete="new-password" required>
+            </div>
+          </div>
+          <p class="fine" style="margin:0">S tem e-naslovom in geslom se boste prijavili v nadzorno ploščo na <a class="uline" href="/prijava.html">flowtiq.si/prijava</a>.</p>
+        </div>
+
+        <div class="hair" style="margin:26px 0"></div>
+        <div class="mono-label">04 · Plačilo</div>
+
+        <div class="izbira" id="paymethod" style="margin-top:14px">
+          <label class="izbran"><input type="radio" name="payment_method" value="card" checked> 💳 Kartica (takoj)</label>
+          <label><input type="radio" name="payment_method" value="proforma"> 🧾 Predračun (nakazilo)</label>
+        </div>
+        <p class="fine" id="payHint" style="margin-top:10px">Po plačilu s kartico vas priklopimo — običajno isti dan.</p>
+
+        <!-- past proti robotom -->
+        <input class="past" type="text" name="website" id="website" tabindex="-1" autocomplete="off">
+
+        <button type="submit" class="btn btn--primary btn--block" id="submitBtn" style="margin-top:24px;font-size:17px">Registracija</button>
+        <div class="form-error" id="msg" style="margin-top:16px;display:none"></div>
+      </form>
+    </div>
+
+    <div class="card card--pad-lg top-green uspeh" id="successBox" style="text-align:center">
+      <div style="font-size:44px;line-height:1">✅</div>
+      <h2 style="font-size:26px;margin:10px 0 0">Registracija uspešna!</h2>
+      <p class="body" id="successMsg" style="margin-top:10px"></p>
+      <a class="btn btn--primary" id="loginBtn" href="/prijava.html" style="margin-top:18px;font-size:16.5px">Prijava v nadzorno ploščo →</a>
+      <p class="fine" style="margin-top:12px">Prijavite se z zgornjim e-naslovom in geslom.</p>
+    </div>
+
+    <p class="fine" style="text-align:center;margin-top:22px">Bot se aktivira po priklopu. Podatke uporabljamo izključno za izvedbo storitve — <a class="uline" href="/varnost.html">več o zasebnosti</a>.</p>
+  </div>
+</section>
+
+<footer class="site-foot">
+  <div class="foot-grid">
+    <div>
+      <img src="/ft-logo.png" width="188" height="55" alt="FlowTiq">
+      <p style="font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:30ch"><strong>Flow</strong> je neprekinjen tok strank. <strong>Tiq</strong> je odziv v sekundi. Skupaj: pomočnik, ki ti polni koledar, medtem ko delaš.</p>
+    </div>
+    <div>
+      <div class="foot-label">Izdelek</div>
+      <div class="foot-links">
+        <a href="/kako-deluje.html">Kako deluje</a>
+        <a href="/funkcije.html">Kaj zna</a>
+        <a href="/cenik.html">Cena</a>
+        <a href="/vprasanja.html">Vprašanja</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Za koga</div>
+      <div class="foot-links">
+        <a href="/panoga/restavracije.html">Restavracije in picerije</a>
+        <a href="/panoga/frizerski-saloni.html">Frizerski saloni</a>
+        <a href="/panoga/zobozdravniki.html">Ambulante</a>
+        <a href="/panoge.html">Vse obrti →</a>
+        <a href="/imenik.html">Imenik lokalov</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Podjetje</div>
+      <div class="foot-links">
+        <a href="/o-nas.html">O nas</a>
+        <a href="/ai-resitve.html">Razvoj AI rešitev po meri</a>
+        <a href="/zgodbe.html">Primeri iz prakse</a>
+        <a href="/nasveti.html">Nasveti</a>
+        <a href="/varnost.html">Varnost in zasebnost</a>
+        <a href="/kontakt.html">Kontakt</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-info">
+    <div>
+      <div class="foot-label">Kdo stoji za FlowTiq</div>
+      <p>FlowTiq razvija <strong>Webacus</strong>. Za njim stojijo leta dela s spletnimi rešitvami in
+      avtomatizacijo za slovenska podjetja — FlowTiq ni stranski projekt, ampak izdelek, ki je zrasel
+      iz pogovorov s pravimi gostinci in obrtniki. Ko se kaj zalomi, se oglasi človek, ki izdelek pozna.</p>
+    </div>
+    <div>
+      <div class="foot-label">Podpora</div>
+      <div class="stack-sm">
+        <div><a href="https://wa.me/38640599185" target="_blank" rel="noopener">WhatsApp 040 599 185</a></div>
+        <div><a href="mailto:info@flowtiq.si">info@flowtiq.si</a></div>
+        <div class="fine">Med tednom od 8. do 19. ure, ob sobotah dopoldne.<br>Odgovorimo običajno v nekaj urah.</div>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Podatki podjetja</div>
+      <div class="stack-sm fine">
+        <div>Webacus, Valentin Iljaž s.p.</div>
+        <div>Nova vas 12, Bizeljsko</div>
+        <div class="davcna">Davčna št.: 35880643</div>
+        <div>Nismo zavezanci za DDV<br>(1. odst. 94. člena ZDDV-1).</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 FlowTiq — Webacus, Valentin Iljaž s.p. · Davčna št.: 35880643</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a><a href="/llms.txt" title="Povzetek strani za jezikovne modele in AI iskalnike">llms.txt</a></div>
+  </div>
+</footer>
 
 <script>
   const YEARLY_MULT = 12; // letno = 12x mesečno (brez popusta)
@@ -151,46 +274,50 @@
   function billingPeriod(){ const el=document.querySelector('input[name=billing_period]:checked'); return el?el.value:'monthly'; }
   function priceHtml(p){
     return billingPeriod()==='yearly'
-      ? `${eur(p.m*YEARLY_MULT)}<span style="color:#6b7280;font-weight:400"> / leto</span>`
-      : `${eur(p.m)}<span style="color:#6b7280;font-weight:400"> / mes</span>`;
+      ? `${eur(p.m*YEARLY_MULT)}<span style="color:var(--muted);font-weight:400"> / leto</span>`
+      : `${eur(p.m)}<span style="color:var(--muted);font-weight:400"> / mes</span>`;
   }
   const params = new URLSearchParams(location.search);
   let selectedPlan = PLANS.some(p=>p.id===params.get('plan')) ? params.get('plan') : 'ai';
 
+  // Preklic plačila pri Stripu se vrne sem — povej, kaj se je zgodilo.
+  if (params.get('billing') === 'cancel') {
+    document.getElementById('obvestilo-preklic').classList.add('vidno');
+  }
+
   function renderPlans(){
     document.getElementById('plans').innerHTML = PLANS.map(p => `
-      <div class="plan ${p.id===selectedPlan?'sel':''}" data-id="${p.id}">
-        <div class="pn">${p.name}</div>
-        <div class="pp">${priceHtml(p)}</div>
-        <div class="pd">${p.desc}</div>
-        <span class="badge">plačilo pred aktivacijo</span>
+      <div class="paket ${p.id===selectedPlan?'izbran':''}" data-id="${p.id}" role="button" tabindex="0">
+        <div class="p-ime">${p.name}</div>
+        <div class="p-cena">${priceHtml(p)}</div>
+        <div class="p-opis">${p.desc}</div>
+        <span class="p-znacka">plačilo pred aktivacijo</span>
       </div>`).join('');
-    document.querySelectorAll('.plan').forEach(el=>el.onclick=()=>{
-      selectedPlan = el.dataset.id; renderPlans();
+    document.querySelectorAll('.paket').forEach(el=>{
+      el.onclick = () => { selectedPlan = el.dataset.id; renderPlans(); };
+      el.onkeydown = (e) => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } };
     });
   }
   renderPlans();
 
-  // period toggle
-  document.querySelectorAll('#period label').forEach(l=>l.onclick=()=>{
-    document.querySelectorAll('#period label').forEach(x=>x.classList.remove('sel'));
-    l.classList.add('sel');
-    const radio = l.querySelector('input'); if(radio) radio.checked = true;
-    renderPlans();
-  });
-
-  // način plačila toggle
-  document.querySelectorAll('#paymethod label').forEach(l=>l.onclick=()=>{
-    document.querySelectorAll('#paymethod label').forEach(x=>x.classList.remove('sel'));
-    l.classList.add('sel');
-    const radio = l.querySelector('input'); if(radio) radio.checked = true;
-    const m = document.querySelector('input[name=payment_method]:checked')?.value;
+  // Segmentirani stikali: obračun in način plačila
+  function stikalo(idVsebnika, poIzbiri){
+    document.querySelectorAll('#'+idVsebnika+' label').forEach(l=>l.onclick=()=>{
+      document.querySelectorAll('#'+idVsebnika+' label').forEach(x=>x.classList.remove('izbran'));
+      l.classList.add('izbran');
+      const radio = l.querySelector('input'); if(radio) radio.checked = true;
+      if (poIzbiri) poIzbiri();
+    });
+  }
+  stikalo('period', renderPlans);
+  stikalo('paymethod', () => {
+    const m = (document.querySelector('input[name=payment_method]:checked')||{}).value;
     document.getElementById('payHint').textContent = m === 'proforma'
-      ? 'Na email prejmete predračun; po nakazilu vas priklopimo.'
+      ? 'Na e-pošto prejmete predračun; po nakazilu vas priklopimo.'
       : 'Po plačilu s kartico vas priklopimo — običajno isti dan.';
   });
 
-  // business types
+  // Dejavnosti iz strežnika
   fetch('/api/business-types').then(r=>r.json()).then(list=>{
     const sel = document.getElementById('business_type');
     sel.innerHTML = list.map(t=>`<option value="${t.value}">${t.label}</option>`).join('');
@@ -200,9 +327,11 @@
 
   const form = document.getElementById('signupForm');
   const msg = document.getElementById('msg');
+  function napaka(besedilo){ msg.textContent = besedilo; msg.style.display = 'block'; }
+
   form.onsubmit = async (e) => {
     e.preventDefault();
-    msg.className = 'msg';
+    msg.style.display = 'none';
     const btn = document.getElementById('submitBtn');
     const payload = {
       plan: selectedPlan,
@@ -219,15 +348,15 @@
       website: document.getElementById('website').value
     };
     if(!payload.company_name || !payload.contact_person || !payload.owner_email){
-      msg.className='msg err'; msg.textContent='Prosimo, izpolnite obvezna polja (naziv, kontaktna oseba, email).'; return;
+      napaka('Prosimo, izpolnite obvezna polja (naziv, kontaktna oseba, e-pošta).'); return;
     }
     if((payload.password||'').length < 8){
-      msg.className='msg err'; msg.textContent='Geslo mora imeti vsaj 8 znakov.'; return;
+      napaka('Geslo mora imeti vsaj 8 znakov.'); return;
     }
     if(payload.password !== document.getElementById('password2').value){
-      msg.className='msg err'; msg.textContent='Gesli se ne ujemata.'; return;
+      napaka('Gesli se ne ujemata.'); return;
     }
-    btn.disabled = true; btn.textContent = 'Pošiljam...';
+    btn.disabled = true; btn.textContent = 'Pošiljam…';
     try{
       const r = await fetch('/api/signup', {
         method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
@@ -237,12 +366,13 @@
       // Kartično plačilo → preusmeri na Stripe Checkout
       if(data.checkout_url){ btn.textContent='Preusmerjam na plačilo…'; window.location.href = data.checkout_url; return; }
       document.getElementById('formCard').style.display='none';
+      document.getElementById('obvestilo-preklic').classList.remove('vidno');
       document.getElementById('successBox').style.display='block';
       document.getElementById('successMsg').textContent = data.message || 'Hvala za registracijo!';
       if(data.login_url) document.getElementById('loginBtn').href = data.login_url;
       window.scrollTo({top:0,behavior:'smooth'});
     }catch(err){
-      msg.className='msg err'; msg.textContent = err.message;
+      napaka(err.message);
       btn.disabled=false; btn.textContent='Registracija';
     }
   };
