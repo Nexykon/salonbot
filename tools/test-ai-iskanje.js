@@ -160,9 +160,40 @@ console.log('\n8) Povezava v nogi');
 const straniZNogo = fs.readdirSync(PUB).filter(f => f.endsWith('.html'))
   .concat(fs.readdirSync(path.join(PUB, 'panoga')).map(f => 'panoga/' + f))
   .filter(f => /Piškotki<\/a>/.test(beri(f)));
-const brezLlms = straniZNogo.filter(f => !/href="\/llms\.txt"/.test(beri(f)));
-je('noga je na 27 straneh', straniZNogo.length, 27);
-je('vse imajo povezavo na llms.txt', brezLlms, []);
+// Števila strani ne zapisujemo v preizkus — nova stran ne sme podreti testa.
+// Trditev je: KJER JE NOGA, sta obe povezavi.
+je('nogo ima vsaj 25 strani', straniZNogo.length >= 25, true);
+je('vse imajo povezavo na llms.txt', straniZNogo.filter(f => !/href="\/llms\.txt"/.test(beri(f))), []);
+je('vse imajo povezavo na razvoj po meri', straniZNogo.filter(f => !/href="\/ai-resitve\.html"/.test(beri(f))), []);
+
+console.log('\n9) Stran za razvoj po meri');
+const ai = beri('ai-resitve.html');
+je('je v sitemapu', /<loc>https:\/\/flowtiq\.si\/ai-resitve\.html<\/loc>/.test(sitemap), true);
+je('je v llms.txt', /\/ai-resitve\.html/.test(llms), true);
+je('llms.txt jo opiše v razdelku "Razvoj po meri"', /## Razvoj po meri/.test(llms), true);
+je('ima kanonični naslov', /<link rel="canonical" href="https:\/\/flowtiq\.si\/ai-resitve\.html">/.test(ai), true);
+je('ima opis pod 200 znaki', (ai.match(/<meta name="description" content="([^"]*)"/) || [, ''])[1].length < 200, true);
+je('naslov omenja platforme', /<title>[^<]*(WhatsApp|Viber)[^<]*<\/title>/.test(ai), true);
+je('pas na prvi strani pelje nanjo', /href="\/ai-resitve\.html"[^>]*>Razvoj AI rešitev/.test(beri('index.html')), true);
+{
+  const bl = [...ai.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  je('en blok JSON-LD', bl.length, 1);
+  let g = null;
+  try { g = JSON.parse(bl[0])['@graph']; ok++; console.log('  ✔ JSON je veljaven'); }
+  catch (e) { ni++; console.log('  ✖ JSON ni veljaven: ' + e.message); }
+  if (g) {
+    const tipi = g.map(x => x['@type']);
+    je('vsebuje Service, FAQPage in BreadcrumbList', tipi.sort(), ['BreadcrumbList', 'FAQPage', 'Service']);
+    const srv = g.find(x => x['@type'] === 'Service');
+    je('Service kaže na isto organizacijo kot prva stran', srv.provider['@id'], 'https://flowtiq.si/#organizacija');
+    je('katalog storitev ima štiri postavke', srv.hasOfferCatalog.itemListElement.length, 4);
+    const faq = g.find(x => x['@type'] === 'FAQPage');
+    je('vsako vprašanje ima odgovor', faq.mainEntity.every(q => q.acceptedAnswer && q.acceptedAnswer.text.length > 40), true);
+    const vidnih = (ai.match(/<summary><span>/g) || []).length;
+    je('vprašanj v shemi je toliko kot na strani', faq.mainEntity.length, vidnih);
+    je('shema ne obljublja cene, ki je na strani ni', /\d+\s*€/.test(JSON.stringify(g)), false);
+  }
+}
 
 console.log('\n' + (ni ? '✖ ' + ni + ' od ' + (ok + ni) + ' ni v redu' : '✔ vse v redu (' + ok + ')'));
 process.exit(ni ? 1 : 0);

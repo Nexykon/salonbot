@@ -4,6 +4,8 @@
 
 FlowTiq ni klepetalni robot za vprašanja o izdelku, ampak prevzame konkreten posel: pogovor s stranko od prvega sporočila do oddanega naročila ali potrjenega termina. Zneske, koledar in urnik vodi determinirana koda, jezik razume AI — zato bot ne izmišljuje cen in prostih terminov. Lastnik vse nastavi v nadzorni plošči: delovni čas po dnevih, storitve in cene, ceno embalaže, ceno dostave po krajih in ton pogovora.
 
+Poleg izdelka razvijamo tudi AI rešitve po meri za podjetja — pomočnike na drugih pogovornih platformah in integracije z obstoječimi sistemi (glej razdelek "Razvoj po meri"). Izdelek FlowTiq ostaja glavna ponudba.
+
 Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je prosta za branje in navajanje; prosimo za navedbo vira flowtiq.si.
 
 ## Na kratko
@@ -14,6 +16,7 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 - **Cena:** fiksna mesečna naročnina brez provizije od naročila — AI Start 89 €, AI Pro 159,99 €, Premium 299 € na mesec. Vsi paketi imajo vse funkcije; razlikuje se obseg (500, 1.500 oziroma 10.000 naročil na mesec), Premium doda več lokacij pod eno ploščo in prednostno podporo.
 - **Pogoji:** postavitev je brezplačna, ni vezave, odpoved kadar koli. Cena je končna — Webacus ni zavezanec za DDV (1. odst. 94. člena ZDDV-1).
 - **Kaj zna:** odgovarja 24 ur na dan, razume prosto napisano besedilo, vodi lasten koledar z dolžinami storitev in ločenimi koledarji po zaposlenih, pokaže meni v pogovoru, sešteje naročilo z embalažo in dostavo po kraju, pošlje opomnik dan prej, sprosti odpovedani termin, vabi stranke nazaj, zbira Google ocene, se poveže z blagajno in vse skupaj pokaže na nadzorni plošči.
+- **Razvoj po meri:** poleg izdelka FlowTiq razvijamo AI rešitve po naročilu — pogovorne pomočnike na WhatsAppu, Viberju, Telegramu, Messengerju in v spletnem klepetu, integracije z blagajno, ERP, CRM in spletno trgovino, avtomatizacijo dela z besedilom ter prevzem in vzdrževanje obstoječih rešitev. Cena je po oceni obsega; uvodni pogovor in ocena sta brezplačna. Podrobno: https://flowtiq.si/ai-resitve.html
 - **Kdo ga razvija:** Webacus, Valentin Iljaž s.p., Nova vas 12, Bizeljsko, Slovenija. Davčna št. 35880643.
 - **Kontakt:** info@flowtiq.si, telefon in WhatsApp +386 40 599 185. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
 
@@ -40,6 +43,10 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 - [FlowTiq za veterinarske ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/veterina.html): FlowTiq za veterinarske ambulante: Termini po živali, opomniki na cepljenja in obvladana nujnost.
 - [FlowTiq za masaže in wellness — WhatsApp pomočnik](https://flowtiq.si/panoga/wellness.html): FlowTiq za masaže in wellness: Termini, paketi in darilni boni — brez motenja med masažo.
 - [FlowTiq za zobozdravniki in ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/zobozdravniki.html): FlowTiq za zobozdravniki in ambulante: Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.
+
+## Razvoj po meri
+
+- [Razvoj AI rešitev po meri — WhatsApp, Viber in integracije](https://flowtiq.si/ai-resitve.html): Razvijamo AI pomočnike po meri na WhatsAppu, Viberju in drugih pogovornih platformah ter jih povežemo z blagajno, ERP-jem ali spletno trgovino. Ekipa, ki v produkciji vzdržuje FlowTiq.
 
 ## Podjetje in zaupanje
 

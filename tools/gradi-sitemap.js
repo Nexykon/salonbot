@@ -21,6 +21,7 @@ const STRANI = [
   ['/cenik.html', 0.9, 'monthly'],
   ['/zgodbe.html', 0.7, 'monthly'],
   ['/vprasanja.html', 0.8, 'monthly'],
+  ['/ai-resitve.html', 0.9, 'monthly'],
   ['/o-nas.html', 0.6, 'yearly'],
   ['/nasveti.html', 0.7, 'monthly'],
   ['/kontakt.html', 0.8, 'yearly'],
