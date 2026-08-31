@@ -246,6 +246,9 @@
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) return pokaziNapako('E-pošta ni videti pravilna. Preveri jo prosim.');
     if (!soglasje) return pokaziNapako('Za kontakt potrebujemo tvoje soglasje.');
 
+    // business_type ostane za združljivost (zapis v bazo, WhatsApp obvestilo),
+    // polja pa gredo tudi LOČENO, da jih e-pošta lahko izpiše z istimi imeni,
+    // kot jih vidi obiskovalec na tem obrazcu.
     var posel = panoga + ' · ' + lokal + (zelja ? ' — želja: ' + zelja : '');
 
     gumb.disabled = true;
@@ -254,7 +257,10 @@
     fetch('/api/contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: ime, email: mail, phone: tel, business_type: posel })
+      body: JSON.stringify({
+        name: ime, email: mail, phone: tel, business_type: posel,
+        lokal: lokal, panoga: panoga, zelja: zelja, soglasje: soglasje
+      })
     }).then(function (r) {
       if (!r.ok) throw new Error('Napaka pri pošiljanju');
       form.style.display = 'none';

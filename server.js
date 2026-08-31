@@ -3007,10 +3007,38 @@ app.post('/api/orders/:id/reject', async (req, res) => {
 // ─── Public Contact Form (landing page) ──────────────────────────────────────
 app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
   try {
-    const { name, email, phone, business_type } = req.body || {};
+    const { name, email, phone, business_type, lokal, panoga, zelja, soglasje } = req.body || {};
     if (!name || !email || !business_type) {
       return res.status(400).json({ error: 'Manjkajo obvezna polja.' });
     }
+
+    /*
+      Imena polj v e-pošti so ISTA kot na obrazcu (public/kontakt.html) — kdor
+      bere prijavo, vidi natanko tisto, kar je obiskovalec izpolnil.
+
+      Stran pošlje polja ločeno; "business_type" (zlepljen niz) ostaja zaradi
+      zapisa v bazo in ker ga lahko pošlje starejša različica strani iz
+      predpomnilnika brskalnika. V tem primeru se izpiše kot ena vrstica.
+    */
+    const esc = (v) => String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const locenaPolja = !!(lokal || panoga);
+    const vrsticeObrazca = locenaPolja
+      ? [
+          ['Ime in priimek', name],
+          ['Telefon (WhatsApp)', phone || '—'],
+          ['E-pošta', email],
+          ['Ime lokala ali salona', lokal || '—'],
+          ['Kaj delaš?', panoga || '—'],
+          ['Kaj bi rad, da pomočnik prevzame?', zelja || '—'],
+          ['Soglasje za kontakt', soglasje ? 'da' : 'ni označeno']
+        ]
+      : [
+          ['Ime in priimek', name],
+          ['Telefon (WhatsApp)', phone || '—'],
+          ['E-pošta', email],
+          ['Vrsta posla', business_type]
+        ];
 
     const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
     const ownerPhone = process.env.FLOWTIQ_OWNER_PHONE || '38640599185';
@@ -3018,15 +3046,14 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
     const waPhoneId = process.env.WA_PHONE_ID;
 
     // 1. Email notification to Tomaz
-    const ownerSubject = `Nova prijava FlowTiq — ${business_type}`;
+    const ownerSubject = locenaPolja
+      ? `Nova prijava FlowTiq — ${lokal || name}${panoga ? ` (${panoga})` : ''}`
+      : `Nova prijava FlowTiq — ${business_type}`;
     const ownerHtml = `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
         <h2 style="color:#1e293b">Nova prijava na FlowTiq</h2>
         <table style="width:100%;border-collapse:collapse;margin-top:16px">
-          <tr><td style="padding:8px 12px;background:#f8fafc;font-weight:600;color:#475569;width:40%">Ime</td><td style="padding:8px 12px;color:#1e293b">${name}</td></tr>
-          <tr><td style="padding:8px 12px;font-weight:600;color:#475569">Email</td><td style="padding:8px 12px;color:#1e293b">${email}</td></tr>
-          <tr><td style="padding:8px 12px;background:#f8fafc;font-weight:600;color:#475569">Telefon</td><td style="padding:8px 12px;color:#1e293b">${phone || '—'}</td></tr>
-          <tr><td style="padding:8px 12px;font-weight:600;color:#475569">Vrsta posla</td><td style="padding:8px 12px;color:#1e293b">${business_type}</td></tr>
+          ${vrsticeObrazca.map(([oznaka, vrednost], i) => `<tr><td style="padding:8px 12px;${i % 2 === 0 ? 'background:#f8fafc;' : ''}font-weight:600;color:#475569;width:44%;vertical-align:top">${esc(oznaka)}</td><td style="padding:8px 12px;color:#1e293b;${i % 2 === 0 ? 'background:#f8fafc;' : ''}">${esc(vrednost)}</td></tr>`).join('\n          ')}
         </table>
         <p style="margin-top:20px;color:#64748b;font-size:.9rem">Prijava prejeta: ${new Date().toLocaleString('sl-SI')}</p>
       </div>`;
@@ -3034,7 +3061,9 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
 
     // 2. WhatsApp notification to Tomaz (best-effort — works within 24h session window)
     if (waToken && waPhoneId) {
-      const waMsg = `Nova prijava FlowTiq!\n\n${name}\nEmail: ${email}\nTel: ${phone || '—'}\nPosao: ${business_type}\n\nOdgovori jim cim prej!`;
+      const waMsg = 'Nova prijava FlowTiq!\n\n'
+        + vrsticeObrazca.map(([oznaka, vrednost]) => oznaka + ': ' + vrednost).join('\n')
+        + '\n\nOdgovori jim čim prej.';
       wa.send(waPhoneId, waToken, wa.textMsg(ownerPhone, waMsg)).catch(() => {});
     }
 
@@ -3043,12 +3072,12 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
     const prospectHtml = `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
         <h2 style="color:#1e293b">Prijava prejeta!</h2>
-        <p style="color:#475569">Pozdravljeni ${name},</p>
-        <p style="color:#475569">Hvala za zanimanje za <strong>FlowTiq</strong>! Prijava je bila uspesno poslana.</p>
-        <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na email <strong>${email}</strong>${phone ? ` ali telefon <strong>${phone}</strong>` : ''}.</p>
+        <p style="color:#475569">Pozdravljeni ${esc(name)},</p>
+        <p style="color:#475569">Hvala za zanimanje za <strong>FlowTiq</strong>! Prijava je bila uspešno poslana.</p>
+        <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na e-pošto <strong>${esc(email)}</strong>${phone ? ` ali telefon <strong>${esc(phone)}</strong>` : ''}.</p>
         <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0">
-          <p style="margin:0;color:#166534;font-weight:600">Nasi paketi:</p>
-          <p style="margin:6px 0 0;color:#166534">AI Start <strong>89 € / mes</strong> (do 500 narocil) · AI Pro <strong>159,99 € / mes</strong> (do 1.500) · Premium <strong>299 € / mes</strong> (do 10.000). Brez vezave.</p>
+          <p style="margin:0;color:#166534;font-weight:600">Naši paketi:</p>
+          <p style="margin:6px 0 0;color:#166534">AI Start <strong>89 € / mes</strong> (do 500 naročil) · AI Pro <strong>159,99 € / mes</strong> (do 1.500) · Premium <strong>299 € / mes</strong> (do 10.000). Brez vezave.</p>
         </div>
         <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTiq</p>
       </div>`;
