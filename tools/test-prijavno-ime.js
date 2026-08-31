@@ -38,14 +38,18 @@ const posnetek = async () => {
 
   console.log('\n1) Iskanje po prijavnem imenu (src/supabase.js)');
   const imena = (s) => s.map(x => x.name).sort();
-  je('pravo ime najde svoj lokal', imena(await db.getSalonsByOwnerEmail('test')), ['Test Picerija']);
-  je('velike črke ne motijo', imena(await db.getSalonsByOwnerEmail('TEST')), ['Test Picerija']);
-  je('presledki ne motijo', imena(await db.getSalonsByOwnerEmail('  test  ')), ['Test Picerija']);
+  // Prijavno ime testnega lokala je bil nekoč "test" (brez @); zdaj je pravi
+  // e-naslov, ker prijavno ime, ki ni e-naslov, zamegli vse ostalo.
+  const IME = 'test-picerija@flowtiq.si';
+  je('pravo ime najde svoj lokal', imena(await db.getSalonsByOwnerEmail(IME)), ['Test Picerija']);
+  je('velike črke ne motijo', imena(await db.getSalonsByOwnerEmail(IME.toUpperCase())), ['Test Picerija']);
+  je('presledki ne motijo', imena(await db.getSalonsByOwnerEmail('  ' + IME + '  ')), ['Test Picerija']);
+  je('staro ime "test" ne najde ničesar', await db.getSalonsByOwnerEmail('test'), []);
   for (const vzorec of ['*', '%', '*@*', '*@gmail.com', 'te*', '_' .repeat(4), 'tes_', '\\']) {
     je('vzorec "' + vzorec + '" ne najde ničesar', await db.getSalonsByOwnerEmail(vzorec), []);
   }
   je('prazen vnos ne najde ničesar', await db.getSalonsByOwnerEmail(''), []);
-  je('en lokal: pravo ime', (await db.getSalonByOwnerEmail('test') || {}).name, 'Test Picerija');
+  je('en lokal: pravo ime', (await db.getSalonByOwnerEmail(IME) || {}).name, 'Test Picerija');
   je('en lokal: vzorec je nič', await db.getSalonByOwnerEmail('*'), null);
 
   console.log('\n2) Prijava (/api/auth/login) z vzorcem');
