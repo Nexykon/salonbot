@@ -41,6 +41,14 @@ const p = beri('public/prijava.html');
 je('naslov je Prijava', /<title>Prijava — FlowTiq<\/title>/.test(p), true);
 je('ni za iskalnike', /name="robots" content="noindex/.test(p), true);
 je('geslo in e-naslov', /id="email"/.test(p) && /id="geslo"/.test(p), true);
+/*
+  Prijavna stran ne sme biti strožja od strežnika: /api/auth/login primerja
+  owner_email kot navaden niz, v bazi pa je lokal, čigar prijavno ime ni
+  e-naslov ("test" pri Test Piceriji). Zahteva po znaku "@" ali type="email"
+  bi takega uporabnika zaklenila zunaj.
+*/
+je('polje za prijavo ni type="email"', /id="email"[^>]*type="email"|type="email"[^>]*id="email"/.test(p), false);
+je('ne zahteva znaka @', /email\.indexOf\('@'\)/.test(p), false);
 // Prijava z WhatsApp kodo je bila odstranjena — vpis je samo e-naslov in geslo.
 je('brez prijave z WhatsApp kodo', /api\/auth\/start|api\/auth\/verify/.test(p), false);
 je('brez ostankov polj za kodo', /id="telefon"|id="koda"|posljiKodo|preveriKodo/.test(p), false);

@@ -61,7 +61,7 @@
 
   <div class="polje">
     <label for="email">E-naslov</label>
-    <input type="email" id="email" placeholder="ana@lokal.si" autocomplete="username" autofocus>
+    <input type="text" inputmode="email" id="email" placeholder="ana@lokal.si" autocomplete="username" autofocus>
   </div>
   <div class="polje">
     <label for="geslo">Geslo</label>
@@ -149,7 +149,14 @@ function vstopi(d) {
 async function prijavaZGeslom() {
   var email = document.getElementById('email').value.trim();
   var geslo = document.getElementById('geslo').value;
-  if (!email || email.indexOf('@') < 0) { povej('Vpišite veljaven e-naslov.', true); return; }
+  /*
+    Preverjamo samo, da polje ni prazno. Znaka "@" NE zahtevamo in polje ni
+    type="email": strežnik primerja owner_email kot navaden niz in v bazi
+    obstaja lokal, čigar prijavno ime ni e-naslov. Stran, ki je strožja od
+    strežnika, pomeni uporabnika, ki se ne more prijaviti, čeprav ima
+    pravilne podatke.
+  */
+  if (!email) { povej('Vpišite e-naslov oziroma prijavno ime.', true); return; }
   if (!geslo) { povej('Vpišite geslo.', true); return; }
   var gumb = document.getElementById('gumb-geslo');
   gumb.disabled = true; gumb.textContent = 'Prijavljam…';
