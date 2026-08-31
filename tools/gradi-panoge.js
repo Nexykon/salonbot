@@ -10,6 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PANOGE = require('./panoge-podatki.js');
+const { ikona } = require('./ikone-panog.js');
 const OUT_DIR = path.join(__dirname, '..', 'public', 'panoga');
 
 const esc = s => String(s == null ? '' : s)
@@ -199,7 +200,7 @@ ${glava(p)}
     <div class="grid-11-top">
       <div>
         <div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <div style="width:46px;height:46px;border:2px solid var(--ink);border-radius:18px;background:#fff;display:grid;place-items:center;font-weight:800;font-size:18px">${esc(p.mono)}</div>
+          <div style="width:46px;height:46px;border:2px solid var(--ink);border-radius:18px;background:#fff;display:grid;place-items:center;color:var(--ink)">${ikona(p.slug, 24)}</div>
           <div class="pill">FlowTiq za: ${esc(p.ime)}</div>
         </div>
         <h1 style="font-size:clamp(38px,4.8vw,62px);margin-top:22px">
@@ -313,6 +314,38 @@ ${noga}
 `;
 }
 
+/*
+  Ikone panog se pojavijo na treh mestih. Panožne strani se generirajo, kartice
+  na prvi strani in vrstice na /panoge.html pa so napisane na roko — zato jih
+  osveži ta korak. Vir ikon je s tem en sam (tools/ikone-panog.js) in ponovna
+  gradnja ne more pustiti treh različnih stanj.
+
+  Zamenja se VSEBINA okvirja, ne okvir: deluje tudi, kadar sta v njem še dve
+  črki, in skript je mogoče poganjati večkrat.
+*/
+function osveziOznake(vse) {
+  const cilji = [
+    { pot: path.join(__dirname, '..', 'public', 'index.html'), razred: 'pan-mono', velikost: 20 },
+    { pot: path.join(__dirname, '..', 'public', 'panoge.html'), razred: 'pan-mono-lg', velikost: 22 }
+  ];
+  for (const c of cilji) {
+    if (!fs.existsSync(c.pot)) { console.log('  POZOR: ni ' + c.pot); continue; }
+    let html = fs.readFileSync(c.pot, 'utf8');
+    let zamenjanih = 0;
+    for (const p of vse) {
+      const re = new RegExp('(href="/panoga/' + p.slug + '\\.html"[\\s\\S]{0,240}?<div class="' + c.razred + '">)([\\s\\S]*?)(</div>)');
+      const novo = html.replace(re, (celo, pred, sredina, za) => {
+        zamenjanih++;
+        return pred + ikona(p.slug, c.velikost) + za;
+      });
+      if (novo === html) console.log('  POZOR: oznake za "' + p.slug + '" ni bilo mogoče najti v ' + path.basename(c.pot));
+      html = novo;
+    }
+    fs.writeFileSync(c.pot, html, 'utf8');
+    console.log('  ' + path.basename(c.pot) + ': ' + zamenjanih + ' oznak');
+  }
+}
+
 fs.mkdirSync(OUT_DIR, { recursive: true });
 let n = 0;
 for (const p of PANOGE) {
@@ -321,4 +354,5 @@ for (const p of PANOGE) {
   console.log('  ✓ public/panoga/' + p.slug + '.html');
   n++;
 }
+osveziOznake(PANOGE);
 console.log(`\nZgrajenih strani: ${n}`);
