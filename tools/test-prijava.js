@@ -41,7 +41,9 @@ const p = beri('public/prijava.html');
 je('naslov je Prijava', /<title>Prijava — FlowTiq<\/title>/.test(p), true);
 je('ni za iskalnike', /name="robots" content="noindex/.test(p), true);
 je('geslo in e-naslov', /id="email"/.test(p) && /id="geslo"/.test(p), true);
-je('WhatsApp koda', /api\/auth\/start/.test(p) && /api\/auth\/verify/.test(p), true);
+// Prijava z WhatsApp kodo je bila odstranjena — vpis je samo e-naslov in geslo.
+je('brez prijave z WhatsApp kodo', /api\/auth\/start|api\/auth\/verify/.test(p), false);
+je('brez ostankov polj za kodo', /id="telefon"|id="koda"|posljiKodo|preveriKodo/.test(p), false);
 je('poskusi lastnika in skrbnika', /api\/auth\/login/.test(p) && /api\/auth\/master-login/.test(p), true);
 je('e-naslova skrbnika ni več v kodi strani', /nexon666/.test(p), false);
 je('skrbnik gre na /admin.html', /'\/admin\.html'/.test(p), true);

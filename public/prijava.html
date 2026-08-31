@@ -41,25 +41,15 @@
   }
   button:hover { background: var(--green-dark); }
   button:disabled { opacity: .6; cursor: default; box-shadow: none; }
-  button.drugotni { background: #fff; color: var(--ink); }
-  button.drugotni:hover { background: var(--cream-2); }
   .sporocilo {
     margin-top: 16px; padding: 12px 14px; border: 2px solid var(--ink); border-radius: 12px;
     font-size: 14px; line-height: 1.55; display: none;
   }
   .sporocilo.ok { background: rgba(22,163,74,.10); }
   .sporocilo.napaka { background: rgba(180,68,46,.10); color: var(--rust); }
-  .locilo {
-    margin: 22px 0 18px; border-top: 2px solid var(--line); position: relative; text-align: center;
-  }
-  .locilo span {
-    position: relative; top: -11px; background: #fff; padding: 0 10px;
-    font-size: 12px; font-weight: 700; letter-spacing: .05em; color: var(--muted);
-  }
   .nazaj { margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--line); text-align: center; }
   .nazaj a { color: var(--muted); font-size: 13.5px; font-weight: 600; text-decoration: none; }
   .nazaj a:hover { color: var(--ink); }
-  .vrstice { display: grid; gap: 8px; }
 </style>
 </head>
 <body>
@@ -76,26 +66,9 @@
   <div class="polje">
     <label for="geslo">Geslo</label>
     <input type="password" id="geslo" placeholder="Vaše geslo" autocomplete="current-password">
-    <div class="namig">E-naslov in geslo sta ločena od WhatsApp številke bota.</div>
+    <div class="namig">E-naslov in geslo sta ločena od WhatsApp številke bota. Prejeli ste ju ob registraciji.</div>
   </div>
   <button id="gumb-geslo" onclick="prijavaZGeslom()">Vstopi</button>
-
-  <div class="locilo"><span>ALI</span></div>
-
-  <p class="pod" style="margin-bottom:14px">Vpišite WhatsApp številko, s katero ste registrirani, in poslali vam bomo kodo.</p>
-  <div class="polje">
-    <label for="telefon">Telefonska številka</label>
-    <input type="tel" id="telefon" placeholder="38641123456" inputmode="numeric" autocomplete="tel">
-    <div class="namig">Koda države + številka, brez plusa (npr. 38641123456).</div>
-  </div>
-  <div class="vrstice">
-    <button class="drugotni" id="gumb-koda" onclick="posljiKodo()">Pošlji WhatsApp kodo</button>
-    <div class="polje" id="polje-koda" style="display:none;margin-bottom:0">
-      <label for="koda">6-mestna koda</label>
-      <input type="text" id="koda" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
-    </div>
-    <button id="gumb-vstopi-koda" onclick="preveriKodo()" style="display:none">Vstopi s kodo</button>
-  </div>
 
   <div class="sporocilo" id="sporocilo"></div>
 
@@ -114,9 +87,10 @@
 /*
   Ena prijavna stran za vse tri plošče.
 
-  Vloge ne ugotavlja ta stran, ampak strežnik: /api/auth/login vrne role in
-  salon.booking_mode, /api/auth/master-login pa role "master". Tu se samo
-  odloči, kam poslati uporabnika in kateri ključ zapisati v shrambo.
+  Vpis je samo z e-naslovom in geslom. Vloge ne ugotavlja ta stran, ampak
+  strežnik: /api/auth/login vrne role in salon.booking_mode,
+  /api/auth/master-login pa role "master". Tu se samo odloči, kam poslati
+  uporabnika in kateri ključ zapisati v shrambo.
 
   Žeton NE gre v naslov. Prej je salon.html preusmerjal na
   /delivery.html?token=…, ker je tista plošča brala drug ključ; zato tu
@@ -157,7 +131,7 @@ function shrani(kljuc, zeton) {
   try { localStorage.setItem(kljuc, zeton); } catch (_e) {}
 }
 
-// Skupna pot za oba načina prijave (geslo in WhatsApp koda).
+// Kam po uspešni prijavi.
 function vstopi(d) {
   if (d.role === 'master') {
     shrani('ft_master_token', d.token);
@@ -201,57 +175,9 @@ async function prijavaZGeslom() {
   }
 }
 
-async function posljiKodo() {
-  var telefon = document.getElementById('telefon').value.replace(/[^\d]/g, '');
-  if (telefon.length < 8) { povej('Vpišite veljavno telefonsko številko.', true); return; }
-  var gumb = document.getElementById('gumb-koda');
-  gumb.disabled = true; gumb.textContent = 'Pošiljam…';
-  try {
-    var r = await fetch('/api/auth/start', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: telefon })
-    });
-    var d = await r.json().catch(function () { return {}; });
-    if (!r.ok) { povej(d.error || 'Kode ni bilo mogoče poslati.', true); return; }
-    document.getElementById('polje-koda').style.display = 'block';
-    document.getElementById('gumb-vstopi-koda').style.display = 'block';
-    document.getElementById('koda').focus();
-    povej('Kodo smo poslali na WhatsApp. Velja nekaj minut.', false);
-  } catch (e) {
-    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
-  } finally {
-    gumb.disabled = false; gumb.textContent = 'Pošlji WhatsApp kodo';
-  }
-}
-
-async function preveriKodo() {
-  var telefon = document.getElementById('telefon').value.replace(/[^\d]/g, '');
-  var koda = document.getElementById('koda').value.replace(/[^\d]/g, '');
-  if (koda.length !== 6) { povej('Koda ima 6 številk.', true); return; }
-  var gumb = document.getElementById('gumb-vstopi-koda');
-  gumb.disabled = true; gumb.textContent = 'Preverjam…';
-  try {
-    var r = await fetch('/api/auth/verify', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: telefon, code: koda })
-    });
-    var d = await r.json().catch(function () { return {}; });
-    if (!r.ok) { povej(d.error || 'Koda ni pravilna ali je potekla.', true); return; }
-    vstopi(d);
-  } catch (e) {
-    povej('Povezava s strežnikom ni uspela. Poskusite pozneje.', true);
-  } finally {
-    gumb.disabled = false; gumb.textContent = 'Vstopi s kodo';
-  }
-}
-
-// Enter v polju sproži tisto, kar je pri tem polju logično.
+// Enter v obeh poljih pomeni prijavo.
 document.addEventListener('keydown', function (e) {
-  if (e.key !== 'Enter') return;
-  var id = (document.activeElement || {}).id;
-  if (id === 'email' || id === 'geslo') prijavaZGeslom();
-  else if (id === 'telefon') posljiKodo();
-  else if (id === 'koda') preveriKodo();
+  if (e.key === 'Enter') prijavaZGeslom();
 });
 </script>
 </body>
