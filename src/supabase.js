@@ -659,18 +659,49 @@ async function getSalonByAdminPhone(phone) {
   return r.data[0] || null;
 }
 
-async function getSalonsByOwnerEmail(email) {
+/*
+  ─── Iskanje lokala po prijavnem e-naslovu ────────────────────────────────
+
+  Prijavno ime NE gre v poizvedbo kot vzorec. PostgREST pri "ilike" pretvori
+  "*" v "%", zato je vnos "*" prej ujel VSE lokale — in to na dveh mestih z
+  resnimi posledicami:
+
+    /api/auth/login        geslo se je primerjalo z zgoščenko VSAKEGA lokala
+                           (all.find(... verifyPassword ...)), torej je vsako
+                           geslo, ki ga ima kdorkoli v sistemu, odprlo njegov
+                           račun. Enako je razvrednotilo omejevalnik poskusov,
+                           ki šteje po e-naslovu.
+    /api/auth/owner-forgot nepooblaščen klic je prepisal
+                           owner_reset_token_hash pri vseh lokalih hkrati.
+
+  Zato iščemo z "eq." po male črke pretvorjenem vnosu. Vsi zapisi v bazi so
+  male črke, zato je izid za prave uporabnike enak kot prej. Rezerva z "ilike"
+  ostane samo za morebiten star zapis z veliko črko — in samo, kadar vnos ni
+  vzorec.
+*/
+// Tudi "_" je pri LIKE nadomestni znak (ujame en poljuben znak), zato je za
+// rezervo enako nevaren kot "*": vnos "_______" bi ujel vsak e-naslov te
+// dolžine. V e-naslovih se "_" res pojavlja, a tam ga pokrije natančni "eq.".
+const jeVzorec = (s) => /[*%_\\]/.test(s);
+
+async function najdiPoEposti(email, dodatek) {
   const clean = String(email || '').trim();
   if (!clean) return [];
-  const r = await axios.get(`${BASE}/sb_salons?owner_email=ilike.${encodeURIComponent(clean)}&order=created_at`, { headers: HEADERS });
-  return r.data || [];
+  const male = clean.toLowerCase();
+  const r = await axios.get(`${BASE}/sb_salons?owner_email=eq.${encodeURIComponent(male)}${dodatek}`, { headers: HEADERS });
+  if ((r.data || []).length) return r.data;
+  if (jeVzorec(clean)) return [];
+  const r2 = await axios.get(`${BASE}/sb_salons?owner_email=ilike.${encodeURIComponent(male)}${dodatek}`, { headers: HEADERS });
+  return r2.data || [];
+}
+
+async function getSalonsByOwnerEmail(email) {
+  return await najdiPoEposti(email, '&order=created_at');
 }
 
 async function getSalonByOwnerEmail(email) {
-  const clean = String(email || '').trim();
-  if (!clean) return null;
-  const r = await axios.get(`${BASE}/sb_salons?owner_email=ilike.${encodeURIComponent(clean)}&limit=1`, { headers: HEADERS });
-  return r.data[0] || null;
+  const najdeni = await najdiPoEposti(email, '&limit=1');
+  return najdeni[0] || null;
 }
 
 async function getSalonByToken(token) {
