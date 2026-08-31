@@ -118,7 +118,30 @@ const streznik = require('../server');
   je('vrednost je cela', hs.includes('Picerije · Pri Lipi'), true);
   je('ime in e-pošta imata novi oznaki', hs.includes('Ime in priimek') && hs.includes('E-pošta'), true);
 
-  console.log('\n7) Vnos ne more vriniti oznak v pošto');
+  console.log('\n7) Soglasje je obvezno tudi na strežniku');
+  // Prej je bila kljukica preverjena samo v brskalniku — torej jo je bilo
+  // mogoče obiti in o soglasju ni bilo nikakršnega zapisa.
+  POSTA = [];
+  const brezSoglasja = await fetch(naslov, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Brez Soglasja', email: 'x@y.si', phone: '040', business_type: 'x',
+      lokal: 'L', panoga: 'Drugo', zelja: '', soglasje: false })
+  });
+  const bsOdgovor = await brezSoglasja.json().catch(() => ({}));
+  je('neoznačeno soglasje je zavrnjeno', brezSoglasja.status, 400);
+  je('odgovor pojasni, zakaj', /soglasje/i.test(bsOdgovor.error || ''), true);
+  je('nobena pošta ni šla', POSTA.length, 0);
+  // Starejša stran iz predpomnilnika soglasja ne pošlje — takrat ne zavračamo.
+  const brezPolja = await posljiObrazec({ name: 'Stara Stran', email: 'a@b.si', phone: '040', business_type: 'Drugo · X' });
+  je('manjkajoče polje ne zavrne prijave', brezPolja.koda, 200);
+  je('v pošti piše, da podatka ni', /ni podatka/.test((brezPolja.lastniku || {}).html || ''), true);
+
+  console.log('\n8) Povezava v soglasju se odpre v novem zavihku');
+  je('target="_blank" in rel="noopener"',
+    /<a href="\/varnost\.html" target="_blank" rel="noopener">/.test(stran), true);
+  je('bralec vidi, da gre v nov zavihek', /Več o zasebnosti ↗/.test(stran), true);
+
+  console.log('\n9) Vnos ne more vriniti oznak v pošto');
   const zlonamerno = await posljiObrazec({
     name: '<img src=x onerror=alert(1)>', email: 'x@y.si', phone: '<b>040</b>',
     business_type: 'x', lokal: '<script>alert(2)</script>', panoga: 'Drugo', zelja: '', soglasje: true

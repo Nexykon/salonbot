@@ -3011,6 +3011,17 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
     if (!name || !email || !business_type) {
       return res.status(400).json({ error: 'Manjkajo obvezna polja.' });
     }
+    /*
+      Soglasje je obvezno. Doslej je bilo preverjeno samo v brskalniku — torej
+      ga je bilo mogoče obiti in o njem ni bilo nikakršnega zapisa.
+
+      Zavrnemo, kadar je IZRECNO neoznačeno. Kadar polja v zahtevi ni, gre
+      najverjetneje za starejšo stran iz predpomnilnika brskalnika; tako
+      prijavo sprejmemo, v pošti pa piše, da podatka ni.
+    */
+    if (soglasje === false) {
+      return res.status(400).json({ error: 'Za kontakt potrebujemo vaše soglasje.' });
+    }
 
     /*
       Imena polj v e-pošti so ISTA kot na obrazcu (public/kontakt.html) — kdor
@@ -3031,13 +3042,15 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
           ['Ime lokala ali salona', lokal || '—'],
           ['Kaj delaš?', panoga || '—'],
           ['Kaj bi rad, da pomočnik prevzame?', zelja || '—'],
-          ['Soglasje za kontakt', soglasje ? 'da' : 'ni označeno']
+          ['Soglasje za kontakt', soglasje === undefined ? 'ni podatka (starejši obrazec)' : (soglasje ? 'da' : 'ni označeno')]
         ]
       : [
           ['Ime in priimek', name],
           ['Telefon (WhatsApp)', phone || '—'],
           ['E-pošta', email],
-          ['Vrsta posla', business_type]
+          ['Vrsta posla', business_type],
+          // Vrstica je tudi tu, da zapis o soglasju nikoli ne manjka.
+          ['Soglasje za kontakt', soglasje === undefined ? 'ni podatka (starejši obrazec)' : (soglasje ? 'da' : 'ni označeno')]
         ];
 
     const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
