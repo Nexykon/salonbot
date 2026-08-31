@@ -46,7 +46,7 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 
 ## Razvoj po meri
 
-- [Razvoj AI rešitev po meri — WhatsApp, Viber in integracije](https://flowtiq.si/ai-resitve.html): Razvijamo AI pomočnike po meri na WhatsAppu, Viberju in drugih pogovornih platformah ter jih povežemo z blagajno, ERP-jem ali spletno trgovino. Ekipa, ki v produkciji vzdržuje FlowTiq.
+- [Razvoj AI rešitev po meri — WhatsApp, Viber in integracije](https://flowtiq.si/ai-resitve.html): Razvijamo AI pomočnike po meri na WhatsAppu, Viberju in drugih platformah ter jih povežemo z blagajno, ERP-jem ali spletno trgovino.
 
 ## Podjetje in zaupanje
 

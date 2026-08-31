@@ -24,7 +24,8 @@ const STRANI = [
   ['/ai-resitve.html', 0.9, 'monthly'],
   ['/o-nas.html', 0.6, 'yearly'],
   ['/nasveti.html', 0.7, 'monthly'],
-  ['/kontakt.html', 0.8, 'yearly'],
+  // Odkar samostrežne registracije ni, je to edina pot do računa.
+  ['/kontakt.html', 0.9, 'monthly'],
   ['/varnost.html', 0.5, 'yearly'],
   ['/imenik.html', 0.7, 'weekly'],
   ['/restavracije', 0.6, 'weekly'],
