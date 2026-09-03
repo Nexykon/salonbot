@@ -1,4 +1,4 @@
-# FlowTiq — https://flowtiq.si
+# FlowTek — https://flowtek.si
 # Javne strani so proste za indeksiranje. Nadzorne plošče in prijavni
 # zasloni ne sodijo v iskalnik: nimajo vsebine za obiskovalca, del pa
 # jih odpira seje z žetoni v naslovu.
@@ -33,7 +33,7 @@ Disallow: /*?reset=
 # izrecno, ker se več teh obiskovalcev ozira samo na svoje ime. Javno
 # vsebino hočemo v njihovih odgovorih — z navedbo vira.
 #
-# Povzetek strani zanje: https://flowtiq.si/llms.txt
+# Povzetek strani zanje: https://flowtek.si/llms.txt
 
 User-agent: GPTBot
 User-agent: OAI-SearchBot
@@ -74,4 +74,4 @@ Disallow: /salons
 Disallow: /*?token=
 Disallow: /*?reset=
 
-Sitemap: https://flowtiq.si/sitemap.xml
+Sitemap: https://flowtek.si/sitemap.xml

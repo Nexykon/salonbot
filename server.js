@@ -25,6 +25,45 @@ const app = express();
 
 app.use(express.json({ limit: '22mb' }));
 
+/*
+  ─── Stara domena → nova (301) ─────────────────────────────────────────────
+  Izdelek se je preimenoval iz FlowTiq v FlowTek; poti se preslikajo 1 : 1,
+  vključno z /restavracije in /panoga/*. Stara domena naj ostane priklopljena
+  vsaj 12 mesecev, da se prenese avtoriteta in da stari zaznamki delujejo.
+
+  Dve namerni izjemi, brez katerih bi preusmeritev podrla delovanje:
+    - samo GET in HEAD. Meta ob POST na /webhook preusmeritve ne sledi, zato
+      bi 301 pomenil izgubljena sporočila strank.
+    - /webhook in /api/ nikoli. Tudi če Meta ali kak odjemalec še kaže na
+      staro domeno, mora klic dobiti odgovor, ne preusmeritve.
+*/
+/*
+  PREUSMERITEV JE PRIVZETO IZKLOPLJENA.
+
+  Dokler flowtek.si ne obstaja, bi 301 pomenil, da vsak obiskovalec
+  flowtiq.si pristane na domeni brez odziva — stran bi bila za vse
+  nedosegljiva. To ni tveganje, ampak gotovost.
+
+  Ko bo nova domena priklopljena, se preusmeritev vklopi z okoljsko
+  spremenljivko na gostovanju (brez posega v kodo in brez ponovne objave):
+
+      PREUSMERI_NA_NOVO_DOMENO = 1
+
+  Preveri: https://flowtiq.si/cenik.html mora vrniti 301 na
+  https://flowtek.si/cenik.html.
+*/
+const NOVA_DOMENA = process.env.NOVA_DOMENA || 'https://flowtek.si';
+const STARE_DOMENE = ['flowtiq.si', 'www.flowtiq.si'];
+const PREUSMERI = process.env.PREUSMERI_NA_NOVO_DOMENO === '1';
+app.use((req, res, next) => {
+  if (!PREUSMERI) return next();
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const gostitelj = String(req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
+  if (!STARE_DOMENE.includes(gostitelj)) return next();
+  if (req.path === '/webhook' || req.path.startsWith('/api/')) return next();
+  res.redirect(301, NOVA_DOMENA + req.originalUrl);
+});
+
 // ─── Static files (dashboard) ─────────────────────────────
 // Preusmeritve po preimenovanju strani (stari zaznamki/emaili ostanejo veljavni)
 app.get('/dashboard.html', (req, res) => { const qs = req.originalUrl.split('?')[1]; res.redirect(302, '/admin.html' + (qs ? '?' + qs : '')); });
@@ -662,7 +701,7 @@ app.post('/onboard', async (req, res) => {
     await db.createServicesFromPreset(salon.id, preset.services);
 
     // Pošlji welcome email z linkom za nastavitev gesla
-    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
     const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
     let emailSent = false;
     try {
@@ -784,7 +823,7 @@ app.post('/api/signup-neuporabljeno', rateLimit(5, 10 * 60 * 1000), async (req, 
     // Nove registracije dobijo PRAZEN meni — lastnik (ali admin) ga napolni sam.
     // (Prej se je meni napolnil z demo artikli iz preseta.)
 
-    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
     const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
 
     // 1) stranki: welcome + link za nastavitev gesla (dostop do dashboarda takoj)
@@ -793,7 +832,7 @@ app.post('/api/signup-neuporabljeno', rateLimit(5, 10 * 60 * 1000), async (req, 
     catch (e) { console.warn('Signup welcome email failed:', e.message); }
 
     // 2) tebi: obvestilo za priklop
-    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
     try {
       await mail.sendEmail(ownerEmail, `Nova registracija — ${name} (${info.label})`, [
         'Nova registracija za priklop:', '',
@@ -822,7 +861,7 @@ app.post('/api/signup-neuporabljeno', rateLimit(5, 10 * 60 * 1000), async (req, 
       const priceId = rCena.priceId;
       if (stripe && priceId) {
         try {
-          const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+          const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
           const returnPage = bookingMode === 'delivery' ? 'delivery.html' : 'salon.html';
           const cs = await stripe.checkout.sessions.create({
             mode: 'subscription',
@@ -1006,7 +1045,7 @@ app.post('/api/settings/request-renewal', async (req, res) => {
     const desiredPlan = plans.isPlan(req.body?.plan) ? req.body.plan : salon.subscription_plan;
     const cur = planInfo(salon.subscription_plan);
     const want = planInfo(desiredPlan);
-    const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
     await mail.sendEmail(owner, `Zahteva za podaljšanje/nadgradnjo — ${salon.name}`, [
       'Stranka želi podaljšati ali nadgraditi naročnino:', '',
       `Lokal: ${salon.name}${salon.company_name ? ' (' + salon.company_name + ')' : ''}`,
@@ -1039,7 +1078,7 @@ app.post('/api/admin/send-proforma/:id', async (req, res) => {
       const pdf = await proforma.proformaPdf(salon, plan);
       attachments = [{ filename: `Predracun-${c.no}.pdf`, content: pdf.toString('base64') }];
     } catch (e) { console.warn('Proforma PDF ni uspel, pošiljam samo HTML:', e.message); }
-    const sent = await mail.sendEmail(salon.owner_email, `Predračun ${c.no} — FlowTiq`, html, attachments);
+    const sent = await mail.sendEmail(salon.owner_email, `Predračun ${c.no} — FlowTek`, html, attachments);
     if (!sent) return res.status(500).json({ error: 'Email ni bil poslan (preveri Resend).' });
     const updated = await db.updateSalonSettings(salon.id, {
       billing_status: 'awaiting', proforma_no: c.no, proforma_amount: c.amount, proforma_issued_at: new Date().toISOString()
@@ -1100,7 +1139,7 @@ app.post('/api/admin/resend-welcome', async (req, res) => {
     const salon = await db.getSalonById(salon_id);
     if (!salon) return res.status(404).json({ error: 'Salon ne obstaja' });
     if (!salon.owner_email) return res.status(400).json({ error: 'Salon nima owner_email' });
-    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
     const setupUrl = `${baseUrl}/setup.html?token=${salon.salon_token}`;
     const sent = await mail.sendWelcomeEmail(salon, setupUrl);
     if (!sent) return res.status(500).json({ error: 'Email ni bil poslan (Resend ni konfiguriran)' });
@@ -1193,7 +1232,7 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
 
     const salonName = salon.name || 'vaše podjetje';
     const contact = salon.contact_person || salon.owner_name || '';
-    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
     // Ena prijava za vse — stran sama odpre pravo ploščo. Stara naslova
     // (salon.html, delivery.html) ostaneta delujoča zaradi že poslanih e-pošt.
     const loginUrl = `${baseUrl}/prijava.html`;
@@ -1201,12 +1240,12 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
     const html = `
       <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:560px;margin:0 auto;background:#f6f9f8;padding:0">
         <div style="background:linear-gradient(135deg,#0e7a5f,#0aa06e);padding:28px 24px;text-align:center">
-          <div style="font-size:22px;font-weight:800;color:#fff">FlowTiq</div>
+          <div style="font-size:22px;font-weight:800;color:#fff">FlowTek</div>
         </div>
         <div style="padding:28px 24px;color:#1e293b;line-height:1.7">
-          <h2 style="margin:0 0 8px;color:#0e7a5f">Dobrodošli v FlowTiq! 🎉</h2>
+          <h2 style="margin:0 0 8px;color:#0e7a5f">Dobrodošli v FlowTek! 🎉</h2>
           <p style="margin:0 0 14px">Pozdravljeni${contact ? ' ' + contact : ''},</p>
-          <p style="margin:0 0 14px">vaš FlowTiq asistent za <strong>${salonName}</strong> je aktiviran in pripravljen na delo.</p>
+          <p style="margin:0 0 14px">vaš FlowTek asistent za <strong>${salonName}</strong> je aktiviran in pripravljen na delo.</p>
           <p style="margin:0 0 14px">Od zdaj vaše stranke naročajo in rezervirajo kar prek WhatsAppa — 24/7, brez klicanja in čakanja. Ob vsakem novem naročilu oz. rezervaciji boste takoj obveščeni, vse skupaj pa pregledno spremljate na svoji nadzorni plošči.</p>
           <div style="text-align:center;margin:24px 0">
             <a href="${loginUrl}" style="display:inline-block;background:#0aa06e;color:#fff;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:10px">Odpri nadzorno ploščo →</a>
@@ -1214,10 +1253,10 @@ app.post('/api/salons/:id/welcome', async (req, res) => {
           <p style="margin:0 0 14px">Če potrebujete pomoč ali kakšno spremembo, nam kar odgovorite na ta email — z veseljem pomagamo. 🙌</p>
           <p style="margin:0">Želimo vam obilo naročil in zadovoljnih strank! 🚀</p>
         </div>
-        <div style="padding:16px 24px;text-align:center;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0">— Ekipa FlowTiq · <a href="https://flowtiq.si" style="color:#0e7a5f;text-decoration:none">flowtiq.si</a></div>
+        <div style="padding:16px 24px;text-align:center;color:#64748b;font-size:13px;border-top:1px solid #e2e8f0">— Ekipa FlowTek · <a href="https://flowtek.si" style="color:#0e7a5f;text-decoration:none">flowtek.si</a></div>
       </div>`;
 
-    const ok = await mail.sendEmail(to, `Dobrodošli v FlowTiq — ${salonName} je aktiviran 🎉`, html);
+    const ok = await mail.sendEmail(to, `Dobrodošli v FlowTek — ${salonName} je aktiviran 🎉`, html);
     if (!ok) return res.status(500).json({ error: 'Email ni bil poslan (preveri RESEND_API_KEY / EMAIL_FROM).' });
     console.log(`Welcome email sent to ${to} for salon ${salonName}`);
     res.json({ success: true });
@@ -1619,7 +1658,7 @@ app.post('/api/billing/checkout', async (req, res) => {
   const salon = await settingsSalonAuth(req, res);
   if (!salon) return;
   const stripe = stripeClient();
-  if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtiq.si.' });
+  if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena. Pišite na info@flowtek.si.' });
   const plan = plans.planKey(req.body.plan);
   // Obdobje iz zahteve ima prednost — stranka ga izbere s preklopnikom v plošči.
   const period = (req.body.billing_period === 'yearly'
@@ -1635,14 +1674,14 @@ app.post('/api/billing/checkout', async (req, res) => {
   const zaMastra = isMasterRequest(req) ? { podrobno: r.podrobno } : {};
   if (r.napaka === 'stripe') {
     console.error('[billing] checkout: ' + r.podrobno);
-    return res.status(502).json({ error: 'Povezava s Stripom ni uspela. Poskusite znova ali pišite na info@flowtiq.si.', ...zaMastra });
+    return res.status(502).json({ error: 'Povezava s Stripom ni uspela. Poskusite znova ali pišite na info@flowtek.si.', ...zaMastra });
   }
   if (!r.priceId) {
     console.error('[billing] checkout: ' + (r.podrobno || 'cene ni'));
     return res.status(503).json({ error: `Stripe cena za paket "${plan}" (${period === 'yearly' ? 'letno' : 'mesečno'}) še ni nastavljena.`, ...zaMastra });
   }
   const priceId = r.priceId;
-  const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+  const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
   const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
 
   const sejaOpts = zKupcem => ({
@@ -1780,7 +1819,7 @@ app.post('/api/billing/portal', async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Plačila še niso omogočena.' });
   if (!salon.stripe_customer_id) return res.status(400).json({ error: 'Naročnina prek Stripe še ni aktivirana.' });
   try {
-    const baseUrl = process.env.BASE_URL || 'https://flowtiq.si';
+    const baseUrl = process.env.BASE_URL || 'https://flowtek.si';
     const returnPage = (salon.booking_mode === 'delivery' || salon.business_type === 'restaurant') ? 'delivery.html' : 'salon.html';
     const portal = await stripe.billingPortal.sessions.create({
       customer: salon.stripe_customer_id,
@@ -2400,7 +2439,7 @@ app.post('/api/auth/start', rateLimit(5, 15 * 60 * 1000, poTelefonu('phone')),
   try {
     if (isMasterAdminPhone(phone)) {
       const code = ownerAuth.createOtp(phone, null, 'master');
-      await wa.send(process.env.WA_PHONE_ID, process.env.WA_TOKEN, wa.textMsg(phone, `FlowTiq master admin koda: ${code}\nVelja 10 minut.`));
+      await wa.send(process.env.WA_PHONE_ID, process.env.WA_TOKEN, wa.textMsg(phone, `FlowTek master admin koda: ${code}\nVelja 10 minut.`));
       return res.json({ success: true, role: 'master', message: 'Master admin koda poslana na WhatsApp.' });
     }
 
@@ -2411,7 +2450,7 @@ app.post('/api/auth/start', rateLimit(5, 15 * 60 * 1000, poTelefonu('phone')),
     const code = ownerAuth.createOtp(phone, salon.id, 'owner');
     const phoneId = salon.whatsapp_phone_number_id || process.env.WA_PHONE_ID;
     const token = salon.whatsapp_access_token || process.env.WA_TOKEN;
-    await wa.send(phoneId, token, wa.textMsg(phone, `FlowTiq prijavna koda: ${code}\nVelja 10 minut.`));
+    await wa.send(phoneId, token, wa.textMsg(phone, `FlowTek prijavna koda: ${code}\nVelja 10 minut.`));
     res.json({ success: true, message: 'Koda poslana na WhatsApp.' });
   } catch (err) {
     console.error('OTP start error:', err.response?.data || err.message);
@@ -3053,18 +3092,18 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
           ['Soglasje za kontakt', soglasje === undefined ? 'ni podatka (starejši obrazec)' : (soglasje ? 'da' : 'ni označeno')]
         ];
 
-    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
     const ownerPhone = process.env.FLOWTIQ_OWNER_PHONE || '38640599185';
     const waToken   = process.env.WA_TOKEN;
     const waPhoneId = process.env.WA_PHONE_ID;
 
     // 1. Email notification to Tomaz
     const ownerSubject = locenaPolja
-      ? `Nova prijava FlowTiq — ${lokal || name}${panoga ? ` (${panoga})` : ''}`
-      : `Nova prijava FlowTiq — ${business_type}`;
+      ? `Nova prijava FlowTek — ${lokal || name}${panoga ? ` (${panoga})` : ''}`
+      : `Nova prijava FlowTek — ${business_type}`;
     const ownerHtml = `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
-        <h2 style="color:#1e293b">Nova prijava na FlowTiq</h2>
+        <h2 style="color:#1e293b">Nova prijava na FlowTek</h2>
         <table style="width:100%;border-collapse:collapse;margin-top:16px">
           ${vrsticeObrazca.map(([oznaka, vrednost], i) => `<tr><td style="padding:8px 12px;${i % 2 === 0 ? 'background:#f8fafc;' : ''}font-weight:600;color:#475569;width:44%;vertical-align:top">${esc(oznaka)}</td><td style="padding:8px 12px;color:#1e293b;${i % 2 === 0 ? 'background:#f8fafc;' : ''}">${esc(vrednost)}</td></tr>`).join('\n          ')}
         </table>
@@ -3074,25 +3113,25 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
 
     // 2. WhatsApp notification to Tomaz (best-effort — works within 24h session window)
     if (waToken && waPhoneId) {
-      const waMsg = 'Nova prijava FlowTiq!\n\n'
+      const waMsg = 'Nova prijava FlowTek!\n\n'
         + vrsticeObrazca.map(([oznaka, vrednost]) => oznaka + ': ' + vrednost).join('\n')
         + '\n\nOdgovori jim čim prej.';
       wa.send(waPhoneId, waToken, wa.textMsg(ownerPhone, waMsg)).catch(() => {});
     }
 
     // 3. Confirmation email to prospect
-    const prospectSubject = 'Hvala za prijavo — FlowTiq vas bo kontaktiral';
+    const prospectSubject = 'Hvala za prijavo — FlowTek vas bo kontaktiral';
     const prospectHtml = `
       <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
         <h2 style="color:#1e293b">Prijava prejeta!</h2>
         <p style="color:#475569">Pozdravljeni ${esc(name)},</p>
-        <p style="color:#475569">Hvala za zanimanje za <strong>FlowTiq</strong>! Prijava je bila uspešno poslana.</p>
+        <p style="color:#475569">Hvala za zanimanje za <strong>FlowTek</strong>! Prijava je bila uspešno poslana.</p>
         <p style="color:#475569">Kontaktirali vas bomo v <strong>nekaj urah</strong> na e-pošto <strong>${esc(email)}</strong>${phone ? ` ali telefon <strong>${esc(phone)}</strong>` : ''}.</p>
         <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin:20px 0">
           <p style="margin:0;color:#166534;font-weight:600">Naši paketi:</p>
           <p style="margin:6px 0 0;color:#166534">AI Start <strong>89 € / mes</strong> (do 500 naročil) · AI Pro <strong>159,99 € / mes</strong> (do 1.500) · Premium <strong>299 € / mes</strong> (do 10.000). Brez vezave.</p>
         </div>
-        <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTiq</p>
+        <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTek</p>
       </div>`;
     mail.sendEmail(email, prospectSubject, prospectHtml).catch(e => console.error('[contact] prospect email:', e.message));
 
@@ -3456,7 +3495,7 @@ app.post('/api/leads/:id/send', async (req, res) => {
 
     const html = personalizeEmail(templateHtml, lead.business_name, lead.token);
     const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
-    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <info@flowtiq.si>';
+    const fromEmail = process.env.RESEND_FROM || 'FlowTek <info@flowtek.si>';
 
     const { default: axios } = await import('axios');
     await axios.post('https://api.resend.com/emails', {
@@ -3464,7 +3503,7 @@ app.post('/api/leads/:id/send', async (req, res) => {
       to: lead.email,
       subject,
       html,
-      reply_to: 'info@flowtiq.si',
+      reply_to: 'info@flowtek.si',
     }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
 
     await sbLeads('patch', `/leads?id=eq.${lead.id}&email_sent_at=is.null`,
@@ -3506,7 +3545,7 @@ app.post('/api/leads/bulk-send', async (req, res) => {
     if (!pending.length) return res.json({ success: true, sent: 0, message: 'Ni leadov za pošiljanje' });
 
     const { default: axios } = await import('axios');
-    const fromEmail = process.env.RESEND_FROM || 'FlowTiq <info@flowtiq.si>';
+    const fromEmail = process.env.RESEND_FROM || 'FlowTek <info@flowtek.si>';
     let sent = 0, errors = [];
 
     for (const lead of pending) {
@@ -3515,7 +3554,7 @@ app.post('/api/leads/bulk-send', async (req, res) => {
         const html = personalizeEmail(loadEmailTemplate(templateName) || '', lead.business_name, lead.token);
         const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
         await axios.post('https://api.resend.com/emails', {
-          from: fromEmail, to: lead.email, subject, html, reply_to: 'info@flowtiq.si',
+          from: fromEmail, to: lead.email, subject, html, reply_to: 'info@flowtek.si',
         }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
         await sbLeads('patch', `/leads?id=eq.${lead.id}`,
           { email_sent_at: new Date().toISOString(), status: 'sent' });
@@ -3533,7 +3572,7 @@ app.post('/api/leads/bulk-send', async (req, res) => {
 
 
 app.listen(PORT, () => {
-  console.log(`FlowTiq server running on port ${PORT}`);
+  console.log(`FlowTek server running on port ${PORT}`);
   /*
     Uskladitev naročnin s Stripom. Zavestno ni v startScheduler(): tista
     funkcija se v tem projektu nikoli ne kliče, poleg tega pa poganja tudi

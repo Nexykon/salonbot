@@ -1,12 +1,12 @@
-# FlowTiq
+# FlowTek
 
 > WhatsApp pomočnik za slovenske gostince in obrtnike: 24 ur na dan sprejema naročila in rezervacije na obstoječi WhatsApp številki lokala, brez aplikacije za stranko in brez provizije od naročila.
 
-FlowTiq ni klepetalni robot za vprašanja o izdelku, ampak prevzame konkreten posel: pogovor s stranko od prvega sporočila do oddanega naročila ali potrjenega termina. Zneske, koledar in urnik vodi determinirana koda, jezik razume AI — zato bot ne izmišljuje cen in prostih terminov. Lastnik vse nastavi v nadzorni plošči: delovni čas po dnevih, storitve in cene, ceno embalaže, ceno dostave po krajih in ton pogovora.
+FlowTek ni klepetalni robot za vprašanja o izdelku, ampak prevzame konkreten posel: pogovor s stranko od prvega sporočila do oddanega naročila ali potrjenega termina. Zneske, koledar in urnik vodi determinirana koda, jezik razume AI — zato bot ne izmišljuje cen in prostih terminov. Lastnik vse nastavi v nadzorni plošči: delovni čas po dnevih, storitve in cene, ceno embalaže, ceno dostave po krajih in ton pogovora.
 
-Poleg izdelka razvijamo tudi AI rešitve po meri za podjetja — pomočnike na drugih pogovornih platformah in integracije z obstoječimi sistemi (glej razdelek "Razvoj po meri"). Izdelek FlowTiq ostaja glavna ponudba.
+Poleg izdelka razvijamo tudi AI rešitve po meri za podjetja — pomočnike na drugih pogovornih platformah in integracije z obstoječimi sistemi (glej razdelek "Razvoj po meri"). Izdelek FlowTek ostaja glavna ponudba.
 
-Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je prosta za branje in navajanje; prosimo za navedbo vira flowtiq.si.
+Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je prosta za branje in navajanje; prosimo za navedbo vira flowtek.si.
 
 ## Na kratko
 
@@ -16,58 +16,58 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 - **Cena:** fiksna mesečna naročnina brez provizije od naročila — AI Start 89 €, AI Pro 159,99 €, Premium 299 € na mesec. Vsi paketi imajo vse funkcije; razlikuje se obseg (500, 1.500 oziroma 10.000 naročil na mesec), Premium doda več lokacij pod eno ploščo in prednostno podporo.
 - **Pogoji:** postavitev je brezplačna, ni vezave, odpoved kadar koli. Cena je končna — Webacus ni zavezanec za DDV (1. odst. 94. člena ZDDV-1).
 - **Kaj zna:** odgovarja 24 ur na dan, razume prosto napisano besedilo, vodi lasten koledar z dolžinami storitev in ločenimi koledarji po zaposlenih, pokaže meni v pogovoru, sešteje naročilo z embalažo in dostavo po kraju, pošlje opomnik dan prej, sprosti odpovedani termin, vabi stranke nazaj, zbira Google ocene, se poveže z blagajno in vse skupaj pokaže na nadzorni plošči.
-- **Razvoj po meri:** poleg izdelka FlowTiq razvijamo AI rešitve po naročilu — pogovorne pomočnike na WhatsAppu, Viberju, Telegramu, Messengerju in v spletnem klepetu, integracije z blagajno, ERP, CRM in spletno trgovino, avtomatizacijo dela z besedilom ter prevzem in vzdrževanje obstoječih rešitev. Cena je po oceni obsega; uvodni pogovor in ocena sta brezplačna. Podrobno: https://flowtiq.si/ai-resitve.html
+- **Razvoj po meri:** poleg izdelka FlowTek razvijamo AI rešitve po naročilu — pogovorne pomočnike na WhatsAppu, Viberju, Telegramu, Messengerju in v spletnem klepetu, integracije z blagajno, ERP, CRM in spletno trgovino, avtomatizacijo dela z besedilom ter prevzem in vzdrževanje obstoječih rešitev. Cena je po oceni obsega; uvodni pogovor in ocena sta brezplačna. Podrobno: https://flowtek.si/ai-resitve.html
 - **Kdo ga razvija:** Webacus, Valentin Iljaž s.p., Nova vas 12, Bizeljsko, Slovenija. Davčna št. 35880643.
-- **Kontakt:** info@flowtiq.si, telefon in WhatsApp +386 40 599 185. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
+- **Kontakt:** info@flowtek.si, telefon in WhatsApp +386 40 599 185. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
 
 ## Izdelek
 
-- [FlowTiq — WhatsApp pomočnik za naročila in termine](https://flowtiq.si/): Kaj je FlowTiq in za koga je
-- [Kako FlowTiq deluje — razloženo brez računalniških besed](https://flowtiq.si/kako-deluje.html): Od prvega sporočila do potrjenega termina. Kaj naredimo mi, kaj ostane pri tebi in kaj se zgodi, ko bot česa ne ve.
-- [Kaj FlowTiq zna — vse zmožnosti na enem mestu](https://flowtiq.si/funkcije.html): Naročanje, koledar, opomniki, ocene, vabila nazaj, povezava z blagajno, nadzorna plošča. Vse, kar FlowTiq prevzame namesto tebe.
-- [Cenik FlowTiq — 89, 159,99 ali 299 € na mesec, brez vezave](https://flowtiq.si/cenik.html): Trije paketi, fiksna mesečna cena, nič provizij od naročila. Postavitev je brezplačna, odpoved kadarkoli.
-- [Pogosta vprašanja o FlowTiq — brez tehničnih besed](https://flowtiq.si/vprasanja.html): Kaj je FlowTiq, kaj mora narediti stranka, kaj s podatki, kaj če bot ne ve, koliko stane. Odgovori na vprašanja, ki jih slišimo vsak dan.
+- [FlowTek — WhatsApp pomočnik za naročila in termine](https://flowtek.si/): Kaj je FlowTek in za koga je
+- [Kako FlowTek deluje — razloženo brez računalniških besed](https://flowtek.si/kako-deluje.html): Od prvega sporočila do potrjenega termina. Kaj naredimo mi, kaj ostane pri tebi in kaj se zgodi, ko bot česa ne ve.
+- [Kaj FlowTek zna — vse zmožnosti na enem mestu](https://flowtek.si/funkcije.html): Naročanje, koledar, opomniki, ocene, vabila nazaj, povezava z blagajno, nadzorna plošča. Vse, kar FlowTek prevzame namesto tebe.
+- [Cenik FlowTek — 89, 159,99 ali 299 € na mesec, brez vezave](https://flowtek.si/cenik.html): Trije paketi, fiksna mesečna cena, nič provizij od naročila. Postavitev je brezplačna, odpoved kadarkoli.
+- [Pogosta vprašanja o FlowTek — brez tehničnih besed](https://flowtek.si/vprasanja.html): Kaj je FlowTek, kaj mora narediti stranka, kaj s podatki, kaj če bot ne ve, koliko stane. Odgovori na vprašanja, ki jih slišimo vsak dan.
 
 ## Za katero dejavnost
 
-- [Za koga je FlowTiq — 12 obrti, ki naročanje prepustijo WhatsAppu](https://flowtiq.si/panoge.html): Restavracije, saloni, ambulante, servisi, studii. Poglej, kako FlowTiq deluje v tvoji obrti — s konkretnimi primeri pogovorov.
-- [FlowTiq za avtoservise in vulkanizerje — WhatsApp pomočnik](https://flowtiq.si/panoga/avtoservisi.html): FlowTiq za avtoservise in vulkanizerje: Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.
-- [FlowTiq za fotografe — WhatsApp pomočnik](https://flowtiq.si/panoga/fotografi.html): FlowTiq za fotografe: Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.
-- [FlowTiq za frizerske salone — WhatsApp pomočnik](https://flowtiq.si/panoga/frizerski-saloni.html): FlowTiq za frizerske salone: Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.
-- [FlowTiq za hotele in apartmaje — WhatsApp pomočnik](https://flowtiq.si/panoga/hoteli.html): FlowTiq za hotele in apartmaje: Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.
-- [FlowTiq za kozmetiko in nohte — WhatsApp pomočnik](https://flowtiq.si/panoga/kozmetika.html): FlowTiq za kozmetiko in nohte: Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.
-- [FlowTiq za restavracije in picerije — WhatsApp pomočnik](https://flowtiq.si/panoga/restavracije.html): FlowTiq za restavracije in picerije: Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.
-- [FlowTiq za šole in inštrukcije — WhatsApp pomočnik](https://flowtiq.si/panoga/sole.html): FlowTiq za šole in inštrukcije: Prijave na termine in tečaje, obveščanje staršev, evidenca obiskov.
-- [FlowTiq za tattoo in piercing studie — WhatsApp pomočnik](https://flowtiq.si/panoga/tattoo.html): FlowTiq za tattoo in piercing studie: Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.
-- [FlowTiq za osebne trenerje in fitnes — WhatsApp pomočnik](https://flowtiq.si/panoga/trenerji.html): FlowTiq za osebne trenerje in fitnes: Termini, skupinske vadbe z omejenimi mesti in paketi treningov.
-- [FlowTiq za veterinarske ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/veterina.html): FlowTiq za veterinarske ambulante: Termini po živali, opomniki na cepljenja in obvladana nujnost.
-- [FlowTiq za masaže in wellness — WhatsApp pomočnik](https://flowtiq.si/panoga/wellness.html): FlowTiq za masaže in wellness: Termini, paketi in darilni boni — brez motenja med masažo.
-- [FlowTiq za zobozdravnike in ambulante — WhatsApp pomočnik](https://flowtiq.si/panoga/zobozdravniki.html): FlowTiq za zobozdravnike in ambulante: Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.
+- [Za koga je FlowTek — 12 obrti, ki naročanje prepustijo WhatsAppu](https://flowtek.si/panoge.html): Restavracije, saloni, ambulante, servisi, studii. Poglej, kako FlowTek deluje v tvoji obrti — s konkretnimi primeri pogovorov.
+- [FlowTek za avtoservise in vulkanizerje — WhatsApp pomočnik](https://flowtek.si/panoga/avtoservisi.html): FlowTek za avtoservise in vulkanizerje: Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.
+- [FlowTek za fotografe — WhatsApp pomočnik](https://flowtek.si/panoga/fotografi.html): FlowTek za fotografe: Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.
+- [FlowTek za frizerske salone — WhatsApp pomočnik](https://flowtek.si/panoga/frizerski-saloni.html): FlowTek za frizerske salone: Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.
+- [FlowTek za hotele in apartmaje — WhatsApp pomočnik](https://flowtek.si/panoga/hoteli.html): FlowTek za hotele in apartmaje: Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.
+- [FlowTek za kozmetiko in nohte — WhatsApp pomočnik](https://flowtek.si/panoga/kozmetika.html): FlowTek za kozmetiko in nohte: Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.
+- [FlowTek za restavracije in picerije — WhatsApp pomočnik](https://flowtek.si/panoga/restavracije.html): FlowTek za restavracije in picerije: Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.
+- [FlowTek za šole in inštrukcije — WhatsApp pomočnik](https://flowtek.si/panoga/sole.html): FlowTek za šole in inštrukcije: Prijave na termine in tečaje, obveščanje staršev, evidenca obiskov.
+- [FlowTek za tattoo in piercing studie — WhatsApp pomočnik](https://flowtek.si/panoga/tattoo.html): FlowTek za tattoo in piercing studie: Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.
+- [FlowTek za osebne trenerje in fitnes — WhatsApp pomočnik](https://flowtek.si/panoga/trenerji.html): FlowTek za osebne trenerje in fitnes: Termini, skupinske vadbe z omejenimi mesti in paketi treningov.
+- [FlowTek za veterinarske ambulante — WhatsApp pomočnik](https://flowtek.si/panoga/veterina.html): FlowTek za veterinarske ambulante: Termini po živali, opomniki na cepljenja in obvladana nujnost.
+- [FlowTek za masaže in wellness — WhatsApp pomočnik](https://flowtek.si/panoga/wellness.html): FlowTek za masaže in wellness: Termini, paketi in darilni boni — brez motenja med masažo.
+- [FlowTek za zobozdravnike in ambulante — WhatsApp pomočnik](https://flowtek.si/panoga/zobozdravniki.html): FlowTek za zobozdravnike in ambulante: Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.
 
 ## Razvoj po meri
 
-- [Razvoj AI rešitev po meri — WhatsApp, Viber in integracije](https://flowtiq.si/ai-resitve.html): Razvijamo AI pomočnike po meri na WhatsAppu, Viberju in drugih platformah ter jih povežemo z blagajno, ERP-jem ali spletno trgovino.
+- [Razvoj AI rešitev po meri — WhatsApp, Viber in integracije](https://flowtek.si/ai-resitve.html): Razvijamo AI pomočnike po meri na WhatsAppu, Viberju in drugih platformah ter jih povežemo z blagajno, ERP-jem ali spletno trgovino.
 
 ## Podjetje in zaupanje
 
-- [O nas — kdo stoji za FlowTiq](https://flowtiq.si/o-nas.html): Zakaj smo naredili FlowTiq, po kakšnih pravilih ga gradimo in kaj obljubljamo obrtnikom in gostincem.
-- [Primeri iz prakse — kako izgleda prvi mesec s FlowTiq](https://flowtiq.si/zgodbe.html): Štirje tipični primeri: picerija, frizerski salon, avtoservis in kozmetični studio. Kaj se spremeni v prvih tridesetih dneh.
-- [Varnost in zasebnost — kaj se dogaja s podatki tvojih strank](https://flowtiq.si/varnost.html): Kje so shranjeni podatki, kdo jih vidi, kako dolgo jih hranimo in kako jih izbrišeš. Razloženo po slovensko, brez pravnega jezika.
-- [Odpri račun FlowTiq — v dveh dneh sprejema naročila namesto tebe](https://flowtiq.si/kontakt.html): Izpolni kratek obrazec. Povemo ti ceno, nastavimo pomočnika in v dveh dneh deluje na tvoji WhatsApp številki.
+- [O nas — kdo stoji za FlowTek](https://flowtek.si/o-nas.html): Zakaj smo naredili FlowTek, po kakšnih pravilih ga gradimo in kaj obljubljamo obrtnikom in gostincem.
+- [Primeri iz prakse — kako izgleda prvi mesec s FlowTek](https://flowtek.si/zgodbe.html): Štirje tipični primeri: picerija, frizerski salon, avtoservis in kozmetični studio. Kaj se spremeni v prvih tridesetih dneh.
+- [Varnost in zasebnost — kaj se dogaja s podatki tvojih strank](https://flowtek.si/varnost.html): Kje so shranjeni podatki, kdo jih vidi, kako dolgo jih hranimo in kako jih izbrišeš. Razloženo po slovensko, brez pravnega jezika.
+- [Odpri račun FlowTek — v dveh dneh sprejema naročila namesto tebe](https://flowtek.si/kontakt.html): Izpolni kratek obrazec. Povemo ti ceno, nastavimo pomočnika in v dveh dneh deluje na tvoji WhatsApp številki.
 
 ## Za stranke lokalov
 
-- [Naročite prek WhatsAppa — imenik lokalov (FlowTiq)](https://flowtiq.si/imenik.html): Seznam restavracij, picerij, gostiln in salonov, kjer lahko naročite ali rezervirate kar prek WhatsAppa. Brez nalaganja aplikacij in brez registracije.
-- [Restavracije z naročanjem prek WhatsApp](https://flowtiq.si/restavracije): Seznam restavracij, picerij in gostiln, kjer lahko naročite kar prek WhatsAppa. Brez aplikacij, brez registracije.
+- [Naročite prek WhatsAppa — imenik lokalov (FlowTek)](https://flowtek.si/imenik.html): Seznam restavracij, picerij, gostiln in salonov, kjer lahko naročite ali rezervirate kar prek WhatsAppa. Brez nalaganja aplikacij in brez registracije.
+- [Restavracije z naročanjem prek WhatsApp](https://flowtek.si/restavracije): Seznam restavracij, picerij in gostiln, kjer lahko naročite kar prek WhatsAppa. Brez aplikacij, brez registracije.
 
 ## Optional
 
-- [Nasveti za obrtnike in gostince — kako ne izgubljati strank](https://flowtiq.si/nasveti.html): Praktični nasveti o naročanju, praznih terminih, provizijah dostavnih platform in ocenah na Googlu. Brez tehničnih besed.
-- [Politika zasebnosti](https://flowtiq.si/privacy.html): Kako FlowTiq ravna z osebnimi podatki: kaj zbiramo, kje hranimo, koliko časa in kako zahtevaš izbris. Strežniki v EU, skladno z GDPR.
-- [Pogoji uporabe](https://flowtiq.si/terms.html): Pogoji uporabe storitve FlowTiq: naročnina, odpoved, obveznosti obeh strani in odgovornost. Brez vezave, odpoved kadarkoli.
-- [Politika piškotkov](https://flowtiq.si/cookies.html): Katere piškotke uporablja flowtiq.si, čemu služijo in kako jih zavrneš ali izbrišeš v svojem brskalniku.
+- [Nasveti za obrtnike in gostince — kako ne izgubljati strank](https://flowtek.si/nasveti.html): Praktični nasveti o naročanju, praznih terminih, provizijah dostavnih platform in ocenah na Googlu. Brez tehničnih besed.
+- [Politika zasebnosti](https://flowtek.si/privacy.html): Kako FlowTek ravna z osebnimi podatki: kaj zbiramo, kje hranimo, koliko časa in kako zahtevaš izbris. Strežniki v EU, skladno z GDPR.
+- [Pogoji uporabe](https://flowtek.si/terms.html): Pogoji uporabe storitve FlowTek: naročnina, odpoved, obveznosti obeh strani in odgovornost. Brez vezave, odpoved kadarkoli.
+- [Politika piškotkov](https://flowtek.si/cookies.html): Katere piškotke uporablja flowtek.si, čemu služijo in kako jih zavrneš ali izbrišeš v svojem brskalniku.
 
 ---
 
-Zadnja sprememba: 2026-08-31
-Zemljevid strani: https://flowtiq.si/sitemap.xml
+Zadnja sprememba: 2026-09-03
+Zemljevid strani: https://flowtek.si/sitemap.xml

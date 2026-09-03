@@ -170,7 +170,7 @@ async function stripePriceId(plan, period, customPriceId) {
 }
 
 /*
-  Iz Stripove cene ugotovi paket: najprej metadata.flowtiq_plan (zapiše ga
+  Iz Stripove cene ugotovi paket: najprej metadata.flowtek_plan (zapiše ga
   skripta ob ustvarjanju), nato lookup_key, nazadnje ročna prevlada iz okolja.
   Sprejme cel objekt cene ali samo ID.
 */
@@ -179,7 +179,7 @@ function planFromPrice(cena) {
   const izOsnove = osnova => plans.PLAN_KEYS.find(k => plans.PLANS[k].env.toLowerCase() === osnova);
 
   if (typeof cena === 'object') {
-    if (plans.isPlan(cena.metadata?.flowtiq_plan)) return cena.metadata.flowtiq_plan;
+    if (plans.isPlan(cena.metadata?.flowtek_plan)) return cena.metadata.flowtek_plan;
     if (cena.lookup_key) {
       const z = izOsnove(String(cena.lookup_key).replace(/_(month|year)$/, ''));
       if (z) return z;
@@ -256,7 +256,7 @@ function subPeriodEnd(sub) {
 }
 
 // Strogo iskanje lokala: metadata -> subscription ID -> customer ID.
-// Vrne null, kadar naročnina ne pripada FlowTiqu (tuja dejavnost v računu).
+// Vrne null, kadar naročnina ne pripada FlowTeku (tuja dejavnost v računu).
 async function salonForSubscription(sub) {
   const izMeta = sub?.metadata?.salon_id;
   if (izMeta) {
@@ -385,10 +385,10 @@ async function applyStripeSubscription(sub, vir, salonZnan) {
   return { salon, status, paket, obdobje, konec, vklopljen, spremenjeno: true, spremembe };
 }
 
-/* ── Obvestila lastniku FlowTiqa ───────────────────────────────────────── */
+/* ── Obvestila lastniku FlowTeka ───────────────────────────────────────── */
 
 async function obvestiOPriklopu(r) {
-  const komu = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+  const komu = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
   const s = r.salon;
   await mail.sendEmail(komu, `💳 Plačano — čaka priklop: ${s.name}`, [
     'Plačilo s kartico je prišlo, bota pa ni bilo mogoče vklopiti samodejno,',
@@ -404,7 +404,7 @@ async function obvestiOPriklopu(r) {
 }
 
 async function obvestiOOdpovedi(salon) {
-  const komu = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+  const komu = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
   const waId = salon.whatsapp_phone_number_id || 'ni nastavljen';
   await mail.sendEmail(komu, `⚠️ Odpoved naročnine — ${salon.name}`, [
     'Naročnina je odpovedana ali dokončno neplačana.', '',

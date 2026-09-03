@@ -16,3 +16,9 @@ push_fix.ps1
 FLOWTIQ_TATTOO_ONBOARDING_RUNBOOK.md
 "FlowTiq spletna stran.txt"
 preview.ps1
+
+# Marketinške spretnosti (coreyhaines31/marketingskills, MIT) — orodje za delo,
+# ne del izdelka, zato niso v repozitoriju. Namestitev:
+#   git clone --depth 1 https://github.com/coreyhaines31/marketingskills
+#   cp -r marketingskills/skills/. .claude/skills/
+.claude/skills/

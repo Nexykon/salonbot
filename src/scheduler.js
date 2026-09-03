@@ -178,7 +178,7 @@ async function sendDailySummary() {
     const d = new Date(today + 'T12:00:00');
     const dateStr = d.toLocaleDateString('sl-SI', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-    let msg = `📊 *FlowTiq — ${dateStr}*\n\n`;
+    let msg = `📊 *FlowTek — ${dateStr}*\n\n`;
     msg += `📅 Rezervacije danes: *${stats.total}*\n`;
     msg += `✅ Potrjene: *${stats.confirmed}*\n`;
     msg += `⏳ Čakajoče: *${stats.pending}*\n`;
@@ -218,7 +218,7 @@ async function sendAiMissDigest() {
     const lines = misses.map(m =>
       `[${(m.created_at || '').slice(11, 16)}] ${nameOf(m.salon_id)} · +${m.phone} · faza: ${m.stage}\n  "${m.message}"  (${m.context})`
     );
-    const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+    const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
     await mail.sendEmail(owner, `AI natakar — ${misses.length} nerazumljenih sporočil (24h)`, [
       `Sporočila, ki jih AI natakar v zadnjih 24h ni razumel (padel na varovalni odgovor):`,
       ``,
@@ -248,13 +248,13 @@ async function sendRenewalReminders() {
       const days = Math.ceil((end - new Date()) / 86400000);
       if (days < 0 || days > 7) continue;
       try {
-        await mail.sendEmail(salon.owner_email, `FlowTiq — naročnina poteče čez ${days} ${days === 1 ? 'dan' : 'dni'}`, [
+        await mail.sendEmail(salon.owner_email, `FlowTek — naročnina poteče čez ${days} ${days === 1 ? 'dan' : 'dni'}`, [
           `Pozdravljeni${salon.contact_person ? ' ' + salon.contact_person : ''},`, '',
-          `vaša FlowTiq naročnina za "${salon.name}" poteče ${end.toLocaleDateString('sl-SI')} — čez ${days} ${days === 1 ? 'dan' : 'dni'}.`,
+          `vaša FlowTek naročnina za "${salon.name}" poteče ${end.toLocaleDateString('sl-SI')} — čez ${days} ${days === 1 ? 'dan' : 'dni'}.`,
           '',
           'Za nemoteno delovanje jo pravočasno podaljšajte: v nadzorni plošči kliknite "Zaprosi za podaljšanje", mi pa vam pošljemo predračun.',
           '',
-          'Hvala, ekipa FlowTiq'
+          'Hvala, ekipa FlowTek'
         ].join('\n'));
         await db.updateSalonSettings(salon.id, { renewal_reminded_at: today });
         console.log(`[renewal-reminder] Poslan ${salon.owner_email} (${days} dni do poteka)`);
@@ -283,13 +283,13 @@ async function sendExpiryNotices() {
       // (a) Potekla, a še v 3-dnevnem odlogu — obvesti enkrat
       if (daysPast < SUB_GRACE_DAYS && !salon.grace_notified_at) {
         try {
-          await mail.sendEmail(salon.owner_email, `FlowTiq — naročnina je potekla (${SUB_GRACE_DAYS} dni odloga)`, [
+          await mail.sendEmail(salon.owner_email, `FlowTek — naročnina je potekla (${SUB_GRACE_DAYS} dni odloga)`, [
             `Pozdravljeni${salon.contact_person ? ' ' + salon.contact_person : ''},`, '',
             `naročnina za "${salon.name}" je potekla ${end.toLocaleDateString('sl-SI')}.`,
             `Bot še vedno deluje, imate pa ${SUB_GRACE_DAYS} dni časa za podaljšanje. Po tem se samodejno ustavi.`,
             '',
             kakoPodaljsa,
-            '', 'Ekipa FlowTiq'
+            '', 'Ekipa FlowTek'
           ].join('\n'));
           await db.updateSalonSettings(salon.id, { grace_notified_at: new Date().toISOString() });
           console.log(`[expiry] Odlog obvestilo poslano ${salon.owner_email}`);
@@ -299,13 +299,13 @@ async function sendExpiryNotices() {
       // (b) Odlog potekel — bot je zdaj na pavzi — obvesti enkrat
       if (daysPast >= SUB_GRACE_DAYS && !salon.paused_notified_at) {
         try {
-          await mail.sendEmail(salon.owner_email, `FlowTiq — bot je začasno ustavljen`, [
+          await mail.sendEmail(salon.owner_email, `FlowTek — bot je začasno ustavljen`, [
             `Pozdravljeni${salon.contact_person ? ' ' + salon.contact_person : ''},`, '',
             `ker naročnina za "${salon.name}" ni bila podaljšana, je bot začasno ustavljen in ne sprejema naročil.`,
             'Stranke dobijo vljudno obvestilo, da trenutno ne sprejemate naročil.',
             '',
             'Za takojšnjo ponovno aktivacijo: ' + kakoPodaljsa,
-            '', 'Ekipa FlowTiq'
+            '', 'Ekipa FlowTek'
           ].join('\n'));
           await db.updateSalonSettings(salon.id, { paused_notified_at: new Date().toISOString() });
           console.log(`[expiry] Pavza obvestilo poslano ${salon.owner_email}`);
@@ -327,7 +327,7 @@ function startScheduler() {
     await sendReactivations();
   }, { timezone: tz });
 
-  // AI natakar (gostilne): ločen dnevni pregled nerazumljenih sporočil -> email FlowTiq
+  // AI natakar (gostilne): ločen dnevni pregled nerazumljenih sporočil -> email FlowTek
   cron.schedule('30 7 * * *', sendAiMissDigest, { timezone: tz });
 
   // Vsak dan ob 08:15 — opomnik lastnikom za podaljšanje naročnine (do 7 dni pred potekom)

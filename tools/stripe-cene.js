@@ -1,5 +1,5 @@
 /*
-  Ustvari (ali samo prikaže) produkte in cene FlowTiq na Stripu.
+  Ustvari (ali samo prikaže) produkte in cene FlowTek na Stripu.
 
   Zgradba: 3 produkti, vsak z mesečno in letno ceno = 6 cen. Tako Stripe
   Customer Portal omogoča preklop mesečno<->letno znotraj istega produkta,
@@ -50,19 +50,19 @@ const OBDOBJA = [
 
 const eur = c => (c / 100).toLocaleString('sl-SI', { minimumFractionDigits: 2 }) + ' €';
 
-// Produkt poiščemo po metadata.flowtiq_plan. Uporabljamo list (ne search),
+// Produkt poiščemo po metadata.flowtek_plan. Uporabljamo list (ne search),
 // ker je search pri Stripu šele naknadno konsistenten in bi drugi zagon
 // takoj po prvem lahko ustvaril dvojnik.
 async function najdiAliUstvariProdukt(planKey) {
   const info = plans.planInfo(planKey);
   const seznam = await stripe.products.list({ limit: 100, active: true });
-  const obstoj = seznam.data.find(p => p.metadata && p.metadata.flowtiq_plan === planKey);
+  const obstoj = seznam.data.find(p => p.metadata && p.metadata.flowtek_plan === planKey);
   if (obstoj) return { produkt: obstoj, nov: false };
 
   const produkt = await stripe.products.create({
-    name: 'FlowTiq ' + info.label,
+    name: 'FlowTek ' + info.label,
     description: `WhatsApp asistent za naročila in termine — do ${info.limit.toLocaleString('sl-SI')} naročil na mesec.`,
-    metadata: { flowtiq_plan: planKey }
+    metadata: { flowtek_plan: planKey }
   });
   return { produkt, nov: true };
 }
@@ -107,12 +107,12 @@ function ustvariCeno(planKey, produktId, obd, lookup, centov, prenos) {
     nickname: plans.planLabel(planKey) + ' — ' + obd.kratko,
     lookup_key: lookup,
     ...(prenos ? { transfer_lookup_key: true } : {}),
-    metadata: { flowtiq_plan: planKey, flowtiq_period: obd.period }
+    metadata: { flowtek_plan: planKey, flowtek_period: obd.period }
   });
 }
 
 (async () => {
-  console.log('FlowTiq → Stripe   način: ' + (jeZivi ? '⚠  ŽIVI' : 'testni') + '\n');
+  console.log('FlowTek → Stripe   način: ' + (jeZivi ? '⚠  ŽIVI' : 'testni') + '\n');
 
   const vrstice = [];
   let neujemanj = 0;

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
-<link rel="icon" type="image/png" href="/logo.png">
-<link rel="apple-touch-icon" href="/logo.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -11,7 +11,7 @@
 </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FlowTiq — Nastavitev gesla</title>
+  <title>FlowTek — Nastavitev gesla</title>
   <style>
     :root {
       --bg: #0f0f1a;
@@ -115,7 +115,7 @@
 </head>
 <body>
   <div class="card">
-    <div class="logo">FlowTiq</div>
+    <div class="logo">FlowTek</div>
     <div class="tagline">Pametni AI asistent za rezervacije</div>
 
     <!-- Loading -->
@@ -127,14 +127,14 @@
     <!-- Invalid token -->
     <div id="invalid-state" style="display:none;">
       <h1>❌ Neveljaven link</h1>
-      <p class="subtitle">Ta link je neveljaven ali je že potekel.<br>Kontaktirajte FlowTiq za novo povabilo.</p>
-      <a href="mailto:info@flowtiq.si" style="color:var(--accent);font-size:14px;">info@flowtiq.si</a>
+      <p class="subtitle">Ta link je neveljaven ali je že potekel.<br>Kontaktirajte FlowTek za novo povabilo.</p>
+      <a href="mailto:info@flowtek.si" style="color:var(--accent);font-size:14px;">info@flowtek.si</a>
     </div>
 
     <!-- Setup form -->
     <div id="setup-form">
       <h1>Nastavite geslo</h1>
-      <p class="subtitle" id="welcome-msg">Dobrodošli! Nastavite geslo za dostop do vašega FlowTiq dashboarda.</p>
+      <p class="subtitle" id="welcome-msg">Dobrodošli! Nastavite geslo za dostop do vašega FlowTek dashboarda.</p>
 
       <div class="form-group">
         <label>Novo geslo</label>
@@ -170,7 +170,7 @@
         const name = data.owner_name || data.salon_name || '';
         if (name) {
           document.getElementById('welcome-msg').textContent =
-            `Pozdravljeni, ${name}! Nastavite geslo za dostop do vašega FlowTiq dashboarda.`;
+            `Pozdravljeni, ${name}! Nastavite geslo za dostop do vašega FlowTek dashboarda.`;
         }
       } catch (e) {
         showInvalid();

@@ -11,7 +11,7 @@
 
     set FT_MASTER_EMAIL=...&& set FT_MASTER_PASS=...
     node tools/stripe-diag.js                  # lokalni strežnik
-    node tools/stripe-diag.js --host=flowtiq.si
+    node tools/stripe-diag.js --host=flowtek.si
 */
 const http = require('http');
 const https = require('https');

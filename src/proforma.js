@@ -27,7 +27,7 @@ function computeProforma(salon, plan) {
   const period = yearly ? 'letna naročnina' : 'mesečna naročnina';
   // Pri letni naročnini na predračunu pokažemo popust, da je znesek razumljiv
   // (sicer izgleda, kot da 12 × 159,99 € ne gre skupaj).
-  const desc = 'FlowTiq paket ' + p.label + ' — ' + period
+  const desc = 'FlowTek paket ' + p.label + ' — ' + period
     + (yearly ? ` (12 mesecev, −${Math.round(plans.yearlyDiscount(plan) * 100)} % · prihranek ${eur(plans.yearlySaving(plan))})` : '');
   return {
     p, yearly, amount, no, sklic, desc,
@@ -50,7 +50,7 @@ function proformaHtml(salon, plan) {
       <tr><td style="${td}">${c.desc}</td><td style="${td};text-align:right">${eur(c.amount)}</td></tr>
       <tr><td style="${td};text-align:right"><b>Za plačilo</b></td><td style="${td};text-align:right"><b>${eur(c.amount)}</b></td></tr>
     </table>
-    <p style="font-size:14px;line-height:1.5"><b>Plačilo po nakazilu:</b> IBAN <b>${ISSUER.iban}</b><br>Sklic: <b>${c.sklic}</b><br>Namen: FlowTiq ${c.no}</p>
+    <p style="font-size:14px;line-height:1.5"><b>Plačilo po nakazilu:</b> IBAN <b>${ISSUER.iban}</b><br>Sklic: <b>${c.sklic}</b><br>Namen: FlowTek ${c.no}</p>
     <p style="color:#666;font-size:13px">${ISSUER.novat}<br>Predračun ni davčni dokument. Po prejemu plačila izdamo račun in aktiviramo storitev.</p>
     <p style="color:#111;font-size:13px"><b>Po plačilu nam prosim pošljite potrdilo o plačilu, da vas takoj aktiviramo.</b></p>
   </div>`;
@@ -93,7 +93,7 @@ async function proformaPdf(salon, plan) {
       doc.moveDown(0.7); doc.text('Plačilo po nakazilu:');
       doc.text('IBAN: ' + ISSUER.iban);
       doc.text('Sklic: ' + c.sklic);
-      doc.text('Namen: FlowTiq ' + c.no);
+      doc.text('Namen: FlowTek ' + c.no);
       doc.moveDown(0.7); doc.fontSize(8).fillColor('#666');
       doc.text(ISSUER.novat);
       doc.text('Predračun ni davčni dokument. Po prejemu plačila izdamo račun in aktiviramo storitev.');

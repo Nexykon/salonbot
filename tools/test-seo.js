@@ -18,7 +18,7 @@ const path = require('path');
 
 const KOREN = path.join(__dirname, '..');
 const PUB = path.join(KOREN, 'public');
-const DOMENA = 'https://flowtiq.si';
+const DOMENA = 'https://flowtek.si';
 
 let ok = 0, ni = 0;
 function je(opis, dobil, pricakoval) {
@@ -33,7 +33,7 @@ const robots = beri('public/robots.txt');
 const streznik = beri('server.js');
 
 // Poti iz sitemapa
-const vSitemapu = [...sitemap.matchAll(/<loc>https:\/\/flowtiq\.si([^<]*)<\/loc>/g)].map(m => m[1] || '/');
+const vSitemapu = [...sitemap.matchAll(/<loc>https:\/\/flowtek\.si([^<]*)<\/loc>/g)].map(m => m[1] || '/');
 
 // Vse strani na disku
 const datoteke = fs.readdirSync(PUB).filter(f => f.endsWith('.html')).map(f => 'public/' + f)

@@ -18,7 +18,10 @@ const esc = s => String(s == null ? '' : s)
 
 const glava = (p) => `<header class="site-head">
   <div class="head-inner">
-    <a class="head-logo" href="/"><img src="/ft-logo.png" width="188" height="55" alt="FlowTiq"></a>
+    <a class="brand head-logo" href="/">
+      <img src="/ft-mark.svg" alt="" width="30" height="30">
+      <span class="brand-name">Flow<span>Tek</span></span>
+    </a>
     <nav class="head-nav">
       <a href="/panoge.html" aria-current="page">Za koga</a>
       <a href="/kako-deluje.html">Kako deluje</a>
@@ -37,8 +40,11 @@ const glava = (p) => `<header class="site-head">
 const noga = `<footer class="site-foot">
   <div class="foot-grid">
     <div>
-      <img src="/ft-logo.png" width="188" height="55" alt="FlowTiq">
-      <p style="font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:30ch"><strong>Flow</strong> je neprekinjen tok strank. <strong>Tiq</strong> je odziv v sekundi. Skupaj: pomočnik, ki ti polni koledar, medtem ko delaš.</p>
+      <a class="brand" href="/">
+        <img src="/ft-mark.svg" alt="" width="28" height="28">
+        <span class="brand-name" style="font-size:19px">Flow<span>Tek</span></span>
+      </a>
+      <p style="font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:30ch"><strong>Flow</strong> je neprekinjen tok strank. <strong>Tek</strong> je to, da posel teče sam naprej. Skupaj: pomočnik, ki ti polni koledar, medtem ko delaš.</p>
     </div>
     <div>
       <div class="foot-label">Izdelek</div>
@@ -73,16 +79,16 @@ const noga = `<footer class="site-foot">
   </div>
   <div class="foot-info">
     <div>
-      <div class="foot-label">Kdo stoji za FlowTiq</div>
-      <p>FlowTiq razvija <strong>Webacus</strong>. Za njim stojijo leta dela s spletnimi rešitvami in
-      avtomatizacijo za slovenska podjetja — FlowTiq ni stranski projekt, ampak izdelek, ki je zrasel
+      <div class="foot-label">Kdo stoji za FlowTek</div>
+      <p>FlowTek razvija <strong>Webacus</strong>. Za njim stojijo leta dela s spletnimi rešitvami in
+      avtomatizacijo za slovenska podjetja — FlowTek ni stranski projekt, ampak izdelek, ki je zrasel
       iz pogovorov s pravimi gostinci in obrtniki. Ko se kaj zalomi, se oglasi človek, ki izdelek pozna.</p>
     </div>
     <div>
       <div class="foot-label">Podpora</div>
       <div class="stack-sm">
         <div><a href="https://wa.me/38640599185" target="_blank" rel="noopener">WhatsApp 040 599 185</a></div>
-        <div><a href="mailto:info@flowtiq.si">info@flowtiq.si</a></div>
+        <div><a href="mailto:info@flowtek.si">info@flowtek.si</a></div>
         <div class="fine">Med tednom od 8. do 19. ure, ob sobotah dopoldne.<br>Odgovorimo običajno v nekaj urah.</div>
       </div>
     </div>
@@ -97,7 +103,7 @@ const noga = `<footer class="site-foot">
     </div>
   </div>
   <div class="foot-bottom">
-    <div>© 2026 FlowTiq — Webacus, Valentin Iljaž s.p. · Davčna št.: 35880643</div>
+    <div>© 2026 FlowTek — Webacus, Valentin Iljaž s.p. · Davčna št.: 35880643</div>
     <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a><a href="/llms.txt" title="Povzetek strani za jezikovne modele in AI iskalnike">llms.txt</a></div>
   </div>
 </footer>`;
@@ -139,26 +145,26 @@ function stran(p, vse) {
     kar navajata Google in AI iskalniki.
   */
   if (!p.za) throw new Error('panoga "' + p.slug + '" nima polja "za" (tožilnik za naslov)');
-  const opisMeta = `FlowTiq za ${p.za}: ${p.kratko}`;
+  const opisMeta = `FlowTek za ${p.za}: ${p.kratko}`;
 
   return `<!DOCTYPE html>
 <html lang="sl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FlowTiq za ${esc(p.za)} — WhatsApp pomočnik</title>
+<title>FlowTek za ${esc(p.za)} — WhatsApp pomočnik</title>
 <meta name="description" content="${esc(opisMeta)}">
-<link rel="canonical" href="https://flowtiq.si/panoga/${p.slug}.html">
-<meta property="og:url" content="https://flowtiq.si/panoga/${p.slug}.html">
-<meta property="og:title" content="FlowTiq za ${esc(p.za)}">
+<link rel="canonical" href="https://flowtek.si/panoga/${p.slug}.html">
+<meta property="og:url" content="https://flowtek.si/panoga/${p.slug}.html">
+<meta property="og:title" content="FlowTek za ${esc(p.za)}">
 <meta property="og:description" content="${esc(p.podnaslov)}">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="sl_SI">
-<meta property="og:site_name" content="FlowTiq">
-<meta property="og:image" content="https://flowtiq.si/og-image.png">
+<meta property="og:site_name" content="FlowTek">
+<meta property="og:image" content="https://flowtek.si/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="FlowTiq — naročila in termini na avtopilotu">
+<meta property="og:image:alt" content="FlowTek — naročila in termini na avtopilotu">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FBF8F1">
 <script type="application/ld+json">
@@ -166,18 +172,19 @@ function stran(p, vse) {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Domov", "item": "https://flowtiq.si/" },
-    { "@type": "ListItem", "position": 2, "name": "Za koga", "item": "https://flowtiq.si/panoge.html" },
-    { "@type": "ListItem", "position": 3, "name": "${esc(p.ime)}", "item": "https://flowtiq.si/panoga/${p.slug}.html" }
+    { "@type": "ListItem", "position": 1, "name": "Domov", "item": "https://flowtek.si/" },
+    { "@type": "ListItem", "position": 2, "name": "Za koga", "item": "https://flowtek.si/panoge.html" },
+    { "@type": "ListItem", "position": 3, "name": "${esc(p.ime)}", "item": "https://flowtek.si/panoga/${p.slug}.html" }
   ]
 }
 </script>
-<link rel="icon" type="image/png" href="/logo.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/flowtiq-site.css">
-<script src="/flowtiq-nav.js" defer></script>
+<link rel="stylesheet" href="/flowtek-site.css">
+<script src="/flowtek-nav.js" defer></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXH2YX58RX"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZXH2YX58RX');</script>
 <style>
@@ -201,7 +208,7 @@ ${glava(p)}
       <div>
         <div style="display:inline-flex;align-items:center;gap:12px;flex-wrap:wrap">
           <div style="width:46px;height:46px;border:2px solid var(--ink);border-radius:18px;background:#fff;display:grid;place-items:center;color:var(--ink)">${ikona(p.slug, 24)}</div>
-          <div class="pill">FlowTiq za: ${esc(p.ime)}</div>
+          <div class="pill">FlowTek za: ${esc(p.ime)}</div>
         </div>
         <h1 style="font-size:clamp(38px,4.8vw,62px);margin-top:22px">
           ${naslovVrstice}
@@ -270,7 +277,7 @@ ${glava(p)}
       </div>
       <div>
         <div class="step-n step-n--green" style="width:34px;height:34px">3</div>
-        <h3 style="font-size:20px;margin-top:16px">FlowTiq prevzame</h3>
+        <h3 style="font-size:20px;margin-top:16px">FlowTek prevzame</h3>
         <p class="body" style="font-size:15px;margin-top:9px">Od tega trenutka sprejema naročila in rezervacije, opominja in vabi nazaj. Ti delaš naprej.</p>
       </div>
     </div>
@@ -282,7 +289,7 @@ ${glava(p)}
     <div class="pill">04 · Kar sprašujejo v tvoji panogi</div>
     <div class="faq" style="margin-top:30px">
         ${faq}
-      <div class="faq-note">Splošna vprašanja o FlowTiq najdeš na <a class="uline" href="/vprasanja.html">strani z vprašanji</a>.</div>
+      <div class="faq-note">Splošna vprašanja o FlowTek najdeš na <a class="uline" href="/vprasanja.html">strani z vprašanji</a>.</div>
     </div>
   </div>
 </section>
@@ -300,7 +307,7 @@ ${glava(p)}
   <div class="wrap cta-wrap">
     <div class="cta cta--split">
       <div>
-        <h2 style="font-size:clamp(30px,3.8vw,48px);max-width:22ch">Poglejmo, kako bi FlowTiq deloval točno pri tebi.</h2>
+        <h2 style="font-size:clamp(30px,3.8vw,48px);max-width:22ch">Poglejmo, kako bi FlowTek deloval točno pri tebi.</h2>
         <p class="measure-50" style="font-size:18px;margin-top:18px">Brez obveznosti in brez tehničnih vprašanj. Povej nam, kaj delaš, in pokažemo ti pogovor, kot bi ga imela tvoja stranka.</p>
       </div>
       <a class="btn btn--onink" href="/kontakt.html" style="justify-self:start;font-size:17.5px">Odpri račun</a>

@@ -121,11 +121,11 @@ async function priceId(paket, obdobje) {
     card: { token: 'tok_visa' }        // uradni testni žeton za 4242…
   });
   const kupec = await stripe.customers.create({
-    email: salon.owner_email || 'test@flowtiq.si',
+    email: salon.owner_email || 'test@flowtek.si',
     name: salon.name,
     payment_method: pm.id,
     invoice_settings: { default_payment_method: pm.id },
-    metadata: { flowtiq_test: 'da', salon_id: SALON_ID }
+    metadata: { flowtek_test: 'da', salon_id: SALON_ID }
   });
   const narocnina = await stripe.subscriptions.create({
     customer: kupec.id,

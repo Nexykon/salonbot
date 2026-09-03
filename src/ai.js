@@ -302,7 +302,7 @@ async function askCustomerAI(message, salonId) {
     knowledgeSection = `\n\nZnanje o podjetju:\n${knowledge.map(k => `- ${k.content}`).join('\n')}`;
   }
 
-  const systemPrompt = `Si prijazen WhatsApp asistent za naročanje "FlowTiq".
+  const systemPrompt = `Si prijazen WhatsApp asistent za naročanje "FlowTek".
 Odgovarjaj kratko in prijazno v slovenščini.
 Če ne veš odgovora, reci da se obrnejo na ponudnika storitev.${knowledgeSection}`;
 
@@ -328,7 +328,7 @@ async function askAdminAI(message, salonId) {
   const today = t.todayStr();
   const dayName = new Date().toLocaleDateString('sl-SI', { weekday: 'long', timeZone: t.TZ });
 
-  const systemPrompt = `Si inteligentni WhatsApp asistent FlowTiq za upravljanje naročil.
+  const systemPrompt = `Si inteligentni WhatsApp asistent FlowTek za upravljanje naročil.
 Danes je ${dayName}, ${today}.
 Pomagaš lastniku podjetja z naročili, storitvami in termini.
 Odgovarjaj kratko, jasno, v slovenščini. Vedno potrdi kar si naredil z emojiji.

@@ -9,7 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DOMENA = 'https://flowtiq.si';
+const DOMENA = 'https://flowtek.si';
 const PUB = path.join(__dirname, '..', 'public');
 
 // pot -> prioriteta, pogostost

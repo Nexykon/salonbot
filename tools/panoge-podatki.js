@@ -1,4 +1,4 @@
-// Vsebina panožnih podstrani. Vir: Claude Design projekt FlowTiq (panoge.js).
+// Vsebina panožnih podstrani. Vir: Claude Design projekt FlowTek (panoge.js).
 // Ureja se tukaj, potem se požene:  node tools/gradi-panoge.js
 
 module.exports = [
@@ -7,14 +7,14 @@ module.exports = [
     za: "restavracije in picerije",
     kratko: "Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.",
     naslov: "Naročila brez zvonjenja.\nIn brez 28 % provizije.",
-    podnaslov: "Gost napiše na WhatsApp, FlowTiq mu pokaže meni, sestavi naročilo in ga pošlje v kuhinjo. Ti kuhaš naprej.",
+    podnaslov: "Gost napiše na WhatsApp, FlowTek mu pokaže meni, sestavi naročilo in ga pošlje v kuhinjo. Ti kuhaš naprej.",
     boli: [
       { t: "Telefon zvoni med špico", o: "Kuhinja gori, natakar drži slušalko. En zamujen klic je eno naročilo pri konkurenci." },
       { t: "Tržnice vzamejo skoraj tretjino", o: "Pri 20 € naročilu ti ostane 14 €. Pri 100 dostavah na mesec je to cena zaposlenega." },
       { t: "Ocene padajo zaradi neodgovorjenih sporočil", o: "Gost, ki ne dobi odgovora, ne napiše lepe ocene. Napiše slabo." }
     ],
     primeri: [
-      { t: "Naročilo za dostavo", o: "Gost napiše „eno capriccioso in dve koli“. FlowTiq razume, sestavi košarico, vpraša za naslov in čas ter potrdi ceno." },
+      { t: "Naročilo za dostavo", o: "Gost napiše „eno capriccioso in dve koli“. FlowTek razume, sestavi košarico, vpraša za naslov in čas ter potrdi ceno." },
       { t: "Osebni prevzem", o: "„Bi vzel ob 19:00.“ Bot preveri obremenitev kuhinje in predlaga realen čas, ne pa nemogočega." },
       { t: "Rezervacija mize", o: "„Miza za 4 v petek ob 20h.“ Preveri zasedenost, potrdi in dan prej pošlje opomnik." },
       { t: "Vprašanja o ponudbi", o: "„A imate kaj brez laktoze?“ Bot odgovori iz tvojega menija — brez ugibanja." },
@@ -45,7 +45,7 @@ module.exports = [
     za: "frizerske salone",
     kratko: "Termini se naročajo sami, medtem ko ti strižeš. Opomniki dan prej zmanjšajo prazne stole.",
     naslov: "Strižeš.\nTermini se polnijo sami.",
-    podnaslov: "Stranka napiše na WhatsApp, FlowTiq pogleda tvoj koledar in ji da prost termin. Brez prekinjanja dela.",
+    podnaslov: "Stranka napiše na WhatsApp, FlowTek pogleda tvoj koledar in ji da prost termin. Brez prekinjanja dela.",
     boli: [
       { t: "Roke v laseh, telefon zvoni", o: "Ne moreš odgovoriti sredi barvanja. Stranka pokliče naslednji salon." },
       { t: "Sporočila ob desetih zvečer", o: "Odgovoriš zjutraj — stranka je že naročena drugje." },
@@ -71,9 +71,9 @@ module.exports = [
       { v: "≈ 16 h", o: "manj telefoniranja na mesec" }
     ],
     faq: [
-      { v: "Moram uporabljati nov koledar?", o: "Ne nujno. FlowTiq ima svoj koledar, lahko pa ga poveže z Google koledarjem, ki ga že uporabljaš." },
+      { v: "Moram uporabljati nov koledar?", o: "Ne nujno. FlowTek ima svoj koledar, lahko pa ga poveže z Google koledarjem, ki ga že uporabljaš." },
       { v: "Kaj če hočem termin dodati sam?", o: "Napišeš botu ali klikneš v nadzorni plošči. Oboje deluje." },
-      { v: "Kaj pa stranke, ki raje pokličejo?", o: "Nič se ne spremeni — telefon dela naprej. FlowTiq prevzame samo tiste, ki pišejo." }
+      { v: "Kaj pa stranke, ki raje pokličejo?", o: "Nič se ne spremeni — telefon dela naprej. FlowTek prevzame samo tiste, ki pišejo." }
     ]
   },
   {
@@ -81,7 +81,7 @@ module.exports = [
     za: "kozmetiko in nohte",
     kratko: "Manikura, trepalnice, obrazi — vsaka storitev s svojo dolžino in svojo pripravo.",
     naslov: "Nohti so tvoje delo.\nUrnik naj bo naš.",
-    podnaslov: "FlowTiq pozna vse tvoje storitve, njihove dolžine in navodila pred obiskom. Stranki jih pošlje sam.",
+    podnaslov: "FlowTek pozna vse tvoje storitve, njihove dolžine in navodila pred obiskom. Stranki jih pošlje sam.",
     boli: [
       { t: "Roke zasedene, telefon ne", o: "Med gelom se ne da odgovarjati. Vsak neodgovorjen DM je izgubljen termin." },
       { t: "Stranke ne vejo, kaj naj izberejo", o: "„Kakšna je razlika med gel lakom in podaljševanjem?“ Isto vprašanje petkrat na dan." },
@@ -108,7 +108,7 @@ module.exports = [
     ],
     faq: [
       { v: "Imam veliko različnih storitev.", o: "Vsako vpišeš enkrat — ime, ceno, trajanje. Bot potem ve, koliko časa rezervirati." },
-      { v: "Delam sama, brez pomoči.", o: "Točno za to je narejeno. FlowTiq je tvoja receptorka, ki ne gre na malico." },
+      { v: "Delam sama, brez pomoči.", o: "Točno za to je narejeno. FlowTek je tvoja receptorka, ki ne gre na malico." },
       { v: "Lahko blokiram dopust?", o: "Da, v nadzorni plošči ali kar prek WhatsAppa: „od 15. do 22. zaprto“." }
     ]
   },
@@ -117,7 +117,7 @@ module.exports = [
     za: "tattoo in piercing studie",
     kratko: "Povpraševanja z referenčnimi slikami, oceno velikosti in depozitom — brez neskončnega dopisovanja.",
     naslov: "Manj dopisovanja.\nVeč časa za iglo.",
-    podnaslov: "FlowTiq zbere vse, kar rabiš za oceno: motiv, velikost, mesto na telesu in sliko. Ti samo potrdiš termin.",
+    podnaslov: "FlowTek zbere vse, kar rabiš za oceno: motiv, velikost, mesto na telesu in sliko. Ti samo potrdiš termin.",
     boli: [
       { t: "Dvajset sporočil za eno tatoo", o: "Vedno ista vprašanja o velikosti, mestu in ceni, preden pride do termina." },
       { t: "Ljudje ne pridejo na dolge seanse", o: "Cel dan blokiran, stranka pa se ne oglasi." },
@@ -153,7 +153,7 @@ module.exports = [
     za: "masaže in wellness",
     kratko: "Termini, paketi in darilni boni — brez motenja med masažo.",
     naslov: "Med masažo\nne dvigaš telefona.",
-    podnaslov: "FlowTiq sprejema rezervacije, prodaja darilne bone in opominja stranke, ko se paket izteka.",
+    podnaslov: "FlowTek sprejema rezervacije, prodaja darilne bone in opominja stranke, ko se paket izteka.",
     boli: [
       { t: "Telefon moti terapijo", o: "Zvonjenje sredi masaže pokvari izkušnjo — in ti stranko." },
       { t: "Paketi se izgubijo", o: "Kdo ima še koliko obiskov od desetih? Nihče ne ve točno." },
@@ -189,7 +189,7 @@ module.exports = [
     za: "zobozdravnike in ambulante",
     kratko: "Naročanje, opomniki in triaža nujnih primerov — brez zasedene linije.",
     naslov: "Linija ni več zasedena.",
-    podnaslov: "FlowTiq sprejme naročilo, pošlje opomnik in nujne primere takoj označi, da jih vidiš prvi.",
+    podnaslov: "FlowTek sprejme naročilo, pošlje opomnik in nujne primere takoj označi, da jih vidiš prvi.",
     boli: [
       { t: "Zasedena telefonska linija", o: "Pacient kliče petkrat, potem gre drugam." },
       { t: "Neprihodi na kontrole", o: "Prazen termin je izgubljen prihodek in daljša čakalna vrsta." },
@@ -225,7 +225,7 @@ module.exports = [
     za: "avtoservise in vulkanizerje",
     kratko: "Termini za servis in menjavo gum, obvestila o končanem popravilu — brez klicanja nazaj.",
     naslov: "Roke v olju.\nTermini vseeno urejeni.",
-    podnaslov: "Stranka napiše registrsko in kaj potrebuje, FlowTiq ji da termin. Ko je avto gotov, jo obvesti.",
+    podnaslov: "Stranka napiše registrsko in kaj potrebuje, FlowTek ji da termin. Ko je avto gotov, jo obvesti.",
     boli: [
       { t: "Telefon zvoni, roke umazane", o: "Sredi popravila ne moreš dvigniti. Klic ostane neodgovorjen." },
       { t: "Sezonska gneča", o: "Oktobra in aprila ti telefon ne da miru dva tedna." },
@@ -261,7 +261,7 @@ module.exports = [
     za: "veterinarske ambulante",
     kratko: "Termini po živali, opomniki na cepljenja in obvladana nujnost.",
     naslov: "Za vsako tačko\nsvoj termin.",
-    podnaslov: "FlowTiq si zapomni žival, njeno vrsto in datum zadnjega cepljenja — in lastnika sam povabi, ko pride čas.",
+    podnaslov: "FlowTek si zapomni žival, njeno vrsto in datum zadnjega cepljenja — in lastnika sam povabi, ko pride čas.",
     boli: [
       { t: "Nujni primeri se izgubijo med klici", o: "Zaskrbljen lastnik ne bi smel čakati na zasedeni liniji." },
       { t: "Cepljenja zamujena", o: "Nihče ne vodi seznama, kdo mora priti letos." },
@@ -297,7 +297,7 @@ module.exports = [
     za: "fotografe",
     kratko: "Povpraševanja s termini, lokacijami in paketi — ter avans, ki potrdi datum.",
     naslov: "Povpraševanja urejena.\nDatumi potrjeni.",
-    podnaslov: "FlowTiq zbere vrsto snemanja, datum, lokacijo in število oseb, pošlje cenik in rezervira datum z avansom.",
+    podnaslov: "FlowTek zbere vrsto snemanja, datum, lokacijo in število oseb, pošlje cenik in rezervira datum z avansom.",
     boli: [
       { t: "Vsako povpraševanje je deset sporočil", o: "Datum, lokacija, koliko oseb, koliko fotografij — vedno znova." },
       { t: "Dvojno obljubljeni datumi", o: "Poroka in krst na isti dan. Neprijetno." },
@@ -333,7 +333,7 @@ module.exports = [
     za: "osebne trenerje in fitnes",
     kratko: "Termini, skupinske vadbe z omejenimi mesti in paketi treningov.",
     naslov: "Ti trenirate.\nUrnik se ureja sam.",
-    podnaslov: "FlowTiq vodi individualne termine in skupinske vadbe z omejenim številom mest, šteje pa tudi porabljene treninge iz paketa.",
+    podnaslov: "FlowTek vodi individualne termine in skupinske vadbe z omejenim številom mest, šteje pa tudi porabljene treninge iz paketa.",
     boli: [
       { t: "Prijave na vadbo v treh kanalih", o: "Nekdo napiše na WhatsApp, drug na Instagram, tretji v živo. Kaos." },
       { t: "Odpovedi zadnji trenutek", o: "Prosto mesto ostane prazno, čeprav bi ga kdo vzel." },
@@ -369,7 +369,7 @@ module.exports = [
     za: "hotele in apartmaje",
     kratko: "Povpraševanja o prostih terminih, direktne rezervacije brez provizij portalov, navodila za prihod.",
     naslov: "Direktne rezervacije.\nBrez 15 % portalu.",
-    podnaslov: "FlowTiq odgovori na povpraševanje v sekundi, pove ceno in razpoložljivost ter potrdi direktno rezervacijo.",
+    podnaslov: "FlowTek odgovori na povpraševanje v sekundi, pove ceno in razpoložljivost ter potrdi direktno rezervacijo.",
     boli: [
       { t: "Portali vzamejo svoj delež", o: "Vsaka rezervacija prek portala je 15–18 % manj zaslužka." },
       { t: "Povpraševanja pridejo ponoči", o: "Gost sprašuje ob 23h, ti odgovoriš zjutraj — rezerviral je drugje." },
@@ -395,7 +395,7 @@ module.exports = [
       { v: "direktno", o: "gost je tvoja stranka" }
     ],
     faq: [
-      { v: "Imam koledar na portalu.", o: "FlowTiq lahko bere iCal povezavo, da se datumi ne podvajajo." },
+      { v: "Imam koledar na portalu.", o: "FlowTek lahko bere iCal povezavo, da se datumi ne podvajajo." },
       { v: "Več enot?", o: "Da, vsaka enota ima svoj koledar in svojo ceno po sezoni." },
       { v: "Kaj z jeziki?", o: "Bot lahko odgovarja v slovenščini, angleščini in nemščini." }
     ]
@@ -405,7 +405,7 @@ module.exports = [
     za: "šole in inštrukcije",
     kratko: "Prijave na termine in tečaje, obveščanje staršev, evidenca obiskov.",
     naslov: "Prijave brez\nsedmih klicev staršem.",
-    podnaslov: "FlowTiq sprejme prijavo, pove urnik in ceno, opomni pred uro ter starše obvesti o spremembah.",
+    podnaslov: "FlowTek sprejme prijavo, pove urnik in ceno, opomni pred uro ter starše obvesti o spremembah.",
     boli: [
       { t: "Prijave po telefonu in mailu", o: "Seznam je v treh zvezkih in eni glavi." },
       { t: "Odpovedi uro prej", o: "Termin ostane prazen, ura je izgubljena." },

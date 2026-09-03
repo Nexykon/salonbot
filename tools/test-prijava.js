@@ -39,7 +39,7 @@ je('v predlogi ni starega naslova', /href="\/salon\.html">Prijava/.test(gen), fa
 
 console.log('\n3) Prijavna stran');
 const p = beri('public/prijava.html');
-je('naslov je Prijava', /<title>Prijava — FlowTiq<\/title>/.test(p), true);
+je('naslov je Prijava', /<title>Prijava — FlowTek<\/title>/.test(p), true);
 je('ni za iskalnike', /name="robots" content="noindex/.test(p), true);
 je('geslo in e-naslov', /id="email"/.test(p) && /id="geslo"/.test(p), true);
 /*
@@ -76,7 +76,7 @@ console.log('\n4) Samostrežne registracije ni');
 */
 je('strani ni več', fs.existsSync(path.join(PUB, 'registracija.html')), false);
 je('nobena stran ne kaže nanjo', javne.filter(f => /registracija\.html/.test(beri(f))), []);
-je('prijava pelje na kontakt', /href="\/kontakt\.html">Še niste v FlowTiq/.test(p), true);
+je('prijava pelje na kontakt', /href="\/kontakt\.html">Še niste v FlowTek/.test(p), true);
 je('preklic plačila pelje na kontakt', /location\.replace\('\/kontakt\.html'/.test(p), true);
 je('robots.txt je ne omenja', /registracija/.test(robots), false);
 

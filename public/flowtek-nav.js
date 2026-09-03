@@ -1,5 +1,5 @@
 /*
-  Skupni skript javnih strani FlowTiq:
+  Skupni skript javnih strani FlowTek:
   burger meni + lebdeči WhatsApp gumb + preklopnik mesečno/letno.
 
   ── 1. Burger meni ──
@@ -8,7 +8,7 @@
   takrat CSS skrije navigacijo za gumb. Če se JS ne naloži, ostane stara
   odzivna navigacija, ki se prelomi v svojo vrstico — nič se ne izgubi.
 
-  Predpostavlja strukturo iz flowtiq-site.css:
+  Predpostavlja strukturo iz flowtek-site.css:
     header.site-head > .head-inner > .head-logo + .head-nav + .head-actions
   Na straneh brez .head-nav (npr. imenik.html) se tiho ne zgodi nič.
 */
@@ -92,12 +92,12 @@
 /*
   ── 2. Lebdeči WhatsApp gumb ──
 
-  Glavna storitev FlowTiq teče na WhatsAppu, zato mora biti stik na klik
+  Glavna storitev FlowTek teče na WhatsAppu, zato mora biti stik na klik
   z vsake javne strani. Gumb vstavi skript in ne markup, da ostane na enem
   mestu; brez JS ostanejo povezave na WhatsApp v nogi in na /kontakt.html.
 
   Izjema je imenik.html — tam obiskovalec naroča pri lokalu in bi ga
-  drugi WhatsApp gumb, ki pelje na FlowTiq, samo zmedel.
+  drugi WhatsApp gumb, ki pelje na FlowTek, samo zmedel.
 */
 (function () {
   var doc = document;
@@ -105,7 +105,7 @@
   if (/\/imenik(\.html)?$/.test(location.pathname)) return;   // glej opombo zgoraj
 
   var POVEZAVA = 'https://wa.me/38640599185'
-    + '?text=Pozdravljeni%2C%20zanima%20me%20FlowTiq%20za%20moje%20podjetje.';
+    + '?text=Pozdravljeni%2C%20zanima%20me%20FlowTek%20za%20moje%20podjetje.';
 
   var a = doc.createElement('a');
   a.className = 'wa-fab';

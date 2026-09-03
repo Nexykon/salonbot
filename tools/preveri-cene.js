@@ -39,7 +39,7 @@ const eur = c => ((c || 0) / 100).toLocaleString('sl-SI', { useGrouping: true, m
       if (cena.currency !== 'eur') tezave.push('valuta ' + cena.currency);
       const priIntervalu = obd === 'yearly' ? 'year' : 'month';
       if (cena.recurring?.interval !== priIntervalu) tezave.push('interval ' + cena.recurring?.interval);
-      if (cena.metadata?.flowtiq_plan !== plan) tezave.push('metadata.flowtiq_plan=' + (cena.metadata?.flowtiq_plan || '—'));
+      if (cena.metadata?.flowtek_plan !== plan) tezave.push('metadata.flowtek_plan=' + (cena.metadata?.flowtek_plan || '—'));
       if (cena.tax_behavior !== 'inclusive') tezave.push('tax_behavior=' + cena.tax_behavior);
 
       if (tezave.length) { napak++; console.log('  ✖ ' + lk.padEnd(16) + cena.id + '   ' + tezave.join(' · ')); }

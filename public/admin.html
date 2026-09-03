@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="sl">
 <head>
-<link rel="icon" type="image/png" href="/logo.png">
-<link rel="apple-touch-icon" href="/logo.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -11,7 +11,7 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FlowTiq Admin</title>
+<title>FlowTek Admin</title>
 <meta name="theme-color" content="#FBF8F1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   :root {
-    /* FlowTiq paleta — imena spremenljivk ostajajo, ker se nanje
+    /* FlowTek paleta — imena spremenljivk ostajajo, ker se nanje
        zanaša 47 mest v markupu in JS predlogah. */
     --bg: #FBF8F1;
     --bg2: #ffffff;
@@ -525,7 +525,7 @@
     color: #fff; font-size: 14px; flex-shrink: 0;
   }
 
-  /* MODERN FLOWTIQ REFRESH */
+  /* MODERN FLOWTEK REFRESH */
   body {
     background:
       radial-gradient(circle at 12% 0%, rgba(124,58,237,0.22), transparent 34%),
@@ -911,9 +911,9 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     FlowTiq design — isti jezik kot javne strani in salon.html.
+     FlowTek design — isti jezik kot javne strani in salon.html.
      Ta blok je namenoma ZADNJI: prepiše ostanke stare temne teme
-     ("MODERN FLOWTIQ REFRESH" zgoraj) brez !important, samo po
+     ("MODERN FLOWTEK REFRESH" zgoraj) brez !important, samo po
      vrstnem redu. Imena razredov in spremenljivk so nespremenjena —
      nanje se zanaša 47 mest v markupu in JS predlogah.
      ═══════════════════════════════════════════════════════════════ */
@@ -1168,7 +1168,7 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <a class="ft-logo-link" href="/" title="FlowTiq — domača stran"><img src="/ft-logo.png" alt="FlowTiq" width="188" height="55" style="object-fit:contain"></a>
+      <a class="ft-logo-link" href="/" title="FlowTek — domača stran"><img src="/ft-logo.png" alt="FlowTek" width="188" height="47" style="object-fit:contain"></a>
     </div>
     <p>Vstopite z master emailom in geslom.</p>
     <div id="master-login-form">
@@ -1202,7 +1202,7 @@
 <div id="app">
   <header>
     <div class="header-left">
-      <a class="ft-logo-link" href="/" title="FlowTiq — domača stran"><img src="/ft-logo.png" alt="FlowTiq" width="188" height="55" style="object-fit:contain;display:block"></a>
+      <a class="ft-logo-link" href="/" title="FlowTek — domača stran"><img src="/ft-logo.png" alt="FlowTek" width="188" height="47" style="object-fit:contain;display:block"></a>
     </div>
     <div class="header-right">
       <span class="header-user" id="header-user"></span>
@@ -1326,9 +1326,9 @@
       <div class="form-group">
         <label>Paket *</label>
         <select id="f-plan">
-          <option value="ai_start">FlowTiq AI Start — €89/mes (500 naročil)</option>
-          <option value="ai" selected>FlowTiq AI Pro — €159,99/mes (1.500)</option>
-          <option value="premium">FlowTiq Premium — €299/mes (10.000)</option>
+          <option value="ai_start">FlowTek AI Start — €89/mes (500 naročil)</option>
+          <option value="ai" selected>FlowTek AI Pro — €159,99/mes (1.500)</option>
+          <option value="premium">FlowTek Premium — €299/mes (10.000)</option>
         </select>
       </div>
     </div>
@@ -2634,9 +2634,9 @@ function openProforma(id) {
   <div class="box r"><h1>PREDRAČUN</h1>Št.: <b>${no}</b><br>Datum: ${today}<br>Rok plačila: ${due}</div></div>
   <div class="box" style="margin-top:16px"><b>Kupec:</b><br>${s.company_name || s.name || '—'}<br>${s.address || ''}<br>${s.vat_id ? ('Davčna št.: ' + s.vat_id) : ''}</div>
   <table><tr><th>Opis</th><th class="r">Znesek</th></tr>
-  <tr><td>FlowTiq paket ${planLabelById(plan)} — ${period}</td><td class="r">${eur(amount)}</td></tr>
+  <tr><td>FlowTek paket ${planLabelById(plan)} — ${period}</td><td class="r">${eur(amount)}</td></tr>
   <tr class="tot"><td class="r">Za plačilo</td><td class="r">${eur(amount)}</td></tr></table>
-  <div class="box"><b>Plačilo po nakazilu:</b> IBAN <b>${PROFORMA_ISSUER.iban}</b><br>Sklic: <b>${sklic}</b><br>Namen: FlowTiq ${no}</div>
+  <div class="box"><b>Plačilo po nakazilu:</b> IBAN <b>${PROFORMA_ISSUER.iban}</b><br>Sklic: <b>${sklic}</b><br>Namen: FlowTek ${no}</div>
   <p class="muted">${PROFORMA_ISSUER.novat}<br>Predračun ni davčni dokument. Po prejemu plačila izdamo račun in aktiviramo storitev.</p>
   <button class="noprint" onclick="window.print()" style="padding:10px 16px;margin-top:8px">Natisni / shrani kot PDF</button>
   </body></html>`);
@@ -2655,15 +2655,15 @@ async function deleteSalon(id, name) {
 }
 
 
-async function addFlowTiqSalon() {
-  if (!confirm('Ustvari FlowTiq sales salon?\n\nPhone ID: 1152382777962508\nBooking mode: sales')) return;
+async function addFlowTekSalon() {
+  if (!confirm('Ustvari FlowTek sales salon?\n\nPhone ID: 1152382777962508\nBooking mode: sales')) return;
   const r = await fetch('/onboard', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + masterToken },
     body: JSON.stringify({
-      name: 'FlowTiq',
-      owner_name: 'FlowTiq Admin',
-      owner_email: 'info@flowtiq.si',
+      name: 'FlowTek',
+      owner_name: 'FlowTek Admin',
+      owner_email: 'info@flowtek.si',
       admin_phone: '',
       whatsapp_phone_number_id: '1152382777962508',
       bot_phone_display: '+386 40 599 185',
@@ -2673,7 +2673,7 @@ async function addFlowTiqSalon() {
   });
   const d = await r.json();
   if (d.success) {
-    showToast('FlowTiq salon ustvarjen!', 'success');
+    showToast('FlowTek salon ustvarjen!', 'success');
     await loadSalons();
     // Now set booking_mode = 'sales' via PATCH
     await fetch(`/api/admin/salons/${d.salon_id}/settings`, {

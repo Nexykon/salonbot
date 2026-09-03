@@ -1,5 +1,5 @@
 /*
-  Edini vir resnice o paketih FlowTiq.
+  Edini vir resnice o paketih FlowTek.
 
   Prej je bil cenik prepisan na osmih mestih (server.js, presets.js, proforma.js,
   admin.html, salon.html, delivery.html). Ob uvedbi letnega popusta je to postalo

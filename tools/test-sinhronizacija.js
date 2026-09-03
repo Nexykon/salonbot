@@ -54,7 +54,7 @@ function narocnina({ status, plan, period, konecDni, subId, custId, salonId, bre
   };
   if (!brezOznak) {
     cena.lookup_key = plans.lookupKey(plan, period);
-    cena.metadata = { flowtiq_plan: plan, flowtiq_period: period };
+    cena.metadata = { flowtek_plan: plan, flowtek_period: period };
   }
   return {
     id: subId || ('sub_test' + (++n)), object: 'subscription', status,

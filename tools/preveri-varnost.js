@@ -8,7 +8,7 @@
   in preskoči, namesto da bi tiho pokazala zeleno.
 
     set FT_MASTER_EMAIL=...&& set FT_MASTER_PASS=...
-    node tools/preveri-varnost.js [--host=flowtiq.si]
+    node tools/preveri-varnost.js [--host=flowtek.si]
 
   Privzeto teče proti lokalnemu strežniku. Za prijave uporablja izmišljene
   e-naslove, da ne zaklene pravega računa; izjema je preverba odjave, ki se

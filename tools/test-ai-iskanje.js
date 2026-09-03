@@ -27,11 +27,11 @@ const robots = beri('robots.txt');
 const sitemap = beri('sitemap.xml');
 
 console.log('\n1) llms.txt — oblika po llmstxt.org');
-je('začne se z imenom', llms.startsWith('# FlowTiq\n'), true);
-je('takoj za imenom je povzetek z ">"', /^# FlowTiq\n\n> .{80,}/.test(llms), true);
+je('začne se z imenom', llms.startsWith('# FlowTek\n'), true);
+je('takoj za imenom je povzetek z ">"', /^# FlowTek\n\n> .{80,}/.test(llms), true);
 je('ima razdelke z "##"', (llms.match(/^## /gm) || []).length >= 4, true);
-je('povezave so v obliki "- [ime](naslov): opis"', (llms.match(/^- \[[^\]]+\]\(https:\/\/flowtiq\.si\/[^)]*\): .+$/gm) || []).length >= 20, true);
-je('vse povezave so absolutne', /\]\((?!https:\/\/flowtiq\.si)/.test(llms), false);
+je('povezave so v obliki "- [ime](naslov): opis"', (llms.match(/^- \[[^\]]+\]\(https:\/\/flowtek\.si\/[^)]*\): .+$/gm) || []).length >= 20, true);
+je('vse povezave so absolutne', /\]\((?!https:\/\/flowtek\.si)/.test(llms), false);
 je('nikjer ni nezamenjanih oznak', /\{\w+\}|undefined|null/.test(llms), false);
 je('ni HTML entitet', /&(amp|quot|nbsp|#39);/.test(llms), false);
 je('ni šumnikov v pokvarjeni obliki', /Ã|Å|Ä/.test(llms), false);
@@ -43,7 +43,7 @@ for (const [opis, vzorec] of [
   ['brez provizije', /brez provizije/],
   ['brez vezave', /ni vezave|brez vezave/],
   ['obsegi naročil', /500.*1\.500.*10\.000/s],
-  ['e-pošta', /info@flowtiq\.si/],
+  ['e-pošta', /info@flowtek\.si/],
   ['telefon', /\+386 40 599 185/],
   ['podjetje', /Webacus/],
   ['davčna številka', /35880643/],
@@ -51,8 +51,8 @@ for (const [opis, vzorec] of [
 ]) je(opis, vzorec.test(llms), true);
 
 console.log('\n3) llms.txt in sitemap si ne nasprotujeta');
-const vSitemapu = [...sitemap.matchAll(/<loc>https:\/\/flowtiq\.si([^<]*)<\/loc>/g)].map(m => m[1] || '/');
-const vLlms = [...llms.matchAll(/\]\(https:\/\/flowtiq\.si([^)]*)\)/g)].map(m => m[1] || '/');
+const vSitemapu = [...sitemap.matchAll(/<loc>https:\/\/flowtek\.si([^<]*)<\/loc>/g)].map(m => m[1] || '/');
+const vLlms = [...llms.matchAll(/\]\(https:\/\/flowtek\.si([^)]*)\)/g)].map(m => m[1] || '/');
 const manjkaVLlms = vSitemapu.filter(u => !vLlms.includes(u));
 const odvecVLlms = vLlms.filter(u => !vSitemapu.includes(u));
 je('vsaka stran iz sitemapa je v llms.txt', manjkaVLlms, []);
@@ -63,7 +63,7 @@ const ZAPRTE = ['/admin.html', '/salon.html', '/delivery.html', '/leads.html', '
 for (const z of ZAPRTE) je('ni povezave na ' + z, vLlms.includes(z), false);
 
 console.log('\n5) robots.txt');
-je('kaže na sitemap', /^Sitemap: https:\/\/flowtiq\.si\/sitemap\.xml$/m.test(robots), true);
+je('kaže na sitemap', /^Sitemap: https:\/\/flowtek\.si\/sitemap\.xml$/m.test(robots), true);
 je('omenja llms.txt', /llms\.txt/.test(robots), true);
 /*
   Robots.txt beremo tako, kot ga bere pajek: skupina je ZAPOREDJE vrstic
@@ -168,10 +168,10 @@ je('vse imajo povezavo na razvoj po meri', straniZNogo.filter(f => !/href="\/ai-
 
 console.log('\n9) Stran za razvoj po meri');
 const ai = beri('ai-resitve.html');
-je('je v sitemapu', /<loc>https:\/\/flowtiq\.si\/ai-resitve\.html<\/loc>/.test(sitemap), true);
+je('je v sitemapu', /<loc>https:\/\/flowtek\.si\/ai-resitve\.html<\/loc>/.test(sitemap), true);
 je('je v llms.txt', /\/ai-resitve\.html/.test(llms), true);
 je('llms.txt jo opiše v razdelku "Razvoj po meri"', /## Razvoj po meri/.test(llms), true);
-je('ima kanonični naslov', /<link rel="canonical" href="https:\/\/flowtiq\.si\/ai-resitve\.html">/.test(ai), true);
+je('ima kanonični naslov', /<link rel="canonical" href="https:\/\/flowtek\.si\/ai-resitve\.html">/.test(ai), true);
 je('ima opis pod 200 znaki', (ai.match(/<meta name="description" content="([^"]*)"/) || [, ''])[1].length < 200, true);
 je('naslov omenja platforme', /<title>[^<]*(WhatsApp|Viber)[^<]*<\/title>/.test(ai), true);
 je('pas na prvi strani pelje nanjo', /href="\/ai-resitve\.html"[^>]*>Razvoj AI rešitev/.test(beri('index.html')), true);
@@ -185,7 +185,7 @@ je('pas na prvi strani pelje nanjo', /href="\/ai-resitve\.html"[^>]*>Razvoj AI r
     const tipi = g.map(x => x['@type']);
     je('vsebuje Service, FAQPage in BreadcrumbList', tipi.sort(), ['BreadcrumbList', 'FAQPage', 'Service']);
     const srv = g.find(x => x['@type'] === 'Service');
-    je('Service kaže na isto organizacijo kot prva stran', srv.provider['@id'], 'https://flowtiq.si/#organizacija');
+    je('Service kaže na isto organizacijo kot prva stran', srv.provider['@id'], 'https://flowtek.si/#organizacija');
     je('katalog storitev ima štiri postavke', srv.hasOfferCatalog.itemListElement.length, 4);
     const faq = g.find(x => x['@type'] === 'FAQPage');
     je('vsako vprašanje ima odgovor', faq.mainEntity.every(q => q.acceptedAnswer && q.acceptedAnswer.text.length > 40), true);

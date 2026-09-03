@@ -32,7 +32,7 @@ const eur = c => ((c || 0) / 100).toLocaleString('sl-SI', { minimumFractionDigit
   console.log('\nprodukti: ' + p.data.length);
   for (const x of p.data) {
     console.log('  ' + (x.active ? 'aktiven  ' : 'arhiviran') + '  ' + x.id + '  ' + x.name
-      + (x.metadata?.flowtiq_plan ? '   [flowtiq_plan=' + x.metadata.flowtiq_plan + ']' : ''));
+      + (x.metadata?.flowtek_plan ? '   [flowtek_plan=' + x.metadata.flowtek_plan + ']' : ''));
   }
 
   const c = await stripe.prices.list({ limit: 100 });

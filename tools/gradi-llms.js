@@ -14,13 +14,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const DOMENA = 'https://flowtiq.si';
+const DOMENA = 'https://flowtek.si';
 const PUB = path.join(__dirname, '..', 'public');
 
 // Razdelki in strani. Vrstni red je vrstni red v llms.txt.
 const RAZDELKI = [
   ['Izdelek', [
-    ['/', 'Kaj je FlowTiq in za koga je'],
+    ['/', 'Kaj je FlowTek in za koga je'],
     ['/kako-deluje.html', null],
     ['/funkcije.html', null],
     ['/cenik.html', null],
@@ -74,8 +74,8 @@ function podatkiStrani(pot) {
   const t = html.match(/<title>([\s\S]*?)<\/title>/i);
   const d = html.match(/<meta\s+name="description"\s+content="([^"]*)"/i);
   let naslov = t ? razLastnosti(t[1]) : pot;
-  // "Cenik — FlowTiq" → "Cenik"; ime znamke je v glavi datoteke
-  naslov = naslov.replace(/\s*[—|–|-]\s*FlowTiq.*$/i, '').trim() || naslov;
+  // "Cenik — FlowTek" → "Cenik"; ime znamke je v glavi datoteke
+  naslov = naslov.replace(/\s*[—|–|-]\s*FlowTek.*$/i, '').trim() || naslov;
   return { naslov, opis: d ? razLastnosti(d[1]) : null };
 }
 
@@ -95,20 +95,20 @@ const NA_KRATKO = `## Na kratko
 - **Cena:** fiksna mesečna naročnina brez provizije od naročila — AI Start 89 €, AI Pro 159,99 €, Premium 299 € na mesec. Vsi paketi imajo vse funkcije; razlikuje se obseg (500, 1.500 oziroma 10.000 naročil na mesec), Premium doda več lokacij pod eno ploščo in prednostno podporo.
 - **Pogoji:** postavitev je brezplačna, ni vezave, odpoved kadar koli. Cena je končna — Webacus ni zavezanec za DDV (1. odst. 94. člena ZDDV-1).
 - **Kaj zna:** odgovarja 24 ur na dan, razume prosto napisano besedilo, vodi lasten koledar z dolžinami storitev in ločenimi koledarji po zaposlenih, pokaže meni v pogovoru, sešteje naročilo z embalažo in dostavo po kraju, pošlje opomnik dan prej, sprosti odpovedani termin, vabi stranke nazaj, zbira Google ocene, se poveže z blagajno in vse skupaj pokaže na nadzorni plošči.
-- **Razvoj po meri:** poleg izdelka FlowTiq razvijamo AI rešitve po naročilu — pogovorne pomočnike na WhatsAppu, Viberju, Telegramu, Messengerju in v spletnem klepetu, integracije z blagajno, ERP, CRM in spletno trgovino, avtomatizacijo dela z besedilom ter prevzem in vzdrževanje obstoječih rešitev. Cena je po oceni obsega; uvodni pogovor in ocena sta brezplačna. Podrobno: https://flowtiq.si/ai-resitve.html
+- **Razvoj po meri:** poleg izdelka FlowTek razvijamo AI rešitve po naročilu — pogovorne pomočnike na WhatsAppu, Viberju, Telegramu, Messengerju in v spletnem klepetu, integracije z blagajno, ERP, CRM in spletno trgovino, avtomatizacijo dela z besedilom ter prevzem in vzdrževanje obstoječih rešitev. Cena je po oceni obsega; uvodni pogovor in ocena sta brezplačna. Podrobno: https://flowtek.si/ai-resitve.html
 - **Kdo ga razvija:** Webacus, Valentin Iljaž s.p., Nova vas 12, Bizeljsko, Slovenija. Davčna št. 35880643.
-- **Kontakt:** info@flowtiq.si, telefon in WhatsApp +386 40 599 185. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
+- **Kontakt:** info@flowtek.si, telefon in WhatsApp +386 40 599 185. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
 `;
 
-const glava = `# FlowTiq
+const glava = `# FlowTek
 
 > WhatsApp pomočnik za slovenske gostince in obrtnike: 24 ur na dan sprejema naročila in rezervacije na obstoječi WhatsApp številki lokala, brez aplikacije za stranko in brez provizije od naročila.
 
-FlowTiq ni klepetalni robot za vprašanja o izdelku, ampak prevzame konkreten posel: pogovor s stranko od prvega sporočila do oddanega naročila ali potrjenega termina. Zneske, koledar in urnik vodi determinirana koda, jezik razume AI — zato bot ne izmišljuje cen in prostih terminov. Lastnik vse nastavi v nadzorni plošči: delovni čas po dnevih, storitve in cene, ceno embalaže, ceno dostave po krajih in ton pogovora.
+FlowTek ni klepetalni robot za vprašanja o izdelku, ampak prevzame konkreten posel: pogovor s stranko od prvega sporočila do oddanega naročila ali potrjenega termina. Zneske, koledar in urnik vodi determinirana koda, jezik razume AI — zato bot ne izmišljuje cen in prostih terminov. Lastnik vse nastavi v nadzorni plošči: delovni čas po dnevih, storitve in cene, ceno embalaže, ceno dostave po krajih in ton pogovora.
 
-Poleg izdelka razvijamo tudi AI rešitve po meri za podjetja — pomočnike na drugih pogovornih platformah in integracije z obstoječimi sistemi (glej razdelek "Razvoj po meri"). Izdelek FlowTiq ostaja glavna ponudba.
+Poleg izdelka razvijamo tudi AI rešitve po meri za podjetja — pomočnike na drugih pogovornih platformah in integracije z obstoječimi sistemi (glej razdelek "Razvoj po meri"). Izdelek FlowTek ostaja glavna ponudba.
 
-Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je prosta za branje in navajanje; prosimo za navedbo vira flowtiq.si.
+Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je prosta za branje in navajanje; prosimo za navedbo vira flowtek.si.
 `;
 
 const odseki = [];

@@ -1,5 +1,5 @@
 /**
- * pos-adapters.js — FlowTiq POS Integration
+ * pos-adapters.js — FlowTek POS Integration
  * Adapters: Poster POS, Square, iiko
  * Each adapter exposes:
  *   getMenu(token, account, options)  → [{ id, name, price, category, description }]
@@ -140,7 +140,7 @@ const SquareAdapter = {
       }));
 
       const body = {
-        idempotency_key: `flowtiq-${Date.now()}`,
+        idempotency_key: `flowtek-${Date.now()}`,
         order: {
           location_id: locationId,
           line_items:  lineItems,

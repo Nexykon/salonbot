@@ -292,7 +292,7 @@ function salesConfirmButtons(to, salonName, salonType, email) {
     interactive: {
       type: 'button',
       body: {
-        text: `🎉 Odlično! Tukaj je povzetek:\n\n🏪 Naziv: ${salonName}\n📋 Dejavnost: ${salonType}\n📧 Email: ${email}\n\n💰 *FlowTiq naročnina: od 89 €/mesec*\n✅ Vključuje: WhatsApp bot + AI natakar / rezervacije + POS + admin panel + email obvestila\n🛠️ Nastavitev v 24h po plačilu\n\nPotrjujete?`
+        text: `🎉 Odlično! Tukaj je povzetek:\n\n🏪 Naziv: ${salonName}\n📋 Dejavnost: ${salonType}\n📧 Email: ${email}\n\n💰 *FlowTek naročnina: od 89 €/mesec*\n✅ Vključuje: WhatsApp bot + AI natakar / rezervacije + POS + admin panel + email obvestila\n🛠️ Nastavitev v 24h po plačilu\n\nPotrjujete?`
       },
       action: {
         buttons: [

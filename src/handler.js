@@ -23,12 +23,12 @@ function fmtDate(dateStr) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
-// Fair-use: obvesti FlowTiq, ko standardni AI lokal preseže mesečno mejo (1x na mesec)
+// Fair-use: obvesti FlowTek, ko standardni AI lokal preseže mesečno mejo (1x na mesec)
 async function notifyFairUse(salon, cnt, limit) {
   const month = t.todayStr().slice(0, 7);
   if (salon.fair_use_notified_month === month) return;
   await db.updateSalonSettings(salon.id, { fair_use_notified_month: month });
-  const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtiq.si';
+  const owner = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
   await mail.sendEmail(owner, `AI fair-use presežen — ${salon.name}`, [
     `Lokal "${salon.name}" je ta mesec presegel fair-use mejo AI paketa.`,
     ``,
@@ -609,7 +609,7 @@ async function handleMessage(msgObj, salon) {
         booking_date: today,
         booking_time: '00:00:00',
         status: 'confirmed',
-        notes: `NAROCILO FlowTiq | Vrsta: ${s.salonType || '-'} | Email: ${s.email || '-'}`,
+        notes: `NAROCILO FlowTek | Vrsta: ${s.salonType || '-'} | Email: ${s.email || '-'}`,
         form_answers: JSON.stringify({ 'Salon': s.salonName, 'Vrsta': s.salonType, 'Email': s.email })
       };
       await db.createBooking(leadData).catch(e => console.error('[sales] save lead failed:', e.message));
@@ -617,19 +617,19 @@ async function handleMessage(msgObj, salon) {
 
       // Notify admin via WA
       if (salonAdminPhone) {
-        const msg = `🎉 *NOVO NAROČILO FlowTiq!*\n\n🏪 Salon: ${s.salonName}\n📋 Vrsta: ${s.salonType}\n📞 Tel: +${from}\n📧 Email: ${s.email}\n\nNastavite jim salon in pošljite dostop!`;
+        const msg = `🎉 *NOVO NAROČILO FlowTek!*\n\n🏪 Salon: ${s.salonName}\n📋 Vrsta: ${s.salonType}\n📞 Tel: +${from}\n📧 Email: ${s.email}\n\nNastavite jim salon in pošljite dostop!`;
         wa.send(phoneId, token, wa.textMsg(salonAdminPhone, msg)).catch(() => {});
       }
       // Notify via email
       if (salon.owner_email) {
         mail.sendBookingNotification && mail.sendBookingNotification(
-          salon, s.salonName, from, today, '—', '-', 'FlowTiq naročnina',
+          salon, s.salonName, from, today, '—', '-', 'FlowTek naročnina',
           { 'Vrsta': s.salonType || '-', 'Email': s.email || '-' }
         ).catch(e => console.error('[sales] email failed:', e.message));
       }
 
       await wa.send(phoneId, token, wa.textMsg(from,
-        `✅ *Naročilo sprejeto!*\n\nHvala, ${s.salonName}! 🎉\n\nV 24 urah vas kontaktiramo na ${s.email} in nastavimo vaš FlowTiq bot.\n\nDo takrat! 🌸 — Ekipa FlowTiq`
+        `✅ *Naročilo sprejeto!*\n\nHvala, ${s.salonName}! 🎉\n\nV 24 urah vas kontaktiramo na ${s.email} in nastavimo vaš FlowTek bot.\n\nDo takrat! 🌸 — Ekipa FlowTek`
       ));
       return;
     }
@@ -644,7 +644,7 @@ async function handleMessage(msgObj, salon) {
     // Default / new session: welcome + izbira dejavnosti
     session.set(skey, { step: 201 });
     await wa.send(phoneId, token, wa.textMsg(from,
-      `👋 Pozdravljeni! Sem *FlowTiq* — WhatsApp bot za naročila in rezervacije.\n\n🍕 Za *restavracije in picerije* sprejemam naročila za dostavo in prevzem (AI natakar).\n💇 Za *salone in storitve* pa rezervacije terminov.\n\nVse 24/7, brez klicev in SMS-ov — vi vodite vse prek preprostega admin panela.\n\n🚀 Katero dejavnost želite priklopiti?`
+      `👋 Pozdravljeni! Sem *FlowTek* — WhatsApp bot za naročila in rezervacije.\n\n🍕 Za *restavracije in picerije* sprejemam naročila za dostavo in prevzem (AI natakar).\n💇 Za *salone in storitve* pa rezervacije terminov.\n\nVse 24/7, brez klicev in SMS-ov — vi vodite vse prek preprostega admin panela.\n\n🚀 Katero dejavnost želite priklopiti?`
     ));
     await wa.send(phoneId, token, wa.salesTypeList(from));
     return;
@@ -1717,7 +1717,7 @@ async function handleMessage(msgObj, salon) {
             type: 'list',
             header: { type: 'text', text: `Meni — ${salon.name}` },
             body:   { text: greeting + 'Izberite artikel iz menija:' + cartSum },
-            footer: { text: 'FlowTiq · POS naročanje' },
+            footer: { text: 'FlowTek · POS naročanje' },
             action: {
               button: 'Odpri meni',
               sections,
@@ -1853,7 +1853,7 @@ async function handleMessage(msgObj, salon) {
           type: 'list',
           header: { type: 'text', text: 'Dodaj artikel' },
           body:   { text: 'Izberite naslednji artikel:' + cartSum },
-          footer: { text: 'FlowTiq · POS naročanje' },
+          footer: { text: 'FlowTek · POS naročanje' },
           action: { button: 'Odpri meni', sections }
         }
       });

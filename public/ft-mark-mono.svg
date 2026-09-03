@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" role="img" aria-label="FlowTek">
+  <g fill="none" stroke="currentColor" stroke-linecap="round">
+    <path d="M6 22C6 13.16 13.16 6 22 6H78C86.84 6 94 13.16 94 22V62C94 70.84 86.84 78 78 78H42L20 94V76.4C12.1 74.2 6 67 6 58.4V22Z" stroke-width="7"></path>
+    <path d="M26 34C33 27 40 41 49 34C58 27 65 41 73 34" stroke-width="7"></path>
+    <path d="M26 52C33 45 40 59 49 52C58 45 65 59 73 52" stroke-width="7"></path>
+  </g>
+</svg>

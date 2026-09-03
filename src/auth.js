@@ -46,7 +46,7 @@ function hashToken(token) {
   return crypto.createHash('sha256').update(String(token || '')).digest('hex');
 }
 
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_KEY || 'flowtiq-fallback-secret';
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_KEY || 'flowtek-fallback-secret';
 const SESSION_TTL_OWNER = 30 * 24 * 60 * 60 * 1000;   // 30 dni (lastniki salonov)
 const SESSION_TTL_MASTER = 30 * 24 * 60 * 60 * 1000;  // 30 dni (master admin)
 
