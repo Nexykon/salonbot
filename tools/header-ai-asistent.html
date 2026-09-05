@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    width: 1200px; height: 630px; overflow: hidden;
+    font-family: "Fira Sans", sans-serif; color: #101E2B;
+    background: linear-gradient(#FBF8F1, #F4EDE4);
+    background-image:
+      radial-gradient(rgba(14,122,56,.10) 1.6px, transparent 1.6px),
+      linear-gradient(#FBF8F1, #F4EDE4);
+    background-size: 34px 34px, 100% 100%;
+    padding: 52px 60px;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .vrh { display: flex; align-items: center; justify-content: space-between; }
+  .logo { height: 46px; }
+  .znacka {
+    display: inline-flex; align-items: center; gap: 10px;
+    border: 3px solid #101E2B; border-radius: 999px; padding: 8px 20px; background: #fff;
+    font-family: "Fira Mono", monospace; font-size: 16px; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+  .znacka i { width: 11px; height: 11px; border-radius: 50%; background: #16A34A; }
+
+  .sredina { display: flex; align-items: center; gap: 46px; }
+  h1 {
+    font-size: 62px; font-weight: 800; line-height: 1.06; letter-spacing: -0.03em;
+    flex: 1;
+  }
+  mark {
+    background: #16A34A; color: #fff; padding: 2px 14px 8px;
+    border-radius: 14px; display: inline-block; transform: rotate(-1.2deg);
+  }
+
+  /* WhatsApp mock */
+  .klepet {
+    width: 384px; flex: none; background: #fff;
+    border: 3px solid #101E2B; border-radius: 22px;
+    box-shadow: 9px 9px 0 #101E2B; overflow: hidden;
+    transform: rotate(1.6deg);
+  }
+  .klepet-vrh {
+    display: flex; align-items: center; gap: 10px;
+    background: #101E2B; color: #FBF8F1; padding: 12px 18px;
+    font-family: "Fira Mono", monospace; font-size: 14px; letter-spacing: .04em;
+  }
+  .klepet-vrh i { width: 9px; height: 9px; border-radius: 50%; background: #16A34A; }
+  .klepet-vrh span { margin-left: auto; opacity: .65; }
+  .klepet-telo { padding: 18px; display: flex; flex-direction: column; gap: 12px; background: #F4EDE4; }
+  .b { max-width: 84%; padding: 11px 15px; font-size: 17px; line-height: 1.35; border: 2px solid #101E2B; }
+  .b .cas { display: block; font-family: "Fira Mono", monospace; font-size: 11px; margin-top: 5px; opacity: .55; }
+  .gost { align-self: flex-start; background: #fff; border-radius: 16px 16px 16px 4px; }
+  .bot { align-self: flex-end; background: #DCF8C6; border-radius: 16px 16px 4px 16px; }
+  .bot .cas { text-align: right; color: #0E7A38; opacity: .8; }
+
+  .dno { display: flex; align-items: flex-end; justify-content: space-between; gap: 36px; }
+  .pas { display: flex; border: 3px solid #101E2B; border-radius: 20px; background: #fff; overflow: hidden; }
+  .pas > div { padding: 13px 24px; }
+  .pas > div + div { border-left: 3px solid #101E2B; }
+  .pas b { display: block; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
+  .pas span { font-size: 14px; color: #5A6875; }
+  .url { font-family: "Fira Mono", monospace; font-size: 21px; font-weight: 600; color: #0E7A38; }
+</style>
+</head>
+<body>
+  <div class="vrh">
+    <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" role="img" aria-label="FlowTek">
+      <g transform="translate(0 8) scale(0.64)">
+        <path d="M6 22C6 13.16 13.16 6 22 6H78C86.84 6 94 13.16 94 22V62C94 70.84 86.84 78 78 78H42L20 94V76.4C12.1 74.2 6 67 6 58.4V22Z" fill="#0E7A38"></path>
+        <path d="M24 32C32 24 40 40 50 32C60 24 68 40 76 32" stroke="#FBF8F1" stroke-width="8" stroke-linecap="round" fill="none"></path>
+        <path d="M24 46C32 38 40 54 50 46C60 38 68 54 76 46" stroke="#7FD69C" stroke-width="8" stroke-linecap="round" fill="none"></path>
+        <path d="M24 60C32 52 40 68 50 60" stroke="#FBF8F1" stroke-width="8" stroke-linecap="round" stroke-opacity=".55" fill="none"></path>
+      </g>
+      <text x="80" y="53" font-family="'Fira Sans',system-ui,sans-serif" font-weight="800" font-size="46" letter-spacing="-1.1" fill="#101E2B">Flow<tspan fill="#0E7A38">Tek</tspan></text>
+    </svg>
+    <div class="znacka"><i></i> Nasveti &nbsp;·&nbsp; 4 min branja</div>
+  </div>
+
+  <div class="sredina">
+    <h1>AI asistent v lokalu<br>ni luksuz.<br><mark>Je razbremenitev ekipe.</mark></h1>
+
+    <div class="klepet">
+      <div class="klepet-vrh"><i></i> WhatsApp <span>petek, 19.15</span></div>
+      <div class="klepet-telo">
+        <div class="b gost">A še dostavljate?<span class="cas">19.15</span></div>
+        <div class="b bot">Seveda 🙂 Kaj vam lahko pripravimo?<span class="cas">19.15 ✓✓</span></div>
+        <div class="b gost">Eno capriccioso in dve koli<span class="cas">19.16</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dno">
+    <div class="pas">
+      <div><b>do 43 %</b><span>klicev v špici ostane brez odgovora</span></div>
+      <div><b>3 minute</b><span>toliko čaka 91 % strank</span></div>
+      <div><b>660 €</b><span>izgubljenega prometa na mesec</span></div>
+    </div>
+    <div class="url">flowtek.si</div>
+  </div>
+</body>
+</html>
