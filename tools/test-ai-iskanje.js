@@ -165,13 +165,19 @@ const straniZNogo = fs.readdirSync(PUB).filter(f => f.endsWith('.html'))
 je('nogo ima vsaj 25 strani', straniZNogo.length >= 25, true);
 je('vse imajo povezavo na llms.txt', straniZNogo.filter(f => !/href="\/llms\.txt"/.test(beri(f))), []);
 je('vse imajo povezavo na razvoj po meri', straniZNogo.filter(f => !/href="\/ai-resitve\.html"/.test(beri(f))), []);
-je('vse imajo povezavo na LinkedIn', straniZNogo.filter(f => !/href="https:\/\/www\.linkedin\.com\/company\/flowtek-si\/"/.test(beri(f))), []);
-je('LinkedIn se odpre v novem zavihku z rel="noopener"',
-  straniZNogo.filter(f => !/linkedin\.com\/company\/flowtek-si\/" target="_blank" rel="noopener"/.test(beri(f))), []);
+const OMREZJA = [
+  ['LinkedIn', /href="https:\/\/www\.linkedin\.com\/company\/flowtek-si\/" target="_blank" rel="noopener"/],
+  ['Facebook', /href="https:\/\/www\.facebook\.com\/profile\.php\?id=61594315972114" target="_blank" rel="noopener"/]
+];
+for (const [ime, vzorec] of OMREZJA)
+  je('vse imajo ' + ime + ' z target="_blank" rel="noopener"', straniZNogo.filter(f => !vzorec.test(beri(f))), []);
 // Predloga generatorja mora imeti isto — brez tega naslednja gradnja
-// panožnih strani povezavo povozi.
-je('predloga generatorja ima LinkedIn',
-  /foot-social[^>]*linkedin\.com\/company\/flowtek-si/.test(fs.readFileSync(path.join(__dirname, 'gradi-panoge.js'), 'utf8')), true);
+// panožnih strani povezave povozi.
+const predloga = fs.readFileSync(path.join(__dirname, 'gradi-panoge.js'), 'utf8');
+for (const [ime, vzorec] of OMREZJA) je('predloga generatorja ima ' + ime, vzorec.test(predloga), true);
+// Znaka morata biti vrisana in brez svoje barve, da ostane paleta nedotaknjena.
+je('znaka prevzameta barvo besedila', straniZNogo.filter(f => (beri(f)
+  .match(/class="foot-social"[\s\S]*?<svg[^>]*fill="currentColor"/g) || []).length !== 2), []);
 
 console.log('\n9) Stran za razvoj po meri');
 const ai = beri('ai-resitve.html');

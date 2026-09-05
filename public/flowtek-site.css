@@ -562,9 +562,10 @@ strong { font-weight: 700; }
 .foot-links { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; font-size: 14.5px; }
 .foot-links a { color: var(--ink); }
 .foot-links a:hover { color: var(--green-dark); }
-/* Družbeno omrežje v nogi — znak prevzame barvo besedila, brez nove barve. */
+/* Družbena omrežja v nogi — znaka prevzameta barvo besedila, brez nove barve. */
+.foot-socials { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 .foot-social {
-  display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
+  display: inline-flex; align-items: center; gap: 8px;
   padding: 7px 15px 7px 12px; background: #fff; color: var(--ink);
   border: 2px solid var(--ink); border-radius: 999px;
   font-size: 14px; font-weight: 600; box-shadow: 3px 3px 0 var(--ink);
