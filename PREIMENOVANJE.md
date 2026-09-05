@@ -1,66 +1,94 @@
 # FlowTiq → FlowTek: kaj je narejeno in kaj mora narediti človek
 
-Koda je pripravljena. **Preden gre v objavo, mora biti izpolnjen pogoj iz
-razdelka 1** — drugače stran sama kaže na domeno, ki ne obstaja.
-
 ---
 
-## 1 · Stanje objave
+## 1 · Stanje objave — domena je živa (5. 9. 2026)
 
-Objavljeno je bilo **brez nove domene** (tako je bilo odločeno; nabiralnik
-`info@flowtek.si` že deluje). Zato:
+`flowtek.si` je priklopljen in **preusmeritev je vklopljena**. Preverjeno v
+živo:
 
-**Preusmeritev na novo domeno je PRIVZETO IZKLOPLJENA.** Dokler flowtek.si ne
-odgovarja, bi 301 pomenil, da vsak obiskovalec flowtiq.si pristane na domeni
-brez odziva — stran bi bila za vse nedosegljiva. To ni tveganje, ampak
-gotovost, zato je za preusmeritvijo stikalo.
+```
+http://flowtek.si/          301 → https://flowtek.si/
+https://flowtek.si/         200, canonical https://flowtek.si/
+https://www.flowtek.si/     301 → https://flowtek.si/
+https://flowtiq.si/         301 → https://flowtek.si/
+https://flowtiq.si/cenik.html  301 → https://flowtek.si/cenik.html
+```
 
-### Ko bo flowtek.si priklopljen
+Preusmeritev dela **naša koda**, ne platforma — kar je pomembno, ker naši dve
+namerni izjemi zato res veljata:
 
-1. registriraj domeno in usmeri DNS na isti strežnik kot `flowtiq.si`;
-2. na gostovanju dodaj `flowtek.si` in `www.flowtek.si`, pridobi potrdilo TLS;
-3. preveri, da `https://flowtek.si/` vrne 200;
-4. na gostovanju nastavi spremenljivko in znova zaženi:
+```
+GET  flowtiq.si/webhook                403  (brez preusmeritve)
+POST flowtiq.si/webhook                200  (brez preusmeritve)
+GET  flowtiq.si/api/public/restaurants 200  (brez preusmeritve)
+```
 
-   ```
-   PREUSMERI_NA_NOVO_DOMENO = 1
-   ```
+Platformna preusmeritev bi tu vrnila 301 in Meta bi ob POST izgubljala
+sporočila strank.
 
-5. preveri, da `https://flowtiq.si/cenik.html` vrne 301 na
-   `https://flowtek.si/cenik.html`;
-6. `flowtiq.si` **pusti priklopljen vsaj 12 mesecev.**
+`flowtiq.si` **pusti priklopljen vsaj 12 mesecev.**
 
-Sprememba kode za to ni potrebna in ni potrebna nova objava.
+### Pred aplikacijo stoji Cloudflare
 
-### Kar do takrat ni v redu (in je znano)
+Glave odgovorov: `server: cloudflare`, `cf-ray: …-VIE`. Posledica, ki jo je
+treba poznati: **`robots.txt` v živo ni naša datoteka.** Cloudflare pred našo
+vsebino vrine 62 vrstic svojega bloka (`# BEGIN Cloudflare Managed content`) z
+`Content-Signal: search=yes,ai-train=no,use=reference` in `Disallow: /` za
+Amazonbot, Applebot-Extended, Bytespider, CCBot, ClaudeBot,
+CloudflareBrowserRenderingCrawler, Google-Extended, GPTBot in
+meta-externalagent.
 
-Strani že vsebujejo `rel="canonical"` in `og:url` na `https://flowtek.si/...`,
-sitemap in llms.txt pa naštevata novo domeno. Dokler ta ne odgovarja:
+Naš del je za tem blokom cel in nespremenjen, `llms.txt` in `sitemap.xml` se
+strežeta točno tako, kot sta v repozitoriju. Omrežne blokade AI pajkov ni —
+zahteve z imeni teh pajkov v `User-Agent` dobijo 200 in vsebino.
 
-- Google bere kanonični naslov, ki vrne napako — dlje ko to traja, bolj
-  verjetno je, da strani začne umikati iz indeksa;
-- deljene povezave na družbenih omrežjih ne bodo pokazale predogleda.
-
-**Zato naj bo priklop domene stvar dni, ne tednov.** Če se zavleče, je
-enourno delo, da se kanonični naslovi in `og:url` začasno vrnejo na
-flowtiq.si — povej in naredim.
+Nastavitev je v Cloudflarovi nadzorni plošči (AI Crawl Control → robots.txt),
+ne v kodi, in velja za obe domeni. Podrobneje v razdelku 5.
 
 ---
 
 ## 2 · Kar je treba narediti ročno, zunaj kode
 
-| # | Kaj | Kje |
-|---|---|---|
-| 1 | Registracija domene + DNS + TLS | registrar in gostovanje |
-| 2 | Nabiralnik `info@flowtek.si` | ponudnik pošte |
-| 3 | **Change of address** iz flowtiq.si v flowtek.si | Google Search Console (obe domeni morata biti potrjeni) |
-| 4 | Nov sitemap oddaj za novo domeno | Search Console |
-| 5 | Ime in naslov strani | Google Business Profile |
-| 6 | Profilna slika in ime | WhatsApp Business — uporabi `public/ft-whatsapp-avatar-1024.png` |
-| 7 | Podpisi v e-pošti | ročno |
-| 8 | Ime in domena na računih/predračunih | preveri `src/proforma.js` (podatki podjetja Webacus ostanejo nespremenjeni) |
-| 9 | Stripe: ime izdelka na položnicah | Stripe nadzorna plošča |
-| 10 | Meta App: ime aplikacije, webhook domena | developers.facebook.com (webhook lahko ostane na stari domeni — 301 ga namenoma ne prestreže) |
+| # | Kaj | Kje | Stanje |
+|---|---|---|---|
+| 1 | Registracija domene + DNS + TLS | registrar in gostovanje | **narejeno** |
+| 2 | Nabiralnik `info@flowtek.si` | ponudnik pošte | **narejeno** |
+| 3 | `PREUSMERI_NA_NOVO_DOMENO = 1` | gostovanje | **narejeno** |
+| 4 | **`BASE_URL = https://flowtek.si`** | gostovanje — glej spodaj | odprto |
+| 5 | **Change of address** iz flowtiq.si v flowtek.si | Google Search Console (obe domeni morata biti potrjeni) | odprto |
+| 6 | Nov sitemap oddaj za novo domeno | Search Console | odprto |
+| 7 | Naslov toka podatkov | Google Analytics 4 | odprto |
+| 8 | Ime in naslov strani | Google Business Profile | odprto |
+| 9 | Profilna slika in ime | WhatsApp Business — uporabi `public/ft-whatsapp-avatar-1024.png` | odprto |
+| 10 | Podpisi v e-pošti | ročno | odprto |
+| 11 | Ime in domena na računih/predračunih | preveri `src/proforma.js` (podatki podjetja Webacus ostanejo nespremenjeni) | odprto |
+| 12 | Stripe: ime izdelka na položnicah | Stripe nadzorna plošča | odprto |
+| 13 | Meta App: ime aplikacije, webhook domena | developers.facebook.com (webhook lahko ostane na stari domeni — 301 ga namenoma ne prestreže) | odprto |
+
+### `BASE_URL` — edina odprta stvar, ki lahko kaj pokvari
+
+`server.js` ga bere na sedmih mestih kot
+`process.env.BASE_URL || 'https://flowtek.si'`. Privzetek v kodi je torej že
+nov, **ampak če je spremenljivka na gostovanju še nastavljena na
+`https://flowtiq.si`, jo koda ubogne** — in vsaka povezava, ki jo strežnik
+sestavi sam, kaže na staro domeno:
+
+- povezave za vpis v e-pošti lastnikom,
+- povezava za ponastavitev gesla,
+- `success_url` in `cancel_url` pri Stripu,
+- povezava za postavitev (`/setup.html?token=…`).
+
+Te povezave sicer **delujejo** (301 jih prevede), a v e-pošti stranka vidi
+staro ime. Popravek: nastavi `BASE_URL = https://flowtek.si` ali spremenljivko
+odstrani — privzetek je pravi.
+
+### Vsi prijavljeni lastniki bodo odjavljeni
+
+Žetoni so v `localStorage`, ta pa je vezan na domeno. Botana in Trixy sta bila
+prijavljena na `flowtiq.si`; na `flowtek.si` bosta prišla **odjavljena** in
+bosta potrebovala geslo. Če ga ne vesta, gre pot prek `/geslo`. To ni okvara,
+ampak posledica menjave domene, ki se je ne da obiti.
 
 ### Okoljske spremenljivke — NE preimenuj
 
@@ -145,3 +173,43 @@ prekinilo delovni imenik in nima nobene zveze z objavljeno stranjo).
   test-kontakt 36, test-seznam 56, test-zaprto 14, test-gumbi 51,
   test-ensus 37, test-dostava 176, test-embalaza 60, test-besede 36,
   test-urnik 41.
+
+---
+
+## 5 · Cloudflarov robots.txt: kaj pomeni za AI iskanje
+
+Cloudflare blokira **pajke za učenje modelov**, ne pajkov, ki sestavljajo
+odgovore z navedbo vira. Ta razlika odloča:
+
+**Blokirani (učenje in gradnja korpusa):** GPTBot, ClaudeBot, CCBot,
+Google-Extended, Applebot-Extended, meta-externalagent, Amazonbot, Bytespider.
+
+**Niso blokirani — in to so tisti, ki pripeljejo obiskovalca:** OAI-SearchBot
+in ChatGPT-User (iskanje v ChatGPT), Claude-SearchBot in Claude-User,
+PerplexityBot in Perplexity-User, Bingbot, Applebot, MistralAI-User,
+DuckAssistBot, YouBot. Googlov AI Overviews se ravna po navadnem Googlebotu,
+ne po Google-Extended.
+
+Delo na `llms.txt` in AI iskanju torej ni izgubljeno.
+
+### Kar pa ni v redu: datoteka si nasprotuje
+
+Za šest imen (GPTBot, ClaudeBot, CCBot, Google-Extended, Applebot-Extended,
+meta-externalagent) sta v živem `robots.txt` **dve skupini z istim imenom** —
+Cloudflarova z `Disallow: /` in naša z `Allow: /`. Kaj se zgodi, je odvisno od
+pajka: Googlov razčlenjevalnik skupini zlije in ob enako dolgih pravilih zmaga
+`Allow`, drugi pajki pa lahko vzamejo prvo skupino in ostalo prezrejo. Zanesti
+se na to ni mogoče.
+
+Dve pošteni rešitvi:
+
+1. **Sprejmemo Cloudflarovo politiko** (učenje ne, iskanje ja) in iz naše
+   datoteke odstranimo teh šest imen, da si ne nasprotuje. Vidnost v AI
+   iskalnikih ostane nespremenjena. *(priporočeno)*
+2. **Izklopimo Cloudflarov managed robots.txt** (nadzorna plošča → AI Crawl
+   Control) in velja samo naša datoteka, ki spušča naprej tudi učenje.
+
+Odločitev je poslovna, zato koda ostaja pri miru, dokler ne pade odgovor.
+
+Omrežne blokade ni: zahteve z imeni teh pajkov v `User-Agent` dobijo 200 in
+vsebino, brez `cf-mitigated`.

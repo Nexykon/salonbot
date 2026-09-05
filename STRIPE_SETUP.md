@@ -7,9 +7,9 @@ Stripe Dashboard -> **Products** -> Add product:
 
 | Izdelek | Cena | Interval |
 |---|---|---|
-| FlowTiq Osnovni | 49,99 EUR | mesečno (recurring) |
-| FlowTiq Pro | 79,99 EUR | mesečno (recurring) |
-| FlowTiq AI | 159,99 EUR | mesečno (recurring) |
+| FlowTek Osnovni | 49,99 EUR | mesečno (recurring) |
+| FlowTek Pro | 79,99 EUR | mesečno (recurring) |
+| FlowTek AI | 159,99 EUR | mesečno (recurring) |
 
 Pri vsaki ceni skopiraj **API ID** (začne se s `price_...`).
 

@@ -1,4 +1,4 @@
-# FlowTiq onboarding runbook - Tattoo salon
+# FlowTek onboarding runbook - Tattoo salon
 
 To je vrstni red, po katerem dodas novo stranko, ki ima tattoo salon.
 
@@ -19,7 +19,7 @@ To je vrstni red, po katerem dodas novo stranko, ki ima tattoo salon.
 ## 1. Pripravi Meta Business / WhatsApp
 
 1. Odpri Meta Developers: `https://developers.facebook.com/apps`
-2. Izberi obstojeco FlowTiq aplikacijo ali ustvari novo aplikacijo za WhatsApp.
+2. Izberi obstojeco FlowTek aplikacijo ali ustvari novo aplikacijo za WhatsApp.
 3. V aplikaciji dodaj produkt `WhatsApp`.
 4. Pojdi v `WhatsApp > API Setup`.
 5. Dodaj produkcijsko telefonsko stevilko za tattoo salon.
@@ -40,7 +40,7 @@ Za produkcijo ne uporabljaj temporary tokena.
 
 1. Odpri Meta Business Settings: `https://business.facebook.com/settings`
 2. Pojdi na `Users > System users`.
-3. Ustvari ali izberi system userja za FlowTiq.
+3. Ustvari ali izberi system userja za FlowTek.
 4. Dodeli mu dostop do WhatsApp Business Accounta.
 5. Ustvari permanent token z dovoljenji za WhatsApp Cloud API.
 6. Token shrani varno.
@@ -50,7 +50,7 @@ Ce bo vsak salon imel svoj token, mora backend dobiti podporo za vnos `whatsapp_
 
 ## 3. Webhook v Meta
 
-FlowTiq webhook:
+FlowTek webhook:
 
 ```text
 https://salonbot-production-785b.up.railway.app/webhook
@@ -72,7 +72,7 @@ Koraki:
 6. Pri webhook fields obvezno subscribaj:
    - `messages`
 
-FlowTiq bo tenant izbral po `phone_number_id`, zato je nujno, da je v FlowTiq salonu pravilno vpisan Meta `Phone Number ID`.
+FlowTek bo tenant izbral po `phone_number_id`, zato je nujno, da je v FlowTek salonu pravilno vpisan Meta `Phone Number ID`.
 
 ## 4. Railway env preverjanje
 
@@ -90,7 +90,7 @@ MASTER_ADMIN_PHONES=38640599185
 
 Po spremembi env vrednosti naredi redeploy.
 
-## 5. Dodaj tattoo salon v FlowTiq master admin
+## 5. Dodaj tattoo salon v FlowTek master admin
 
 1. Odpri master admin:
 
@@ -176,7 +176,7 @@ Preveri:
 
 - Meta webhook je verified
 - Meta webhook je subscribed na `messages`
-- `Phone Number ID` v FlowTiq ustreza tej bot stevilki
+- `Phone Number ID` v FlowTek ustreza tej bot stevilki
 - owner admin telefon je pravilna osebna stevilka lastnika
 - lastnik se lahko prijavi z OTP
 - owner dashboard prikaze samo njegov salon
@@ -190,10 +190,10 @@ Preveri:
   - preveri Meta webhook URL
   - preveri `WA_VERIFY_TOKEN`
   - preveri, da je webhook subscribed na `messages`
-  - preveri `Phone Number ID` v FlowTiq salonu
+  - preveri `Phone Number ID` v FlowTek salonu
 
 - Lastnik ne dobi OTP:
-  - preveri admin telefon v FlowTiq
+  - preveri admin telefon v FlowTek
   - preveri, da bot WA token lahko posilja sporocila
   - preveri Railway logs
 
