@@ -562,6 +562,16 @@ strong { font-weight: 700; }
 .foot-links { display: flex; flex-direction: column; gap: 9px; margin-top: 14px; font-size: 14.5px; }
 .foot-links a { color: var(--ink); }
 .foot-links a:hover { color: var(--green-dark); }
+/* Družbeno omrežje v nogi — znak prevzame barvo besedila, brez nove barve. */
+.foot-social {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 16px;
+  padding: 7px 15px 7px 12px; background: #fff; color: var(--ink);
+  border: 2px solid var(--ink); border-radius: 999px;
+  font-size: 14px; font-weight: 600; box-shadow: 3px 3px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s, color .12s;
+}
+.foot-social:hover { color: var(--green-dark); box-shadow: 1px 1px 0 var(--ink); transform: translate(2px, 2px); }
+.foot-social svg { display: block; flex: none; }
 /* Kdo stoji za izdelkom, podpora, podatki podjetja */
 .foot-info {
   max-width: 1180px; margin: 0 auto; padding: 26px 24px 28px;
