@@ -81,7 +81,7 @@ const noga = `<footer class="site-foot">
   <div class="foot-info">
     <div>
       <div class="foot-label">Kdo stoji za FlowTek</div>
-      <p>FlowTek razvija <strong>Webacus</strong>. Za njim stojijo leta dela s spletnimi rešitvami in
+      <p>FlowTek razvija <strong><a href="https://webacus.net" target="_blank" rel="noopener">Webacus</a></strong>. Za njim stojijo leta dela s spletnimi rešitvami in
       avtomatizacijo za slovenska podjetja — FlowTek ni stranski projekt, ampak izdelek, ki je zrasel
       iz pogovorov s pravimi gostinci in obrtniki. Ko se kaj zalomi, se oglasi človek, ki izdelek pozna.</p>
     </div>
@@ -96,15 +96,13 @@ const noga = `<footer class="site-foot">
     <div>
       <div class="foot-label">Podatki podjetja</div>
       <div class="stack-sm fine">
-        <div>Webacus, Valentin Iljaž s.p.</div>
+        <div><a href="https://webacus.net" target="_blank" rel="noopener">Webacus</a>, Valentin Iljaž s.p.</div>
         <div>Nova vas 12, Bizeljsko</div>
-        <div class="davcna">Davčna št.: 35880643</div>
-        <div>Nismo zavezanci za DDV<br>(1. odst. 94. člena ZDDV-1).</div>
       </div>
     </div>
   </div>
   <div class="foot-bottom">
-    <div>© 2026 FlowTek — Webacus, Valentin Iljaž s.p. · Davčna št.: 35880643</div>
+    <div>© 2026 FlowTek — <a href="https://webacus.net" target="_blank" rel="noopener">Webacus</a>, Valentin Iljaž s.p.</div>
     <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a><a href="/llms.txt" title="Povzetek strani za jezikovne modele in AI iskalnike">llms.txt</a></div>
   </div>
 </footer>`;
