@@ -610,6 +610,11 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
 
 /* ── Mreže z razmerji ── */
 .grid-hero { display: grid; grid-template-columns: 1.15fr .85fr; gap: 56px; align-items: start; }
+/* Odmiki vrha prve strani so tu in ne v atributu style, da jih ožji zasloni
+   lahko zmanjšajo. Na telefonu je 64 px praznine nad naslovom videti kot
+   napaka, ne kot zrak. */
+.hero-pad { padding-top: 64px; }
+.hero-col { padding-bottom: 64px; }
 .grid-11 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 52px; align-items: end; }
 .grid-11-top { display: grid; grid-template-columns: 1.1fr .9fr; gap: 52px; align-items: start; }
 .grid-even { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
@@ -630,6 +635,8 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
   .head-inner { flex-wrap: wrap; gap: 12px 18px; }
   .head-nav { order: 3; width: 100%; margin-left: 0; flex-wrap: wrap; gap: 8px 16px; font-size: 13.5px; }
   .grid-hero, .grid-11, .grid-11-top, .grid-09, .grid-095, .grid-085 { grid-template-columns: 1fr; gap: 36px; }
+  .hero-pad { padding-top: 32px; }
+  .hero-col { padding-bottom: 36px; }
   .cols-5, .cols-4, .cols-3 { grid-template-columns: repeat(2, 1fr); }
   .grid-3-20 { grid-template-columns: repeat(2, 1fr); }
   .sticky-90 { position: static; }
@@ -643,6 +650,10 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
 @media (max-width: 640px) {
   .sec { padding: 48px 0; }
   .sec--tight, .sec--sm { padding: 42px 0; }
+  /* Brez te vrstice zgornji .sec povozi .sec--flush, ker pride pozneje v
+     datoteki in ima enako težo — in odsek, ki se mora glave dotikati, dobi
+     na telefonu nazaj 48 px praznine. */
+  .sec--flush { padding: 0; }
   .wrap, .wrap-narrow { padding: 0 16px; }
   .cols-5, .cols-4, .cols-3, .cols-2, .grid-3-20, .grid-even, .grid-even-end, .grid-even-20 { grid-template-columns: 1fr; }
   .grid-even, .grid-even-end { gap: 28px; }
@@ -653,6 +664,8 @@ input[type="range"] { accent-color: var(--green); width: 100%; height: 26px; }
   .faq-body { padding: 0 18px 18px; }
   .head-logo img { height: 26px; }
   .btn { font-size: 16px; padding: 13px 20px; }
+  .hero-pad { padding-top: 18px; }
+  .hero-col { padding-bottom: 28px; }
 }
 /* Na ozkih zaslonih stisnemo gumba v glavi, da logotip in oba gumba
    udobno ostanejo v isti vrsti. */
