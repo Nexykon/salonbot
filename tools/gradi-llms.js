@@ -97,7 +97,7 @@ const NA_KRATKO = `## Na kratko
 - **Kaj zna:** odgovarja 24 ur na dan, razume prosto napisano besedilo, vodi lasten koledar z dolžinami storitev in ločenimi koledarji po zaposlenih, pokaže meni v pogovoru, sešteje naročilo z embalažo in dostavo po kraju, pošlje opomnik dan prej, sprosti odpovedani termin, vabi stranke nazaj, zbira Google ocene, se poveže z blagajno in vse skupaj pokaže na nadzorni plošči.
 - **Razvoj po meri:** poleg izdelka FlowTek razvijamo AI rešitve po naročilu — pogovorne pomočnike na WhatsAppu, Viberju, Telegramu, Messengerju in v spletnem klepetu, integracije z blagajno, ERP, CRM in spletno trgovino, avtomatizacijo dela z besedilom ter prevzem in vzdrževanje obstoječih rešitev. Cena je po oceni obsega; uvodni pogovor in ocena sta brezplačna. Podrobno: https://flowtek.si/ai-resitve.html
 - **Kdo ga razvija:** Webacus, Valentin Iljaž s.p., Nova vas 12, Bizeljsko, Slovenija. Davčna št. 35880643.
-- **Kontakt:** info@flowtek.si, telefon in WhatsApp +386 40 599 185. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
+- **Kontakt:** info@flowtek.si, telefon in WhatsApp +386 69 323 846. Odgovorimo med tednom od 8. do 19. ure, ob sobotah dopoldne.
 `;
 
 const glava = `# FlowTek

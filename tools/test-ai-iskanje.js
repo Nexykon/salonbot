@@ -44,7 +44,7 @@ for (const [opis, vzorec] of [
   ['brez vezave', /ni vezave|brez vezave/],
   ['obsegi naročil', /500.*1\.500.*10\.000/s],
   ['e-pošta', /info@flowtek\.si/],
-  ['telefon', /\+386 40 599 185/],
+  ['telefon', /\+386 69 323 846/],
   ['podjetje', /Webacus/],
   ['davčna številka', /35880643/],
   ['država', /Slovenij/]

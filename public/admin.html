@@ -2656,7 +2656,7 @@ async function deleteSalon(id, name) {
 
 
 async function addFlowTekSalon() {
-  if (!confirm('Ustvari FlowTek sales salon?\n\nPhone ID: 1152382777962508\nBooking mode: sales')) return;
+  if (!confirm('Ustvari FlowTek sales salon?\n\nPhone ID: 1267624709775423\nBooking mode: sales')) return;
   const r = await fetch('/onboard', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + masterToken },
@@ -2665,8 +2665,8 @@ async function addFlowTekSalon() {
       owner_name: 'FlowTek Admin',
       owner_email: 'info@flowtek.si',
       admin_phone: '',
-      whatsapp_phone_number_id: '1152382777962508',
-      bot_phone_display: '+386 40 599 185',
+      whatsapp_phone_number_id: '1267624709775423',
+      bot_phone_display: '+386 69 323 846',
       business_type: 'other',
       plan: 'ai'
     })

@@ -104,7 +104,7 @@
   if (doc.querySelector('.wa-fab')) return;                  // že vstavljen
   if (/\/imenik(\.html)?$/.test(location.pathname)) return;   // glej opombo zgoraj
 
-  var POVEZAVA = 'https://wa.me/38640599185'
+  var POVEZAVA = 'https://wa.me/38669323846'
     + '?text=Pozdravljeni%2C%20zanima%20me%20FlowTek%20za%20moje%20podjetje.';
 
   var a = doc.createElement('a');
@@ -112,7 +112,7 @@
   a.href = POVEZAVA;
   a.target = '_blank';
   a.rel = 'noopener';
-  a.setAttribute('aria-label', 'Pišite nam na WhatsApp — 040 599 185');
+  a.setAttribute('aria-label', 'Pišite nam na WhatsApp — 069 323 846');
   a.title = 'Pišite nam na WhatsApp';
   a.innerHTML =
     '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">'
