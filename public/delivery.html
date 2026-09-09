@@ -628,8 +628,11 @@ h1, h2, h3, h4 { font-family: var(--sans); font-weight: 800; letter-spacing: -0.
         </div>
       </div>
       <div class="filter-row">
-        <button class="filter-chip active" onclick="setFilter('today','f-today')" id="f-today">Danes</button>
-        <button class="filter-chip" onclick="setFilter('pending','f-pending')" id="f-pending">V čakanju</button>
+        <!-- "V čakanju" je prvi in privzeto odprt: to je edini zavihek, ki
+             zahteva ukrepanje. Naročilo, ki čaka, mora biti vidno takoj ob
+             odprtju plošče, ne šele po kliku. -->
+        <button class="filter-chip active" onclick="setFilter('pending','f-pending')" id="f-pending">V čakanju</button>
+        <button class="filter-chip" onclick="setFilter('today','f-today')" id="f-today">Danes</button>
         <button class="filter-chip" onclick="setFilter('all','f-all')" id="f-all">Vse</button>
       </div>
       <input id="order-search" oninput="applyOrderSearch()" placeholder="🔍 Išči po ref (#A1B2C3), imenu, telefonu ali naslovu ..." style="width:100%;margin:8px 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:9px 13px;font-size:13.5px;color:var(--text);outline:none">
@@ -1108,7 +1111,8 @@ async function toggleTag(id, tag) {
     await fetch('/api/settings/services/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ownerToken }, body: JSON.stringify({ tags: cur }) });
   } catch (e) {}
 }
-let currentFilter = 'today';
+// Privzeti zavihek je "V čakanju" — glej opombo ob gumbih.
+let currentFilter = 'pending';
 let currentPage = 0;
 let totalPages = 1;
 let pendingAcceptId = null;
@@ -1271,8 +1275,14 @@ function renderOrders(orders) {
   document.getElementById('col-del-count').textContent  = delOrders.length  ? '(' + delOrders.length + ')'  : '';
   document.getElementById('col-pick-count').textContent = pickOrders.length ? '(' + pickOrders.length + ')' : '';
   const emptyCol = (msg) => '<div class="empty-state" style="padding:20px 8px"><span class="emoji">📭</span><p>' + msg + '</p></div>';
-  document.getElementById('orders-list-delivery').innerHTML = delOrders.length  ? renderCards(delOrders)  : emptyCol('Ni naročil za dostavo');
-  document.getElementById('orders-list-pickup').innerHTML   = pickOrders.length ? renderCards(pickOrders) : emptyCol('Ni naročil za prevzem');
+  /* Na zavihku "V čakanju" prazno ni slaba novica, ampak dobra: nič ne čaka
+     na odgovor. Zato drugo besedilo kot pri "Danes", kjer prazno res pomeni,
+     da naročil ni bilo. */
+  const cakanje = currentFilter === 'pending';
+  const praznoDostava = cakanje ? 'Nič ne čaka na potrditev' : 'Ni naročil za dostavo';
+  const praznoPrevzem = cakanje ? 'Nič ne čaka na potrditev' : 'Ni naročil za prevzem';
+  document.getElementById('orders-list-delivery').innerHTML = delOrders.length  ? renderCards(delOrders)  : emptyCol(praznoDostava);
+  document.getElementById('orders-list-pickup').innerHTML   = pickOrders.length ? renderCards(pickOrders) : emptyCol(praznoPrevzem);
 }
 function renderCards(orders) {
   const statusLabel = {pending:'V čakanju', confirmed:'Potrjeno', cancelled:'Zavrnjeno', delivered:'Dostavljeno'};
