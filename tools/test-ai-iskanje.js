@@ -13,7 +13,13 @@ const fs = require('fs');
 const path = require('path');
 
 const PUB = path.join(__dirname, '..', 'public');
-const beri = f => fs.readFileSync(path.join(PUB, f), 'utf8');
+/*
+  Prelomi vrstic niso vsebina. Generatorji pišejo LF, git pa datoteke na
+  Windowsu odloži s CRLF — zato je trditev "začne se z '# FlowTek\n'" padla
+  takoj po rebaseu, čeprav se v datoteki ni spremenila niti črka. Vse beremo
+  normalizirano, da preizkus meri vsebino in ne okolja.
+*/
+const beri = f => fs.readFileSync(path.join(PUB, f), 'utf8').replace(/\r\n/g, '\n');
 
 let ok = 0, ni = 0;
 function je(opis, dobil, pricakoval) {
