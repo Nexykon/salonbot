@@ -173,7 +173,8 @@ je('vse imajo povezavo na llms.txt', straniZNogo.filter(f => !/href="\/llms\.txt
 je('vse imajo povezavo na razvoj po meri', straniZNogo.filter(f => !/href="\/ai-resitve\.html"/.test(beri(f))), []);
 const OMREZJA = [
   ['LinkedIn', /href="https:\/\/www\.linkedin\.com\/company\/flowtek-si\/" target="_blank" rel="noopener"/],
-  ['Facebook', /href="https:\/\/www\.facebook\.com\/profile\.php\?id=61594315972114" target="_blank" rel="noopener"/]
+  ['Facebook', /href="https:\/\/www\.facebook\.com\/profile\.php\?id=61594315972114" target="_blank" rel="noopener"/],
+  ['Instagram', /href="https:\/\/www\.instagram\.com\/flowtek_si\/" target="_blank" rel="noopener"/]
 ];
 for (const [ime, vzorec] of OMREZJA)
   je('vse imajo ' + ime + ' z target="_blank" rel="noopener"', straniZNogo.filter(f => !vzorec.test(beri(f))), []);
@@ -181,9 +182,9 @@ for (const [ime, vzorec] of OMREZJA)
 // panožnih strani povezave povozi.
 const predloga = fs.readFileSync(path.join(__dirname, 'gradi-panoge.js'), 'utf8');
 for (const [ime, vzorec] of OMREZJA) je('predloga generatorja ima ' + ime, vzorec.test(predloga), true);
-// Znaka morata biti vrisana in brez svoje barve, da ostane paleta nedotaknjena.
-je('znaka prevzameta barvo besedila', straniZNogo.filter(f => (beri(f)
-  .match(/class="foot-social"[\s\S]*?<svg[^>]*fill="currentColor"/g) || []).length !== 2), []);
+// Znaki morajo biti vrisani in brez svoje barve, da ostane paleta nedotaknjena.
+je('znaki prevzamejo barvo besedila', straniZNogo.filter(f => (beri(f)
+  .match(/class="foot-social"[\s\S]*?<svg[^>]*fill="currentColor"/g) || []).length !== OMREZJA.length), []);
 
 console.log('\n9) Stran za razvoj po meri');
 const ai = beri('ai-resitve.html');
