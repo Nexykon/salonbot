@@ -3109,7 +3109,15 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         </table>
         <p style="margin-top:20px;color:#64748b;font-size:.9rem">Prijava prejeta: ${new Date().toLocaleString('sl-SI')}</p>
       </div>`;
-    mail.sendEmail(ownerEmail, ownerSubject, ownerHtml).catch(e => console.error('[contact] owner email:', e.message));
+    /*
+      Na to pošto prijava dejansko PRIDE do človeka, zato je ne pošiljamo
+      "na slepo". Septembra 2026 se je pokazalo, zakaj: po preimenovanju
+      domene Resend ni imel potrjene flowtek.si in je vsako pošiljanje
+      zavrnil s 403. Obrazec je obiskovalcu še naprej javljal uspeh, prijave
+      pa dva tedna niso prišle nikamor in o njih ni ostalo nobene sledi.
+    */
+    const posta = await mail.sendEmail(ownerEmail, ownerSubject, ownerHtml)
+      .catch(e => { console.error('[contact] owner email:', e.message); return false; });
 
     // 2. WhatsApp notification to Tomaz (best-effort — works within 24h session window)
     if (waToken && waPhoneId) {
@@ -3135,15 +3143,52 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
       </div>`;
     mail.sendEmail(email, prospectSubject, prospectHtml).catch(e => console.error('[contact] prospect email:', e.message));
 
-    // 4. Save to sb_contacts table (best-effort — table may not exist yet)
+    // 4. Zapis v sb_contacts (tabela morda še ne obstaja — glej migracijo 009)
     const sbUrl = process.env.SUPABASE_URL;
     const sbKey = process.env.SUPABASE_KEY;
+    const sbGlave = { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+    let zapisana = false;
     if (sbUrl && sbKey) {
-      axios.post(`${sbUrl}/rest/v1/sb_contacts`, {
-        name, email, phone: phone || null, business_type,
-        created_at: new Date().toISOString(), source: 'landing_form'
-      }, { headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' } })
-      .catch(() => {});
+      try {
+        await axios.post(`${sbUrl}/rest/v1/sb_contacts`, {
+          name, email, phone: phone || null, business_type,
+          created_at: new Date().toISOString(), source: 'landing_form'
+        }, { headers: sbGlave });
+        zapisana = true;
+      } catch (e) {
+        console.error('[contact] sb_contacts:', e.response?.data?.message || e.message);
+      }
+    }
+
+    /*
+      Varovalka. Če prijava ni šla ne po pošti ne v sb_contacts, jo zapišemo
+      med napake — ta tabela obstaja že danes in je v plošči prikazana z
+      opozorilno značko, torej jo človek res vidi. Brez tega bi prijava
+      izginila brez sledi, obiskovalec pa bi videl "poslano".
+    */
+    if (!posta && !zapisana && sbUrl && sbKey) {
+      try {
+        await axios.post(`${sbUrl}/rest/v1/sb_errors`, {
+          salon_id: null,
+          type: 'kontakt-nedostavljen',
+          message: `Prijava z obrazca ni bila dostavljena: ${name} <${email}>`,
+          details: vrsticeObrazca.map(([o, v]) => o + ': ' + v).join('\n').substring(0, 1000)
+        }, { headers: sbGlave });
+        zapisana = true;
+      } catch (e) {
+        console.error('[contact] varovalka sb_errors:', e.response?.data?.message || e.message);
+      }
+    }
+
+    /*
+      "success" pomeni: prijava je nekje, kjer jo bo človek videl — po pošti
+      ali zapisana. Kadar ni ne enega ne drugega, tega ne smemo trditi.
+    */
+    if (!posta && !zapisana) {
+      console.error('[contact] PRIJAVA IZGUBLJENA — ni poste in ni zapisa:', name, email);
+      return res.status(502).json({
+        error: 'Prijave nam trenutno ni uspelo sprejeti. Piši nam na WhatsApp 069 323 846 ali na info@flowtek.si — oglasimo se takoj.'
+      });
     }
 
     res.json({ success: true });
@@ -3588,4 +3633,10 @@ app.listen(PORT, () => {
   */
   osveziMasterValidFrom();
   setInterval(osveziMasterValidFrom, 60 * 1000).unref();
+
+  /*
+    Ali bo pošta sploh šla ven. Če ne, je to zapisano v dnevniku ob zagonu —
+    ne šele takrat, ko kdo opazi, da že dva tedna ni nobene prijave.
+  */
+  mail.preveriNastavitev().catch(() => {});
 });

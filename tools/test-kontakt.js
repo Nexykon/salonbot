@@ -20,8 +20,15 @@ const podtakni = (rel, izvoz) => {
 };
 
 let POSTA = [];
+/*
+  Pravi sendEmail vrne true ob uspehu in false ob neuspehu — na tej vrednosti
+  zdaj stoji, ali obrazec obiskovalcu sme javiti uspeh. Podtaknjeni mora zato
+  vračati isto, sicer preizkus ne preverja tistega, kar teče v resnici.
+*/
+let POSTA_USPE = true;
 podtakni('../src/email', {
-  sendEmail: async (na, zadeva, html) => { POSTA.push({ na, zadeva, html }); },
+  sendEmail: async (na, zadeva, html) => { POSTA.push({ na, zadeva, html }); return POSTA_USPE; },
+  preveriNastavitev: async () => true,
   send: async () => {}, sendMail: async () => {}, sendPasswordReset: async () => {}
 });
 let WA = [];
@@ -56,10 +63,17 @@ app.use(express.json());
 process.env.PORT = process.env.PORT || '3011';
 process.env.FLOWTIQ_OWNER_EMAIL = 'preizkus@example.invalid';
 delete process.env.WA_TOKEN;      // brez WhatsApp obvestila v tem preizkusu
-delete process.env.SUPABASE_URL;  // brez zapisa v bazo
-delete process.env.SUPABASE_KEY;
 
 const streznik = require('../server');
+
+/*
+  Bazo odklopimo ŠELE ZDAJ, ne prej: server.js ob nalaganju požene dotenv, ki
+  izbrisane spremenljivke povrne iz .env. Preizkus je zato nekaj časa pisal v
+  PRAVO bazo. Naslov usmerimo v prazno (vrata 9 = discard), da poskus zapisa
+  takoj pade in preizkus meri res tisto, kar misli, da meri.
+*/
+process.env.SUPABASE_URL = 'http://127.0.0.1:9';
+process.env.SUPABASE_KEY = 'preizkus-brez-baze';
 
 (async () => {
   const naslov = 'http://127.0.0.1:' + process.env.PORT + '/api/contact';
@@ -70,7 +84,8 @@ const streznik = require('../server');
     const r = await fetch(naslov, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(telo)
     });
-    return { koda: r.status, lastniku: POSTA.find(m => m.na === 'preizkus@example.invalid'), prosilcu: POSTA.find(m => m.na !== 'preizkus@example.invalid') };
+    const odgovor = await r.json().catch(() => ({}));
+    return { koda: r.status, odgovor, lastniku: POSTA.find(m => m.na === 'preizkus@example.invalid'), prosilcu: POSTA.find(m => m.na !== 'preizkus@example.invalid') };
   };
 
   console.log('\n1) Nova stran pošlje polja ločeno');
@@ -149,6 +164,34 @@ const streznik = require('../server');
   const hz = (zlonamerno.lastniku || {}).html || '';
   je('oznake so ubežane', /<img src=x|<script>alert/.test(hz), false);
   je('besedilo je vidno kot besedilo', hz.includes('&lt;img src=x'), true);
+
+  /*
+    Septembra 2026 je Resend dva tedna zavračal vsako pošiljanje, obrazec pa
+    je obiskovalcu še naprej javljal uspeh. Ker zapisa v bazo ni bilo, so
+    prijave izginile brez sledi. "success" odslej pomeni: prijava je nekje,
+    kjer jo bo človek videl.
+  */
+  console.log('\n10) Ko pošta odpove, obrazec ne sme javiti uspeha');
+  POSTA_USPE = false;                 // Resend zavrne (403) ali ni nastavljen
+  const padec = await posljiObrazec({
+    name: 'Pošta Odpove', email: 'test@primer.si', phone: '040 000 000',
+    business_type: 'Picerije · Test', lokal: 'Test', panoga: 'Picerije', zelja: '', soglasje: true
+  });
+  // V tem preizkusu sta SUPABASE_URL in _KEY izbrisana, torej ni ne zapisa
+  // v sb_contacts ne varovalke v sb_errors — prijava je res izgubljena.
+  je('obrazec vrne napako, ne uspeha', padec.koda, 502);
+  const napaka = padec.odgovor || {};
+  je('odgovor ponudi drugo pot', /WhatsApp|info@flowtek\.si/.test(napaka.error || ''), true);
+  // Ne lovimo besed — "ni uspelo" je zanikanje. Pomembna je pogodba odgovora.
+  je('odgovor ne trdi uspeha', napaka.success === true, false);
+  je('odgovor nosi napako', typeof napaka.error === 'string' && napaka.error.length > 20, true);
+
+  POSTA_USPE = true;                  // stanje vrnemo, da ne vpliva naprej
+  const spet = await posljiObrazec({
+    name: 'Spet Deluje', email: 'ok@primer.si', phone: '040',
+    business_type: 'Drugo · X', lokal: 'X', panoga: 'Drugo', zelja: '', soglasje: true
+  });
+  je('ko pošta spet dela, je prijava sprejeta', spet.koda, 200);
 
   console.log('\n' + (ni ? '✖ ' + ni + ' od ' + (ok + ni) + ' ni v redu' : '✔ vse v redu (' + ok + ')'));
   process.exit(ni ? 1 : 0);

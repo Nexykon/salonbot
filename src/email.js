@@ -234,4 +234,67 @@ async function sendAdminBookingConfirmEmail(salon, customerName, phone, date, ti
   }
 }
 
-module.exports = { configured, sendEmail, sendWelcomeEmail, sendBookingNotification, sendAdminBookingConfirmEmail, sendPasswordReset, sendCustomerBookingReceived, sendCustomerBookingConfirmed };
+/*
+  Ali bo pošta sploh šla ven — preverjeno ob zagonu, ne šele ob prvi prijavi.
+
+  Septembra 2026 je po preimenovanju domene Resend zavračal vsako pošiljanje
+  (flowtek.si pri njih ni bila potrjena), kar je odkril šele človek, ki dva
+  tedna ni dobil nobene prijave. Ta preverba isto stvar pove ob zagonu.
+
+  Nikoli ne vrže napake in ne ustavi strežnika: če Resend ne odgovori, to ne
+  sme podreti zagona. Ključa ne izpisujemo.
+*/
+async function preveriNastavitev() {
+  const kljuc = process.env.RESEND_API_KEY;
+  const posiljatelj = process.env.EMAIL_FROM;
+
+  if (!kljuc || !posiljatelj) {
+    console.error('[email] POŠTA NE DELUJE — manjka '
+      + [!kljuc ? 'RESEND_API_KEY' : null, !posiljatelj ? 'EMAIL_FROM' : null].filter(Boolean).join(' in ')
+      + '. Prijave z obrazca, ponastavitve gesla in obvestila ne bodo poslani.');
+    return false;
+  }
+
+  // Iz "FlowTek <info@flowtek.si>" potrebujemo samo domeno.
+  const domena = (String(posiljatelj).match(/@([^>\s]+)/) || [, ''])[1].toLowerCase();
+  if (!domena) {
+    console.error(`[email] POŠTA NE DELUJE — iz EMAIL_FROM ("${posiljatelj}") ni mogoče prebrati domene.`);
+    return false;
+  }
+
+  try {
+    const r = await axios.get('https://api.resend.com/domains', {
+      headers: { Authorization: `Bearer ${kljuc}` }, timeout: 10000
+    });
+    const domene = (r.data && (r.data.data || r.data)) || [];
+    const nasa = Array.isArray(domene) ? domene.find(d => String(d.name).toLowerCase() === domena) : null;
+
+    if (!nasa) {
+      console.error(`[email] POŠTA NE BO ŠLA VEN — domena "${domena}" pri Resendu ni dodana. `
+        + `Dodaj jo na https://resend.com/domains ali nastavi EMAIL_FROM na potrjeno domeno. `
+        + `Potrjene so: ${(Array.isArray(domene) ? domene.map(d => d.name) : []).join(', ') || '(nobena)'}`);
+      return false;
+    }
+    if (nasa.status !== 'verified') {
+      console.error(`[email] POŠTA NE BO ŠLA VEN — domena "${domena}" je pri Resendu v stanju "${nasa.status}", ne "verified".`);
+      return false;
+    }
+    console.log(`[email] pošta pripravljena — pošiljatelj ${posiljatelj}, domena ${domena} potrjena.`);
+    return true;
+  } catch (e) {
+    const sporocilo = e.response?.data?.message || e.message;
+    /*
+      Ključ "samo za pošiljanje" domen ne sme naštevati. To ni napaka, ampak
+      ožja in varnejša pravica — pošiljanje z njim dela normalno.
+    */
+    if (/restricted to only send/i.test(sporocilo)) {
+      console.log(`[email] pošiljatelj ${posiljatelj}; ključ je samo za pošiljanje, zato potrditve domene ni mogoče prebrati (pričakovano).`);
+      return null;
+    }
+    // Sama preverba je odpovedala; to še ne pomeni, da pošiljanje ne dela.
+    console.warn('[email] nastavitve ni bilo mogoče preveriti: ' + sporocilo);
+    return null;
+  }
+}
+
+module.exports = { configured, preveriNastavitev, sendEmail, sendWelcomeEmail, sendBookingNotification, sendAdminBookingConfirmEmail, sendPasswordReset, sendCustomerBookingReceived, sendCustomerBookingConfirmed };
