@@ -6,11 +6,11 @@ module.exports = [
     slug: "restavracije", mono: "RE", ime: "Restavracije in picerije",
     za: "restavracije in picerije",
     kratko: "Naročila za dostavo in prevzem ter rezervacije miz — direktno na tvoj WhatsApp, brez provizij.",
-    naslov: "Naročila brez zvonjenja.\nIn brez 28 % provizije.",
+    naslov: "Naročila brez zvonjenja.\nIn brez provizije tržnicam.",
     podnaslov: "Gost napiše na WhatsApp, FlowTek mu pokaže meni, sestavi naročilo in ga pošlje v kuhinjo. Ti kuhaš naprej.",
     boli: [
       { t: "Telefon zvoni med špico", o: "Kuhinja gori, natakar drži slušalko. En zamujen klic je eno naročilo pri konkurenci." },
-      { t: "Tržnice vzamejo skoraj tretjino", o: "Pri 20 € naročilu ti ostane 14 €. Pri 100 dostavah na mesec je to cena zaposlenega." },
+      { t: "Tržnica vzame delež od vsakega naročila", o: "Vzame ga ne glede na obseg — pri 10 naročilih ali pri 200. FlowTek namesto tega vzame fiksno mesečno naročnino." },
       { t: "Ocene padajo zaradi neodgovorjenih sporočil", o: "Gost, ki ne dobi odgovora, ne napiše lepe ocene. Napiše slabo." }
     ],
     primeri: [
