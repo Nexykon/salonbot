@@ -36,7 +36,8 @@ const RAZDELKI = [
     ['/o-nas.html', null],
     ['/zgodbe.html', null],
     ['/varnost.html', null],
-    ['/kontakt.html', null]
+    ['/kontakt.html', null],
+    ['/vodic.html', 'Brezplačen vodič v PDF o naročilih, ki se izgubijo med servisom']
   ]],
   ['Za stranke lokalov', [
     ['/imenik.html', null],

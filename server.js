@@ -76,6 +76,10 @@ app.get('/voznik', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vo
 app.get('/geslo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'geslo.html')));
 // Čista naslova za prijavo in registracijo.
 app.get('/prijava', (req, res) => res.sendFile(path.join(__dirname, 'public', 'prijava.html')));
+// Vodič v PDF: pristajalna stran in stran za zahvalo (ta ima svoj naslov, da je
+// prenos merljiv v GA — stanje iste strani se ne bi poznalo).
+app.get('/vodic', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vodic.html')));
+app.get('/vodic-hvala', (req, res) => res.sendFile(path.join(__dirname, 'public', 'vodic-hvala.html')));
 /*
   Samostrežne registracije ni — priklop ni avtomatiziran, zato je edina pot do
   računa obrazec na /kontakt.html. Stara naslova se preusmerita tja, da nobena
@@ -3093,7 +3097,7 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         ];
 
     const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
-    const ownerPhone = process.env.FLOWTIQ_OWNER_PHONE || '38640599185';
+    const ownerPhone = process.env.FLOWTIQ_OWNER_PHONE || '38669323846';
     const waToken   = process.env.WA_TOKEN;
     const waPhoneId = process.env.WA_PHONE_ID;
 
@@ -3195,6 +3199,152 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
   } catch (err) {
     console.error('[contact] error:', err.message);
     res.status(500).json({ error: 'Napaka pri posiljanju prijave.' });
+  }
+});
+
+/*
+  ── Vodič v PDF ──────────────────────────────────────────────────────────
+
+  Datoteko preberemo ENKRAT ob zagonu, ne ob vsaki prijavi: ista vsebina gre
+  vsem, branje z diska na vsako zahtevo pa bi bilo delo brez učinka.
+
+  Imena ne ugibamo — poiščemo ga v mapi. Iščemo po vrsti: vodic/ (zunaj
+  public/, torej ni javno dosegljiv), nato public/assets/ in public/. Tako je
+  vseeno, kje datoteka je, in prestavitev pozneje ne zahteva spremembe kode.
+*/
+const VODIC_MAPE = [
+  path.join(__dirname, 'vodic'),
+  path.join(__dirname, 'public', 'assets'),
+  path.join(__dirname, 'public')
+];
+let VODIC = null;   // { ime, base64, kb }
+
+function naloziVodic() {
+  for (const mapa of VODIC_MAPE) {
+    let najdene;
+    try { najdene = fs.readdirSync(mapa).filter(f => f.toLowerCase().endsWith('.pdf')).sort(); }
+    catch (e) { continue; }                       // mape ni — poskusi naslednjo
+    if (!najdene.length) continue;
+
+    if (najdene.length > 1) {
+      console.warn(`[vodic] v ${mapa} je več PDF datotek (${najdene.join(', ')}) — uporabljam prvo.`);
+    }
+    const ime = najdene[0];
+    try {
+      const bajti = fs.readFileSync(path.join(mapa, ime));
+      VODIC = { ime, base64: bajti.toString('base64'), kb: Math.round(bajti.length / 1024) };
+      console.log(`[vodic] pripravljen: ${ime} (${VODIC.kb} KB) iz ${mapa}`);
+      if (mapa.startsWith(path.join(__dirname, 'public'))) {
+        console.warn('[vodic] datoteka je pod public/, zato je dosegljiva tudi neposredno prek naslova. '
+          + 'Če naj bo vodič res le za tiste, ki pustijo e-naslov, jo prestavi v mapo vodic/.');
+      }
+      return;
+    } catch (e) {
+      console.error(`[vodic] ${ime} ni bilo mogoče prebrati: ${e.message}`);
+    }
+  }
+  console.error('[vodic] PDF NI NAJDEN — /api/vodic bo vsako prijavo zavrnil s 502. '
+    + 'Odloži datoteko v eno od: ' + VODIC_MAPE.map(m => path.relative(__dirname, m).replace(/\\/g, '/') + '/').join(', '));
+}
+naloziVodic();
+
+app.post('/api/vodic', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
+  try {
+    const email = String((req.body || {}).email || '').trim();
+    // Obrazec ima eno samo polje; vsako dodatno bi bil razlog, da ga kdo ne izpolni.
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 200) {
+      return res.status(400).json({ error: 'Vpiši veljaven e-naslov.' });
+    }
+
+    const esc = (v) => String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const ownerEmail = process.env.FLOWTIQ_OWNER_EMAIL || 'info@flowtek.si';
+
+    // 1 · vodič bralcu — to je obljuba strani, zato z await in s priponko
+    let poslano = false;
+    if (VODIC) {
+      const html = `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e293b">Tvoj vodič</h2>
+        <p style="color:#475569">Pozdravljen,</p>
+        <p style="color:#475569">V priponki je vodič <strong>Naročila, ki jih izgubiš med servisom</strong>. Štiri minute branja.</p>
+        <p style="color:#475569">Na zadnji strani je stvar, ki jo lahko preizkusiš takoj: na številki
+          <strong>069 323 814</strong> stoji pravi FlowTek pomočnik za testno picerijo — pravi meni, prave cene.
+          <a href="https://wa.me/38669323814?text=Pozdravljeni%2C%20rad%20bi%20naro%C4%8Dil." style="color:#166534">Napiši mu na WhatsApp</a>.</p>
+        <p style="color:#64748b;font-size:.9rem">Ničesar drugega ti ne bomo pošiljali, dokler ne rečeš, da smemo.</p>
+        <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTek</p>
+      </div>`;
+      poslano = await mail.sendEmail(email, 'Tvoj vodič — Naročila, ki jih izgubiš med servisom', html,
+        [{ filename: VODIC.ime, content: VODIC.base64 }])
+        .catch(e => { console.error('[vodic] pošta bralcu:', e.message); return false; });
+    } else {
+      console.error('[vodic] PDF ni naložen — vodiča ni mogoče poslati.');
+    }
+
+    // 2 · obvestilo lastniku, da je nekdo vzel vodič (ne sme podreti odgovora)
+    await mail.sendEmail(ownerEmail, `Nov prenos vodiča — ${email}`, `
+      <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="color:#1e293b">Nekdo je vzel vodič</h2>
+        <p style="color:#475569">E-pošta: <strong>${esc(email)}</strong></p>
+        <p style="color:#475569">Vodič ${poslano ? 'je bil poslan' : '<strong>NI bil poslan</strong> — pošlji mu ga ročno'}.</p>
+        <p style="color:#64748b;font-size:.9rem">Prejeto: ${new Date().toLocaleString('sl-SI')}</p>
+      </div>`).catch(e => { console.error('[vodic] pošta lastniku:', e.message); return false; });
+
+    // 3 · zapis prijave
+    const sbUrl = process.env.SUPABASE_URL;
+    const sbKey = process.env.SUPABASE_KEY;
+    const sbGlave = { apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' };
+    let zapisana = false;
+    if (sbUrl && sbKey) {
+      try {
+        await axios.post(`${sbUrl}/rest/v1/sb_contacts`, {
+          // sb_contacts.name je NOT NULL, obrazec pa imena ne zbira. Lokalni del
+          // e-naslova je edino, kar o človeku vemo — in je boljši od praznega.
+          name: email.split('@')[0],
+          email, phone: null, business_type: 'Vodič (PDF)',
+          created_at: new Date().toISOString(), source: 'vodic'
+        }, { headers: sbGlave });
+        zapisana = true;
+      } catch (e) {
+        console.error('[vodic] sb_contacts:', e.response?.data?.message || e.message);
+      }
+    }
+
+    // 4 · varovalka — ista kot pri /api/contact
+    if (!poslano && !zapisana && sbUrl && sbKey) {
+      try {
+        await axios.post(`${sbUrl}/rest/v1/sb_errors`, {
+          salon_id: null,
+          type: 'kontakt-nedostavljen',
+          message: `Prenos vodiča ni bil dostavljen: ${email}`,
+          details: ('E-pošta: ' + email + '\nVir: vodic\nPDF naložen: ' + (VODIC ? VODIC.ime : 'NE')).substring(0, 1000)
+        }, { headers: sbGlave });
+        zapisana = true;
+      } catch (e) {
+        console.error('[vodic] varovalka sb_errors:', e.response?.data?.message || e.message);
+      }
+    }
+
+    /*
+      Tu je pogodba strožja kot pri /api/contact, in to namenoma.
+
+      Pri /api/contact "success" pomeni: prijava je nekje, kjer jo bo človek
+      videl. Tu pa stran obljubi konkretno stvar — "Vodič dobiš takoj" — in
+      stran za zahvalo pravi "Vodič je na poti". Če priponka ni odšla, to ni
+      res, tudi kadar je prijava lepo zapisana. Zapis nam pove, komu ga
+      moramo poslati ročno; obiskovalcu pa ne smemo reči, da je na poti.
+    */
+    if (!poslano) {
+      console.error('[vodic] vodič ni bil poslan:', email, zapisana ? '(prijava je zapisana)' : '(IN NI ZAPISANA)');
+      return res.status(502).json({
+        error: 'Vodiča nam trenutno ni uspelo poslati. Piši nam na WhatsApp 069 323 846 ali na info@flowtek.si — pošljemo ga takoj.'
+      });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[vodic] error:', err.message);
+    res.status(500).json({ error: 'Napaka pri pošiljanju vodiča.' });
   }
 });
 

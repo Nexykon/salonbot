@@ -143,7 +143,8 @@ console.log('  (opozorila) predolgi naslovi: ' + (dolgNaslov.length ? dolgNaslov
 console.log('  (opozorila) predolgi opisi:   ' + (dolgOpis.length ? dolgOpis.join(', ') : 'ni'));
 
 console.log('\n5) Javne strani niso pozabljene v sitemapu');
-const ZAPRTE_ALI_NOTRANJE = ['admin', 'salon', 'delivery', 'voznik', 'leads', 'book', 'setup', 'prijava', 'geslo', 'restavracije'];
+// "vodic-hvala" je stran za zahvalo: ima noindex in v sitemapu nima kaj iskati.
+const ZAPRTE_ALI_NOTRANJE = ['admin', 'salon', 'delivery', 'voznik', 'leads', 'book', 'setup', 'prijava', 'geslo', 'restavracije', 'vodic-hvala'];
 const pozabljene = datoteke
   .filter(f => !f.startsWith('public/panoga/'))
   .map(f => '/' + path.basename(f))

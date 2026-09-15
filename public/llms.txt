@@ -54,6 +54,7 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 - [Primeri iz prakse — kako izgleda prvi mesec s FlowTek](https://flowtek.si/zgodbe.html): Štirje tipični primeri: picerija, frizerski salon, avtoservis in kozmetični studio. Kaj se spremeni v prvih tridesetih dneh.
 - [Varnost in zasebnost — kaj se dogaja s podatki tvojih strank](https://flowtek.si/varnost.html): Kje so shranjeni podatki, kdo jih vidi, kako dolgo jih hranimo in kako jih izbrišeš. Razloženo po slovensko, brez pravnega jezika.
 - [Odpri račun FlowTek — v dveh dneh sprejema naročila namesto tebe](https://flowtek.si/kontakt.html): Izpolni kratek obrazec. Povemo ti ceno, nastavimo pomočnika in v dveh dneh deluje na tvoji WhatsApp številki.
+- [Naročila, ki jih izgubiš med servisom — vodič v PDF](https://flowtek.si/vodic.html): Brezplačen vodič v PDF o naročilih, ki se izgubijo med servisom
 
 ## Za stranke lokalov
 
@@ -69,5 +70,5 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 
 ---
 
-Zadnja sprememba: 2026-09-03
+Zadnja sprememba: 2026-09-15
 Zemljevid strani: https://flowtek.si/sitemap.xml

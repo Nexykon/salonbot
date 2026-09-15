@@ -26,6 +26,9 @@ const STRANI = [
   ['/nasveti.html', 0.7, 'monthly'],
   // Odkar samostrežne registracije ni, je to edina pot do računa.
   ['/kontakt.html', 0.9, 'monthly'],
+  // Vodič v PDF. Stran za zahvalo (/vodic-hvala.html) je namenoma zunaj —
+  // ima noindex in v iskalniku nima kaj iskati.
+  ['/vodic.html', 0.8, 'monthly'],
   ['/varnost.html', 0.5, 'yearly'],
   ['/imenik.html', 0.7, 'weekly'],
   ['/restavracije', 0.6, 'weekly'],
