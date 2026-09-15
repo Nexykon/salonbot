@@ -199,3 +199,73 @@
     izpisi(korenina.classList.contains('obd-yearly') ? 'yearly' : 'monthly');
   }).catch(function () { /* tiho — ostanejo številke iz HTML-a */ });
 })();
+
+/*
+  ── 4. Merjenje klikov na WhatsApp ──
+
+  GA4 brez kode zna sprožati samo page_view in form_submit, zato klika na
+  wa.me ne vidi. Tu je ena sama delegirana poslušalka za vse povezave na vseh
+  straneh — brez kopije v vsaki datoteki in brez atributa na vsaki povezavi.
+
+  KAJ TA DOGODEK JE IN KAJ NI
+
+    Meri klik na NAŠI strani. Ali je človek v WhatsAppu res napisal sporočilo,
+    od tu ni vidno in ne bo — to je meja merjenja, ne napaka v postavitvi.
+    wa_click zato NI konverzija, ampak izkazano zanimanje.
+
+  Klik ne čaka na GA: dogodek pošljemo prek beacona, navigacije ne zadržujemo,
+  napaka pri merjenju pa ne sme ustaviti odpiranja povezave.
+*/
+(function () {
+  var doc = document;
+
+  /*
+    Merimo SAMO svoji dve številki.
+
+    imenik.html in restavracije.html sestavljata povezave na wa.me s
+    številkami POSAMEZNIH LOKALOV. Klik tam pomeni "gost naroči pico pri
+    Botani" in ne "interesent piše FlowTeku". Če bi oboje padlo v isti
+    dogodek, bi wa_click čez mesec dni pomenil dve različni stvari hkrati —
+    in prav to bi ga naredilo neuporabnega.
+  */
+  var NASE = { '38669323814': 'demo', '38669323846': 'podpora' };
+
+  // "/" -> index, "/vodic.html" -> vodic, "/panoga/restavracije.html" -> panoga-restavracije
+  function stranSlug() {
+    var p = location.pathname.replace(/\.html$/, '').replace(/^\/+/, '').replace(/\/+$/, '');
+    return p ? p.replace(/\//g, '-') : 'index';
+  }
+
+  function kje(a) {
+    if (a.getAttribute('data-wa')) return a.getAttribute('data-wa');   // izrecno ime
+    if (a.classList.contains('wa-fab')) return 'plavajoci';
+    if (a.closest('footer')) return 'noga';
+    return stranSlug() + '-vsebina';
+  }
+
+  /*
+    Zajem (capture) je namenoma: dogodek ujamemo tudi, če ga kdo nižje ustavi.
+    Povezave nikoli ne prestrezemo — brez preventDefault, brez čakanja.
+  */
+  doc.addEventListener('click', function (e) {
+    var cilj = e.target;
+    if (!cilj || typeof cilj.closest !== 'function') return;
+    var a = cilj.closest('a[href*="wa.me/"]');
+    if (!a) return;
+    if (typeof gtag !== 'function') return;          // GA ni naložen — klik gre naprej
+
+    var stevilka = (a.getAttribute('href').match(/wa\.me\/(\d+)/) || [, ''])[1];
+    var vrsta = NASE[stevilka];
+    if (!vrsta) return;            // številka lokala iz imenika — ni naš dogodek
+
+    try {
+      gtag('event', 'wa_click', {
+        kje: kje(a),
+        stevilka: stevilka,
+        // 814 je testna picerija (prikaz), 846 podpora — namen klika je drugačen.
+        vrsta: vrsta,
+        transport_type: 'beacon'
+      });
+    } catch (err) { /* merjenje ne sme ovirati klika */ }
+  }, true);
+})();
