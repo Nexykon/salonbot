@@ -40,7 +40,11 @@ const posnetek = async () => {
   const imena = (s) => s.map(x => x.name).sort();
   // Prijavno ime testnega lokala je bil nekoč "test" (brez @); zdaj je pravi
   // e-naslov, ker prijavno ime, ki ni e-naslov, zamegli vse ostalo.
-  const IME = 'test-picerija@flowtek.si';
+  // Domena je namenoma stara. Preimenovanje FlowTiq → FlowTek je zamenjalo
+  // besedilo tudi tukaj, e-naslova v bazi pa ne — od takrat je preizkus padal.
+  // Prijavno ime je tisto, s čimer se lastnik res prijavi; dokler v bazi piše
+  // flowtiq.si, mora tako pisati tudi tu.
+  const IME = 'test-picerija@flowtiq.si';
   je('pravo ime najde svoj lokal', imena(await db.getSalonsByOwnerEmail(IME)), ['Test Picerija']);
   je('velike črke ne motijo', imena(await db.getSalonsByOwnerEmail(IME.toUpperCase())), ['Test Picerija']);
   je('presledki ne motijo', imena(await db.getSalonsByOwnerEmail('  ' + IME + '  ')), ['Test Picerija']);

@@ -182,8 +182,8 @@ function stran(p, vse) {
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/flowtek-site.css">
-<script src="/flowtek-nav.js" defer></script>
+<link rel="stylesheet" href="/flowtek-site.css?v=5351ca76">
+<script src="/flowtek-nav.js?v=70edbd7c" defer></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXH2YX58RX"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZXH2YX58RX');</script>
 <style>
@@ -340,11 +340,18 @@ function osveziOznake(vse) {
     let zamenjanih = 0;
     for (const p of vse) {
       const re = new RegExp('(href="/panoga/' + p.slug + '\\.html"[\\s\\S]{0,240}?<div class="' + c.razred + '">)([\\s\\S]*?)(</div>)');
+      /*
+        Najdeno merimo z zastavico, ne s primerjavo besedila. Ob drugem zagonu
+        je nova ikona enaka stari, novo === html — in opozorilo se je sprožilo
+        po vsaki uspešni gradnji. Alarm, ki zvoni vedno, ne pove ničesar.
+      */
+      let najdeno = false;
       const novo = html.replace(re, (celo, pred, sredina, za) => {
+        najdeno = true;
         zamenjanih++;
         return pred + ikona(p.slug, c.velikost) + za;
       });
-      if (novo === html) console.log('  POZOR: oznake za "' + p.slug + '" ni bilo mogoče najti v ' + path.basename(c.pot));
+      if (!najdeno) console.log('  POZOR: oznake za "' + p.slug + '" ni bilo mogoče najti v ' + path.basename(c.pot));
       html = novo;
     }
     fs.writeFileSync(c.pot, html, 'utf8');

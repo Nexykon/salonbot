@@ -46,7 +46,9 @@ je('povezave na WhatsApp ima vsaj 25 strani', straniZWa.length >= 25, true);
 je('nobena stran nima svoje kopije',
   straniZWa.filter(f => /wa_click/.test(vsebina(f))), []);
 je('vse strani z našo številko nalagajo flowtek-nav.js',
-  straniZNaso.filter(f => !/src="\/flowtek-nav\.js"/.test(vsebina(f))), []);
+  // Naslov nosi različico (?v=…) zaradi predpomnilnika — tu nas zanima samo,
+  // da se datoteka sploh naloži, ne katera različica je zapisana.
+  straniZNaso.filter(f => !/src="\/flowtek-nav\.js(\?v=[a-f0-9]+)?"/.test(vsebina(f))), []);
 
 /* ── 2 · klik ne sme čakati ────────────────────────────────────────────── */
 console.log('\n2) Klik ne čaka na merjenje');
