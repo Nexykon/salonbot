@@ -280,6 +280,9 @@
       form.style.display = 'none';
       document.getElementById('uspeh').style.display = 'block';
       if (typeof gtag === 'function') gtag('event', 'generate_lead', { method: 'kontakt-obrazec' });
+      /* Meta potrebuje svoj dogodek, sicer kampanja ne more optimizirati za
+         konverzije. Stoji ZA preverbo r.ok, torej se sproži samo ob uspehu. */
+      if (typeof ftSledi === 'function') ftSledi('Lead', { content_name: 'kontakt-obrazec' });
     }).catch(function (e) {
       gumb.disabled = false;
       gumb.textContent = 'Pošlji prijavo';

@@ -269,3 +269,77 @@
     } catch (err) { /* merjenje ne sme ovirati klika */ }
   }, true);
 })();
+
+/*
+  ── 5. Meta pixel ──
+
+  Kot pri wa_click: ena sama koda za vse strani, brez kopije v vsaki datoteki.
+
+  ZAKAJ JE SPLOH TU
+
+    Brez pixla Meta ne vidi konverzij. Kampanja lahko optimizira samo za klike
+    ali doseg, remarketinga ni in v poročilu ni videti, kateri oglas je
+    pripeljal prijavo. Pri isti porabi je to bistveno slabši rezultat.
+
+  DVE DOGODKI IN NIČ VEČ
+
+    PageView   vsaka javna stran
+    Lead       samo tam, kjer je človek res nekaj oddal — /vodic-hvala.html
+               in uspešna oddaja kontaktnega obrazca
+
+    Lead namenoma NI na klik na WhatsApp. Klik je izkazano zanimanje, ne
+    konverzija; če bi bilo oboje isti dogodek, bi se Meta učila na napačnem
+    signalu in bi optimizirala za tisto, kar ne prinese stranke.
+
+  PRIVOLITEV
+
+    Pixel je oglaševalsko sledenje in v EU praviloma zahteva privolitev pred
+    proženjem. Pasu za privolitev stran (še) nima, zato je stikalo spodaj
+    nastavljeno na false in pixel se sproži takoj. Ko bo pas postavljen, se
+    prestavi na true in ftDovoliSledenje() se pokliče šele ob privolitvi —
+    drugod v kodi ni treba spremeniti ničesar.
+*/
+(function () {
+  var PIXEL = '2251955875346046';
+  var ZAHTEVA_PRIVOLITEV = false;
+
+  var vrsta = [];          // dogodki, ki čakajo na privolitev
+  var dovoljeno = !ZAHTEVA_PRIVOLITEV;
+  var nalozen = false;
+
+  function nalozi() {
+    if (nalozen) return;
+    nalozen = true;
+    /* Metina standardna koda; vstavimo jo šele, ko smemo. */
+    !(function (f, b, e, v, n, t, s) {
+      if (f.fbq) return;
+      n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
+      if (!f._fbq) f._fbq = n;
+      n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = [];
+      t = b.createElement(e); t.async = !0; t.src = v;
+      s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
+    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+
+    window.fbq('init', PIXEL);
+    window.fbq('track', 'PageView');
+  }
+
+  /* Edina pot do pixla iz ostale kode. Pred privolitvijo dogodke shrani. */
+  window.ftSledi = function (dogodek, podatki) {
+    if (!dovoljeno) { vrsta.push([dogodek, podatki]); return; }
+    nalozi();
+    try { window.fbq('track', dogodek, podatki || {}); } catch (e) { /* merjenje ne sme ovirati strani */ }
+  };
+
+  /* Pokliče se ob privolitvi; sprosti vse, kar je čakalo. */
+  window.ftDovoliSledenje = function () {
+    if (dovoljeno) return;
+    dovoljeno = true;
+    nalozi();
+    vrsta.splice(0).forEach(function (d) {
+      try { window.fbq('track', d[0], d[1] || {}); } catch (e) { /* tiho */ }
+    });
+  };
+
+  if (dovoljeno) nalozi();
+})();

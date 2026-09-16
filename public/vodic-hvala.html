@@ -147,6 +147,17 @@
 /* Dogodek se sproži tu in ne na obrazcu: sem pride samo tisti, ki mu je
    strežnik vodič res poslal. */
 if (typeof gtag === 'function') gtag('event', 'generate_lead', { method: 'vodic' });
+/*
+  Isti trenutek še za Meto, da zna kampanja optimizirati za konverzijo.
+
+  ftSledi pride iz flowtek-nav.js, ta pa se nalaga z "defer" — torej ga ob
+  izvedbi te vrstice še NI. Prvi poskus je Lead klical takoj in ga tiho
+  izpustil: v brskalniku je bil viden samo PageView. Odloženi skripti se
+  izvedejo pred DOMContentLoaded, zato je ta dogodek prava točka.
+*/
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof ftSledi === 'function') ftSledi('Lead', { content_name: 'vodic' });
+});
 </script>
 </body>
 </html>
