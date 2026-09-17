@@ -103,15 +103,25 @@
         </v:roundrect>
         <![endif]-->
         <!--[if !mso]><!-- -->
+        <!--
+          Črna obroba je s strani: tam ima .btn { border: 2px solid ink } in
+          k temu trdo senco 5px 5px 0 ink. V pošti je sprva ostala samo
+          obroba in je zato izpadla kot obris po pomoti, ne kot namen —
+          senco vrne ta vrstica.
+
+          box-shadow v Outlooku odpade, tam gumb nariše VML zgoraj. Kjer
+          odpade tudi tam, ostane zelena ploskev z obrobo: natanko to, kar
+          je bilo prej, torej slabše ne more biti.
+        -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
           <tr>
-            <td align="center" bgcolor="#16A34A" style="background-color:#16A34A; border:2px solid #101E2B; border-radius:10px;">
-              <a href="{{GUMB_POVEZAVA}}" target="_blank" style="display:inline-block; padding:15px 30px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:1; color:#ffffff; text-decoration:none;">{{GUMB_BESEDILO}}</a>
+            <td align="center" bgcolor="#16A34A" style="background-color:#16A34A; border:2px solid #101E2B; border-radius:12px; box-shadow:4px 4px 0 #101E2B;">
+              <a href="{{GUMB_POVEZAVA}}" target="_blank" style="display:inline-block; padding:15px 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:1; color:#ffffff; text-decoration:none;">{{GUMB_BESEDILO}}</a>
             </td>
           </tr>
         </table>
         <!--<![endif]-->
-        <p style="margin:10px 0 0; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:12.5px; color:#5A6875;">{{GUMB_POD}}</p>
+        <p style="margin:16px 0 0; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:12.5px; line-height:1.5; color:#5A6875;">{{GUMB_POD}}</p>
       </td>
     </tr>
 
