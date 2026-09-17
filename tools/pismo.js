@@ -10,15 +10,18 @@
 
   KAKO SLIKA PRIDE NOTER
 
-    Vložena je v sporočilo kot data: URI. Prednost: nič se ne nalaga z
-    zunanjega strežnika, torej ni ne prazne škatlice pri prejemniku, ki ima
-    slike privzeto izklopljene z naših domen, ne sledi o tem, kdaj je kdo
-    pismo odprl. Slabost: nekateri odjemalci data: URI zavrnejo — Gmail ga je
-    leta zavračal in ni nikjer zapisano, da ga danes zanesljivo sprejme.
-    Prav zato prvo pismo pošljemo na Gmail in pogledamo.
+    Vložena je v sporočilo kot data: URI. Nič se ne nalaga z zunanjega
+    strežnika: ni prazne škatlice pri prejemniku, ki ima slike privzeto
+    izklopljene, in ni sledi o tem, kdaj je kdo pismo odprl.
 
-    Če slika odpade, pismo ostane berljivo: pod njo je besedilo, ki pove isto,
-    naslov in gumb pa sta besedilna.
+    PREVERJENO 17. 9. 2026: Gmail vloženo sliko PRIKAŽE. To je bila edina
+    prava neznanka v tej zasnovi — Gmail je data: URI leta zavračal in v
+    dokumentaciji ni nikjer zapisano, da ga sprejme. Preizkušeno s pravim
+    pismom na pravi Gmail račun, ne v pregledovalniku.
+
+    Če bi kdaj nehalo delovati, se to pokaže kot manjkajoča slika in ne kot
+    napaka — pismo ostane berljivo, ker sta naslov in gumb besedilna, pod
+    sliko pa je stavek, ki pove isto.
 
   VELIKOST
 
