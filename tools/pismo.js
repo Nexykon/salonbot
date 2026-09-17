@@ -125,7 +125,37 @@ const V = {
     + '<p style="margin:0;">Lep pozdrav,<br /><strong>' + PODPISNIK + '</strong><br />'
     + '<a href="https://flowtek.si/?utm_source=pismo&amp;utm_medium=email&amp;utm_campaign=nagovor&amp;utm_content=' + SLUG + '" style="color:#5A6875;">FlowTek · flowtek.si</a></p>',
 
-  NOGA: 'Pišem posamično, ne v paketu. Če ne želite več sporočil, zadošča kratek odgovor in vas takoj odstranim.',
+  /*
+    NOGA — troje, in vsako je tam iz svojega razloga.
+
+    1. "To je poslovno sporočilo" in od kod naslov. Zakon o elektronskem
+       poslovanju na trgu zahteva, da je komercialno sporočilo kot tako
+       prepoznavno in da je razvidno, v čigavem imenu je poslano. Splošna
+       uredba (GDPR) pa zahteva, da človeku, čigar podatka nismo dobili od
+       njega samega, povemo, od kod ga imamo.
+
+    2. Odjava v enem stavku, brez obrazca in brez povezave. Povezava za
+       odjavo v glavi sporočila (List-Unsubscribe) je stvar strežnika in je
+       iz Roundcube ni mogoče dodati; navodilo "odgovorite z ne" je tisto,
+       kar pri ročnem pošiljanju res deluje. Pomembno ni zaradi zakona,
+       ampak zaradi pritožb: prijava kot neželena pošta je za ugled domene
+       najdražja stvar, ki se lahko zgodi, in ljudje jo pritisnejo takrat,
+       ko ne najdejo lažje poti ven.
+
+    3. Polni podatki podjetja. Zakon o gospodarskih družbah zahteva, da
+       poslovna pisma — in e-pošta to je — nosijo firmo, sedež in matične
+       podatke. Isti podatki so na vseh straneh spletnega mesta; tukaj so
+       prepisani od tam, da se ne razideta.
+
+    Nisem pravnik; členov namenoma ne navajam po spominu. Če bo pošiljanje
+    steklo v resnih količinah, je to pol ure dela za nekoga, ki to je.
+  */
+  NOGA: '<p style="margin:0 0 10px;">To je poslovno sporočilo. Vaš e-naslov je javno objavljen na spletu; pišem posamično, ne v paketu.</p>'
+    + '<p style="margin:0 0 10px;">Če ne želite več sporočil, odgovorite z <strong>„ne"</strong> ali pišite na '
+    + '<a href="mailto:info@flowtek.si" style="color:#93A0AC;">info@flowtek.si</a> — naslov takoj odstranim in vam ne pišem več.</p>'
+    + '<p style="margin:0;">FlowTek · Webacus, Valentin Iljaž s.p. · Nova vas 12, Bizeljsko, Slovenija<br />'
+    + 'Davčna številka: 35880643 · info@flowtek.si · 069 323 846 · '
+    + '<a href="https://flowtek.si/" style="color:#93A0AC;">flowtek.si</a></p>',
 };
 
 /* ── Slika ─────────────────────────────────────────────────────────────── */
