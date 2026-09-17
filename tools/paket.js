@@ -299,17 +299,27 @@ const crkaZa = (ime) => (ime.match(/[A-Za-zČŠŽčšž]/) || ['?'])[0].toUpperC
   }
 
   // 4) Kazalo za delo
+  const zadevaZa = (slug) => {
+    const p = path.join(IZHOD, 'pismo-' + slug + '.html');
+    if (!fs.existsSync(p)) return '';
+    const m = fs.readFileSync(p, 'utf8').match(/<title>([^<]+)<\/title>/);
+    return m ? m[1] : '';
+  };
   const vrstice = sprejeti.map((s, i) =>
-    '| ' + (i + 1) + ' | ' + s.ime + ' | ' + s.kraj + ' | ' + s.email + ' | `out/pismo-' + s.slug + '.html` |');
+    '| ' + (i + 1) + ' | ' + s.ime + ' | ' + s.kraj + ' | ' + s.email + ' | ' + zadevaZa(s.slug) + ' | `out/pismo-' + s.slug + '.html` |');
   const kazalo = [
     '# Paket pisem — ' + PANOGA,
     '',
     'Pripravljeno: ' + new Date().toLocaleString('sl-SI'),
     '',
-    'Zadeva za vse: **Slika za vašo ' + (JE_GOSTINSTVO ? 'picerijo' : 'salon') + '**',
+    /*
+      Zadeva ni ista za vse — pismo.js jo sestavi iz imena lokala, ker so v
+      isti panogi gostilne, restavracije in gostišča. Zato je v kazalu svoj
+      stolpec in ne ena vrstica na vrhu.
+    */
     '',
-    '| # | Lokal | Kraj | E-naslov | Pismo |',
-    '|---|---|---|---|---|',
+    '| # | Lokal | Kraj | E-naslov | Zadeva | Pismo |',
+    '|---|---|---|---|---|---|',
     ...vrstice,
     '',
     '## Izločeni (' + izloceni.length + ')',

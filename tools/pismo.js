@@ -94,18 +94,73 @@ if (!IME) {
    odgovorila pa bi ji picerija.
 */
 const GOSTINSTVO = PANOGA === 'narocila';
-const LOKAL = GOSTINSTVO ? 'picerijo' : 'salon';
+
+/*
+  Kakšen lokal to sploh je — iz imena, ne iz panoge.
+
+  Prej je bilo tu `GOSTINSTVO ? 'picerijo' : 'salon'` in vseh trideset pisem
+  prvega paketa je imelo zadevo "Slika za vašo picerijo". Med njimi ni bilo
+  niti ene picerije: deset restavracij, deset gostiln, tri gostišča. Lastnik
+  Gostilne Puncer ob taki zadevi v sekundi ve, da je to predloga — in s tem
+  je izgubljeno natanko tisto, kar personalizirana slika pridobi.
+
+  Sklanjatev je del podatka: "za vašo gostilno", "za vaše gostišče", "za vaš
+  lokal". Napačen spol je enako opazen kot napačna panoga.
+*/
+const VRSTE = [
+  [/picerij|pizzer/i, 'vašo picerijo'],
+  [/gostiln/i, 'vašo gostilno'],
+  [/gostišč|gostisc/i, 'vaše gostišče'],
+  [/restavrac/i, 'vašo restavracijo'],
+  [/kavarn/i, 'vašo kavarno'],
+  [/slaščičar/i, 'vašo slaščičarno'],
+  [/pivnic/i, 'vašo pivnico'],
+  [/hotel|motel/i, 'vaš hotel'],
+  [/frizer/i, 'vaš salon'],
+  [/nohtarn|kozmetik/i, 'vaš studio'],
+  [/masaž|wellness|spa\b/i, 'vaš salon'],
+  [/tattoo|tetoviran/i, 'vaš studio'],
+];
+const LOKAL = (VRSTE.find(([v]) => v.test(IME)) || [null, GOSTINSTVO ? 'vaš lokal' : 'vaš salon'])[1];
 
 const V = {
-  ZADEVA: arg('zadeva', 'Slika za vašo ' + LOKAL),
+  /*
+    Zadeva: opisna, brez prodaje in brez imena izdelka.
 
-  PREDOGLED: 'Naredil sem jo za vas — tako bi pri vas izgledal pogovor z gostom.',
+    Prej je bila "Slika za vašo picerijo". Dvoje je bilo narobe: vseh
+    trideset prejemnikov prvega paketa ni bilo picerij, beseda "Slika" pa
+    spominja na ponudbe tipa "naredili smo vam logotip".
 
+    Bolj prodajna zadeva ni rešitev — podatki pravijo, da prodajni jezik
+    pomeni 17,9 % manj odprtij in predstavitev izdelka 57 % manj odgovorov.
+    Rešitev je konkretnost brez ponudbe: pove temo in ne obljublja ničesar.
+  */
+  ZADEVA: arg('zadeva', GOSTINSTVO ? 'Naročila prek WhatsAppa' : 'Naročanje terminov prek WhatsAppa'),
+
+  /*
+    Predogled je vrstica, ki jo Gmail pokaže za zadevo v seznamu sporočil.
+    Prej se je glasil "Naredil sem jo za vas" in se je naslanjal na besedo
+    "slika" iz stare zadeve; ko je ta odpadla, je "jo" viselo v zraku.
+
+    Tu je zato prostor za vrsto lokala: zadeva pove temo, predogled pa, da
+    je nekaj narejeno prav zanje.
+  */
+  PREDOGLED: 'Sliko spodaj sem naredil za ' + LOKAL + ' — tako bi pri vas izgledal pogovor.',
+
+  /*
+    Ime lokala stoji v imenovalniku, za dvopičjem — in ne za predlogom.
+
+    Prej se je glasilo "naredil sem jo za <ime>", kar je zahtevalo tožilnik:
+    "za Gostilno Puncer". Sklanjanje poljubnih imen iz registra pa ni
+    rešljivo s pravilom, ki bi držalo: "Gostilna" → "Gostilno" gre, "Kitajska
+    Restavracija Dva Zmaja" pa se zalomi pri "Dva". Napačno sklanjano ime je
+    enako opazno kot napačna panoga — obrnjen stavek je zato edina oblika, ki
+    je pravilna pri vseh 2236 lokalih.
+  */
   UVOD: '<p style="margin:0 0 14px;">Pozdravljeni,</p>'
-    + '<p style="margin:0;">sem ' + PODPISNIK + ' iz FlowTeka. Sliko spodaj sem naredil za <strong>' + IME + '</strong> — '
-    + (GOSTINSTVO
-      ? 'tako bi pri vas izgledal pogovor z gostom:'
-      : 'tako bi pri vas izgledal pogovor s stranko:')
+    + '<p style="margin:0;">sem ' + PODPISNIK + ' iz FlowTeka. Spodnjo sliko sem naredil posebej za vas: '
+    + '<strong>' + IME + '</strong> na WhatsAppu, tako kot bi '
+    + (GOSTINSTVO ? 'jo videl vaš gost.' : 'jo videla vaša stranka.')
     + '</p>',
 
   SLIKA_OPIS: GOSTINSTVO
