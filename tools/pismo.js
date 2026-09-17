@@ -67,6 +67,26 @@ const PODPISNIK = arg('podpisnik', 'Tomaž');
 */
 const CLANEK = arg('clanek', 'https://www.linkedin.com/pulse/zakaj-ai-asistent-v-lokalu-ni-luksuz-ampak-razbremenitev-ekipe-ubgoe/');
 const CLANEK_NASLOV = arg('clanek-naslov', 'AI asistent v lokalu ni luksuz, ampak razbremenitev ekipe');
+
+/*
+  Povezave na flowtek.si vedno skozi to funkcijo.
+
+  V pismu sta dve — v podpisu in v nogi. Prva različica je imela UTM samo na
+  eni; kliki iz noge bi zato v analitiki pristali med "direct" in bi jih
+  pripisali napačnemu viru. Napaka te vrste se ne pokaže kot napaka, ampak
+  kot podatek, ki je videti pravilen.
+
+  utm_content nosi ime lokala, zato se vidi, kateri lokal je kliknil in s
+  katerega mesta v pismu. Pri tridesetih pismih je to razlika med "nekdo je
+  prišel s pisma" in "prišla je Gostilna Puncer, iz podpisa".
+
+  Piškotek na wa.me povezavo ni mogoče pripeti — WhatsApp UTM-jev ne prenaša.
+  Od tam vemo samo to, da je nekdo pisal demo botu.
+*/
+const povezava = (mesto, pot = '/') =>
+  'https://flowtek.si' + pot + '?utm_source=pismo&amp;utm_medium=email'
+  + '&amp;utm_campaign=nagovor-' + (GOSTINSTVO ? 'gostinstvo' : 'termini')
+  + '&amp;utm_content=' + SLUG + '-' + mesto;
 const SLUG = (arg('slug') || IME || 'lokal')
   .toLowerCase()
   .replace(/[čć]/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z')
@@ -209,7 +229,7 @@ const V = {
     : '')
     + '<p style="margin:0 0 14px;">Se vam zdi uporabno? Odgovorite kar na to pošto.</p>'
     + '<p style="margin:0;">Lep pozdrav,<br /><strong>' + PODPISNIK + '</strong><br />'
-    + '<a href="https://flowtek.si/?utm_source=pismo&amp;utm_medium=email&amp;utm_campaign=nagovor&amp;utm_content=' + SLUG + '" style="color:#5A6875;">FlowTek · flowtek.si</a></p>',
+    + 'FlowTek · <a href="' + povezava('podpis') + '" style="color:#0E7A38; font-weight:600;">flowtek.si</a></p>',
 
   /*
     NOGA — troje, in vsako je tam iz svojega razloga.
@@ -241,7 +261,7 @@ const V = {
     + '<a href="mailto:info@flowtek.si" style="color:#93A0AC;">info@flowtek.si</a> — naslov takoj odstranim in vam ne pišem več.</p>'
     + '<p style="margin:0;">FlowTek · Webacus, Valentin Iljaž s.p. · Nova vas 12, Bizeljsko, Slovenija<br />'
     + 'Davčna številka: 35880643 · info@flowtek.si · 069 323 846 · '
-    + '<a href="https://flowtek.si/" style="color:#93A0AC;">flowtek.si</a></p>',
+    + '<a href="' + povezava('noga') + '" style="color:#93A0AC;">flowtek.si</a></p>',
 };
 
 /* ── Slika ─────────────────────────────────────────────────────────────── */
