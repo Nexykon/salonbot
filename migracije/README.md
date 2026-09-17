@@ -25,7 +25,7 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 | `007-dostava-po-krajih.sql` | ✔ pognana. Doda `sb_salons.delivery_zones` za ceno dostave po kraju |
 | `008-ponastavitev-gesla-lastnika.sql` | ⏳ **za pognati.** Doda `owner_reset_token_hash` in `owner_reset_expires_at` za pozabljeno geslo |
 | `009-sb-contacts.sql` | ✔ pognana. Doda `sb_contacts` za prijave z obrazca |
-| `010-stiki-z-leadi.sql` | ⏳ **za pognati.** Doda `sb_lead_stiki` (dnevnik nagovarjanja) in stolpce na `leads`: kanala FB/IG, `ne_kontaktiraj`, povzetek stanja |
+| `010-stiki-z-leadi.sql` | ✔ pognana 17. 9. 2026. Doda `sb_lead_stiki` (dnevnik nagovarjanja) in stolpce na `leads`: kanala FB/IG, `ne_kontaktiraj`, povzetek stanja. Preverjeno: 183 zapisov za nazaj, prožilec napolnil povzetek pri 183 leadih, RLS `t` na obeh tabelah |
 
 ## Naše tabele
 
