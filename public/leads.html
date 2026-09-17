@@ -6,38 +6,76 @@
 <title>FlowTek — Leads</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#252540;--border:#2a2a4a;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#10b981;--blue:#3b82f6;--purple:#7c3aed;--red:#ef4444;--yellow:#f59e0b;}
+/*
+  Paleta je FlowTekova, ista kot v admin.html in delivery.html.
+
+  Stran je bila edina, ki je ostala v stari temno modro-vijolični shemi s
+  Segoe UI — iz časa pred preimenovanjem. Imena spremenljivk so ostala
+  nespremenjena, ker se nanje zanaša ves markup; zamenjale so se vrednosti.
+
+  Dve imeni v shemi nimata FlowTekove ustreznice:
+    --blue   je bila barva stanja "poslano". Zdaj je črnilo: nevtralno,
+             ni ne uspeh ne napaka, kar poslana pošta tudi ni.
+    --purple je bila barva izbranega zavihka in glavnega gumba. Zdaj je
+             zelena, ki to vlogo nosi povsod drugod na strani.
+*/
+:root{
+  --bg:#FBF8F1;      /* kremna podlaga */
+  --bg2:#ffffff;     /* kartice */
+  --bg3:#F4EDE4;     /* vnosna polja, tihi gumbi */
+  --border:#E4DCCB;
+  --text:#101E2B;
+  --text2:#5A6875;
+  --text3:#93A0AC;
+  --green:#0E7A38;   /* zelena za besedilo (temnejša, da drži na kremni) */
+  --accent:#16A34A;  /* zelena za ploskve */
+  --blue:#2B3A47;    /* nevtralno črnilo, prej modra */
+  --purple:#16A34A;  /* glavno dejanje, prej vijolična */
+  --red:#B4442E;
+  --yellow:#D97706;
+  --mint:#7FD69C;
+  --green-tint:#E8F5EC;
+  --rust-tint:#FBEEEB;
+  --tan:#EDE4D6;
+  --sans:"Fira Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Fira Mono",ui-monospace,Menlo,monospace;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
 /* LOGIN */
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:360px;text-align:center;}
-.login-box h2{margin-bottom:8px;font-size:22px;}
+#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.login-box{background:var(--bg2);border:2px solid var(--text);border-radius:18px;padding:40px;width:380px;text-align:center;box-shadow:6px 6px 0 var(--text);}
+.login-mark{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px;}
+.login-mark span{font-size:24px;font-weight:800;letter-spacing:-0.02em;}
+.login-mark span i{font-style:normal;color:var(--accent);}
+.login-box h2{margin-bottom:8px;font-size:20px;font-weight:700;}
 .login-box p{color:var(--text2);font-size:14px;margin-bottom:24px;}
-.login-box input{width:100%;padding:12px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;margin-bottom:12px;}
+.login-box input{width:100%;padding:12px 16px;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;font-family:var(--sans);margin-bottom:12px;outline:none;}
+.login-box input:focus{border-color:var(--accent);}
 /* GENERAL */
-.btn{padding:10px 20px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;transition:opacity .15s;}
+.btn{padding:10px 20px;border-radius:10px;border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:var(--sans);transition:opacity .15s;}
 .btn:hover{opacity:.82;}
 .btn-full{width:100%;padding:12px;}
-.btn-green{background:var(--green);color:#fff;}
+.btn-green{background:var(--accent);color:#fff;}
 .btn-blue{background:var(--blue);color:#fff;}
-.btn-purple{background:var(--purple);color:#fff;}
+.btn-purple{background:var(--accent);color:#fff;}
 .btn-red{background:var(--red);color:#fff;}
-.btn-ghost{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
+.btn-ghost{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border);}
 .btn-sm{padding:5px 12px;font-size:12px;border-radius:8px;}
 .error-msg{color:var(--red);font-size:13px;margin-top:8px;}
 /* MAIN */
 #main-screen{display:none;}
 header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .header-left{display:flex;align-items:center;gap:14px;}
-header .logo{height:34px;}
+header .logo{height:34px;width:auto;object-fit:contain;display:block;}
 header h1{font-size:17px;font-weight:700;}
 .header-right{display:flex;align-items:center;gap:10px;}
 /* TABS */
 .tabs{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex;gap:4px;}
 .tab{padding:14px 20px;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
-.tab.active{color:var(--text);border-bottom-color:var(--purple);}
+.tab.active{color:var(--text);border-bottom-color:var(--accent);}
 .tab-content{display:none;}
 .tab-content.active{display:block;}
 .container{max-width:1200px;margin:0 auto;padding:28px 24px;}
@@ -55,26 +93,31 @@ header h1{font-size:17px;font-weight:700;}
 .cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;}
 .cat-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
 .cat-name{font-size:13px;font-weight:600;margin-bottom:8px;}
-.cat-bar-wrap{background:rgba(255,255,255,.06);border-radius:4px;height:5px;margin-bottom:5px;overflow:hidden;}
-.cat-bar{background:var(--green);height:5px;border-radius:4px;}
+/* Prej bela prosojnost na temnem; na kremnem je bila nevidna. */
+.cat-bar-wrap{background:var(--tan);border-radius:4px;height:6px;margin-bottom:5px;overflow:hidden;}
+.cat-bar{background:var(--accent);height:6px;border-radius:4px;}
 .cat-nums{font-size:11px;color:var(--text2);}
 .cat-nums b{color:var(--green);}
 /* TABLE */
 table{width:100%;border-collapse:collapse;}
-th{padding:10px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;}
+th{padding:10px 14px;text-align:left;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;font-family:var(--mono);}
 td{padding:10px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
 tr:last-child td{border-bottom:none;}
-tr:hover td{background:rgba(255,255,255,.02);}
-.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
-.b-pending{background:rgba(100,116,139,.15);color:var(--text3);}
-.b-sent{background:rgba(59,130,246,.15);color:var(--blue);}
-.b-interested{background:rgba(16,185,129,.15);color:var(--green);}
-.b-not{background:rgba(239,68,68,.15);color:var(--red);}
+/* Bila je bela prosojnost — na kremni podlagi je ni bilo videti. */
+tr:hover td{background:#FAF6EE;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+/* Polne ploskve namesto prosojnosti: na kremni podlagi so te zbledele v nič. */
+.b-pending{background:var(--tan);color:var(--text2);}
+.b-sent{background:#E6EAED;color:var(--blue);}
+.b-interested{background:var(--green-tint);color:var(--green);}
+.b-not{background:var(--rust-tint);color:var(--red);}
 /* SEARCH PANEL */
 .search-row{display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;}
-.form-group input,.form-group select{padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;}
+.form-group label{font-family:var(--mono);}
+.form-group input,.form-group select{padding:10px 14px;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--sans);outline:none;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
 /* SEARCH RESULTS */
 .result-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;}
 .result-row:last-child{border-bottom:none;}
@@ -89,11 +132,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
 /* FILTER */
 .filter-row{display:flex;gap:8px;flex-wrap:wrap;}
 .filter-btn{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
-.filter-btn.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 .empty-state{text-align:center;padding:48px;color:var(--text3);}
 .empty-state .icon{font-size:40px;margin-bottom:12px;}
 /* LOADING */
-.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle;}
+/* Vrtavka se vrti na obarvanih gumbih, zato ostaja bela. */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px;vertical-align:middle;}
 @keyframes spin{to{transform:rotate(360deg)}}
 /* TOAST */
 #toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 20px;font-size:14px;display:none;z-index:999;max-width:360px;}
@@ -105,7 +149,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 /* CATEGORY TABS */
 .cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .cat-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap;}
-.cat-tab.active{background:var(--purple);border-color:var(--purple);color:#fff;}
+.cat-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 /* PAGINATION */
 .pager{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;}
 .pager-info{font-size:12px;color:var(--text3);}
@@ -113,7 +157,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .pager-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;}
 .pager-btn:hover:not(:disabled){background:var(--bg2);color:var(--text);}
 .pager-btn:disabled{opacity:.35;cursor:default;}
-.pager-btn.cur{background:var(--purple);border-color:var(--purple);color:#fff;}
+.pager-btn.cur{background:var(--accent);border-color:var(--accent);color:#fff;}
 @media(max-width:700px){.search-row{grid-template-columns:1fr}table{font-size:12px}th,td{padding:8px 10px}}
 </style>
 </head>
@@ -122,7 +166,16 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <h2>📊 Leads</h2>
+    <!-- Znak je vrisan, da se prijavni zaslon izriše tudi brez naloženih slik. -->
+    <div class="login-mark">
+      <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="1.5" y="2.5" width="21" height="17" rx="5" fill="#16A34A" stroke="#101E2B" stroke-width="1.6"/>
+        <path d="M6 9.5h12M6 13h8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M8 19.5 L7 23 L11.5 19.5 Z" fill="#16A34A" stroke="#101E2B" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+      <span>Flow<i>Tek</i></span>
+    </div>
+    <h2>Leads</h2>
     <p>Prijavi se z master geslom</p>
     <input type="email" id="l-email" placeholder="Email" autocomplete="username">
     <input type="password" id="l-pass" placeholder="Geslo" autocomplete="current-password">
@@ -135,7 +188,12 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <div id="main-screen">
   <header>
     <div class="header-left">
-      <img src="/logo.png" class="logo" alt="FlowTek">
+      <!--
+        Bil je /logo.png — stari FlowTiq logotip z modrim "Tiq". Preimenovanje
+        ga je zamenjalo povsod razen tukaj, ker ta stran ni v nobenem seznamu
+        javnih strani. Zdaj je isti lockup kot v admin.html.
+      -->
+      <a href="/admin.html" title="Nadzorna plošča"><img src="/ft-logo.png" class="logo" alt="FlowTek"></a>
       <h1>Leads & Kampanja</h1>
     </div>
     <div class="header-right">
@@ -258,14 +316,20 @@ tr:hover td{background:rgba(255,255,255,.02);}
   <div class="tab-content" id="tab-kampanja">
     <div class="container">
 
-      <!-- Bulk send bar -->
+      <!--
+        Tu je stal gumb "Pošlji vsem". Odstranjen skupaj z obema končnima
+        točkama na strežniku: ob manjkajoči predlogi je poslal prazno pošto
+        in lead vseeno označil za poslanega. Pošiljanje se dela lokalno, po
+        enem naslovu naenkrat. Ta zaslon je od zdaj seznam in stanje, ne
+        sprožilec.
+      -->
       <div class="bulk-bar">
         <div>
-          <div class="bulk-info">Neposlani emaili: <b id="unsent-count">…</b></div>
-          <div style="font-size:12px;color:var(--text3);margin-top:3px">Samo leadi z emailom in brez poslanega sporočila</div>
+          <div class="bulk-info">Še brez stika: <b id="unsent-count">…</b></div>
+          <div style="font-size:12px;color:var(--text3);margin-top:3px">Leadi z e-naslovom, ki jim še nismo pisali</div>
         </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-purple" onclick="bulkSend()" id="bulk-btn">📤 Pošlji vsem</button>
+        <div style="font-size:12px;color:var(--text3);max-width:340px;text-align:right">
+          Pošiljanje iz te plošče je odstranjeno — poteka lokalno, posamično.
         </div>
       </div>
 
@@ -452,9 +516,14 @@ function renderTable(){
     const emailCell=l.email
       ?`<a href="mailto:${esc(l.email)}" style="color:var(--blue);font-size:13px">${esc(l.email)}</a>`
       :`<input class="edit-input" placeholder="Vnesi email" onblur="saveEmail(${l.id},this.value)" style="width:150px">`;
-    const sendBtn=!l.email_sent_at&&l.email
-      ?`<button class="btn btn-green btn-sm" onclick="sendOne(${l.id},this)">📤 Pošlji</button>`
-      :l.email_sent_at?`<span style="color:var(--text3);font-size:12px">✓ Poslano</span> <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;opacity:0.7" onclick="resetLead(${l.id},this)">↺</button>`:'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
+    /*
+      Stolpec ne sproži več ničesar — pove samo, kje lead stoji. Gumb za
+      pošiljanje je odstranjen; ↺ ostane, da se da zmotni vpis razveljaviti.
+    */
+    const kdaj=l.email_sent_at?new Date(l.email_sent_at).toLocaleDateString('sl-SI'):'';
+    const sendBtn=l.email_sent_at
+      ?`<span style="color:var(--text2);font-size:12px">✓ ${kdaj}</span> <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;opacity:0.7" onclick="resetLead(${l.id},this)" title="Razveljavi oznako">↺</button>`
+      :l.email?'<span style="color:var(--text3);font-size:12px">—</span>':'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
     return `<tr id="row-${l.id}"><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td>${sendBtn}</td></tr>`;
   }).join('');
 
@@ -601,37 +670,15 @@ async function resetLead(id,btn){
     const r=await fetch(`/api/leads/${id}/reset`,{method:'POST',headers:{Authorization:masterToken}});
     const d=await r.json();
     if(d.error) throw new Error(d.error);
-    toast('↺ Reset — email bo šel pri naslednjem pošiljanju','success');
+    toast('↺ Oznaka odstranjena — lead je spet med nekontaktiranimi','success');
     await loadLeads();
   }catch(e){toast('Napaka: '+e.message,'error');btn.innerHTML='↺';btn.disabled=false;}
 }
 
-async function sendOne(id,btn){
-  btn.innerHTML='<span class="spinner"></span>';btn.disabled=true;
-  try{
-    const r=await fetch(`/api/leads/${id}/send`,{method:'POST',headers:{Authorization:masterToken}});
-    const d=await r.json();
-    if(d.error) throw new Error(d.error);
-    toast('✅ Email poslan: '+d.to,'success');
-    loadAll();
-  }catch(e){toast('Napaka: '+e.message,'error');btn.innerHTML='📤 Pošlji';btn.disabled=false;}
-}
-
-async function bulkSend(){
-  const btn=document.getElementById('bulk-btn');
-  const count=parseInt(document.getElementById('unsent-count').textContent)||0;
-  if(!count){toast('Ni neposlanih emailov.','error');return;}
-  if(!confirm(`Poslati ${count} emailov prek Resend?`)) return;
-  btn.innerHTML='<span class="spinner"></span>Pošiljam…';btn.disabled=true;
-  try{
-    const r=await fetch('/api/leads/bulk-send',{method:'POST',headers:{Authorization:masterToken,'Content-Type':'application/json'}});
-    const d=await r.json();
-    if(d.error) throw new Error(d.error);
-    toast(`✅ Poslano: ${d.sent} emailov${d.errors?.length?' ('+d.errors.length+' napak)':''}`, d.errors?.length?'error':'success');
-    loadAll();
-  }catch(e){toast('Napaka: '+e.message,'error');}
-  finally{btn.innerHTML='📤 Pošlji vsem';btn.disabled=false;}
-}
+/*
+  Tu sta stali sendOne() in bulkSend(). Odstranjeni skupaj s koncnima
+  tockama na streznik: posiljanje iz plosce je ukinjeno.
+*/
 
 // ── SAVE EMAIL ──
 async function saveEmail(id,email){

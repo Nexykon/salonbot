@@ -3463,57 +3463,40 @@ app.post('/api/leads', async (req, res) => {
 });
 
 
-// ─── LEADS — SCRAPER + RESEND ────────────────────────────────────────────────
+/*
+  ─── LEADS — ISKANJE IN SEZNAM ───────────────────────────────────────────────
 
-const TEMPLATE_DIR = path.join(__dirname, 'email-templates');
+  POŠILJANJE JE ODSTRANJENO.
 
-const CAT_TEMPLATE = {
-  'frizerji': 'promo_frizerji', 'frizer': 'promo_frizerji',
-  'nohtarnic': 'promo_nohtarnice', 'nohti': 'promo_nohtarnice', 'gel nohti': 'promo_nohtarnice',
-  'masaž': 'promo_masaze', 'wellness': 'promo_masaze', 'spa': 'promo_masaze',
-  'pasji': 'promo_pasji_strizci', 'grooming': 'promo_pasji_strizci',
-  'picerij': 'promo_picerije', 'pizza': 'promo_picerije',
-  'restavraci': 'promo_picerije',
-  'fotograf': '07_fotografski_studii',
-  'kozmetič': 'promo_kozmeticarke', 'kozmetika': 'promo_kozmeticarke',
-  'pedikar': 'promo_kozmeticarke', 'pedikur': 'promo_kozmeticarke',
-  'trener': '10_osebni_trenerji', 'fitnes': '10_osebni_trenerji',
-  'tattoo': 'promo_tattoo', 'tetoviran': 'promo_tattoo',
-};
+  Tu sta stali dve končni točki, ki sta pošiljali hladno pošto prek Resenda:
+  /api/leads/:id/send in /api/leads/bulk-send. Z njima vred je odšel izbirnik
+  predlog (CAT_TEMPLATE, EMAIL_SUBJECTS, resolveTemplate, loadEmailTemplate,
+  personalizeEmail), ker ga ni več uporabljalo nič.
 
-const EMAIL_SUBJECTS = {
-  'promo_frizerji':       '{} — WhatsApp asistent za rezervacije v vašem salonu ✂️',
-  'promo_nohtarnice':     '{} — WhatsApp asistent za rezervacije v vaši nohtarnici 💅',
-  'promo_masaze':         '{} — WhatsApp asistent za rezervacije v vašem masažnem salonu 💆',
-  'promo_pasji_strizci':  '{} — WhatsApp asistent za termine v vašem pasjem salonu 🐾',
-  'promo_picerije':       '{} — WhatsApp naročanje za vašo restavracijo 🍕',
-  'promo_tattoo':         '{} — WhatsApp asistent za termine v vašem tattoo studiu 🎨',
-  'promo_kozmeticarke':   '{} — WhatsApp asistent za rezervacije v vašem kozmetičnem salonu ✨',
-  '07_fotografski_studii':'{} — termini za fotografiranje na avtopilotu?',
-  '10_osebni_trenerji':   '{} — treningi rezervirani, vi trenirate',
-  '12_splosno':           '{} — WhatsApp pomočnik za vaše podjetje?',
-};
+  ZAKAJ
 
-function resolveTemplate(category) {
-  const c = (category || '').toLowerCase();
-  for (const [key, val] of Object.entries(CAT_TEMPLATE)) {
-    if (c.includes(key)) return val;
-  }
-  return '12_splosno';
-}
+    Množično pošiljanje je ob manjkajoči predlogi poslalo PRAZNO sporočilo
+    (`loadEmailTemplate(...) || ''`) in lead vseeno označilo za poslanega. V
+    mapi email-templates je obstajala natanko ena predloga, rezervna
+    12_splosno.html pa sploh ne — torej bi vsak klik na "Pošlji vsem" za
+    katerokoli panogo razen picerij poslal prazno pošto iz info@flowtek.si in
+    zabrisal sled za tem, komu.
 
-function loadEmailTemplate(templateName) {
-  const fp = path.join(TEMPLATE_DIR, templateName + '.html');
-  if (!fs.existsSync(fp)) {
-    const fallback = path.join(TEMPLATE_DIR, '12_splosno.html');
-    return fs.existsSync(fallback) ? fs.readFileSync(fallback, 'utf8') : null;
-  }
-  return fs.readFileSync(fp, 'utf8');
-}
+    Poleg tega je edina obstoječa predloga ponujala cene, ki jih ni več
+    (49,99 €, medtem ko cenik pravi 89–299 €), povezave so kazale na
+    up.railway.app, v nogi pa je pisalo staro ime.
 
-function personalizeEmail(html, businessName, token) {
-  return html.replace(/\{\{IME_FIRME\}\}/g, businessName).replace(/\{\{TOKEN\}\}/g, token);
-}
+    Pošiljanje se bo delalo lokalno, po enem naslovu naenkrat in s pregledom
+    pred vsakim. Gumb, ki v enem kliku doseže 3874 podjetij, v tem ne sodi.
+
+  KAJ OSTAJA
+
+    Iskanje, uvoz, urejanje in seznam. In /track/:token/:response, ker je
+    180 pisem že zunaj in njihove povezave morajo delati naprej.
+
+    Mapa email-templates ostane na disku kot izhodišče za besedilo; strežnik
+    je ne bere več.
+*/
 
 function parseBiziSi(html) {
   const results = [];
@@ -3673,45 +3656,6 @@ app.patch('/api/leads/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/leads/:id/send — pošlji email prek Resend
-app.post('/api/leads/:id/send', async (req, res) => {
-  if (!adminAuth(req, res)) return;
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY ni nastavljen' });
-  try {
-    const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
-    const lead = leads[0];
-    if (!lead) return res.status(404).json({ error: 'Lead ne obstaja' });
-    if (!lead.email) return res.status(400).json({ error: 'Email ni vnesen' });
-
-    const templateName = resolveTemplate(lead.category);
-    const templateHtml = loadEmailTemplate(templateName);
-    if (!templateHtml) return res.status(500).json({ error: 'Predloga ne obstaja' });
-
-    const html = personalizeEmail(templateHtml, lead.business_name, lead.token);
-    const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
-    const fromEmail = process.env.RESEND_FROM || 'FlowTek <info@flowtek.si>';
-
-    const { default: axios } = await import('axios');
-    await axios.post('https://api.resend.com/emails', {
-      from: fromEmail,
-      to: lead.email,
-      subject,
-      html,
-      reply_to: 'info@flowtek.si',
-    }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
-
-    await sbLeads('patch', `/leads?id=eq.${lead.id}&email_sent_at=is.null`,
-      { email_sent_at: new Date().toISOString(), status: 'sent' });
-
-    res.json({ success: true, to: lead.email, subject });
-  } catch (err) {
-    const msg = err.response?.data?.message || err.message;
-    res.status(500).json({ error: msg });
-  }
-});
-
-
 // POST /api/leads/:id/reset — ponastavi email_sent_at (za ponovno pošiljanje)
 app.post('/api/leads/:id/reset', async (req, res) => {
   if (!adminAuth(req, res)) return;
@@ -3725,46 +3669,6 @@ app.post('/api/leads/:id/reset', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-// POST /api/leads/bulk-send — pošlji vsem neposlani
-app.post('/api/leads/bulk-send', async (req, res) => {
-  if (!adminAuth(req, res)) return;
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'RESEND_API_KEY ni nastavljen' });
-  try {
-    const { category, limit: limitParam } = req.body || {};
-    const limitVal = Math.min(parseInt(limitParam) || 30, 100);
-    let leadsUrl = '/leads?email_sent_at=is.null&email=neq.&order=id.asc&limit=' + limitVal;
-    if (category) leadsUrl += '&category=eq.' + encodeURIComponent(category);
-    const pending = await sbLeads('get', leadsUrl);
-    if (!pending.length) return res.json({ success: true, sent: 0, message: 'Ni leadov za pošiljanje' });
-
-    const { default: axios } = await import('axios');
-    const fromEmail = process.env.RESEND_FROM || 'FlowTek <info@flowtek.si>';
-    let sent = 0, errors = [];
-
-    for (const lead of pending) {
-      try {
-        const templateName = resolveTemplate(lead.category);
-        const html = personalizeEmail(loadEmailTemplate(templateName) || '', lead.business_name, lead.token);
-        const subject = (EMAIL_SUBJECTS[templateName] || '{} — WhatsApp pomočnik?').replace('{}', lead.business_name);
-        await axios.post('https://api.resend.com/emails', {
-          from: fromEmail, to: lead.email, subject, html, reply_to: 'info@flowtek.si',
-        }, { headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } });
-        await sbLeads('patch', `/leads?id=eq.${lead.id}`,
-          { email_sent_at: new Date().toISOString(), status: 'sent' });
-        sent++;
-        // Rate limit — Resend free plan 2/sec
-        await new Promise(r => setTimeout(r, 600));
-      } catch (e) {
-        errors.push({ id: lead.id, email: lead.email, error: e.response?.data?.message || e.message });
-      }
-    }
-    res.json({ success: true, sent, errors, total: pending.length });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-
 
 app.listen(PORT, () => {
   console.log(`FlowTek server running on port ${PORT}`);

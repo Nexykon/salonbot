@@ -24,6 +24,19 @@ Vse datoteke so napisane tako, da jih je varno pognati **večkrat**
 | `006-embalaza-po-artiklu.sql` | ✔ pognana. Doda `sb_services.packaging_price` za ceno embalaže pri posameznem artiklu |
 | `007-dostava-po-krajih.sql` | ✔ pognana. Doda `sb_salons.delivery_zones` za ceno dostave po kraju |
 | `008-ponastavitev-gesla-lastnika.sql` | ⏳ **za pognati.** Doda `owner_reset_token_hash` in `owner_reset_expires_at` za pozabljeno geslo |
+| `009-sb-contacts.sql` | ✔ pognana. Doda `sb_contacts` za prijave z obrazca |
+| `010-stiki-z-leadi.sql` | ⏳ **za pognati.** Doda `sb_lead_stiki` (dnevnik nagovarjanja) in stolpce na `leads`: kanala FB/IG, `ne_kontaktiraj`, povzetek stanja |
+
+## Naše tabele
+
+Za pravilo »vsaka migracija mora tabele našteti izrecno« je tu seznam, ki mu
+sledijo pregledi RLS (004):
+
+`sb_salons`, `sb_services`, `sb_bookings`, `sb_customers`, `sb_contacts`,
+`sb_errors`, `sb_lead_stiki`, `leads`, `ai_misses`, `ai_sessions`.
+
+Novo tabelo dopiši sem **in** v poizvedbe v `004-rls-samo-nase-tabele.sql`,
+sicer pregled stanja RLS zanjo tiho molči.
 
 ## V tej bazi ni samo FlowTiq
 
