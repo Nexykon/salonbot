@@ -52,6 +52,21 @@ const PANOGA = arg('panoga', 'narocila');   // narocila | termini
   mu nato odpiše nekdo drug, je prvi vtis pokvarjen že pri drugem sporočilu.
 */
 const PODPISNIK = arg('podpisnik', 'Tomaž');
+
+/*
+  Članek. Edini kos kredibilnosti v pismu, ki ne prihaja od nas samih —
+  naslov sam nosi argument, zato je povezan naslov in ne beseda "tukaj".
+
+  Iz naslova je odstranjen ?trackingId=… iz LinkedInovega vmesnika: to je
+  njihova sledilna oznaka za klik znotraj LinkedIna, v pismu ne pomeni nič
+  in sčasoma poteče.
+
+  Cena: to je drugi naslov v pismu poleg gumba. Filtri za neželeno pošto
+  štejejo naslove, pozornost pa se deli. Zato stoji na koncu, za glavnim
+  pozivom, in ne pred njim.
+*/
+const CLANEK = arg('clanek', 'https://www.linkedin.com/pulse/zakaj-ai-asistent-v-lokalu-ni-luksuz-ampak-razbremenitev-ekipe-ubgoe/');
+const CLANEK_NASLOV = arg('clanek-naslov', 'AI asistent v lokalu ni luksuz, ampak razbremenitev ekipe');
 const SLUG = (arg('slug') || IME || 'lokal')
   .toLowerCase()
   .replace(/[čć]/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z')
@@ -134,8 +149,18 @@ const V = {
     Bolj prodajna zadeva ni rešitev — podatki pravijo, da prodajni jezik
     pomeni 17,9 % manj odprtij in predstavitev izdelka 57 % manj odgovorov.
     Rešitev je konkretnost brez ponudbe: pove temo in ne obljublja ničesar.
+
+    "AI na vašem WhatsAppu" je konkretna in ni ponudba — pove, o čem pismo
+    je. Beseda AI je hkrati vez s preostalo znamko: naslov prve strani se
+    glasi "Tvoj AI pomočnik", paketa sta AI Start in AI Pro, video oglasi
+    nosijo oznako "AI, KI DELA NA WHATSAPPU". Prva različica pisma besede AI
+    ni imela nikjer — kdor je videl oglas in nato pismo, ju ni povezal.
+
+    Tveganje, ki ga je treba poznati: "AI" je pri delu filtrov za neželeno
+    pošto beseda z zgodovino, in del starejših lastnikov jo bere kot "robot".
+    Če bo odzivov malo, je to prva stvar za zamenjavo — z --zadeva.
   */
-  ZADEVA: arg('zadeva', GOSTINSTVO ? 'Naročila prek WhatsAppa' : 'Naročanje terminov prek WhatsAppa'),
+  ZADEVA: arg('zadeva', 'AI na vašem WhatsAppu'),
 
   /*
     Predogled je vrstica, ki jo Gmail pokaže za zadevo v seznamu sporočil.
@@ -159,9 +184,8 @@ const V = {
   */
   UVOD: '<p style="margin:0 0 14px;">Pozdravljeni,</p>'
     + '<p style="margin:0;">sem ' + PODPISNIK + ' iz FlowTeka. Spodnjo sliko sem naredil posebej za vas: '
-    + '<strong>' + IME + '</strong> na WhatsAppu, tako kot bi '
-    + (GOSTINSTVO ? 'jo videl vaš gost.' : 'jo videla vaša stranka.')
-    + '</p>',
+    + '<strong>' + IME + '</strong> na WhatsAppu, kjer na sporočila '
+    + (GOSTINSTVO ? 'gostov' : 'strank') + ' odgovarja AI.</p>',
 
   SLIKA_OPIS: GOSTINSTVO
     ? 'Pogovor na WhatsAppu: gost naroči, pomočnik potrdi naročilo — ' + IME
@@ -170,16 +194,20 @@ const V = {
   GUMB_POVEZAVA: 'https://wa.me/38669323814?text=' + encodeURIComponent('Pozdravljeni, rad bi naročil.'),
   GUMB_BESEDILO: 'Preizkusite zdaj',
   GUMB_POD: GOSTINSTVO
-    ? 'Odpre se WhatsApp. Naročite pico — odgovarja isti pomočnik, ki bi delal pri vas.'
+    ? 'Odpre se WhatsApp. Naročite pico — odgovarja isti AI, ki bi delal pri vas.'
     : 'Odpre se WhatsApp. Tam teče demo picerija, ker je naročanje najbolj nazorno.',
 
   BESEDILO: '<p style="margin:0;">'
     + (GOSTINSTVO
-      ? 'Gost piše na vašo obstoječo številko, pomočnik odgovori in naročilo pošlje vam.'
-      : 'Stranka piše na vašo obstoječo številko, pomočnik ponudi proste termine in rezervacijo zabeleži.')
+      ? 'Gost piše na vašo obstoječo številko, AI pomočnik odgovori in naročilo pošlje vam.'
+      : 'Stranka piše na vašo obstoječo številko, AI pomočnik ponudi proste termine in rezervacijo zabeleži.')
     + ' Brez nove aplikacije in brez provizije. Postavimo v dveh dneh.</p>',
 
-  PODPIS: '<p style="margin:0 0 14px;">Se vam zdi uporabno? Odgovorite kar na to pošto.</p>'
+  PODPIS: (CLANEK
+    ? '<p style="margin:0 0 14px;">O tem sem pisal tudi na LinkedInu: '
+      + '<a href="' + CLANEK + '" style="color:#0E7A38;">' + CLANEK_NASLOV + '</a>.</p>'
+    : '')
+    + '<p style="margin:0 0 14px;">Se vam zdi uporabno? Odgovorite kar na to pošto.</p>'
     + '<p style="margin:0;">Lep pozdrav,<br /><strong>' + PODPISNIK + '</strong><br />'
     + '<a href="https://flowtek.si/?utm_source=pismo&amp;utm_medium=email&amp;utm_campaign=nagovor&amp;utm_content=' + SLUG + '" style="color:#5A6875;">FlowTek · flowtek.si</a></p>',
 
