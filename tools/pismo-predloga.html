@@ -102,23 +102,17 @@
         <![endif]-->
         <!--[if !mso]><!-- -->
         <!--
-          Črna obroba je s strani: tam ima .btn { border: 2px solid ink } in
-          k temu trdo senco 5px 5px 0 ink. V pošti je sprva ostala samo
-          obroba in je zato izpadla kot obris po pomoti, ne kot namen —
-          senco vrne ta vrstica.
-
-          box-shadow v Outlooku odpade, tam gumb nariše VML zgoraj. Kjer
-          odpade tudi tam, ostane zelena ploskev z obrobo: natanko to, kar
-          je bilo prej, torej slabše ne more biti.
-        -->
-        <!--
           Obroba, zaobljenost in senca so na POVEZAVI, ne na celici tabele.
 
-          Ko so bile na celici, se je senca risala po kvadratnem okvirju: pod
-          zaobljenim zelenim gumbom je štrlel oglat črn blok. Kriv je
-          border-collapse: collapse zgoraj — ob njem odjemalci zaobljenost in
-          senco celice rišejo po nezaobljenem robu. Povezava je inline-block
-          in oboje upošteva pravilno.
+          Črna obroba je s strani: tam ima .btn { border: 2px solid ink } in k
+          temu trdo senco 5px 5px 0 ink. Brez sence je obroba izpadla kot
+          obris po pomoti; ko pa je senca šla na celico, se je risala po
+          kvadratnem okvirju in pod zaobljenim gumbom je štrlel oglat blok.
+          Kriv je border-collapse: collapse zgoraj — ob njem odjemalci
+          zaobljenost in senco celice rišejo po nezaobljenem robu. Povezava je
+          inline-block in oboje upošteva pravilno.
+
+          V Outlooku box-shadow odpade, tam gumb nariše VML zgoraj.
         -->
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto; border-collapse:separate !important;">
           <tr>

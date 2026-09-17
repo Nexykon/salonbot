@@ -43,6 +43,12 @@ const arg = (ime, privzeto) => {
 const IME = arg('ime');
 const SLIKA = arg('slika');
 const PANOGA = arg('panoga', 'narocila');   // narocila | termini
+/*
+  Kdo piše. To ime je v pismu dvakrat — v prvi vrstici in v podpisu — in mora
+  biti človek, ki bo tudi odgovarjal. Prejemnik bo odgovoril temu imenu; če
+  mu nato odpiše nekdo drug, je prvi vtis pokvarjen že pri drugem sporočilu.
+*/
+const PODPISNIK = arg('podpisnik', 'Tomaž');
 const SLUG = (arg('slug') || IME || 'lokal')
   .toLowerCase()
   .replace(/[čć]/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z')
@@ -93,7 +99,7 @@ const V = {
   PREDOGLED: 'Naredil sem jo za vas — tako bi pri vas izgledal pogovor z gostom.',
 
   UVOD: '<p style="margin:0 0 14px;">Pozdravljeni,</p>'
-    + '<p style="margin:0;">sem Miran iz FlowTeka. Sliko spodaj sem naredil za <strong>' + IME + '</strong> — '
+    + '<p style="margin:0;">sem ' + PODPISNIK + ' iz FlowTeka. Sliko spodaj sem naredil za <strong>' + IME + '</strong> — '
     + (GOSTINSTVO
       ? 'tako bi pri vas izgledal pogovor z gostom:'
       : 'tako bi pri vas izgledal pogovor s stranko:')
@@ -116,7 +122,7 @@ const V = {
     + ' Brez nove aplikacije in brez provizije. Postavimo v dveh dneh.</p>',
 
   PODPIS: '<p style="margin:0 0 14px;">Se vam zdi uporabno? Odgovorite kar na to pošto.</p>'
-    + '<p style="margin:0;">Lep pozdrav,<br /><strong>Miran</strong><br />'
+    + '<p style="margin:0;">Lep pozdrav,<br /><strong>' + PODPISNIK + '</strong><br />'
     + '<a href="https://flowtek.si/?utm_source=pismo&amp;utm_medium=email&amp;utm_campaign=nagovor&amp;utm_content=' + SLUG + '" style="color:#5A6875;">FlowTek · flowtek.si</a></p>',
 
   NOGA: 'Pišem posamično, ne v paketu. Če ne želite več sporočil, zadošča kratek odgovor in vas takoj odstranim.',
