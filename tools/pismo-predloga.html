@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="sl" xml:lang="sl">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="x-apple-disable-message-reformatting" />
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+<meta name="color-scheme" content="light" />
+<meta name="supported-color-schemes" content="light" />
+<title>{{ZADEVA}}</title>
+<!--[if mso]>
+<xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+<![endif]-->
+<style type="text/css">
+  /* Samo popravki, ki jih odjemalci s podporo za <style> upoštevajo.
+     Vse bistveno je vpisano v atribute in inline sloge, ker Gmail ta blok
+     pri posredovanem sporočilu vrže stran. */
+  body { margin:0 !important; padding:0 !important; width:100% !important; }
+  table { border-collapse:collapse !important; }
+  img { -ms-interpolation-mode:bicubic; }
+  a { text-decoration:none; }
+  /* Telefonske številke na iOS pobarva modro; vrnemo našo barvo. */
+  a[x-apple-data-detectors] { color:inherit !important; text-decoration:none !important; }
+  @media screen and (max-width:620px) {
+    .ovoj { width:100% !important; }
+    .rob { padding-left:20px !important; padding-right:20px !important; }
+    .naslov { font-size:22px !important; line-height:1.25 !important; }
+  }
+</style>
+</head>
+
+<!--
+  BARVE SO FLOWTEKOVE, PRENESENE S STRANI
+
+    kremna   #FBF8F1      črnilo      #101E2B
+    kremna 2 #F4EDE4      besedilo 2  #5A6875
+    zelena   #16A34A      zelena tem. #0E7A38
+    obroba   #E4DCCB
+
+  ZAKAJ TAKO, IN NE KOT NA SPLETNI STRANI
+
+    V pošti ni flexboxa, ne grida, ne zunanjega CSS in ne spletnih pisav, na
+    katere bi se dalo zanesti. Zato tabele, inline slogi in pisave, ki jih
+    ima vsak. Zaobljeni robovi in sence v Outlooku odpadejo — postavitev je
+    narejena tako, da brez njih ni videti pokvarjena, samo bolj oglata.
+
+    Gumb je narejen po "bulletproof" vzorcu: za Outlook posebej v VML, za vse
+    ostale kot obarvana celica tabele. Gumb, sestavljen iz diva, je v
+    Outlooku brez ozadja in zato neviden.
+-->
+
+<body style="margin:0; padding:0; width:100%; background-color:#FBF8F1;">
+
+<!-- Predogled v seznamu sporočil. Za njim presledki, da se ne prilepi začetek pisma. -->
+<div style="display:none; font-size:1px; color:#FBF8F1; line-height:1px; max-height:0; max-width:0; opacity:0; overflow:hidden;">
+  {{PREDOGLED}}
+  &#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;&#847;&zwnj;&nbsp;
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#FBF8F1;">
+<tr>
+<td align="center" style="padding:24px 12px;">
+
+  <table role="presentation" class="ovoj" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px; background-color:#ffffff; border:2px solid #101E2B; border-radius:18px;">
+
+    <!-- ZNAMKA — besedilo in ne slika, da se pokaže tudi z izklopljenimi slikami -->
+    <tr>
+      <td class="rob" align="left" style="padding:26px 32px 0 32px;">
+        <span style="font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:22px; font-weight:800; color:#101E2B; letter-spacing:-0.5px;">Flow<span style="color:#16A34A;">Tek</span></span>
+      </td>
+    </tr>
+
+    <!-- NASLOV -->
+    <tr>
+      <td class="rob" align="left" style="padding:18px 32px 0 32px;">
+        <h1 class="naslov" style="margin:0; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:26px; line-height:1.2; font-weight:800; color:#101E2B; letter-spacing:-0.4px;">
+          {{NASLOV}}
+        </h1>
+      </td>
+    </tr>
+
+    <!-- UVOD -->
+    <tr>
+      <td class="rob" align="left" style="padding:14px 32px 0 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; line-height:1.65; color:#101E2B;">
+        {{UVOD}}
+      </td>
+    </tr>
+
+    <!-- SLIKA — personalizirana, vložena v sporočilo -->
+    <tr>
+      <td class="rob" align="center" style="padding:20px 32px 0 32px;">
+        <img src="{{SLIKA}}" width="536" alt="{{SLIKA_OPIS}}" style="display:block; width:100%; max-width:536px; height:auto; border:0; outline:none; text-decoration:none; border-radius:10px;" />
+      </td>
+    </tr>
+
+    <!-- GUMB -->
+    <tr>
+      <td class="rob" align="center" style="padding:24px 32px 0 32px;">
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{GUMB_POVEZAVA}}" style="height:52px;v-text-anchor:middle;width:300px;" arcsize="20%" strokecolor="#101E2B" strokeweight="2px" fillcolor="#16A34A">
+          <w:anchorlock/>
+          <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">{{GUMB_BESEDILO}}</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-- -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+          <tr>
+            <td align="center" bgcolor="#16A34A" style="background-color:#16A34A; border:2px solid #101E2B; border-radius:10px;">
+              <a href="{{GUMB_POVEZAVA}}" target="_blank" style="display:inline-block; padding:15px 30px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:1; color:#ffffff; text-decoration:none;">{{GUMB_BESEDILO}}</a>
+            </td>
+          </tr>
+        </table>
+        <!--<![endif]-->
+        <p style="margin:10px 0 0; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:12.5px; color:#5A6875;">{{GUMB_POD}}</p>
+      </td>
+    </tr>
+
+    <!-- BESEDILO -->
+    <tr>
+      <td class="rob" align="left" style="padding:24px 32px 0 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; line-height:1.65; color:#101E2B;">
+        {{BESEDILO}}
+      </td>
+    </tr>
+
+    <!-- PODPIS -->
+    <tr>
+      <td class="rob" align="left" style="padding:22px 32px 28px 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; line-height:1.6; color:#101E2B;">
+        {{PODPIS}}
+      </td>
+    </tr>
+
+    <!-- NOGA -->
+    <tr>
+      <td class="rob" align="left" style="padding:18px 32px 24px 32px; border-top:1px solid #E4DCCB; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:12px; line-height:1.6; color:#93A0AC;">
+        {{NOGA}}
+      </td>
+    </tr>
+
+  </table>
+
+  <!-- Pod kartico: nič, kar bi moral kdo brati. Samo zrak. -->
+  <div style="height:16px; line-height:16px; font-size:16px;">&nbsp;</div>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

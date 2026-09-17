@@ -22,3 +22,7 @@ preview.ps1
 #   git clone --depth 1 https://github.com/coreyhaines31/marketingskills
 #   cp -r marketingskills/skills/. .claude/skills/
 .claude/skills/
+
+# Sestavljena pisma za nagovarjanje. Vsebujejo ime konkretnega lokala in
+# vlozeno sliko; nastanejo z "node tools/pismo.js" in v repozitorij ne sodijo.
+out/
