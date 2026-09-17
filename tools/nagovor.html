@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nagovor — lokalna konzola</title>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Paleta je FlowTekova, ista kot leads.html in admin.html. */
+:root{
+  --bg:#FBF8F1;--bg2:#ffffff;--bg3:#F4EDE4;--border:#E4DCCB;
+  --text:#101E2B;--text2:#5A6875;--text3:#93A0AC;
+  --accent:#16A34A;--green:#0E7A38;--ink:#2B3A47;--red:#B4442E;--yellow:#D97706;
+  --green-tint:#E8F5EC;--rust-tint:#FBEEEB;--tan:#EDE4D6;
+  --sans:"Fira Sans",system-ui,sans-serif;--mono:"Fira Mono",ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:10}
+.znak{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.znak i{font-style:normal;color:var(--accent)}
+.stevec{font-family:var(--mono);font-size:13px;color:var(--text2)}
+.stevec b{font-size:20px;color:var(--text)}
+.stevec.polno b{color:var(--red)}
+.wrap{max-width:1180px;margin:0 auto;padding:24px}
+.mreza{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
+@media(max-width:900px){.mreza{grid-template-columns:1fr}}
+.kartica{background:var(--bg2);border:2px solid var(--text);border-radius:18px;box-shadow:5px 5px 0 var(--text);overflow:hidden;margin-bottom:20px}
+.kartica h2{font-size:15px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.telo{padding:18px}
+.ime{font-size:24px;font-weight:800;line-height:1.2;margin-bottom:4px}
+.meta{font-size:13px;color:var(--text2);margin-bottom:14px}
+.oznaka{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:var(--tan);color:var(--text2);font-family:var(--mono)}
+.vrstica{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.vrstica label{font-family:var(--mono);font-size:11px;color:var(--text3);text-transform:uppercase;width:78px;flex:none}
+input[type=text],input[type=email],textarea{font-family:var(--sans);font-size:14px;padding:9px 12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;color:var(--text);outline:none;flex:1;min-width:0}
+input:focus,textarea:focus{border-color:var(--accent)}
+textarea{width:100%;min-height:270px;line-height:1.5;resize:vertical;font-size:13.5px}
+.gumb{padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13.5px;font-weight:600;font-family:var(--sans)}
+.gumb:hover{opacity:.85}
+.g-zelen{background:var(--accent);color:#fff}
+.g-crn{background:var(--ink);color:#fff}
+.g-tih{background:var(--bg3);color:var(--text2);border:1.5px solid var(--border)}
+.g-rdec{background:var(--rust-tint);color:var(--red);border:1.5px solid var(--red)}
+.g-mali{padding:5px 11px;font-size:12px;border-radius:8px}
+.gumbi{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.kanali{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:6px}
+.kanal{border:1.5px solid var(--border);border-radius:12px;padding:12px;background:var(--bg3)}
+.kanal .naslov{font-family:var(--mono);font-size:11px;color:var(--text3);text-transform:uppercase;margin-bottom:8px}
+.kanal .vrednost{font-size:13px;word-break:break-all;margin-bottom:8px}
+.ni{color:var(--text3);font-style:italic}
+.seznam{max-height:340px;overflow:auto}
+.el{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;display:flex;justify-content:space-between;gap:10px}
+.el:hover{background:var(--bg3)}
+.el.izbran{background:var(--green-tint);border-left:3px solid var(--accent)}
+.el .kraj{color:var(--text3);font-size:11px;white-space:nowrap}
+.namig{font-size:12px;color:var(--text3);line-height:1.45;margin-top:10px}
+#obvestilo{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:2px solid var(--text);border-radius:12px;padding:12px 18px;font-size:14px;display:none;box-shadow:4px 4px 0 var(--text);z-index:99;max-width:380px}
+#obvestilo.vidno{display:block}
+#obvestilo.napaka{border-color:var(--red);color:var(--red)}
+.prazno{padding:40px;text-align:center;color:var(--text3)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="znak">
+    <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="1.5" y="2.5" width="21" height="17" rx="5" fill="#16A34A" stroke="#101E2B" stroke-width="1.6"/>
+      <path d="M6 9.5h12M6 13h8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      <path d="M8 19.5 L7 23 L11.5 19.5 Z" fill="#16A34A" stroke="#101E2B" stroke-width="1.6" stroke-linejoin="round"/>
+    </svg>
+    <span>Flow<i>Tek</i> · nagovor</span>
+  </div>
+  <div class="stevec" id="stevec">danes <b>–</b> / –</div>
+</header>
+
+<div class="wrap">
+  <div class="mreza">
+
+    <!-- LEVO: vrsta + kanali -->
+    <div>
+      <div class="kartica">
+        <h2>Na vrsti</h2>
+        <div class="seznam" id="seznam"><div class="prazno">Nalagam…</div></div>
+      </div>
+
+      <div class="kartica">
+        <h2>Kanali</h2>
+        <div class="telo" id="kanali"></div>
+      </div>
+    </div>
+
+    <!-- DESNO: lokal + pošta -->
+    <div>
+      <div class="kartica">
+        <h2>Lokal</h2>
+        <div class="telo" id="lokal"><div class="prazno">Izberi lokal na levi.</div></div>
+      </div>
+
+      <div class="kartica">
+        <h2>Pošta — prepiši v svoj predal</h2>
+        <div class="telo">
+          <div class="vrstica"><label>Za</label><input type="email" id="za" readonly></div>
+          <div class="vrstica"><label>Zadeva</label><input type="text" id="zadeva"></div>
+          <textarea id="besedilo"></textarea>
+          <div class="gumbi">
+            <button class="gumb g-crn" onclick="kopiraj('besedilo')">Kopiraj besedilo</button>
+            <button class="gumb g-tih" onclick="kopiraj('zadeva')">Kopiraj zadevo</button>
+            <button class="gumb g-tih" onclick="odpriPredal()">Odpri v odjemalcu</button>
+          </div>
+          <div class="namig">
+            Besedilo lahko pred kopiranjem popraviš — sprememba velja samo za ta lokal.
+            GIF pripneš sam; ime datoteke vpiši spodaj, da ostane zapisano, kaj je bilo poslano.
+          </div>
+          <div class="vrstica" style="margin-top:14px"><label>Priponka</label><input type="text" id="priponka" placeholder="npr. vabilo-1042.gif"></div>
+          <div class="gumbi">
+            <button class="gumb g-zelen" onclick="zabelezi('email')">Zabeleži: poslana pošta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="obvestilo"></div>
+
+<script>
+let LEADI = [], IZBRAN = null, DANES = 0, NA_DAN = 30;
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+function obvesti(t, napaka) {
+  const o = $('obvestilo');
+  o.textContent = t;
+  o.className = 'vidno' + (napaka ? ' napaka' : '');
+  clearTimeout(o._t);
+  o._t = setTimeout(() => { o.className = ''; }, 3500);
+}
+
+async function nalozi() {
+  try {
+    const r = await fetch('/api/vrsta?koliko=25');
+    const d = await r.json();
+    if (d.napaka) throw new Error(d.napaka);
+    LEADI = d.leadi; DANES = d.danes; NA_DAN = d.naDan;
+    $('stevec').innerHTML = 'danes <b>' + DANES + '</b> / ' + NA_DAN;
+    $('stevec').className = 'stevec' + (DANES >= NA_DAN ? ' polno' : '');
+    izrisiSeznam();
+    if (LEADI.length) izberi(LEADI[0].id);
+  } catch (e) { obvesti('Napaka: ' + e.message, true); }
+}
+
+function izrisiSeznam() {
+  const s = $('seznam');
+  if (!LEADI.length) { s.innerHTML = '<div class="prazno">Vrsta je prazna.</div>'; return; }
+  s.innerHTML = LEADI.map((l) =>
+    '<div class="el' + (IZBRAN === l.id ? ' izbran' : '') + '" onclick="izberi(' + l.id + ')">' +
+      '<span>' + esc(l.business_name) + '</span>' +
+      '<span class="kraj">' + esc((l.address || '').split(',').pop().trim()) + '</span>' +
+    '</div>').join('');
+}
+
+function izberi(id) {
+  IZBRAN = id;
+  const l = LEADI.find((x) => x.id === id);
+  if (!l) return;
+  izrisiSeznam();
+
+  $('lokal').innerHTML =
+    '<div class="ime">' + esc(l.business_name) + '</div>' +
+    '<div class="meta">' + esc(l.address || 'brez naslova') + ' · <span class="oznaka">' + esc(l.category) + '</span></div>' +
+    '<div class="vrstica"><label>E-pošta</label><input type="email" id="p-email" value="' + esc(l.email) + '"></div>' +
+    '<div class="vrstica"><label>Telefon</label><input type="text" id="p-phone" value="' + esc(l.phone || '') + '"></div>' +
+    '<div class="vrstica"><label>Opomba</label><input type="text" id="p-notes" value="' + esc(l.notes || '') + '"></div>' +
+    '<div class="gumbi">' +
+      '<button class="gumb g-tih g-mali" onclick="shrani()">Shrani</button>' +
+      '<button class="gumb g-tih g-mali" onclick="zabelezi(\'telefon\')">Zabeleži klic</button>' +
+      '<button class="gumb g-tih g-mali" onclick="preskoci()">Preskoči za teden</button>' +
+      '<button class="gumb g-rdec g-mali" onclick="neKontaktiraj()">Ne kontaktiraj</button>' +
+    '</div>' +
+    (l.stikov ? '<div class="namig">Že ' + l.stikov + ' stikov, zadnji ' + new Date(l.zadnji_stik_at).toLocaleDateString('sl-SI') + '.</div>' : '');
+
+  $('kanali').innerHTML = kanal('Facebook', l.facebook_url, 'p-fb', isci(l, 'facebook')) +
+                          kanal('Instagram', l.instagram_url, 'p-ig', isci(l, 'instagram'));
+
+  $('za').value = l.email;
+  $('zadeva').value = l.posta.zadeva;
+  $('besedilo').value = l.posta.besedilo;
+  $('priponka').value = '';
+}
+
+/* Iskanje po imenu lokala — povezavo prilepiš nazaj sem. */
+function isci(l, kje) {
+  const q = encodeURIComponent(l.business_name + ' ' + (l.address || '').split(',').pop().trim());
+  return kje === 'facebook'
+    ? 'https://www.facebook.com/search/pages/?q=' + q
+    : 'https://www.google.com/search?q=' + q + '+site%3Ainstagram.com';
+}
+
+function kanal(naslov, vrednost, polje, iskanje) {
+  return '<div class="kanal">' +
+    '<div class="naslov">' + naslov + '</div>' +
+    (vrednost
+      ? '<div class="vrednost"><a href="' + esc(vrednost) + '" target="_blank" rel="noopener">' + esc(vrednost) + '</a></div>'
+      : '<div class="vrednost ni">ni zapisano</div>') +
+    '<div class="vrstica"><input type="text" id="' + polje + '" placeholder="prilepi povezavo" value="' + esc(vrednost || '') + '"></div>' +
+    '<div class="gumbi" style="margin-top:8px">' +
+      '<button class="gumb g-tih g-mali" onclick="window.open(\'' + iskanje + '\',\'_blank\')">Poišči</button>' +
+      '<button class="gumb g-tih g-mali" onclick="shrani()">Shrani</button>' +
+      (vrednost ? '<button class="gumb g-zelen g-mali" onclick="zabelezi(\'' + naslov.toLowerCase() + '\')">Zabeleži sporočilo</button>' : '') +
+    '</div></div>';
+}
+
+async function shrani() {
+  const l = LEADI.find((x) => x.id === IZBRAN); if (!l) return;
+  const telo = {
+    email: $('p-email') ? $('p-email').value.trim() : undefined,
+    phone: $('p-phone') ? $('p-phone').value.trim() : undefined,
+    notes: $('p-notes') ? $('p-notes').value.trim() : undefined,
+    facebook_url: $('p-fb') ? $('p-fb').value.trim() : undefined,
+    instagram_url: $('p-ig') ? $('p-ig').value.trim() : undefined,
+  };
+  try {
+    const r = await fetch('/api/lead/' + l.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(telo) });
+    const d = await r.json(); if (d.napaka) throw new Error(d.napaka);
+    Object.assign(l, telo);
+    obvesti('Shranjeno.');
+    izberi(l.id);
+  } catch (e) { obvesti('Napaka: ' + e.message, true); }
+}
+
+async function zabelezi(kanalIme) {
+  const l = LEADI.find((x) => x.id === IZBRAN); if (!l) return;
+  if (DANES >= NA_DAN && !confirm('Dnevna meja ' + NA_DAN + ' je dosežena. Vseeno zabeležim?')) return;
+  try {
+    const r = await fetch('/api/stik', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        lead_id: l.id,
+        kanal: kanalIme,
+        zadeva: kanalIme === 'email' ? $('zadeva').value : null,
+        priponka: kanalIme === 'email' ? ($('priponka').value.trim() || null) : null,
+      }),
+    });
+    const d = await r.json(); if (d.napaka) throw new Error(d.napaka);
+    obvesti('Zabeleženo: ' + kanalIme + ' — ' + l.business_name);
+    await nalozi();
+  } catch (e) { obvesti('Napaka: ' + e.message, true); }
+}
+
+async function neKontaktiraj() {
+  const l = LEADI.find((x) => x.id === IZBRAN); if (!l) return;
+  const razlog = prompt('Razlog (zapiše se v bazo):', 'Prosil, naj ga ne kontaktiramo');
+  if (razlog === null) return;
+  try {
+    const r = await fetch('/api/ne-kontaktiraj/' + l.id, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ razlog }) });
+    const d = await r.json(); if (d.napaka) throw new Error(d.napaka);
+    obvesti('Odjavljen: ' + l.business_name);
+    await nalozi();
+  } catch (e) { obvesti('Napaka: ' + e.message, true); }
+}
+
+async function preskoci() {
+  const l = LEADI.find((x) => x.id === IZBRAN); if (!l) return;
+  const cez = new Date(); cez.setDate(cez.getDate() + 7);
+  try {
+    await fetch('/api/lead/' + l.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naslednji_korak_at: cez.toISOString().slice(0, 10) }) });
+    obvesti('Preskočen do ' + cez.toLocaleDateString('sl-SI'));
+    await nalozi();
+  } catch (e) { obvesti('Napaka: ' + e.message, true); }
+}
+
+function kopiraj(id) {
+  const el = $(id);
+  el.select();
+  navigator.clipboard.writeText(el.value).then(() => obvesti('Kopirano.'), () => obvesti('Kopiranje ni uspelo', true));
+}
+
+/*
+  mailto: nosi zadevo in besedilo, priponke pa ne zna — GIF pripneš sam.
+  Pri daljšem besedilu ga nekateri odjemalci odrežejo, zato je gumb za
+  kopiranje glavna pot, ta pa bližnjica.
+*/
+function odpriPredal() {
+  const l = LEADI.find((x) => x.id === IZBRAN); if (!l) return;
+  window.location.href = 'mailto:' + encodeURIComponent(l.email) +
+    '?subject=' + encodeURIComponent($('zadeva').value) +
+    '&body=' + encodeURIComponent($('besedilo').value);
+}
+
+nalozi();
+</script>
+</body>
+</html>
