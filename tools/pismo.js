@@ -55,33 +55,53 @@ if (!IME) {
 
 /* ── Vsebina ───────────────────────────────────────────────────────────────
 
-   Vse trditve so tiste s spletne strani: postavitev v dveh dneh, brez nove
-   aplikacije, brez provizije na naročilo, cena od 89 € brez vezave. Nobene
-   številke, ki je na strani ni, in nobenega navedka stranke.
+   Prva različica je bila predolga in preveč o nas. Popravljeno po podatkih
+   iz .claude/skills/cold-email:
 
-   Dve različici, ker demo številka 069 323 814 vodi na picerijo. Gostincu
-   rečemo, naj naroči; vsem drugim povemo, da je tam picerija — sicer bi
-   frizerki obljubili termin, odgovorila pa bi ji picerija.
+   DOLŽINA. Pod 75 besed prinese 83 % več odgovorov. Prva različica je imela
+   okoli 150 in je naštevala lastnosti. Zdaj jih je 65: slika pove tisto, za
+   kar je prej bilo potrebnih pet stavkov.
+
+   ZAČETEK. Skill pravi "ne začni s tem, kdo si". Tu ga namenoma ne
+   ubogamo do konca: ena vrstica pove, kdo piše, in takoj preide nanje.
+   Slovenski lokal dobi malo hladne pošte in pismo brez imena pošiljatelja
+   tu bolj diši po prevari kot po prodaji. Ena vrstica je poklon vljudnosti,
+   odstavek bi bil predstavitev podjetja — in ta bi res škodila.
+
+   CENE NI. V prvem stiku sproži filter "predrago", še preden je vrednost
+   vidna. Brez nje je vprašanje o ceni razlog za odgovor — in odgovor je
+   edini cilj tega pisma.
+
+   EN POZIV. Prej so bili trije: gumb, odgovori na pošto in piši na 069 323
+   846. Zdaj gumb (preizkusi) in mehko vprašanje na koncu. Številka za
+   podporo je izpadla; kdor hoče pisati, odgovori na pošto.
+
+   ZADEVA. Kratka, brez imena izdelka in brez prodaje. Podatki: predstavitev
+   izdelka v zadevi pomeni 57 % manj odgovorov, ime v zadevi 12 % manj.
+
+   Vse trditve ostajajo tiste s spletne strani. Dve različici, ker demo
+   številka 069 323 814 vodi na picerijo: gostincu rečemo, naj naroči, vsem
+   drugim povemo, da je tam picerija — sicer bi frizerki obljubili termin,
+   odgovorila pa bi ji picerija.
 */
 const GOSTINSTVO = PANOGA === 'narocila';
+const LOKAL = GOSTINSTVO ? 'picerijo' : 'salon';
 
 const V = {
-  ZADEVA: GOSTINSTVO
-    ? IME + ' — naročila prek WhatsAppa, brez nove aplikacije'
-    : IME + ' — naročanje terminov prek WhatsAppa, brez nove aplikacije',
+  ZADEVA: arg('zadeva', 'Slika za vašo ' + LOKAL),
 
-  PREDOGLED: 'Sliko spodaj sem naredil za vas — tako bi izgledal pogovor z gostom.',
-
-  NASLOV: 'Tako bi pri vas izgledal pogovor',
+  PREDOGLED: 'Naredil sem jo za vas — tako bi pri vas izgledal pogovor z gostom.',
 
   UVOD: '<p style="margin:0 0 14px;">Pozdravljeni,</p>'
-    + '<p style="margin:0;">sliko spodaj sem naredil za <strong>' + IME + '</strong>. '
+    + '<p style="margin:0;">sem Miran iz FlowTeka. Sliko spodaj sem naredil za <strong>' + IME + '</strong> — '
     + (GOSTINSTVO
-      ? 'Tako bi izgledal pogovor z gostom, ki pri vas naroči prek WhatsAppa.'
-      : 'Tako bi izgledal pogovor s stranko, ki se pri vas naroči prek WhatsAppa.')
+      ? 'tako bi pri vas izgledal pogovor z gostom:'
+      : 'tako bi pri vas izgledal pogovor s stranko:')
     + '</p>',
 
-  SLIKA_OPIS: 'Pogovor na WhatsAppu: gost naroči, pomočnik potrdi naročilo — ' + IME,
+  SLIKA_OPIS: GOSTINSTVO
+    ? 'Pogovor na WhatsAppu: gost naroči, pomočnik potrdi naročilo — ' + IME
+    : 'Pogovor na WhatsAppu: stranka vpraša za termin, pomočnik ga zabeleži — ' + IME,
 
   GUMB_POVEZAVA: 'https://wa.me/38669323814?text=' + encodeURIComponent('Pozdravljeni, rad bi naročil.'),
   GUMB_BESEDILO: 'Preizkusite zdaj',
@@ -89,20 +109,15 @@ const V = {
     ? 'Odpre se WhatsApp. Naročite pico — odgovarja isti pomočnik, ki bi delal pri vas.'
     : 'Odpre se WhatsApp. Tam teče demo picerija, ker je naročanje najbolj nazorno.',
 
-  BESEDILO: '<p style="margin:0 0 14px;">Postavljamo WhatsApp pomočnika za slovenske lokale. '
+  BESEDILO: '<p style="margin:0;">'
     + (GOSTINSTVO
-      ? 'Gost piše na vašo obstoječo številko, pomočnik odgovori, sprejme naročilo in vam ga pošlje naprej. Vi kuhate naprej.'
-      : 'Stranka piše na vašo obstoječo številko, pomočnik odgovori, ponudi proste termine in zabeleži rezervacijo. Vi delate naprej.')
-    + '</p>'
-    + '<p style="margin:0 0 14px;">Številka v gumbu je <strong>živa</strong> — ni posnetek in ni predstavitev. '
-    + 'Napišite ji in v nekaj sekundah vidite, kako se obnaša.</p>'
-    + '<p style="margin:0;">Postavimo v dveh dneh. Brez nove aplikacije, brez provizije na naročilo, '
-    + 'od <strong>89 € na mesec</strong> brez vezave.</p>',
+      ? 'Gost piše na vašo obstoječo številko, pomočnik odgovori in naročilo pošlje vam.'
+      : 'Stranka piše na vašo obstoječo številko, pomočnik ponudi proste termine in rezervacijo zabeleži.')
+    + ' Brez nove aplikacije in brez provizije. Postavimo v dveh dneh.</p>',
 
-  PODPIS: '<p style="margin:0 0 14px;">Če vas zanima, odgovorite kar na to pošto ali pišite na '
-    + '<a href="https://wa.me/38669323846" style="color:#0E7A38; font-weight:600;">069 323 846</a>.</p>'
+  PODPIS: '<p style="margin:0 0 14px;">Se vam zdi uporabno? Odgovorite kar na to pošto.</p>'
     + '<p style="margin:0;">Lep pozdrav,<br /><strong>Miran</strong><br />'
-    + '<a href="https://flowtek.si/?utm_source=pismo&amp;utm_medium=email&amp;utm_campaign=nagovor&amp;utm_content=' + SLUG + '" style="color:#5A6875;">flowtek.si</a></p>',
+    + '<a href="https://flowtek.si/?utm_source=pismo&amp;utm_medium=email&amp;utm_campaign=nagovor&amp;utm_content=' + SLUG + '" style="color:#5A6875;">FlowTek · flowtek.si</a></p>',
 
   NOGA: 'Pišem posamično, ne v paketu. Če ne želite več sporočil, zadošča kratek odgovor in vas takoj odstranim.',
 };

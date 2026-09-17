@@ -70,18 +70,16 @@
       </td>
     </tr>
 
-    <!-- NASLOV -->
-    <tr>
-      <td class="rob" align="left" style="padding:18px 32px 0 32px;">
-        <h1 class="naslov" style="margin:0; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:26px; line-height:1.2; font-weight:800; color:#101E2B; letter-spacing:-0.4px;">
-          {{NASLOV}}
-        </h1>
-      </td>
-    </tr>
+    <!--
+      Tu je stal velik naslov v 26 pikah. Odstranjen: delal je iz pisma
+      okrožnico. Hladno pismo mora biti videti, kot da ga je napisal človek
+      posebej zate — in noben človek svojega pisma ne začne z naslovom.
+      Znamka zgoraj pove, kdo piše; prva vrstica pove, zakaj.
+    -->
 
     <!-- UVOD -->
     <tr>
-      <td class="rob" align="left" style="padding:14px 32px 0 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:15px; line-height:1.65; color:#101E2B;">
+      <td class="rob" align="left" style="padding:20px 32px 0 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:15.5px; line-height:1.65; color:#101E2B;">
         {{UVOD}}
       </td>
     </tr>
@@ -113,10 +111,19 @@
           odpade tudi tam, ostane zelena ploskev z obrobo: natanko to, kar
           je bilo prej, torej slabše ne more biti.
         -->
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+        <!--
+          Obroba, zaobljenost in senca so na POVEZAVI, ne na celici tabele.
+
+          Ko so bile na celici, se je senca risala po kvadratnem okvirju: pod
+          zaobljenim zelenim gumbom je štrlel oglat črn blok. Kriv je
+          border-collapse: collapse zgoraj — ob njem odjemalci zaobljenost in
+          senco celice rišejo po nezaobljenem robu. Povezava je inline-block
+          in oboje upošteva pravilno.
+        -->
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto; border-collapse:separate !important;">
           <tr>
-            <td align="center" bgcolor="#16A34A" style="background-color:#16A34A; border:2px solid #101E2B; border-radius:12px; box-shadow:4px 4px 0 #101E2B;">
-              <a href="{{GUMB_POVEZAVA}}" target="_blank" style="display:inline-block; padding:15px 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:1; color:#ffffff; text-decoration:none;">{{GUMB_BESEDILO}}</a>
+            <td align="center">
+              <a href="{{GUMB_POVEZAVA}}" target="_blank" style="display:inline-block; background-color:#16A34A; border:2px solid #101E2B; border-radius:12px; box-shadow:4px 4px 0 #101E2B; padding:15px 32px; font-family:'Fira Sans',-apple-system,'Segoe UI',Roboto,Arial,sans-serif; font-size:16px; font-weight:700; line-height:1; color:#ffffff; text-decoration:none;">{{GUMB_BESEDILO}}</a>
             </td>
           </tr>
         </table>
