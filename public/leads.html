@@ -450,11 +450,17 @@ async function loadAll(){
   }catch(e){console.error(e);}
 }
 
+/*
+  Povsod, kjer se šteje "smo že pisali", velja zadnji_stik_at iz dnevnika;
+  email_sent_at je rezerva za julijski paket, ko dnevnika še ni bilo.
+*/
+const jeKontaktiran=(l)=>Boolean(l.zadnji_stik_at||l.email_sent_at);
+
 function renderStats(d){
   const responded=d.interested+d.not_interested;
   setText('s-total',d.total);
-  setText('s-pending',allLeads.filter(l=>!l.email_sent_at).length);
-  setText('s-sent',allLeads.filter(l=>l.email_sent_at).length);
+  setText('s-pending',allLeads.filter(l=>!jeKontaktiran(l)).length);
+  setText('s-sent',allLeads.filter(jeKontaktiran).length);
   setText('s-interested',d.interested);
   setText('s-not',d.not_interested);
   setText('s-rate',(responded>0?Math.round(d.interested/responded*100):0)+'%');
@@ -467,7 +473,7 @@ function renderStats(d){
 }
 
 function updateUnsentCount(){
-  const c=allLeads.filter(l=>!l.email_sent_at&&l.email).length;
+  const c=allLeads.filter(l=>!jeKontaktiran(l)&&l.email&&!l.ne_kontaktiraj).length;
   setText('unsent-count',c);
 }
 
@@ -489,8 +495,8 @@ function setCat(cat,btn){
 function renderTable(){
   let filtered=allLeads;
   // Status filter
-  if(currentFilter==='pending') filtered=filtered.filter(l=>!l.email_sent_at);
-  else if(currentFilter==='sent') filtered=filtered.filter(l=>l.email_sent_at&&l.status==='sent');
+  if(currentFilter==='pending') filtered=filtered.filter(l=>!jeKontaktiran(l)&&!l.ne_kontaktiraj);
+  else if(currentFilter==='sent') filtered=filtered.filter(l=>jeKontaktiran(l)&&l.status!=='interested'&&l.status!=='not_interested');
   else if(currentFilter==='interested') filtered=filtered.filter(l=>l.status==='interested');
   else if(currentFilter==='not_interested') filtered=filtered.filter(l=>l.status==='not_interested');
   // Category filter
@@ -512,7 +518,17 @@ function renderTable(){
 
   tbody.innerHTML=page.map((l,i)=>{
     const rowNum=start+i+1;
-    const badge=l.status==='interested'?'<span class="badge b-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge b-not">❌ Ni interesa</span>':l.email_sent_at?'<span class="badge b-sent">📤 Poslano</span>':'<span class="badge b-pending">⏳ Čaka</span>';
+    /*
+      Kdaj smo pisali, beremo iz zadnji_stik_at — tega vzdržuje prožilec nad
+      dnevnikom sb_lead_stiki (migracija 010). email_sent_at ostane samo za
+      julijski paket, ko dnevnika še ni bilo.
+
+      Brez tega je plošča lagala: paket, poslan 18. 9., je imel v dnevniku
+      trideset zapisov, tu pa je vseh trideset kazalo "Čaka", ker je
+      email_sent_at ostal prazen. Podatek, ki je videti pravilen, a ni.
+    */
+    const stik=l.zadnji_stik_at||l.email_sent_at;
+    const badge=l.ne_kontaktiraj?'<span class="badge b-not">⛔ Ne kontaktiraj</span>':l.status==='interested'?'<span class="badge b-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge b-not">❌ Ni interesa</span>':stik?'<span class="badge b-sent">📤 Poslano</span>':'<span class="badge b-pending">⏳ Čaka</span>';
     const emailCell=l.email
       ?`<a href="mailto:${esc(l.email)}" style="color:var(--blue);font-size:13px">${esc(l.email)}</a>`
       :`<input class="edit-input" placeholder="Vnesi email" onblur="saveEmail(${l.id},this.value)" style="width:150px">`;
@@ -520,9 +536,10 @@ function renderTable(){
       Stolpec ne sproži več ničesar — pove samo, kje lead stoji. Gumb za
       pošiljanje je odstranjen; ↺ ostane, da se da zmotni vpis razveljaviti.
     */
-    const kdaj=l.email_sent_at?new Date(l.email_sent_at).toLocaleDateString('sl-SI'):'';
-    const sendBtn=l.email_sent_at
-      ?`<span style="color:var(--text2);font-size:12px">✓ ${kdaj}</span> <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;opacity:0.7" onclick="resetLead(${l.id},this)" title="Razveljavi oznako">↺</button>`
+    const kdaj=stik?new Date(stik).toLocaleDateString('sl-SI'):'';
+    const koliko=l.stikov>1?` <span style="color:var(--text3)">· ${l.stikov}×</span>`:'';
+    const sendBtn=stik
+      ?`<span style="color:var(--text2);font-size:12px">✓ ${kdaj}${koliko}</span> <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;opacity:0.7" onclick="resetLead(${l.id},this)" title="Razveljavi oznako">↺</button>`
       :l.email?'<span style="color:var(--text3);font-size:12px">—</span>':'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
     return `<tr id="row-${l.id}"><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td>${sendBtn}</td></tr>`;
   }).join('');

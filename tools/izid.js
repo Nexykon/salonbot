@@ -84,6 +84,7 @@ const KDAJ = process.argv.includes('--kdaj')
 
   let stikov = 0;
   let odjav = 0;
+  let stanj = 0;
 
   for (const z of zapisi) {
     /*
@@ -96,24 +97,44 @@ const KDAJ = process.argv.includes('--kdaj')
       + '&kanal=eq.email&zgodilo_at=gte.' + dan + 'T00:00:00Z&zgodilo_at=lte.' + dan + 'T23:59:59Z',
       { headers: GLAVA }
     );
-    if ((await obstoj.json()).length) { console.log('  · ' + z.id + ' že zapisan za ' + dan + ', preskočen'); continue; }
+    if ((await obstoj.json()).length) {
+      console.log('  · ' + z.id + ' že zapisan za ' + dan + ', stik preskočen');
+    } else {
+      const r = await fetch(SB + '/rest/v1/sb_lead_stiki', {
+        method: 'POST',
+        headers: GLAVA,
+        body: JSON.stringify({
+          lead_id: z.id,
+          kanal: 'email',
+          smer: 'odhod',
+          zgodilo_at: KDAJ,
+          izid: z.izid,
+          zadeva: 'AI na vašem WhatsAppu',
+          priponka: z.slug + '.png',
+          opomba: z.opomba,
+        }),
+      });
+      if (!r.ok) { console.error('  ✖ stik ' + z.id + ': ' + (await r.text()).slice(0, 160)); continue; }
+      stikov += 1;
+    }
 
-    const r = await fetch(SB + '/rest/v1/sb_lead_stiki', {
-      method: 'POST',
+    /*
+      status pomeni "kje v lijaku je" (migracija 010). Po poslanem pismu
+      lead ni več "pending" — to bi pomenilo, da mu nismo pisali.
+
+      Prvi zagon tega ni zapisal: dnevnik je imel trideset zapisov, status
+      pa je ostal pending in leads.html je vseh trideset kazal kot "Čaka".
+
+      Kdor je že odgovoril (interested / not_interested), ostane, kjer je;
+      odgovor je dlje v lijaku od poslanega pisma.
+    */
+    const st = await fetch(SB + '/rest/v1/leads?id=eq.' + z.id
+      + '&status=in.(pending,new)', {
+      method: 'PATCH',
       headers: GLAVA,
-      body: JSON.stringify({
-        lead_id: z.id,
-        kanal: 'email',
-        smer: 'odhod',
-        zgodilo_at: KDAJ,
-        izid: z.izid,
-        zadeva: 'AI na vašem WhatsAppu',
-        priponka: z.slug + '.png',
-        opomba: z.opomba,
-      }),
+      body: JSON.stringify({ status: 'sent' }),
     });
-    if (!r.ok) { console.error('  ✖ stik ' + z.id + ': ' + (await r.text()).slice(0, 160)); continue; }
-    stikov += 1;
+    if (st.ok) stanj += 1;
 
     if (z.izid === 'napaka') {
       const p = await fetch(SB + '/rest/v1/leads?id=eq.' + z.id, {
@@ -129,5 +150,6 @@ const KDAJ = process.argv.includes('--kdaj')
   }
 
   console.log('\n  zapisanih stikov: ' + stikov);
+  console.log('  status → sent: ' + stanj);
   console.log('  označenih ne_kontaktiraj: ' + odjav + '\n');
 })();
