@@ -3654,28 +3654,112 @@ app.get('/api/leads/find', async (req, res) => {
   return res.redirect(307, `/api/leads/search?category=${encodeURIComponent(q||'')}&region=${encodeURIComponent(city||'')}`);
 });
 
-// PATCH /api/leads/:id — posodobi email/telefon/naslov
+/*
+  Id gre nespremenjen v poizvedbo PostgREST, zato mora biti število in nič
+  drugega — `id=eq.<karkoli>` je mesto, kjer se da dopisati še kakšen pogoj.
+*/
+function leadId(req) {
+  return /^\d+$/.test(String(req.params.id)) ? req.params.id : null;
+}
+
+/*
+  PATCH /api/leads/:id — popravek ene vrstice iz plošče.
+
+  Kaj se sme spremeniti, je našteto spodaj. Dve stvari sta bili doslej zunaj
+  seznama in ju je bilo mogoče postaviti samo iz tools/izid.js ali z roko v
+  bazi: ne_kontaktiraj in njegov razlog. To je ravno zastavica, od katere je
+  odvisno, ali lokal jutri dobi drugo pismo — sodi tja, kjer se dela.
+
+  Status se preveri po seznamu. Tipkarska napaka bi se zapisala tiho, filtri
+  in statistika pa bi lead po njej nehali videti.
+*/
+const LEAD_STATUSI = ['new', 'pending', 'sent', 'interested', 'not_interested'];
+
 app.patch('/api/leads/:id', async (req, res) => {
   if (!adminAuth(req, res)) return;
-  const allowed = ['email','phone','address','business_name','category','notes','status'];
+  const id = leadId(req);
+  if (!id) return res.status(400).json({ error: 'Neveljaven id' });
+
+  const allowed = ['email','phone','address','website','business_name','category','notes','status'];
   const updates = {};
   for (const k of allowed) if (req.body[k] !== undefined) updates[k] = req.body[k];
+
+  if (updates.status !== undefined && !LEAD_STATUSI.includes(updates.status)) {
+    return res.status(400).json({ error: 'Neveljaven status: ' + updates.status });
+  }
+  if (updates.business_name !== undefined && !String(updates.business_name).trim()) {
+    return res.status(400).json({ error: 'Ime firme ne sme biti prazno' });
+  }
+
+  if (req.body.ne_kontaktiraj !== undefined) {
+    const off = req.body.ne_kontaktiraj === true || req.body.ne_kontaktiraj === 'true';
+    updates.ne_kontaktiraj = off;
+    /*
+      Zastavica brez razloga je čez mesec dni neuporabna — nihče ne ve, ali
+      je lokal odjavljen, mrtev naslov ali pomota. Ob izklopu razlog pade z
+      njo vred, da ne ostane viseti nad leadom, ki spet sme dobiti pošto.
+    */
+    if (off) {
+      updates.ne_kontaktiraj_razlog = String(req.body.ne_kontaktiraj_razlog || '').trim()
+        || 'Označeno ročno v plošči ' + new Date().toISOString().slice(0, 10);
+    } else {
+      updates.ne_kontaktiraj_razlog = null;
+    }
+  } else if (req.body.ne_kontaktiraj_razlog !== undefined) {
+    updates.ne_kontaktiraj_razlog = String(req.body.ne_kontaktiraj_razlog || '').trim() || null;
+  }
+
   if (!Object.keys(updates).length) return res.status(400).json({ error: 'Nič za posodobiti' });
   try {
-    const result = await sbLeads('patch', `/leads?id=eq.${req.params.id}`, updates);
-    res.json(result[0] || {});
+    const result = await sbLeads('patch', `/leads?id=eq.${id}`, updates);
+    if (!result[0]) return res.status(404).json({ error: 'Lead ne obstaja' });
+    res.json(result[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// POST /api/leads/:id/reset — ponastavi email_sent_at (za ponovno pošiljanje)
+/*
+  POST /api/leads/:id/reset — razveljavi zadnji stik.
+
+  Prej je ta klic pobrisal email_sent_at in postavil status na 'new'. Odkar
+  stike vodi dnevnik sb_lead_stiki (migracija 010), to ne naredi ničesar
+  vidnega: plošča bere zadnji_stik_at, tega pa vzdržuje prožilec nad
+  dnevnikom. Trideset leadov iz paketa 18. 9. je bilo natanko v tem stanju —
+  klik na ↺ ni spremenil niti značke.
+
+  Zdaj se odstrani zadnji odhodni zapis v dnevniku; prožilec zatem sam
+  preračuna zadnji_stik_at in stikov (in ju postavi na null oziroma 0, če je
+  bil zapis edini).
+
+  Dnevnik sicer velja za nespremenljiv. Izjema je zavestna in ozka: to je
+  gumb "zmotil sem se", briše se ena sama, najnovejša vrstica, in odgovor
+  pove, katera — brisanje na slepo bi bilo nekaj drugega.
+*/
 app.post('/api/leads/:id/reset', async (req, res) => {
   if (!adminAuth(req, res)) return;
+  const id = leadId(req);
+  if (!id) return res.status(400).json({ error: 'Neveljaven id' });
   try {
-    const leads = await sbLeads('get', `/leads?id=eq.${req.params.id}`);
+    const leads = await sbLeads('get', `/leads?id=eq.${id}`);
     if (!leads[0]) return res.status(404).json({ error: 'Lead ne obstaja' });
-    await sbLeads('patch', `/leads?id=eq.${req.params.id}`,
-      { email_sent_at: null, responded_at: null, status: 'new' });
-    res.json({ success: true });
+
+    const zadnji = await sbLeads('get',
+      `/sb_lead_stiki?lead_id=eq.${id}&smer=eq.odhod&order=zgodilo_at.desc&limit=1`);
+    let odstranjen = null;
+    if (zadnji[0]) {
+      await sbLeads('delete', `/sb_lead_stiki?id=eq.${zadnji[0].id}`);
+      odstranjen = { zgodilo_at: zadnji[0].zgodilo_at, kanal: zadnji[0].kanal };
+    }
+
+    /*
+      status nazaj na 'pending', ne na 'new': vrsta za naslednji paket in
+      tools/izid.js gledata (pending,new) enako, 'pending' pa ima v tej bazi
+      986 vrstic in 'new' enajst — ponastavljen lead sodi med prve.
+    */
+    await sbLeads('patch', `/leads?id=eq.${id}`,
+      { email_sent_at: null, responded_at: null, status: 'pending' });
+
+    const po = await sbLeads('get', `/leads?id=eq.${id}`);
+    res.json({ success: true, odstranjen, lead: po[0] || null });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

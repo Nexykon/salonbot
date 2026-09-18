@@ -146,6 +146,34 @@ tr:hover td{background:#FAF6EE;}
 #toast.error{border-color:var(--red);color:var(--red);}
 /* INLINE EDIT */
 .edit-input{padding:4px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;width:160px;}
+/*
+  Status se izbere kar v vrstici. Značka je prej samo povedala, kje lead
+  stoji; po odgovoru na pismo je bilo treba stanje popraviti v bazi z roko.
+*/
+.st-sel{padding:3px 6px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text);font-size:11px;font-weight:600;font-family:var(--sans);cursor:pointer;outline:none;max-width:140px;}
+.st-sel:focus{border-color:var(--accent);}
+.st-sel.s-interested{background:var(--green-tint);color:var(--green);}
+.st-sel.s-not_interested{background:var(--rust-tint);color:var(--red);}
+.st-sel.s-sent{background:#E6EAED;color:var(--blue);}
+.st-sel:disabled{opacity:.5;cursor:not-allowed;}
+/* Odjavljen lead ostane viden, a se loči na prvi pogled. */
+tr.odjavljen td{opacity:.55;}
+tr.odjavljen td:first-child{opacity:1;box-shadow:inset 3px 0 0 var(--red);}
+.ico-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:2px 7px;font-size:12px;line-height:1.5;cursor:pointer;color:var(--text2);font-family:var(--sans);}
+.ico-btn:hover{background:var(--bg3);color:var(--text);}
+/* MODAL */
+.modal-back{position:fixed;inset:0;background:rgba(16,30,43,.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:500;}
+.modal-back.show{display:flex;}
+.modal{background:var(--bg2);border:2px solid var(--text);border-radius:18px;box-shadow:6px 6px 0 var(--text);width:100%;max-width:520px;max-height:90vh;overflow:auto;}
+.modal h3{font-size:17px;font-weight:700;padding:18px 22px;border-bottom:1px solid var(--border);}
+.modal-body{padding:20px 22px;display:grid;gap:14px;}
+.modal-grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.modal textarea{padding:10px 14px;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;font-family:var(--sans);outline:none;resize:vertical;min-height:70px;}
+.modal textarea:focus{border-color:var(--accent);}
+.chk-row{display:flex;align-items:center;gap:9px;font-size:14px;cursor:pointer;}
+.chk-row input{width:17px;height:17px;accent-color:var(--red);cursor:pointer;}
+.modal-id{font-size:11px;color:var(--text3);font-family:var(--mono);}
 /* CATEGORY TABS */
 .cat-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .cat-tab{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;transition:all .15s;white-space:nowrap;}
@@ -434,6 +462,77 @@ tr:hover td{background:#FAF6EE;}
   </div>
 </div>
 
+<!--
+  ── UREJANJE ENEGA LEADA ──
+  Do zdaj je bilo iz brskalnika mogoče popraviti eno samo stvar: e-naslov, in
+  še to samo pri leadih, ki ga niso imeli. Napačen e-naslov, prestavljen lokal
+  ali napačna kategorija so terjali poseg v bazo.
+-->
+<div class="modal-back" id="edit-back" onclick="if(event.target===this)closeEdit()">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+    <h3 id="edit-title">Uredi lead</h3>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Ime firme</label>
+        <input type="text" id="e-name">
+      </div>
+      <div class="modal-grid2">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="e-email" placeholder="brez e-naslova">
+        </div>
+        <div class="form-group">
+          <label>Telefon</label>
+          <input type="text" id="e-phone" placeholder="040 123 456">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Naslov</label>
+        <input type="text" id="e-address" placeholder="Glavna cesta 1, 4000 Kranj">
+      </div>
+      <div class="modal-grid2">
+        <div class="form-group">
+          <label>Kategorija</label>
+          <input type="text" id="e-cat">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select id="e-status">
+            <option value="pending">⏳ Čaka</option>
+            <option value="sent">📤 Poslano</option>
+            <option value="interested">✅ Zainteresiran</option>
+            <option value="not_interested">❌ Ni interesa</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Spletna stran</label>
+        <input type="text" id="e-website" placeholder="https://">
+      </div>
+      <div class="form-group">
+        <label>Zapiski</label>
+        <textarea id="e-notes" placeholder="Kaj je rekel, kdaj poklicati nazaj …"></textarea>
+      </div>
+      <label class="chk-row">
+        <input type="checkbox" id="e-nk" onchange="document.getElementById('e-nk-why').style.display=this.checked?'flex':'none'">
+        <span>⛔ Ne kontaktiraj — izpusti ga iz vseh nadaljnjih paketov</span>
+      </label>
+      <div class="form-group" id="e-nk-why" style="display:none">
+        <label>Razlog</label>
+        <input type="text" id="e-nk-razlog" placeholder="Zakaj — čez pol leta nihče ne bo vedel">
+      </div>
+      <div class="error-msg" id="e-err" style="display:none"></div>
+    </div>
+    <div class="modal-foot">
+      <span class="modal-id" id="e-id"></span>
+      <span style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="closeEdit()">Prekliči</button>
+        <button class="btn btn-green btn-sm" id="e-save" onclick="saveEdit()">Shrani</button>
+      </span>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -600,7 +699,23 @@ function renderTable(){
       email_sent_at ostal prazen. Podatek, ki je videti pravilen, a ni.
     */
     const stik=l.zadnji_stik_at||l.email_sent_at;
-    const badge=l.ne_kontaktiraj?'<span class="badge b-not">⛔ Ne kontaktiraj</span>':l.status==='interested'?'<span class="badge b-interested">✅ Zainteresiran</span>':l.status==='not_interested'?'<span class="badge b-not">❌ Ni interesa</span>':stik?'<span class="badge b-sent">📤 Poslano</span>':'<span class="badge b-pending">⏳ Čaka</span>';
+    /*
+      Status je spustni seznam, ne več značka: po odgovoru na pismo je treba
+      stanje popraviti, in to je edino mesto, kjer je lead pred očmi.
+
+      'new' in 'pending' pomenita isto — "še nismo pisali" — in obe izbiri
+      kažeta ⏳ Čaka. Zapiše se 'pending', ker jih je v bazi 986 proti
+      enajstim; 'new' ostane v podatkih, dokler ga kdo ne prevozi.
+
+      Kadar je lead odjavljen, izbirnik ne sme delovati: status odjavljenega
+      leada ne pomeni ničesar, dokler se zastavica ne umakne.
+    */
+    const stSel=(sel)=>['pending','sent','interested','not_interested']
+      .map(v=>`<option value="${v}"${v===sel?' selected':''}>${{pending:'⏳ Čaka',sent:'📤 Poslano',interested:'✅ Zainteresiran',not_interested:'❌ Ni interesa'}[v]}</option>`).join('');
+    const stanje=l.status==='interested'||l.status==='not_interested'?l.status:(stik?'sent':'pending');
+    const badge=l.ne_kontaktiraj
+      ?`<span class="badge b-not" title="${esc(l.ne_kontaktiraj_razlog||'brez razloga')}">⛔ Ne kontaktiraj</span>`
+      :`<select class="st-sel s-${stanje}" onchange="setStatus(${l.id},this.value,this)">${stSel(stanje)}</select>`;
     const emailCell=l.email
       ?`<a href="mailto:${esc(l.email)}" style="color:var(--blue);font-size:13px">${esc(l.email)}</a>`
       :`<input class="edit-input" placeholder="Vnesi email" onblur="saveEmail(${l.id},this.value)" style="width:150px">`;
@@ -612,15 +727,27 @@ function renderTable(){
       ?`<a href="tel:${esc(String(l.phone).replace(/[^\d+]/g,''))}" style="color:var(--blue);font-size:13px;white-space:nowrap">${esc(l.phone)}</a>`
       :'<span style="color:var(--text3);font-size:12px">—</span>';
     /*
-      Stolpec ne sproži več ničesar — pove samo, kje lead stoji. Gumb za
-      pošiljanje je odstranjen; ↺ ostane, da se da zmotni vpis razveljaviti.
+      Zadnji stolpec: kdaj smo pisali in kaj se da s tem narediti. Gumb za
+      pošiljanje je odstranjen, ostanejo trije posegi —
+
+        ✎  popravek vrstice (ime, e-naslov, telefon, naslov, zapiski …)
+        ⛔  odjava, da lokal ne pride v naslednji paket
+        ↺  razveljavitev zadnjega stika, kadar je bil zapisan po pomoti
+
+      ↺ se pokaže samo, kadar stik obstaja — razveljaviti nekaj, česar ni,
+      ni mogoče, gumb pa je prej stal tam in ni delal ničesar.
     */
     const kdaj=stik?new Date(stik).toLocaleDateString('sl-SI'):'';
     const koliko=l.stikov>1?` <span style="color:var(--text3)">· ${l.stikov}×</span>`:'';
-    const sendBtn=stik
-      ?`<span style="color:var(--text2);font-size:12px">✓ ${kdaj}${koliko}</span> <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;opacity:0.7" onclick="resetLead(${l.id},this)" title="Razveljavi oznako">↺</button>`
+    const kdajCell=stik
+      ?`<span style="color:var(--text2);font-size:12px">✓ ${kdaj}${koliko}</span>`
       :l.email?'<span style="color:var(--text3);font-size:12px">—</span>':'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
-    return `<tr id="row-${l.id}"><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td>${phoneCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td>${sendBtn}</td></tr>`;
+    const akcije=`<span style="display:inline-flex;gap:4px;margin-left:6px">`
+      +`<button class="ico-btn" onclick="openEdit(${l.id})" title="Uredi">✎</button>`
+      +`<button class="ico-btn" onclick="toggleNeKontaktiraj(${l.id},this)" title="${l.ne_kontaktiraj?'Vrni med kontakte':'Ne kontaktiraj'}">${l.ne_kontaktiraj?'↩':'⛔'}</button>`
+      +(stik?`<button class="ico-btn" onclick="resetLead(${l.id},this)" title="Razveljavi zadnji stik">↺</button>`:'')
+      +`</span>`;
+    return `<tr id="row-${l.id}"${l.ne_kontaktiraj?' class="odjavljen"':''}><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td>${phoneCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td style="white-space:nowrap">${kdajCell}${akcije}</td></tr>`;
   }).join('');
 
   // Pagination
@@ -770,15 +897,142 @@ async function addManual(){
   }
 }
 
-// ── SEND ──
+// ── UREJANJE ──
+/*
+  Vsak popravek gre skozi to eno pot. Strežnik vrne popravljeno vrstico, zato
+  se v allLeads vpiše tisto, kar je res v bazi, in ne tisto, kar smo poslali —
+  če strežnik vrednost zavrne ali priredi (recimo razlog pri odjavi), tabela
+  to takoj pokaže.
+
+  Statistika se osveži z loadAll() v ozadju; tabela se izriše takoj, ker
+  čakanje na 4058 vrstic ob vsakem kliku ni delo, ampak zamuda.
+*/
+async function patchLead(id,polja){
+  const r=await fetch(`/api/leads/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:masterToken},body:JSON.stringify(polja)});
+  const d=await r.json();
+  if(!r.ok||d.error) throw new Error(d.error||('Strežnik je vrnil '+r.status));
+  const i=allLeads.findIndex(l=>l.id===id);
+  if(i>=0) allLeads[i]=d;
+  renderTable();
+  loadAll();
+  return d;
+}
+
+async function setStatus(id,status,sel){
+  sel.disabled=true;
+  try{
+    await patchLead(id,{status});
+    toast('Status shranjen','success');
+  }catch(e){
+    toast('Napaka: '+e.message,'error');
+    sel.disabled=false;
+    renderTable(); // nazaj na stanje iz baze, da izbirnik ne kaže neresnice
+  }
+}
+
+async function toggleNeKontaktiraj(id,btn){
+  const l=allLeads.find(x=>x.id===id);
+  if(!l) return;
+  let polja;
+  if(l.ne_kontaktiraj){
+    if(!confirm('»'+l.business_name+'« vrnem med kontakte?\n\nRazlog za odjavo ('+(l.ne_kontaktiraj_razlog||'brez razloga')+') se izbriše.')) return;
+    polja={ne_kontaktiraj:false};
+  }else{
+    /*
+      Razlog ni obvezen na silo, a se vpraša vedno: zastavica brez razloga je
+      čez pol leta neuporabna — nihče ne ve, ali je lokal odjavljen, mrtev
+      naslov ali pomota. Če polje ostane prazno, ga strežnik izpolni z datumom.
+    */
+    const why=prompt('Zakaj »'+l.business_name+'« ne sme več dobiti pošte?','Ne želi pošte');
+    if(why===null) return;
+    polja={ne_kontaktiraj:true,ne_kontaktiraj_razlog:why};
+  }
+  btn.disabled=true;
+  try{
+    const d=await patchLead(id,polja);
+    toast(d.ne_kontaktiraj?'⛔ Odjavljen — ne pride v naslednji paket':'↩ Spet med kontakti','success');
+  }catch(e){toast('Napaka: '+e.message,'error');btn.disabled=false;}
+}
+
+let editId=null;
+function openEdit(id){
+  const l=allLeads.find(x=>x.id===id);
+  if(!l) return;
+  editId=id;
+  const v=(el,val)=>{document.getElementById(el).value=val||'';};
+  v('e-name',l.business_name);v('e-email',l.email);v('e-phone',l.phone);
+  v('e-address',l.address);v('e-cat',l.category);v('e-website',l.website);v('e-notes',l.notes);
+  // 'new' in 'pending' pomenita isto; izbirnik pozna samo 'pending'.
+  document.getElementById('e-status').value=['sent','interested','not_interested'].includes(l.status)?l.status:'pending';
+  document.getElementById('e-nk').checked=Boolean(l.ne_kontaktiraj);
+  v('e-nk-razlog',l.ne_kontaktiraj_razlog);
+  document.getElementById('e-nk-why').style.display=l.ne_kontaktiraj?'flex':'none';
+  document.getElementById('e-id').textContent='id '+l.id;
+  document.getElementById('e-err').style.display='none';
+  document.getElementById('edit-back').classList.add('show');
+}
+
+function closeEdit(){editId=null;document.getElementById('edit-back').classList.remove('show');}
+
+async function saveEdit(){
+  if(editId===null) return;
+  const l=allLeads.find(x=>x.id===editId);
+  if(!l) return;
+  const val=(id)=>document.getElementById(id).value.trim();
+  const errEl=document.getElementById('e-err');errEl.style.display='none';
+  if(!val('e-name')){errEl.textContent='Ime firme ne sme biti prazno.';errEl.style.display='block';return;}
+
+  /*
+    Pošlje se samo tisto, kar se je res spremenilo. Brez tega bi vsako
+    odpiranje okna prepisalo vsa polja — tudi tista, ki jih medtem popravi
+    kdo drug ali skript.
+  */
+  const zelim={
+    business_name:val('e-name'),email:val('e-email'),phone:val('e-phone'),
+    address:val('e-address'),category:val('e-cat'),website:val('e-website'),
+    notes:document.getElementById('e-notes').value.trim(),
+    status:document.getElementById('e-status').value,
+  };
+  const polja={};
+  for(const[k,nov] of Object.entries(zelim)) if(nov!==(l[k]||'')) polja[k]=nov;
+
+  const nk=document.getElementById('e-nk').checked;
+  const razlog=val('e-nk-razlog');
+  if(nk!==Boolean(l.ne_kontaktiraj)){polja.ne_kontaktiraj=nk;if(nk)polja.ne_kontaktiraj_razlog=razlog;}
+  else if(nk&&razlog!==(l.ne_kontaktiraj_razlog||'')) polja.ne_kontaktiraj_razlog=razlog;
+
+  if(!Object.keys(polja).length){closeEdit();toast('Nič spremenjenega','success');return;}
+
+  const btn=document.getElementById('e-save');btn.disabled=true;
+  try{
+    await patchLead(editId,polja);
+    closeEdit();
+    toast('Shranjeno ✅','success');
+  }catch(e){errEl.textContent=e.message;errEl.style.display='block';}
+  finally{btn.disabled=false;}
+}
+
+/*
+  Razveljavitev zadnjega stika.
+
+  Prej je klic končal z loadLeads(), ki v tej datoteki ne obstaja — vsak klik
+  je torej pokazal "Napaka: loadLeads is not defined". Pod tem je bila druga,
+  tišja okvara: strežnik je brisal email_sent_at, značka pa bere zadnji_stik_at
+  iz dnevnika stikov, tako da se tudi ob uspehu ne bi premaknilo nič.
+*/
 async function resetLead(id,btn){
+  const l=allLeads.find(x=>x.id===id);
+  if(l&&!confirm('Razveljavim zadnji stik z »'+l.business_name+'«?\n\nIz dnevnika se izbriše zadnji zapis in lead se vrne v vrsto za naslednji paket.')) return;
   btn.innerHTML='↻';btn.disabled=true;
   try{
     const r=await fetch(`/api/leads/${id}/reset`,{method:'POST',headers:{Authorization:masterToken}});
     const d=await r.json();
-    if(d.error) throw new Error(d.error);
-    toast('↺ Oznaka odstranjena — lead je spet med nekontaktiranimi','success');
-    await loadLeads();
+    if(!r.ok||d.error) throw new Error(d.error||('Strežnik je vrnil '+r.status));
+    if(d.lead){const i=allLeads.findIndex(x=>x.id===id);if(i>=0)allLeads[i]=d.lead;}
+    renderTable();loadAll();
+    toast(d.odstranjen
+      ?'↺ Odstranjen stik z dne '+new Date(d.odstranjen.zgodilo_at).toLocaleDateString('sl-SI')+' — lead je spet v vrsti'
+      :'↺ V dnevniku ni bilo stika; oznake so pobrisane','success');
   }catch(e){toast('Napaka: '+e.message,'error');btn.innerHTML='↺';btn.disabled=false;}
 }
 
@@ -790,10 +1044,8 @@ async function resetLead(id,btn){
 // ── SAVE EMAIL ──
 async function saveEmail(id,email){
   if(!email||!email.includes('@')) return;
-  try{
-    await fetch(`/api/leads/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json',Authorization:masterToken},body:JSON.stringify({email})});
-    loadAll();
-  }catch(e){console.error(e);}
+  try{ await patchLead(id,{email}); }
+  catch(e){toast('Napaka: '+e.message,'error');}
 }
 
 // ── UTILS ──
@@ -809,7 +1061,10 @@ function toast(msg,type='success'){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.className='',4000);
 }
 
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&editId!==null){closeEdit();return;}
+  if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();
+});
 (function(){const s=sessionStorage.getItem('ft_master_token')||localStorage.getItem('ft_master_token');if(s){masterToken=s;showMain();}})();
 </script>
 </body>
