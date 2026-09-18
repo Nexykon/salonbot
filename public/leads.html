@@ -333,6 +333,17 @@ tr:hover td{background:#FAF6EE;}
         </div>
       </div>
 
+      <!--
+        Iskanje. Stoji nad filtri, ker je pri 4057 vrsticah to prva stvar,
+        po kateri sežeš, kadar iščeš en sam lokal.
+      -->
+      <div style="margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="search" id="isci" placeholder="Poišči lokal — ime, e-naslov, kraj, telefon"
+               oninput="setSearch(this.value)"
+               style="flex:1 1 320px;min-width:0;padding:11px 16px;background:var(--bg2);border:2px solid var(--text);border-radius:12px;color:var(--text);font-size:14.5px;font-family:var(--sans);outline:none">
+        <span id="isci-zadetki" style="font-family:var(--mono);font-size:12px;color:var(--text3)"></span>
+      </div>
+
       <!-- Category filter -->
       <div class="cat-tabs" id="cat-tabs">
         <button class="cat-tab active" onclick="setCat('all',this)">🌐 Vse</button>
@@ -375,7 +386,7 @@ tr:hover td{background:#FAF6EE;}
         </table>
         <div class="empty-state" id="leads-empty" style="display:none">
           <div class="icon">📭</div>
-          <div>Ni leadov v tej kategoriji.</div>
+          <div id="leads-empty-text">Ni leadov v tej kategoriji.</div>
         </div>
         <div class="pager" id="pager" style="display:none">
           <div class="pager-info" id="pager-info"></div>
@@ -492,8 +503,38 @@ function setCat(cat,btn){
   renderTable();
 }
 
+/*
+  Iskanje po besedilu.
+
+  Pri 4057 vrsticah je brskanje po straneh neuporabno, kadar iščeš en lokal
+  — po odgovoru na pismo, po klicu ali ker ga hočeš označiti. Išče se po
+  imenu, e-naslovu, naslovu in kategoriji hkrati, ker se nikoli ne spomniš,
+  po čem si ga našel.
+
+  Sklanjatev ni: gostinec je v registru zapisan z uradnim imenom, ti pa
+  iščeš tisto, česar se spomniš. Zato več besed pomeni "vse te besede,
+  kjerkoli" in ne enega niza — "puncer celje" najde GOSTILNA PUNCER, RENATA
+  REBERNIK S.P. v Celju.
+*/
+let currentSearch='';
+
+function setSearch(v){
+  currentSearch=String(v||'').trim().toLowerCase();
+  currentPage=1;
+  renderTable();
+}
+
+function ustreza(l,besede){
+  if(!besede.length) return true;
+  const kup=[l.business_name,l.email,l.address,l.category,l.phone,l.id].join(' ').toLowerCase();
+  return besede.every(b=>kup.includes(b));
+}
+
 function renderTable(){
   let filtered=allLeads;
+  // Iskanje po besedilu — pred ostalimi filtri, ker je najbolj zamejujoče
+  const besede=currentSearch.split(/\s+/).filter(Boolean);
+  if(besede.length) filtered=filtered.filter(l=>ustreza(l,besede));
   // Status filter
   if(currentFilter==='pending') filtered=filtered.filter(l=>!jeKontaktiran(l)&&!l.ne_kontaktiraj);
   else if(currentFilter==='sent') filtered=filtered.filter(l=>jeKontaktiran(l)&&l.status!=='interested'&&l.status!=='not_interested');
@@ -503,6 +544,12 @@ function renderTable(){
   if(currentCat!=='all') filtered=filtered.filter(l=>(l.category||'').toUpperCase()===currentCat.toUpperCase());
 
   const total=filtered.length;
+  /*
+    Ob iskanju povemo, koliko od koliko — brez tega ne veš, ali je nič
+    zadetkov zato, ker lokala ni, ali zato, ker ga skriva kakšen filter.
+  */
+  setText('isci-zadetki',besede.length?(total+' od '+allLeads.length):'');
+
   const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE));
   if(currentPage>totalPages) currentPage=totalPages;
   const start=(currentPage-1)*PAGE_SIZE;
@@ -513,7 +560,16 @@ function renderTable(){
   const empty=document.getElementById('leads-empty');
   const pager=document.getElementById('pager');
 
-  if(!total){tbody.innerHTML='';empty.style.display='block';pager.style.display='none';return;}
+  if(!total){
+    /*
+      Prazen izid ima dva različna vzroka in različno rešitev: ali lokala v
+      seznamu ni, ali pa ga skriva filter. Zato dve različni besedili.
+    */
+    setText('leads-empty-text',besede.length
+      ? 'Za »'+currentSearch+'« ni zadetkov — poskusi z manj besedami ali odstrani filtre.'
+      : 'Ni leadov v tej kategoriji.');
+    tbody.innerHTML='';empty.style.display='block';pager.style.display='none';return;
+  }
   empty.style.display='none';
 
   tbody.innerHTML=page.map((l,i)=>{
