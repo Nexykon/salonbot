@@ -310,8 +310,14 @@ tr.odjavljen td:first-child{opacity:1;box-shadow:inset 3px 0 0 var(--red);}
               <label>Ime firme</label>
               <input type="text" id="m-name" placeholder="Frizerski salon Vita">
             </div>
+            <!--
+              E-naslov ni obvezen. Picerijo najdeš na Googlu s telefonom,
+              e-naslova pa nikjer — zahteva po njem je pomenila, da se tak
+              lokal sploh ne da zapisati. Brez naslova ne pride v noben paket
+              pošte, v tabeli pa dobi vnosno polje, da se dopiše pozneje.
+            -->
             <div class="form-group">
-              <label>Email</label>
+              <label>Email <span style="color:var(--text3);text-transform:none;letter-spacing:0">— ni obvezen</span></label>
               <input type="email" id="m-email" placeholder="vita@example.com">
             </div>
             <!--

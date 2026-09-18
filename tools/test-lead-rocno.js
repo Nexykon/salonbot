@@ -30,12 +30,19 @@ const VRATA = 3099;
 const KLJUC = 'preizkus-' + Math.random().toString(36).slice(2);
 
 const IME = 'PREIZKUS Gostilna Telefon';
+const BREZ = 'PREIZKUS Picerija Brez Naslova';
 const EPOSTA = 'preizkus.telefon@primer.invalid';
 const TELEFON = '040 987 654';
 const NASLOV = 'Glavna cesta 1, 4000 Kranj';
 
 const { trdi, konec } = stevec();
-const pocisti = () => sb('DELETE', '/leads?business_name=eq.' + encodeURIComponent(IME)).then((d) => d.length);
+// Pobriše natanko svoji dve vrstici — ne vsega, kar se začne s "PREIZKUS",
+// ker ima drug preizkus svoje in bi si znala priti navzkriž.
+async function pocisti() {
+  let n = 0;
+  for (const ime of [IME, BREZ]) n += (await sb('DELETE', '/leads?business_name=eq.' + encodeURIComponent(ime))).length;
+  return n;
+}
 
 (async () => {
   if (!SB || !SBK) { console.error('Manjka SUPABASE_URL ali SUPABASE_KEY.'); process.exit(1); }
@@ -99,6 +106,46 @@ const pocisti = () => sb('DELETE', '/leads?business_name=eq.' + encodeURICompone
     */
     okolje.setSearch('040987654');
     trdi('strnjen zapis (brez presledkov) NE najde — znana meja', !vrstice().includes(IME));
+
+    /*
+      6 · Lokal, ki ga imaš samo po telefonu.
+
+      Prej je strežnik tak vpis zavrnil z "Manjkajo polja", ker je zahteval
+      e-naslov — in to je ustavilo natanko tiste lokale, zaradi katerih sta
+      stolpca Telefon in Naslov sploh nastala. Picerijo najdeš na Googlu s
+      telefonom, e-naslova pa nikjer.
+    */
+    console.log('\n6. Lokal brez e-naslova');
+    dom.document.getElementById('m-name').value = BREZ;
+    dom.document.getElementById('m-email').value = '';
+    dom.document.getElementById('m-phone').value = '041 222 333';
+    dom.document.getElementById('m-address').value = '';
+    dom.document.getElementById('m-cat').value = 'RESTAVRACIJE';
+    dnevnik.length = 0;
+    await okolje.addManual();
+    /*
+      Napaka strežnika ne pride v m-err, ampak v obvestilo — addLead jo ujame
+      in pokaže kot toast. Prva različica te vrstice je gledala v m-err in je
+      zato "držala" tudi takrat, ko je strežnik vpis zavrnil.
+    */
+    const obvestilo = dom.document.getElementById('toast');
+    trdi('ni obvestila o napaki', !String(obvestilo.className).includes('error'), obvestilo.textContent);
+
+    const b = await sb('GET', '/leads?select=*&business_name=eq.' + encodeURIComponent(BREZ));
+    trdi('lokal je v bazi', b.length === 1, 'najdenih ' + b.length);
+    trdi('e-naslov je prazen niz, ne null', b[0] && b[0].email === '', JSON.stringify(b[0] && b[0].email));
+    trdi('telefon je shranjen', b[0] && b[0].phone === '041 222 333', b[0] && b[0].phone);
+
+    izvedi('allLeads = ' + JSON.stringify(b) + '; currentSearch = ""; currentPage = 1; renderTable();');
+    trdi('v tabeli dobi polje za vpis e-naslova', vrstice().includes('Vnesi email'));
+
+    /*
+      In ne pride v paket pošte: tools/paket.js izbira z email=neq. — ista
+      poizvedba, ki tu ne sme vrniti ničesar.
+    */
+    const vPaketu = await sb('GET',
+      '/leads?select=id&email=neq.&business_name=eq.' + encodeURIComponent(BREZ));
+    trdi('izbor za pošto ga ne pobere', vPaketu.length === 0, 'vrnjenih ' + vPaketu.length);
   } finally {
     await mojFetch.pocakaj(); // da osveževanje seznama ne pade sredi klica
     streznik.kill();

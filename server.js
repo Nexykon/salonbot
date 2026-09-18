@@ -3458,14 +3458,30 @@ app.post('/api/leads/import', async (req, res) => {
   zavržena: klic zgoraj (uvoz seznama) ju je shranjeval, ta pa ne, zato je
   vsak ročno dodan lokal pristal v bazi brez telefona in naslova — tudi kadar
   ju je tisti, ki ga je dodajal, imel pred sabo.
+
+  E-NASLOV NI OBVEZEN
+
+    Prej je bil, in to je ustavilo natanko tiste lokale, zaradi katerih se
+    stolpca Telefon in Naslov sploh dodajata: picerijo najdeš na Googlu s
+    telefonom, naslova pa nikjer. Zahteva po e-naslovu je pomenila, da se
+    tak lokal ne da niti zapisati — ne kot lead za pozneje, ne kot nekdo,
+    ki ga je treba poklicati.
+
+    Zapiše se prazen niz, ne null: stolpec je v bazi NOT NULL. Lokal brez
+    naslova v noben paket pošte ne pride — tools/paket.js prazne naslove
+    izloči že v poizvedbi (email=neq.) in še enkrat v preverbi — v tabeli
+    pa dobi vnosno polje, da se e-naslov dopiše, ko se ga izve.
 */
 app.post('/api/leads', async (req, res) => {
   if (!adminAuth(req, res)) return;
   try {
     const { email, business_name, category, token, phone, address } = req.body;
-    if (!email || !business_name || !category || !token) return res.status(400).json({ error: 'Manjkajo polja' });
+    if (!business_name || !category || !token) {
+      return res.status(400).json({ error: 'Manjkajo polja: ime firme, kategorija in token so obvezni' });
+    }
     const result = await sbLeads('post', '/leads', {
-      email, business_name, category, token,
+      business_name, category, token,
+      email: email || '',
       phone: phone || '',
       address: address || '',
     });
