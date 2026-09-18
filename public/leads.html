@@ -286,6 +286,21 @@ tr:hover td{background:#FAF6EE;}
               <label>Email</label>
               <input type="email" id="m-email" placeholder="vita@example.com">
             </div>
+            <!--
+              Telefon in naslov: obrazec ju ni imel, v klic sta šla kot prazna
+              niza, in tudi POST /api/leads ju je razpakiral stran (popravljeno
+              hkrati s tem). Telefon je pri tem seznamu drugi kanal (3376 od
+              4057 lokalov ga ima), naslov pa edini način, da v tabeli ločiš
+              dve gostilni z istim imenom.
+            -->
+            <div class="form-group">
+              <label>Telefon</label>
+              <input type="text" id="m-phone" placeholder="040 123 456">
+            </div>
+            <div class="form-group">
+              <label>Naslov</label>
+              <input type="text" id="m-address" placeholder="Glavna cesta 1, 4000 Kranj">
+            </div>
             <div class="form-group">
               <label>Kategorija</label>
               <select id="m-cat">
@@ -376,6 +391,7 @@ tr:hover td{background:#FAF6EE;}
               <th>#</th>
               <th>Firma</th>
               <th>Email</th>
+              <th>Telefon</th>
               <th>Kraj</th>
               <th>Kategorija</th>
               <th>Status</th>
@@ -589,6 +605,13 @@ function renderTable(){
       ?`<a href="mailto:${esc(l.email)}" style="color:var(--blue);font-size:13px">${esc(l.email)}</a>`
       :`<input class="edit-input" placeholder="Vnesi email" onblur="saveEmail(${l.id},this.value)" style="width:150px">`;
     /*
+      Telefon je povezan s tel:, ker je pri tem seznamu drugi kanal — po
+      pismu sledi klic, in klic s plošče je en klik namesto prepisovanja.
+    */
+    const phoneCell=l.phone
+      ?`<a href="tel:${esc(String(l.phone).replace(/[^\d+]/g,''))}" style="color:var(--blue);font-size:13px;white-space:nowrap">${esc(l.phone)}</a>`
+      :'<span style="color:var(--text3);font-size:12px">—</span>';
+    /*
       Stolpec ne sproži več ničesar — pove samo, kje lead stoji. Gumb za
       pošiljanje je odstranjen; ↺ ostane, da se da zmotni vpis razveljaviti.
     */
@@ -597,7 +620,7 @@ function renderTable(){
     const sendBtn=stik
       ?`<span style="color:var(--text2);font-size:12px">✓ ${kdaj}${koliko}</span> <button class="btn btn-sm" style="font-size:11px;padding:2px 8px;opacity:0.7" onclick="resetLead(${l.id},this)" title="Razveljavi oznako">↺</button>`
       :l.email?'<span style="color:var(--text3);font-size:12px">—</span>':'<span style="color:var(--text3);font-size:12px">Vnesi email</span>';
-    return `<tr id="row-${l.id}"><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td>${sendBtn}</td></tr>`;
+    return `<tr id="row-${l.id}"><td style="color:var(--text3);font-size:11px">${rowNum}</td><td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(l.business_name)}">${esc(l.business_name)}</td><td>${emailCell}</td><td>${phoneCell}</td><td style="color:var(--text2);font-size:12px">${esc(l.address||'')}</td><td style="color:var(--text2);font-size:11px">${esc(l.category)}</td><td>${badge}</td><td>${sendBtn}</td></tr>`;
   }).join('');
 
   // Pagination
@@ -729,11 +752,22 @@ async function addLead(name,email,category,phone,address){
 async function addManual(){
   const name=document.getElementById('m-name').value.trim();
   const email=document.getElementById('m-email').value.trim();
+  const phone=document.getElementById('m-phone').value.trim();
+  const address=document.getElementById('m-address').value.trim();
   const cat=document.getElementById('m-cat').value;
   const errEl=document.getElementById('m-err');errEl.style.display='none';
   if(!name){errEl.textContent='Vnesi ime firme.';errEl.style.display='block';return;}
-  const ok=await addLead(name,email,cat,'','');
-  if(ok){document.getElementById('m-name').value='';document.getElementById('m-email').value='';toast('Dodano! ✅','success');loadAll();}
+  /*
+    Prej sta bila tu dva prazna niza, zato je vsak ročno dodan lokal prišel v
+    bazo brez telefona in naslova — tudi kadar ju je tisti, ki ga je dodajal,
+    imel pred sabo. Uvoz seznama (/api/leads/import) ju je shranjeval, ta pot
+    pa ne, kar je bilo videti kot "pač ni bilo podatka".
+  */
+  const ok=await addLead(name,email,cat,phone,address);
+  if(ok){
+    for(const id of ['m-name','m-email','m-phone','m-address']) document.getElementById(id).value='';
+    toast('Dodano! ✅','success');loadAll();
+  }
 }
 
 // ── SEND ──

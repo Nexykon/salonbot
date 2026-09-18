@@ -3451,13 +3451,24 @@ app.post('/api/leads/import', async (req, res) => {
   res.json({ success: true, added, skipped, total: businesses.length });
 });
 
-// POST /api/leads — dodaj nov lead (za generiranje emailov)
+/*
+  POST /api/leads — dodaj en lead ročno.
+
+  phone in address se zapišeta, ker ju obrazec zdaj pošilja. Prej sta bila
+  zavržena: klic zgoraj (uvoz seznama) ju je shranjeval, ta pa ne, zato je
+  vsak ročno dodan lokal pristal v bazi brez telefona in naslova — tudi kadar
+  ju je tisti, ki ga je dodajal, imel pred sabo.
+*/
 app.post('/api/leads', async (req, res) => {
   if (!adminAuth(req, res)) return;
   try {
-    const { email, business_name, category, token } = req.body;
+    const { email, business_name, category, token, phone, address } = req.body;
     if (!email || !business_name || !category || !token) return res.status(400).json({ error: 'Manjkajo polja' });
-    const result = await sbLeads('post', '/leads', { email, business_name, category, token });
+    const result = await sbLeads('post', '/leads', {
+      email, business_name, category, token,
+      phone: phone || '',
+      address: address || '',
+    });
     res.json(result[0]);
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
