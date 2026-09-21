@@ -179,8 +179,17 @@ const V = {
     Tveganje, ki ga je treba poznati: "AI" je pri delu filtrov za neželeno
     pošto beseda z zgodovino, in del starejših lastnikov jo bere kot "robot".
     Če bo odzivov malo, je to prva stvar za zamenjavo — z --zadeva.
+
+    21. 9. 2026 med pošiljanjem drugega paketa dodana beseda "natakar".
+    Razlog je isti kot zgoraj, le stopnjo naprej: "AI na vašem WhatsAppu"
+    pove tehnologijo, "AI natakar" pa opravilo. Gostinec ve, kaj dela
+    natakar, in kaj bi zanj pomenilo, da eden nikoli ne spi.
+
+    Ker je bila zamenjava sredi paketa, dnevnik stikov za vseh trideset
+    navaja novo zadevo — kaj je bilo poslano prvim, iz baze ni razvidno.
+    Pri naslednji primerjavi odzivov je to treba upoštevati.
   */
-  ZADEVA: arg('zadeva', 'AI na vašem WhatsAppu'),
+  ZADEVA: arg('zadeva', 'AI natakar na vašem WhatsAppu'),
 
   /*
     Predogled je vrstica, ki jo Gmail pokaže za zadevo v seznamu sporočil.

@@ -41,12 +41,27 @@ const PAKET = path.join(__dirname, '..', 'out', 'paket.json');
   prepisovanje v številke je korak, kjer se pri tridesetih vrsticah zmotiš.
 */
 const ZAVRNJENI = [
-  'peter.zavesek@siol.net',
-  'info@kitajskivrt.si',
-  'gostilnaa@gmail.com',
-  'smart.f@siol.net',
+  // Paket 21. 9. 2026 — 550, naslov ne obstaja.
+  'natasa.pungarsek@kanet.si',
+  'gpbistra@amis.net',
+  'marusa.pivnica@siol.net',
+  'logic.system@siol.net',
 ];
-const BREZ_SLIKE = ['kangqiangsen@gmail.com'];
+const BREZ_SLIKE = [
+  // Paket 21. 9. 2026 — dostavljeno, a se vložena slika ni prikazala.
+];
+
+/*
+  Seznama veljata vedno le za paket, ki je trenutno v out/paket.json. Pred
+  novim paketom ju je treba izprazniti — stara vsebina je past, ker je
+  videti kot izpolnjen seznam, čeprav velja za drug paket.
+
+  Zabeleženo doslej:
+    18. 9.  peter.zavesek@siol.net, info@kitajskivrt.si, gostilnaa@gmail.com,
+            smart.f@siol.net; brez slike kangqiangsen@gmail.com
+    21. 9.  natasa.pungarsek@kanet.si, gpbistra@amis.net,
+            marusa.pivnica@siol.net, logic.system@siol.net
+*/
 
 const KDAJ = process.argv.includes('--kdaj')
   ? process.argv[process.argv.indexOf('--kdaj') + 1]
@@ -109,7 +124,7 @@ const KDAJ = process.argv.includes('--kdaj')
           smer: 'odhod',
           zgodilo_at: KDAJ,
           izid: z.izid,
-          zadeva: 'AI na vašem WhatsAppu',
+          zadeva: 'AI natakar na vašem WhatsAppu',
           priponka: z.slug + '.png',
           opomba: z.opomba,
         }),

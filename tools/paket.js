@@ -69,8 +69,31 @@ const ZARES = process.argv.includes('--zares');
   jo da ponoviti in preveriti — zato v ukazu in ne v glavi.
 */
 const seznamId = (s) => new Set(String(s || '').split(/[,\s]+/).filter(Boolean).map(Number));
-const ROCNO_IZLOCI = seznamId(arg('izloci', ''));
 const ROCNO_VKLJUCI = seznamId(arg('vkljuci', ''));
+
+/*
+  Pri izločitvi se poleg id-ja lahko zapiše razlog:
+
+    --izloci "798=ime v registru ni napis nad lokalom;824=isti lokal kot 826"
+
+  Razlog gre v bazo in je v plošči tisto, kar piše nad značko ⛔. Brez njega
+  je v leads.html zapisano samo "ročno izločen pri pregledu", kar čez pol
+  leta ne pove ničesar — ne, ali je lokal odjavljen, ne, ali je bila to
+  napačna presoja, ki jo je vredno preklicati.
+*/
+function razclenIzloci(s) {
+  const m = new Map();
+  for (const del of String(s || '').split(';')) {
+    const kos = del.trim();
+    if (!kos) continue;
+    const [idDel, ...razlogDel] = kos.split('=');
+    for (const id of String(idDel).split(/[,\s]+/).filter(Boolean)) {
+      m.set(Number(id), razlogDel.join('=').trim() || 'ročno izločen pri pregledu');
+    }
+  }
+  return m;
+}
+const ROCNO_IZLOCI = razclenIzloci(arg('izloci', ''));
 
 /* Gostinstvo dobi drugo besedilo kot ostali — glej pismo.js. */
 const JE_GOSTINSTVO = /restavrac|picerij|pizza|gostil/i.test(PANOGA);
@@ -187,6 +210,31 @@ const GOSTINSKA_BESEDA = /gostil|gostiš|gostinstv|picerij|pizzer|pizza|restavra
 
 const crkaZa = (ime) => (ime.match(/[A-Za-zČŠŽčšž]/) || ['?'])[0].toUpperCase();
 
+/*
+  ROČNO POPRAVLJENA IMENA
+
+    Ime, ki gre v sliko, se izpelje iz registra, register pa ni napis nad
+    lokalom. Iz "GOSTILNA FRANCL, PETER ZAVERŠEK S.P." nastane "Gostilna
+    Francl Peter Zaveršek", iz "OKREPČEVALNICA - BISTRO TANJA TANJA
+    DERVARIČ S.P." pa "Okrepčevalnica - Bistro Tanja Tanj" — odrezano na
+    34 znakih sredi besede.
+
+    To ni lepotna napaka. Slika je edino, kar je v pismu res narejeno za
+    prejemnika; ime z lastnikovim priimkom ali odrezano na pol pove, da je
+    pismo sestavil stroj. V paketu z 18. 9. je tako odšlo najmanj šest
+    pisem (gostilna-francl-peter-zaversek, restavracija-pikol-tadej-
+    gasparin, gostisce-kekec-klavdij-tinunin, bracic-mirko …).
+
+    Pravila za to ni — kako se lokal predstavlja, piše na njegovih vratih,
+    ne v registru. Zato datoteka: id → ime, kot ga uporablja lokal sam.
+    Kdor jo dopolni, to zapiše enkrat in za zmeraj.
+
+    Popravljeno ime hkrati pomeni, da je lokal nekdo pogledal, zato tak
+    lead ne gre več med "za tvoj pregled".
+*/
+const IMENA_POT = path.join(__dirname, 'imena-lokalov.json');
+const IMENA = fs.existsSync(IMENA_POT) ? JSON.parse(fs.readFileSync(IMENA_POT, 'utf8')) : {};
+
 /* ── Glavni tek ────────────────────────────────────────────────────────── */
 
 (async () => {
@@ -214,7 +262,7 @@ const crkaZa = (ime) => (ime.match(/[A-Za-zČŠŽčšž]/) || ['?'])[0].toUpperC
     if (sprejeti.length >= KOLIKO) break;
 
     if (ROCNO_IZLOCI.has(l.id)) {
-      izloceni.push({ id: l.id, ime: l.business_name, email: l.email, razlog: 'ročno izločen pri pregledu' });
+      izloceni.push({ id: l.id, ime: l.business_name, email: l.email, razlog: ROCNO_IZLOCI.get(l.id) });
       continue;
     }
 
@@ -223,12 +271,14 @@ const crkaZa = (ime) => (ime.match(/[A-Za-zČŠŽčšž]/) || ['?'])[0].toUpperC
       izloceni.push({ id: l.id, ime: l.business_name, email: l.email, razlog });
       continue;
     }
-    const ime = imeZaPogovor(l.business_name);
+    const rocno = IMENA[String(l.id)];
+    const ime = rocno || imeZaPogovor(l.business_name);
     videni.set(String(l.email).trim().toLowerCase(), ime);
     sprejeti.push({
       id: l.id,
       uradno: l.business_name,
       ime,
+      rocnoIme: Boolean(rocno),
       crka: crkaZa(ime),
       email: l.email,
       kraj: String(l.address || '').split(',').pop().trim(),
@@ -236,14 +286,26 @@ const crkaZa = (ime) => (ime.match(/[A-Za-zČŠŽčšž]/) || ['?'])[0].toUpperC
     });
   }
 
-  const jeJasen = (s) => GOSTINSKA_BESEDA.test(s.uradno) || ROCNO_VKLJUCI.has(s.id);
+  const jeJasen = (s) => s.rocnoIme || GOSTINSKA_BESEDA.test(s.uradno) || ROCNO_VKLJUCI.has(s.id);
   const jasni = sprejeti.filter(jeJasen);
   const zaPregled = sprejeti.filter((s) => !jeJasen(s));
 
   console.log('  ✔ SPREJETI (' + jasni.length + ')');
   for (const s of jasni) {
-    console.log('     ' + String(s.id).padStart(5) + '  ' + s.ime.padEnd(34) + '  ' + s.email);
+    console.log('     ' + String(s.id).padStart(5) + '  ' + s.ime.padEnd(34) + '  ' + s.email
+      + (s.rocnoIme ? '   ← ime popravljeno ročno' : ''));
     if (s.ime !== s.uradno) console.log('            v registru: ' + s.uradno);
+  }
+
+  /*
+    Dolgo ime je drugo opozorilo poleg manjkajoče gostinske besede: pri 34
+    znakih se odreže, in odrezano ime v sliki je slabše od nobenega pisma.
+  */
+  const dolga = jasni.filter((s) => !s.rocnoIme && s.ime.length >= 30);
+  if (dolga.length) {
+    console.log('\n  ! PREDOLGA IMENA (' + dolga.length + ') — v sliki bodo odrezana,');
+    console.log('    popravi jih v tools/imena-lokalov.json:');
+    for (const s of dolga) console.log('     ' + String(s.id).padStart(5) + '  "' + s.ime + '"');
   }
 
   if (zaPregled.length) {
