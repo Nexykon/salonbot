@@ -22,6 +22,7 @@ const path = require('path');
 
 const KOREN = path.join(__dirname, '..', 'public');
 const STRANI = ['/', '/primerjava.html', '/cenik.html', '/funkcije.html', '/zgodbe.html',
+  '/restavracije.html',
   '/panoga/frizerski-saloni.html', '/panoga/kozmetika.html', '/panoga/zobozdravniki.html',
   '/sitemap.xml', '/llms.txt'];
 
