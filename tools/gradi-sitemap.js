@@ -19,6 +19,9 @@ const STRANI = [
   ['/kako-deluje.html', 0.9, 'monthly'],
   ['/funkcije.html', 0.9, 'monthly'],
   ['/cenik.html', 0.9, 'monthly'],
+  // Primerjava s ponudniki. Podatki o njih so datirani, zato monthly —
+  // ob vsakem preverjanju se datum v strani in lastmod premakneta skupaj.
+  ['/primerjava.html', 0.8, 'monthly'],
   ['/zgodbe.html', 0.7, 'monthly'],
   ['/vprasanja.html', 0.8, 'monthly'],
   ['/ai-resitve.html', 0.9, 'monthly'],

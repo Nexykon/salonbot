@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlowTek, WhatsPortal ali dostavna platforma — primerjava za lokale | FlowTek</title>
+<meta name="description" content="Kako se razlikujejo FlowTek, WhatsPortal in dostavna platforma (Wolt): provizija, lastna številka, čas postavitve, kdo odgovarja med servisom in cena.">
+<link rel="canonical" href="https://flowtek.si/primerjava.html">
+<meta property="og:url" content="https://flowtek.si/primerjava.html">
+<meta property="og:title" content="FlowTek, WhatsPortal ali dostavna platforma?">
+<meta property="og:description" content="Provizija, lastna številka, čas postavitve, kdo odgovarja med servisom in cena — na eni strani.">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="sl_SI">
+<meta property="og:image" content="https://flowtek.si/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="FlowTek — naročila in termini na avtopilotu">
+<meta property="og:site_name" content="FlowTek">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#FBF8F1">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700;800&family=Fira+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/flowtek-site.css?v=5351ca76">
+<script src="/flowtek-nav.js?v=70edbd7c" defer></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-ZXH2YX58RX"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-ZXH2YX58RX');</script>
+<style>
+  /*
+    Prava tabela, ne mreža iz divov.
+
+    Drugod na strani primerjave riše .tbl z display:grid. Tu mora biti
+    <table> s <th> in <td>: stran je napisana zato, da jo AI iskalniki
+    berejo in navajajo, mreža iz divov pa jim ne pove, katera vrednost
+    pripada kateremu ponudniku. Videz je prevzet iz .tbl, da se ne pozna.
+  */
+  .prim { border:2px solid var(--ink); border-radius:var(--r); background:#fff; overflow-x:auto; }
+  .prim table { width:100%; min-width:720px; border-collapse:collapse; }
+  .prim thead th {
+    background:var(--ink); color:var(--on-ink); font-family:var(--mono);
+    font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    padding:14px 16px; text-align:left; font-weight:500; vertical-align:bottom;
+  }
+  .prim thead th + th { border-left:1.5px solid var(--ink-line); }
+  .prim thead th.je-nas { color:var(--mint); }
+  .prim tbody tr { border-bottom:1.5px solid var(--line); }
+  .prim tbody tr:last-child { border-bottom:0; }
+  .prim tbody th {
+    text-align:left; padding:16px 20px; font-size:15.5px; font-weight:600;
+    color:var(--ink); vertical-align:top; width:19%;
+  }
+  .prim tbody td { padding:16px; font-size:14.5px; color:var(--muted); line-height:1.5; vertical-align:top; border-left:1.5px solid var(--line); }
+  .prim tbody td.je-nas { background:var(--green-tint-2); color:var(--ink); font-weight:500; }
+  /* Namig, da se tabela premakne vstran — brez njega je na telefonu videti odrezana. */
+  .prim-namig { font-size:13px; color:var(--muted-3); margin-top:10px; }
+  @media (min-width:900px) { .prim-namig { display:none; } }
+  /* Besedilo za bralnik zaslona; v sistemu takega razreda še ni. */
+  .le-za-bralnik { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+  .odg { border:2px solid var(--ink); border-radius:var(--r); background:var(--green-tint); padding:24px 26px; margin-top:26px; }
+  .odg p { font-size:17.5px; line-height:1.6; color:var(--ink-2); }
+  .vir { font-size:13.5px; color:var(--muted-2); margin-top:14px; line-height:1.6; }
+  .kdaj { display:grid; gap:14px; margin-top:26px; }
+  .kdaj li { list-style:none; border-left:3px solid var(--green); padding:2px 0 2px 16px; font-size:16px; line-height:1.55; color:var(--ink-2); }
+  .kdaj li strong { color:var(--ink); }
+</style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "inLanguage": "sl-SI",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Ali FlowTek jemlje provizijo od naročil?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ne. FlowTek ima fiksno mesečno ceno: AI Start 89 €, AI Pro 159,99 € ali Premium 299 €. Od naročila ne vzame nič, ne glede na to, koliko naročil sprejmeš. Metini stroški sporočil so že vključeni v ceno."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Kakšna je razlika med FlowTekom in WhatsPortalom?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "WhatsPortal se predstavlja kot splošna platforma za WhatsApp Business API za indijska podjetja; po njegovem ceniku so cene v rupijah in Metini stroški pogovorov se obračunajo posebej, tok naročila pa sestaviš sam. FlowTek je pomočnik za slovenske lokale, ki ga postavimo mi v 1–2 dneh, z Metinimi stroški že v ceni, in ki v slovenščini sprejema naročila in rezervacije po tvojem ceniku."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Ali FlowTek nadomesti Wolt?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Ne nujno. Wolt ti prinese nove stranke in kurirje. FlowTek sprejema naročila strank, ki ti pišejo neposredno, na tvoji številki in brez provizije. Lahko uporabljaš oboje."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Kdo odgovarja strankam, ko imam poln servis?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "FlowTekov AI pomočnik, 24 ur na dan. Ceno, urnik in proste termine vzame iz tvojih nastavitev, zato si jih ne izmišljuje. Kadar česa ne ve, stranki pove, da bo preveril, in obvesti tebe."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Ali moram zamenjati številko ali namestiti aplikacijo?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Aplikacije ne potrebuje nihče. FlowTek dela na mobilni številki, ki jo lokal določi za WhatsApp — stacionarna številka ne deluje. Stranka ne potrebuje nobene aplikacije ali registracije: na to številko piše kot na vsako drugo."
+      }
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Domov", "item": "https://flowtek.si/" },
+    { "@type": "ListItem", "position": 2, "name": "Primerjava", "item": "https://flowtek.si/primerjava.html" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "FlowTek, WhatsPortal ali dostavna platforma — primerjava za lokale",
+  "description": "Kako se razlikujejo FlowTek, WhatsPortal in dostavna platforma (Wolt): provizija, lastna številka, čas postavitve, kdo odgovarja med servisom in cena.",
+  "url": "https://flowtek.si/primerjava.html",
+  "inLanguage": "sl-SI",
+  "dateModified": "2026-10-15",
+  "isPartOf": { "@type": "WebSite", "name": "FlowTek", "url": "https://flowtek.si/" },
+  "publisher": { "@type": "Organization", "name": "FlowTek", "url": "https://flowtek.si/" }
+}
+</script>
+</head>
+<body>
+
+<header class="site-head">
+  <div class="head-inner">
+    <a class="brand head-logo" href="/">
+      <img src="/ft-mark.svg" alt="" width="30" height="30">
+      <span class="brand-name">Flow<span>Tek</span></span>
+    </a>
+    <nav class="head-nav">
+      <a href="/panoge.html">Za koga</a>
+      <a href="/kako-deluje.html">Kako deluje</a>
+      <a href="/funkcije.html">Kaj zna</a>
+      <a href="/cenik.html">Cena</a>
+      <a href="/zgodbe.html">Primeri</a>
+      <a href="/vprasanja.html">Vprašanja</a>
+    </nav>
+    <div class="head-actions">
+      <a class="btn btn--ghost btn--sm" href="/prijava.html">Prijava</a>
+      <a class="btn btn--primary btn--sm" href="/kontakt.html">Odpri račun</a>
+    </div>
+  </div>
+</header>
+
+<section class="sec sec--grad sec--tight">
+  <div class="wrap">
+    <div class="pill">Primerjava</div>
+    <h1 class="h-1 measure-22" style="margin-top:20px">FlowTek, WhatsPortal ali dostavna platforma?</h1>
+    <div class="odg measure-76">
+      <p>Dostavna platforma, kot je Wolt, ti prinese nove stranke in kurirje, a vzame provizijo od vsakega naročila. WhatsPortal je po lastni predstavitvi splošno orodje za WhatsApp Business API za indijski trg, kjer tok naročila sestaviš sam. FlowTek je WhatsApp pomočnik za slovenske lokale: na mobilni številki, ki jo določiš za WhatsApp, 24 ur na dan sprejema naročila in rezervacije, za fiksno mesečno ceno brez provizije, z Metinimi stroški že v ceni, postavljen v 1–2 dneh.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec sec--sm">
+  <div class="wrap">
+    <h2 class="h-4 measure-24">Primerjava na eni strani</h2>
+
+    <div class="prim" style="margin-top:28px">
+      <table>
+        <caption class="le-za-bralnik">Primerjava FlowTek, WhatsPortal in dostavne platforme Wolt po proviziji, številki, času postavitve, odzivu med servisom, ceni, dostavi in ciljnem trgu</caption>
+        <thead>
+          <tr>
+            <th scope="col"><span class="le-za-bralnik">Lastnost</span></th>
+            <th scope="col" class="je-nas">FlowTek</th>
+            <th scope="col">WhatsPortal</th>
+            <th scope="col">Dostavna platforma (Wolt)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Provizija od naročila</th>
+            <td class="je-nas">0 € — fiksna mesečna cena; Metini stroški sporočil so vključeni.</td>
+            <td>Brez provizije od naročila; Metini stroški pogovorov se obračunajo posebej (po navedbi ponudnika).</td>
+            <td>Odstotek od vsakega naročila, določen v pogodbi; lahko še pristojbina za platformo. Stopnje Wolt javno ne objavlja.</td>
+          </tr>
+          <tr>
+            <th scope="row">Tvoja številka</th>
+            <td class="je-nas">Da — dela na mobilni številki, ki jo lokal določi za WhatsApp (stacionarna številka ne deluje).</td>
+            <td>Po navedbi ponudnika se poveže tvoja WhatsApp Business številka prek WhatsApp Business API.</td>
+            <td>Ne — gost naroči v aplikaciji Wolt.</td>
+          </tr>
+          <tr>
+            <th scope="row">Čas postavitve</th>
+            <td class="je-nas">1–2 dni, postavitev je brezplačna.</td>
+            <td>Samopostrežno, v orodju brez kode; ponudnik navaja, da preprost tok nastaviš v manj kot uri. Koliko traja potrditev računa pri Meti, ponudnik ne navaja.</td>
+            <td>Prijava in uvajanje (meni, slike, izplačila); trajanja Wolt ne objavlja.</td>
+          </tr>
+          <tr>
+            <th scope="row">Kdo odgovarja med servisom</th>
+            <td class="je-nas">AI pomočnik, nastavljen po tvojem ceniku in urniku. Kadar česa ne ve, ne ugiba — pove, da bo preveril, in obvesti tebe.</td>
+            <td>Po navedbi ponudnika avtomatski tok ali AI klepetalnik, ki ga sestaviš sam, s predajo človeku v skupnem nabiralniku.</td>
+            <td>Gost naroči v aplikaciji, ti potrdiš na tablici; podporo strankam za dostavo vodi Wolt.</td>
+          </tr>
+          <tr>
+            <th scope="row">Cena</th>
+            <td class="je-nas">AI Start 89 €, AI Pro 159,99 € ali Premium 299 € na mesec (do 500, 1.500 ali 10.000 naročil na mesec). Metini stroški so vključeni, brez vezave, cena je končna.</td>
+            <td>Po ceniku ponudnika brezplačen paket do 100 sporočil na mesec, plačljiva paketa 1.499 ₹ in 2.499 ₹ na mesec, cene v indijskih rupijah; Metini stroški pogovorov niso vključeni.</td>
+            <td>Brez naročnine in aktivacije; plačaš provizijo od naročil.</td>
+          </tr>
+          <tr>
+            <th scope="row">Dostava</th>
+            <td class="je-nas">Ne vozi — dostavo izvaja lokal sam, kot doslej.</td>
+            <td>Ne vozi.</td>
+            <td>Wolt kurirji.</td>
+          </tr>
+          <tr>
+            <th scope="row">Za koga je narejeno</th>
+            <td class="je-nas">Slovenski gostinski lokali in obrtniki, v slovenščini.</td>
+            <td>Po lastni predstavitvi indijska podjetja (Shopify, PetPooja, Shiprocket).</td>
+            <td>Lokali, ki želijo doseči nove stranke v aplikaciji.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prim-namig">Tabelo potegni vstran, da vidiš vse stolpce.</div>
+
+    <p class="vir measure-76">Podatki preverjeni: 15. 10. 2026, iz javnih strani ponudnikov: <a href="https://whatsportal.io" target="_blank" rel="noopener nofollow">whatsportal.io</a>, <a href="https://merchant.wolt.com/sl/svn" target="_blank" rel="noopener nofollow">merchant.wolt.com/sl/svn</a>. Glovo v Sloveniji ne deluje od 10. 5. 2024. Če kaj ni več točno, nam piši na <a href="https://wa.me/38669323846" target="_blank" rel="noopener">069 323 846</a> in popravimo.</p>
+  </div>
+</section>
+
+<section class="sec sec--cream sec--tight">
+  <div class="wrap">
+    <h2 class="h-4 measure-24">Kdaj je katera izbira smiselna</h2>
+    <ul class="kdaj measure-76">
+      <li><strong>Dostavna platforma:</strong> kadar potrebuješ nove stranke in nimaš svoje dostave. Plačaš z deležem vsakega naročila.</li>
+      <li><strong>WhatsPortal:</strong> kadar imaš ekipo, ki bo sama sestavila tokove, in pošiljaš množična sporočila; ponudnik je namenjen predvsem indijskemu trgu.</li>
+      <li><strong>FlowTek:</strong> kadar ti stranke že pišejo ali kličejo in želiš, da nekdo odgovori takoj — tudi sredi servisa — za isto ceno vsak mesec.</li>
+      <li><strong>Lahko imaš oboje:</strong> platformo za nove stranke, FlowTek za stalne goste, ki ti pišejo neposredno.</li>
+    </ul>
+    <p class="lead measure-62" style="margin-top:26px">Svojo stopnjo provizije najdeš na zadnjem obračunu platforme. To je tvoja prava številka.</p>
+  </div>
+</section>
+
+<section class="sec sec--flush sec--open">
+  <div class="wrap cta-wrap">
+    <div class="cta">
+      <div>
+        <h2 style="font-size:clamp(30px,3.8vw,48px);max-width:24ch">Preizkusi sam</h2>
+        <p class="measure-50">Napiši naročilo testni piceriji na WhatsApp 069 323 814.</p>
+      </div>
+      <a class="btn btn--onink" href="https://wa.me/38669323814" target="_blank" rel="noopener" style="font-size:17.5px">Piši testni piceriji</a>
+    </div>
+    <p style="margin-top:18px"><a href="/cenik.html">Poglej cenik →</a></p>
+  </div>
+</section>
+
+<section class="sec sec--cream sec--tight">
+  <div class="wrap">
+    <h2 class="h-4 measure-24">Pogosta vprašanja</h2>
+    <div class="faq" style="margin-top:28px">
+      <details>
+        <summary><span>Ali FlowTek jemlje provizijo od naročil?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Ne. FlowTek ima fiksno mesečno ceno: AI Start 89 €, AI Pro 159,99 € ali Premium 299 €. Od naročila ne vzame nič, ne glede na to, koliko naročil sprejmeš. Metini stroški sporočil so že vključeni v ceno.</div>
+      </details>
+      <details>
+        <summary><span>Kakšna je razlika med FlowTekom in WhatsPortalom?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">WhatsPortal se predstavlja kot splošna platforma za WhatsApp Business API za indijska podjetja; po njegovem ceniku so cene v rupijah in Metini stroški pogovorov se obračunajo posebej, tok naročila pa sestaviš sam. FlowTek je pomočnik za slovenske lokale, ki ga postavimo mi v 1–2 dneh, z Metinimi stroški že v ceni, in ki v slovenščini sprejema naročila in rezervacije po tvojem ceniku.</div>
+      </details>
+      <details>
+        <summary><span>Ali FlowTek nadomesti Wolt?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Ne nujno. Wolt ti prinese nove stranke in kurirje. FlowTek sprejema naročila strank, ki ti pišejo neposredno, na tvoji številki in brez provizije. Lahko uporabljaš oboje.</div>
+      </details>
+      <details>
+        <summary><span>Kdo odgovarja strankam, ko imam poln servis?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">FlowTekov AI pomočnik, 24 ur na dan. Ceno, urnik in proste termine vzame iz tvojih nastavitev, zato si jih ne izmišljuje. Kadar česa ne ve, stranki pove, da bo preveril, in obvesti tebe.</div>
+      </details>
+      <details>
+        <summary><span>Ali moram zamenjati številko ali namestiti aplikacijo?</span><span class="sign"></span></summary>
+        <div class="faq-body measure-76">Aplikacije ne potrebuje nihče. FlowTek dela na mobilni številki, ki jo lokal določi za WhatsApp — stacionarna številka ne deluje. Stranka ne potrebuje nobene aplikacije ali registracije: na to številko piše kot na vsako drugo.</div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="site-foot">
+  <div class="foot-grid">
+    <div>
+      <a class="brand" href="/">
+        <img src="/ft-mark.svg" alt="" width="28" height="28">
+        <span class="brand-name" style="font-size:19px">Flow<span>Tek</span></span>
+      </a>
+      <p style="font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.55;max-width:30ch"><strong>Flow</strong> je neprekinjen tok strank. <strong>Tek</strong> je to, da posel teče sam naprej. Skupaj: pomočnik, ki ti polni koledar, medtem ko delaš.</p>
+      <div class="foot-socials"><a class="foot-social" href="https://www.linkedin.com/company/flowtek-si/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28ZM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13Zm1.78 13.02H3.56V9h3.56v11.45ZM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0Z"/></svg>LinkedIn</a><a class="foot-social" href="https://www.facebook.com/profile.php?id=61594315972114" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M24 12.07C24 5.44 18.63.07 12 .07S0 5.44 0 12.07c0 5.99 4.39 10.95 10.13 11.86v-8.39H7.08v-3.47h3.05V9.43c0-3.01 1.79-4.67 4.53-4.67 1.31 0 2.69.24 2.69.24v2.95h-1.51c-1.49 0-1.96.93-1.96 1.87v2.25h3.33l-.53 3.47h-2.8v8.39C19.61 23.02 24 18.06 24 12.07Z"/></svg>Facebook</a><a class="foot-social" href="https://www.instagram.com/flowtek_si/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.65-.07-4.85s.02-3.58.07-4.85c.15-3.23 1.66-4.77 4.92-4.92 1.27-.06 1.65-.07 4.85-.07M12 0C8.74 0 8.33.01 7.05.07 2.7.27.27 2.69.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.2 4.36 2.62 6.78 6.98 6.98 1.28.06 1.69.07 4.95.07s3.67-.01 4.95-.07c4.35-.2 6.78-2.62 6.98-6.98.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95C23.72 2.7 21.3.27 16.95.07 15.67.01 15.26 0 12 0Zm0 5.84A6.16 6.16 0 1 0 18.16 12 6.16 6.16 0 0 0 12 5.84ZM12 16a4 4 0 1 1 4-4 4 4 0 0 1-4 4Zm6.41-10.85a1.44 1.44 0 1 0 1.43 1.44 1.44 1.44 0 0 0-1.43-1.44Z"/></svg>Instagram</a></div>
+    </div>
+    <div>
+      <div class="foot-label">Izdelek</div>
+      <div class="foot-links">
+        <a href="/kako-deluje.html">Kako deluje</a>
+        <a href="/funkcije.html">Kaj zna</a>
+        <a href="/cenik.html">Cena</a>
+        <a href="/vprasanja.html">Vprašanja</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Za koga</div>
+      <div class="foot-links">
+        <a href="/panoga/restavracije.html">Restavracije in picerije</a>
+        <a href="/panoga/frizerski-saloni.html">Frizerski saloni</a>
+        <a href="/panoga/zobozdravniki.html">Ambulante</a>
+        <a href="/panoge.html">Vse obrti →</a>
+        <a href="/imenik.html">Imenik lokalov</a>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Podjetje</div>
+      <div class="foot-links">
+        <a href="/o-nas.html">O nas</a>
+        <a href="/ai-resitve.html">Razvoj AI rešitev po meri</a>
+        <a href="/zgodbe.html">Primeri iz prakse</a>
+        <a href="/nasveti.html">Nasveti</a>
+        <a href="/varnost.html">Varnost in zasebnost</a>
+        <a href="/kontakt.html">Kontakt</a>
+      </div>
+    </div>
+  </div>
+  <div class="foot-info">
+    <div>
+      <div class="foot-label">Kdo stoji za FlowTek</div>
+      <p>FlowTek razvija <strong><a href="https://webacus.net" target="_blank" rel="noopener">Webacus</a></strong>. Za njim stojijo leta dela s spletnimi rešitvami in
+      avtomatizacijo za slovenska podjetja — FlowTek ni stranski projekt, ampak izdelek, ki je zrasel
+      iz pogovorov s pravimi gostinci in obrtniki. Ko se kaj zalomi, se oglasi človek, ki izdelek pozna.</p>
+    </div>
+    <div>
+      <div class="foot-label">Podpora</div>
+      <div class="stack-sm">
+        <div><a href="https://wa.me/38669323846" target="_blank" rel="noopener">WhatsApp 069 323 846</a></div>
+        <div><a href="mailto:info@flowtek.si">info@flowtek.si</a></div>
+        <div class="fine">Med tednom od 8. do 19. ure, ob sobotah dopoldne.<br>Odgovorimo običajno v nekaj urah.</div>
+      </div>
+    </div>
+    <div>
+      <div class="foot-label">Podatki podjetja</div>
+      <div class="stack-sm fine">
+        <div><a href="https://webacus.net" target="_blank" rel="noopener">Webacus</a>, Valentin Iljaž s.p.</div>
+        <div>Nova vas 12, Bizeljsko</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 FlowTek — <a href="https://webacus.net" target="_blank" rel="noopener">Webacus</a>, Valentin Iljaž s.p.</div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap"><a href="/privacy.html">Zasebnost</a><a href="/terms.html">Pogoji uporabe</a><a href="/cookies.html">Piškotki</a><a href="/llms.txt" title="Povzetek strani za jezikovne modele in AI iskalnike">llms.txt</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

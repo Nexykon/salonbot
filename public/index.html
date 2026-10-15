@@ -232,7 +232,7 @@
             <div class="bubble bubble--out d4">Trubarjeva 12</div>
             <div class="bubble bubble--in d5">Naročilo je potrjeno in že v kuhinji. Dostava ob <strong>19:25</strong>. Hvala!</div>
             <div class="typing d7"><span style="animation-delay:2.9s"></span><span style="animation-delay:3.05s"></span><span style="animation-delay:3.2s"></span></div>
-            <div class="chat-live d8"><i></i>ODGOVOR V 1,4 s</div>
+            <div class="chat-live d8"><i></i>ODGOVOR V NEKAJ SEKUNDAH</div>
           </div>
         </div>
       </div>
@@ -297,7 +297,7 @@
           <p class="step-p">Kot vedno. Nobene nove aplikacije, nobene registracije zanjo.</p>
         </div>
         <div style="padding:20px 18px 22px">
-          <div class="step-head"><div class="step-n">2</div><div class="step-time">1,4 s</div></div>
+          <div class="step-head"><div class="step-n">2</div><div class="step-time">v sekundah</div></div>
           <h3 class="step-t">FlowTek razume, kaj hoče</h3>
           <p class="step-p">Tudi če napiše po domače, s tipkarsko napako ali v narekovanju.</p>
         </div>
@@ -392,7 +392,7 @@
         </div>
         <div style="padding:6px 0">
           <div class="day-row"><div class="day-h">10:20</div><div><div class="day-t">Sporočilo: „A dostavljate na Trubarjevo?“</div><div class="day-good">Bot potrdi območje in pošlje meni. Naročilo v 3 minutah.</div></div></div>
-          <div class="day-row"><div class="day-h">11:40</div><div><div class="day-t">Gost naroča, ti pripravljaš testo</div><div class="day-good">Odgovor v 1,4 s. Ti ne veš niti, da se je zgodilo.</div></div></div>
+          <div class="day-row"><div class="day-h">11:40</div><div><div class="day-t">Gost naroča, ti pripravljaš testo</div><div class="day-good">Odgovor v nekaj sekundah. Ti ne veš niti, da se je zgodilo.</div></div></div>
           <div class="day-row"><div class="day-h">12:35</div><div><div class="day-t">Pet naročil hkrati med kosilom</div><div class="day-good">Vsa sprejeta in natisnjena v kuhinji.</div></div></div>
           <div class="day-row"><div class="day-h">15:10</div><div><div class="day-t">Nič za klicati nazaj</div><div class="day-good">Vsa naročila so že v blagajni.</div></div></div>
           <div class="day-row"><div class="day-h">19:15</div><div><div class="day-t">Špica: osem naročil naenkrat</div><div class="day-good">Meja 8 pic na 15 minut jih razporedi. Kuhinja zdrži.</div></div></div>
@@ -428,6 +428,17 @@
   .pan-p { font-size:14px; color:var(--muted); margin-top:8px; line-height:1.5; }
   .bar { display:flex; border:2px solid var(--ink); border-radius:18px; overflow:hidden; height:52px; }
   .bar > div { display:flex; align-items:center; padding:0 14px; font-weight:600; font-size:15px; }
+  /*
+    Stolpec, ki ne meri ničesar. Prej sta bila deleža 72/28 in sta brala kot
+    izmerjena stopnja provizije — te pa nobena platforma ne objavlja, zato je
+    ne smemo narisati. Šrafura pove, da je širina ponazoritev; napisa se zato
+    tudi prelomita, ker sta daljša od prejšnjih zneskov in bi se na telefonu
+    odrezala.
+  */
+  .bar--ocena > div { font-size:13px; line-height:1.15; white-space:normal; padding:0 12px; }
+  .bar-sraf { color:#fff; background:repeating-linear-gradient(45deg, var(--rust) 0 7px, var(--rust-ink) 7px 14px); }
+  /* Na telefonu je 36 % stolpca ozko za tri besede, zato tu višina ni fiksna. */
+  @media (max-width:620px) { .bar--ocena { height:auto; min-height:52px; } .bar--ocena > div { font-size:12.5px; padding:10px 12px; } }
   .slot { flex:1 1 0; height:46px; border:2px solid var(--ink); border-radius:5px; background:var(--green); }
   .slot--empty { background:var(--cream-2); border:2px dashed var(--rust); }
   .flow-pipe { height:26px; width:2px; background:var(--ink); margin-left:26px; }
@@ -497,7 +508,7 @@
 
     <div style="margin-top:40px;border:2px solid var(--on-ink);border-radius:18px;overflow:hidden">
       <div class="fn-row"><div class="fn-n">01</div><h3 class="fn-t">Sprejema naročila in rezervacije</h3><div><p class="fn-o">Ves dan in vso noč. Stranka napiše na WhatsApp, FlowTek jo pripelje do potrjenega termina ali naročila — brez tebe.</p><div class="fn-rez">0 zamujenih povpraševanj</div></div></div>
-      <div class="fn-row"><div class="fn-n">02</div><h3 class="fn-t">Pošilja opomnike</h3><div><p class="fn-o">Dan prej vljudno spomni stranko in jo prosi za potrditev. Če odpove, se termin takoj ponudi naslednjemu.</p><div class="fn-rez">do 30 % manj praznih terminov</div></div></div>
+      <div class="fn-row"><div class="fn-n">02</div><h3 class="fn-t">Pošilja opomnike</h3><div><p class="fn-o">Dan prej vljudno spomni stranko in jo prosi za potrditev. Če odpove, se termin takoj ponudi naslednjemu.</p><div class="fn-rez">odpovedan termin se ponudi naslednjemu</div></div></div>
       <div class="fn-row"><div class="fn-n">03</div><h3 class="fn-t">Vodi tvoj koledar</h3><div><p class="fn-o">Ve, kdaj si prost, koliko traja katera storitev in koliko naročil zmore kuhinja. Dvojnih rezervacij ni več.</p><div class="fn-rez">brez Excela in listkov</div></div></div>
       <div class="fn-row"><div class="fn-n">04</div><h3 class="fn-t">Razume, kako ljudje pišejo</h3><div><p class="fn-o">„eno capriccioso in dve koli“, „bi na barvanje kdaj popoldne“, tipkarske napake, narekovanje. Ne rabi menija s številkami.</p><div class="fn-rez">brez izbiranja 1, 2, 3</div></div></div>
       <div class="fn-row"><div class="fn-n">05</div><h3 class="fn-t">Vabi stranke nazaj</h3><div><p class="fn-o">Tistim, ki jih ni bilo osem tednov, pošlje osebno povabilo. Koledar polniš iz strank, ki jih že imaš.</p><div class="fn-rez">novi termini brez oglasov</div></div></div>
@@ -549,10 +560,11 @@
             <strong style="font-size:19px">Prek dostavne tržnice</strong>
             <span class="mono" style="font-size:13px;color:var(--muted-2)">2.000 € prometa</span>
           </div>
-          <div class="bar">
-            <div style="width:72%;background:var(--tan);border-right:2px solid var(--ink)">Ostane tebi — 1.440 €</div>
-            <div style="width:28%;background:var(--rust);color:#fff">−560 € pri 28 %</div>
+          <div class="bar bar--ocena">
+            <div style="width:64%;background:var(--tan);border-right:2px solid var(--ink)">Ostane tebi — 2.000 € minus provizija</div>
+            <div class="bar-sraf" style="width:36%">provizija iz tvoje pogodbe</div>
           </div>
+          <div style="font-size:13.5px;color:var(--muted-2);margin-top:8px">Širina rdečega dela je ponazoritev, ne stopnja.</div>
         </div>
         <div>
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:14px;flex-wrap:wrap">
@@ -569,9 +581,9 @@
       <div class="row" style="margin-top:28px;border-top:2px solid var(--ink);padding-top:22px;gap:28px;align-items:center">
         <div>
           <div class="mono-label">Razlika v tvojem žepu</div>
-          <div class="big-num big-num--green">+471 € / mesec</div>
+          <div class="big-num big-num--green">tvoja provizija − 89 €</div>
         </div>
-        <p class="fine" style="flex:1 1 260px;font-size:13.5px">Primer računa s 28 % provizije. Te stopnje ne objavlja nobena platforma — pogaja se za vsak lokal posebej, zato je ne trdimo kot dejstvo. Vzemi svoj zadnji obračun: delež, ki ga vidiš tam, je tvoja prava številka.</p>
+        <p class="fine" style="flex:1 1 260px;font-size:13.5px">Brez provizije na naročilo. Stopnje provizije ne objavlja nobena platforma — pogaja se za vsak lokal posebej. Vzemi svoj zadnji obračun platforme: znesek provizije, ki ga vidiš tam, je tvoja prava številka.</p>
       </div>
     </div>
   </div>
@@ -618,8 +630,8 @@
           </div>
           <div class="row" style="margin-top:18px;padding-top:18px;border-top:2px solid var(--ink);gap:22px;align-items:baseline">
             <div>
-              <div class="big-num big-num--sm big-num--green">do −30 %</div>
-              <div style="font-size:13px;color:var(--muted-2)">manj praznih terminov</div>
+              <div class="big-num big-num--sm big-num--green">dan prej</div>
+              <div style="font-size:13px;color:var(--muted-2)">opomnik in prošnja za potrditev</div>
             </div>
             <div>
               <div class="big-num big-num--sm">+2 uri</div>
@@ -674,7 +686,7 @@
          Brez JS ostanejo mesečne cene in vrstica z letno ceno pod njimi. -->
     <div class="obd-switch" role="group" aria-label="Obračunsko obdobje" style="margin-top:32px">
       <button type="button" class="obd-btn is-on" data-obd="monthly" aria-pressed="true">Mesečno</button>
-      <button type="button" class="obd-btn" data-obd="yearly" aria-pressed="false">Letno <span class="obd-znacka">−30 %</span></button>
+      <button type="button" class="obd-btn" data-obd="yearly" aria-pressed="false">Letno</button>
     </div>
 
     <!-- stretch, ne start: kartica Pro je odkar so funkcije enake najkrajša -->
@@ -1026,7 +1038,7 @@
 
   var SCENARIJI = [
     {
-      ime: 'Picerija Vrtnica', crka: 'P', odziv: 'ODGOVOR V 1,4 s',
+      ime: 'Picerija Vrtnica', crka: 'P', odziv: 'ODGOVOR V NEKAJ SEKUNDAH',
       p: [
         { k: 'g', t: 'a lahko dobim eno capriccioso in dve koli za dostavo' },
         { k: 'b', t: 'Seveda. Dodal sem <strong>1× Capricciosa</strong> in <strong>2× Coca-Cola</strong> — skupaj 14,60 €. Na kateri naslov dostavimo?' },

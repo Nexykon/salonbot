@@ -24,6 +24,7 @@ const RAZDELKI = [
     ['/kako-deluje.html', null],
     ['/funkcije.html', null],
     ['/cenik.html', null],
+    ['/primerjava.html', null],
     ['/vprasanja.html', null]
   ]],
   ['Za katero dejavnost', [

@@ -66,7 +66,7 @@ module.exports = [
       { k: "b", t: "Zabeleženo — sreda 17:30, striženje (40 min) pri Ani. Dan prej ti pošljem opomnik." }
     ],
     stevilke: [
-      { v: "do −30 %", o: "manj praznih terminov" },
+      { v: "dan prej", o: "opomnik in prošnja za potrditev" },
       { v: "24/7", o: "naročanje tudi ponoči" },
       { v: "≈ 16 h", o: "manj telefoniranja na mesec" }
     ],
@@ -103,7 +103,7 @@ module.exports = [
     ],
     stevilke: [
       { v: "24/7", o: "naročanje brez tvojega telefona" },
-      { v: "do −30 %", o: "manj neprihodov" },
+      { v: "dan prej", o: "opomnik in prošnja za potrditev" },
       { v: "+ ocene", o: "samodejna prošnja po obisku" }
     ],
     faq: [
@@ -211,7 +211,7 @@ module.exports = [
     ],
     stevilke: [
       { v: "0", o: "zasedenih linij" },
-      { v: "do −30 %", o: "manj neprihodov" },
+      { v: "dan prej", o: "opomnik in prošnja za potrditev" },
       { v: "nujno", o: "primeri označeni takoj" }
     ],
     faq: [

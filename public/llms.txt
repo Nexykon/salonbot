@@ -26,6 +26,7 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 - [Kako FlowTek deluje — razloženo brez računalniških besed](https://flowtek.si/kako-deluje.html): Od prvega sporočila do potrjenega termina. Kaj naredimo mi, kaj ostane pri tebi in kaj se zgodi, ko bot česa ne ve.
 - [Kaj FlowTek zna — vse zmožnosti na enem mestu](https://flowtek.si/funkcije.html): Naročanje, koledar, opomniki, ocene, vabila nazaj, povezava z blagajno, nadzorna plošča. Vse, kar FlowTek prevzame namesto tebe.
 - [Cenik FlowTek — 89, 159,99 ali 299 € na mesec, brez vezave](https://flowtek.si/cenik.html): Trije paketi, fiksna mesečna cena, nič provizij od naročila. Postavitev je brezplačna, odpoved kadarkoli.
+- [FlowTek, WhatsPortal ali dostavna platforma — primerjava za lokale](https://flowtek.si/primerjava.html): Kako se razlikujejo FlowTek, WhatsPortal in dostavna platforma (Wolt): provizija, lastna številka, čas postavitve, kdo odgovarja med servisom in cena.
 - [Pogosta vprašanja o FlowTek — brez tehničnih besed](https://flowtek.si/vprasanja.html): Kaj je FlowTek, kaj mora narediti stranka, kaj s podatki, kaj če bot ne ve, koliko stane. Odgovori na vprašanja, ki jih slišimo vsak dan.
 
 ## Za katero dejavnost
@@ -70,5 +71,5 @@ Ta datoteka je namenjena jezikovnim modelom in AI iskalnikom. Vsebina strani je 
 
 ---
 
-Zadnja sprememba: 2026-09-15
+Zadnja sprememba: 2026-10-15
 Zemljevid strani: https://flowtek.si/sitemap.xml
