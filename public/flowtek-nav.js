@@ -238,6 +238,8 @@
 
   function kje(a) {
     if (a.getAttribute('data-wa')) return a.getAttribute('data-wa');   // izrecno ime
+    // Oglasne strani (preizkus-*) uporabljajo data-wa-location; pomeni isto.
+    if (a.getAttribute('data-wa-location')) return a.getAttribute('data-wa-location');
     if (a.classList.contains('wa-fab')) return 'plavajoci';
     if (a.closest('footer')) return 'noga';
     return stranSlug() + '-vsebina';
@@ -264,6 +266,14 @@
         stevilka: stevilka,
         // 814 je testna picerija (prikaz), 846 podpora — namen klika je drugačen.
         vrsta: vrsta,
+        /*
+          link_location in page_path sta ista podatka kot kje in pot strani,
+          le pod imenoma, ki ju pričakuje poročilo za oglasno kampanjo.
+          Dodana sta, obstoječa dva pa ostajata — stara poročila se ob tem
+          ne smejo pretrgati.
+        */
+        link_location: kje(a),
+        page_path: location.pathname,
         transport_type: 'beacon'
       });
     } catch (err) { /* merjenje ne sme ovirati klika */ }

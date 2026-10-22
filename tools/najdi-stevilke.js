@@ -19,6 +19,12 @@
     Zneski v evrih, ki so resnični (747,60 €, 89 €), in primeri v
     demonstracijskem pogovoru (avans 30 % pri hotelih) niso trditve o
     učinku. Izpišejo se posebej, da se vidi, da so bili pregledani.
+
+    Vrednosti atributa href se pred iskanjem izpraznijo. V pripravljenem
+    sporočilu za WhatsApp "ob 18.30?" se vprašaj zakodira v %3F, kar da niz
+    "30%" — videti je kot odstotek, čeprav je vprašaj. Brez tega bi vsak
+    pregled javljal napako, ki je ni, in se ga človek čez tri tedne neha
+    jemati resno.
 */
 const fs = require('fs');
 const path = require('path');
@@ -52,7 +58,9 @@ function datoteke(dir) {
 
 const zadetki = [];
 for (const f of datoteke(KOREN)) {
-  const vrstice = fs.readFileSync(f, 'utf8').split(/\r?\n/);
+  const vrstice = fs.readFileSync(f, 'utf8').split(/\r?\n/)
+    // Vrednost se nadomesti z enako dolgim nizom, da se stolpci ne premaknejo.
+    .map((v) => v.replace(/href="([^"]*)"/g, (m, u) => 'href="' + ' '.repeat(u.length) + '"'));
   vrstice.forEach((vrstica, i) => {
     for (const [ime, re] of VZORCI) {
       re.lastIndex = 0;

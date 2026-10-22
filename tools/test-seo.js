@@ -143,10 +143,20 @@ console.log('  (opozorila) predolgi naslovi: ' + (dolgNaslov.length ? dolgNaslov
 console.log('  (opozorila) predolgi opisi:   ' + (dolgOpis.length ? dolgOpis.join(', ') : 'ni'));
 
 console.log('\n5) Javne strani niso pozabljene v sitemapu');
-// "vodic-hvala" je stran za zahvalo: ima noindex in v sitemapu nima kaj iskati.
-const ZAPRTE_ALI_NOTRANJE = ['admin', 'salon', 'delivery', 'voznik', 'leads', 'book', 'setup', 'prijava', 'geslo', 'restavracije', 'vodic-hvala'];
+/*
+  Stran z noindex v sitemapu nima kaj iskati in ni pozabljena — tako sta
+  mišljeni stran za zahvalo po prenosu vodiča in oglasne strani preizkus-*,
+  ki so skoraj enake med sabo in bi v iskalniku tekmovale s cenikom.
+
+  Prej je bil tu seznam imen in "vodic-hvala" na njem. Pravilo je boljše od
+  seznama: naslednja taka stran se ne bo zataknila ob ta preizkus, pozabljena
+  stran brez noindex pa bo še vedno padla skozi.
+*/
+const ZAPRTE_ALI_NOTRANJE = ['admin', 'salon', 'delivery', 'voznik', 'leads', 'book', 'setup', 'prijava', 'geslo', 'restavracije'];
+const jeNoindex = (f) => /name="robots"[^>]*noindex/.test(beri(f));
 const pozabljene = datoteke
   .filter(f => !f.startsWith('public/panoga/'))
+  .filter(f => !jeNoindex(f))
   .map(f => '/' + path.basename(f))
   // index.html je v sitemapu kot "/" — to ni pozabljena stran.
   .filter(u => u !== '/index.html')

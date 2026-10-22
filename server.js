@@ -71,6 +71,17 @@ app.get('/settings.html', (req, res) => { const qs = req.originalUrl.split('?')[
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/restavracije', (req, res) => res.sendFile(path.join(__dirname, 'public', 'restavracije.html')));
+/*
+  Oglasne pristajalne strani za Meta kampanjo (ft-meta-2026-10).
+
+  Naslov v oglasu je brez končnice, zato mora delovati oboje. Datoteko
+  pošljemo neposredno in NE preusmerimo: preusmeritev bi morala sama
+  prenesti poizvedbeni niz, sicer bi se ?utm_source=…&utm_content=… izgubil
+  in vsi obiski bi v GA4 pristali kot neposredni. Tako vprašanja sploh ni.
+*/
+for (const slug of ['preizkus-gostinstvo', 'preizkus-storitve', 'preizkus-obrtniki', 'preizkus-ai']) {
+  app.get('/' + slug, (req, res) => res.sendFile(path.join(__dirname, 'public', slug + '.html')));
+}
 app.get('/voznik', (req, res) => res.sendFile(path.join(__dirname, 'public', 'voznik.html')));
 // Ponastavitev pozabljenega gesla — ena stran za zahtevo in za novo geslo.
 app.get('/geslo', (req, res) => res.sendFile(path.join(__dirname, 'public', 'geslo.html')));
