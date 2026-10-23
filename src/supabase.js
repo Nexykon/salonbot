@@ -796,13 +796,30 @@ async function updateBookingFields(id, fields) {
   );
 }
 
-// Termini za jutri kjer reminder_sent = false, created_at > 7 dni nazaj
+/*
+  Termini za jutri, kjer reminder_sent = false. Brez opomnika ostanejo samo
+  termini, rezervirani danes — kdor je za jutri pravkar rezerviral, opomnika
+  dan prej ne potrebuje.
+
+  Meja je konec včerajšnjega dne po SLOVENSKEM času, prevedena v UTC. Prej je
+  bila zapisana kot "<datum>T23:59:59Z", kar je konec dneva po UTC: poleti dve
+  uri pozneje. Rezervacija, narejena danes ob 1:30 ponoči, je pod tako mejo
+  padla med stare in dobila opomnik še isti dan.
+*/
 async function getBookingsForReminder(salonId, tomorrow) {
-  const sevenDaysAgo = new Date(tomorrow + 'T00:00:00');
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const cutoff = sevenDaysAgo.toISOString().split('T')[0];
+  const meja = t.konecDnevaUtc(t.dateOffsetStr(tomorrow, -2));
   const r = await axios.get(
-    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${tomorrow}&status=eq.confirmed&reminder_sent=eq.false&created_at=lte.${cutoff}T23:59:59Z`,
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&booking_date=eq.${tomorrow}&status=eq.confirmed&reminder_sent=eq.false&created_at=lte.${encodeURIComponent(meja)}`,
+    { headers: HEADERS }
+  );
+  return r.data;
+}
+
+// Potrjeni termini stranke na dane datume, za katere je že dobila opomnik
+// (za odgovor DA / NE na opomnik), najbližji najprej.
+async function getRemindedBookings(salonId, phone, dates) {
+  const r = await axios.get(
+    `${BASE}/sb_bookings?salon_id=eq.${salonId}&customer_phone=eq.${phone}&booking_date=in.(${dates.join(',')})&status=eq.confirmed&reminder_sent=eq.true&order=booking_date,booking_time`,
     { headers: HEADERS }
   );
   return r.data;
@@ -930,7 +947,7 @@ module.exports = {
   addSlot, removeSlot, getPendingBookings,
   getKnowledge, addKnowledge, deleteKnowledge,
   getDailyStats, getBookedTimesForDate,
-  updateBookingFields, getBookingsForReminder, getBookingsForReview, getBookingsForReactivation,
+  updateBookingFields, getBookingsForReminder, getRemindedBookings, getBookingsForReview, getBookingsForReactivation,
   getSalonByStripeSubId,
   getSalonByStripeCustomerId,
   invoiceLogged,

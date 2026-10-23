@@ -7,6 +7,7 @@ const { askAdminAI, askCustomerAI, transcribeAudio } = require('./ai');
 const { getFreeDates, getFreeTimesForDate, isSlotFree, fitsBeforeEnd, toMins } = require('./calendar');
 const t = require('./time');
 const urnik = require('./urnik');
+const opomnik = require('./opomnik');
 const { botMsg } = require('./botmsg');
 const { evri } = require('./denar');
 const besede = require('./besede');
@@ -1970,6 +1971,36 @@ async function handleMessage(msgObj, salon) {
   }
   // ══════════════════════════════════════════════════════
 
+
+  // ── Odgovor na opomnik (DA / NE) ──
+  // Gumb velja vedno; besedni "da" / "ne" samo zunaj drugega pogovora in samo,
+  // če ima stranka danes ali jutri termin, za katerega je dobila opomnik.
+  const naOpomnik = opomnik.razberi(iId, msgText);
+  if (naOpomnik && (naOpomnik.bookingId || !(sess && sess.step))) {
+    const today = t.todayStr();
+    let termini = [];
+    try { termini = await db.getRemindedBookings(salon.id, from, [today, t.dateOffsetStr(today, 1)]); } catch (e) { console.error('[opomnik] branje terminov:', e.message); }
+    const b = naOpomnik.bookingId ? termini.find(x => x.id === naOpomnik.bookingId) : termini[0];
+    if (b) {
+      const ura = (b.booking_time || '').substring(0, 5);
+      if (naOpomnik.odgovor === 'ne') {
+        await db.updateBookingStatus(b.id, 'cancelled');
+        await wa.send(phoneId, token, wa.textMsg(from, opomnik.odgovorNe()));
+        if (salonAdminPhone) {
+          wa.send(phoneId, token, wa.textMsg(salonAdminPhone, opomnik.obvestiloLastniku(b, fmtDate(b.booking_date))))
+            .catch(e => console.error('[opomnik] obvestilo lastniku:', e.message));
+        }
+      } else {
+        await wa.send(phoneId, token, wa.textMsg(from, opomnik.odgovorDa(ura)));
+      }
+      return;
+    }
+    // Gumb starega opomnika (termin že odpovedan ali mimo): pove, namesto da molči.
+    if (naOpomnik.bookingId) {
+      await wa.send(phoneId, token, wa.textMsg(from, 'Tega termina ni več med prihajajočimi. Za nov termin nam pišite. 🙂'));
+      return;
+    }
+  }
 
   const VALID_MODES = ['exact_time', 'date_only', 'inquiry', 'month_only'];
   const bookingMode = VALID_MODES.includes(salon.booking_mode) ? salon.booking_mode : 'exact_time';

@@ -3,6 +3,7 @@ const db = require('./supabase');
 const wa = require('./whatsapp');
 const mail = require('./email');
 const t = require('./time');
+const opomnik = require('./opomnik');
 
 const ADMIN_PHONE = process.env.ADMIN_PHONE;
 
@@ -22,9 +23,9 @@ function todayStr() {
   return t.todayStr();
 }
 
-// ─── 1. OPOMNIK (dan pred terminom, samo če rezervirano >7 dni vnaprej) ──────
-// Pogoj: booking_date = jutri AND created_at <= booking_date - 7 dni
-// → Stranka ki je rezervirala vsaj teden naprej dobi opomnik dan pred terminom
+// ─── 1. OPOMNIK (dan pred terminom, z DA / NE) ───────────────────────────────
+// Pogoj: booking_date = jutri, rezervirano pred danes (getBookingsForReminder)
+// → Stranka dobi opomnik dan pred terminom; odgovor obdela src/opomnik.js
 async function sendReminders() {
   try {
     const salons = await db.getAllSalons();
@@ -37,16 +38,24 @@ async function sendReminders() {
       const bookings = await db.getBookingsForReminder(salon.id, tomorrow);
       for (const b of bookings) {
         try {
-          const time = (b.booking_time || '').substring(0, 5);
-          const name = b.customer_name || 'stranka';
-          const dateLabel = fmtDate(b.booking_date);
-          const msg =
-            `⏰ *Opomnik za jutri*\n\n` +
-            `Pozdravljeni${name ? ' ' + name.split(' ')[0] : ''}! 👋\n\n` +
-            `Jutri, *${dateLabel}* ob *${time}*, vas čakamo v salonu *${salon.name}*.\n\n` +
-            `Če ne morete priti, nas prosim obvestite čim prej. Hvala! 🙏`;
+          /*
+            Predloga, ne interaktivno sporočilo. Prejemnik je rezerviral vsaj
+            dva dni prej, zato je skoraj zagotovo zunaj 24-urnega okna, kjer
+            WhatsApp prepusti samo odobrene predloge. Prejšnja rezerva
+            "če gumbi ne gredo, pošlji besedilo" ni rešila ničesar — navadno
+            besedilo pade iz istega razloga — in je skrila pravi vzrok.
 
-          await wa.send(phoneId, token, wa.textMsg(b.customer_phone, msg));
+            Gumba DA / NE sta del predloge; odgovor nanju obdela handler prek
+            src/opomnik.js, prav tako besedni "da" / "ne".
+          */
+          await wa.send(phoneId, token, wa.reminderTemplate(
+            b.customer_phone, fmtDate(b.booking_date), (b.booking_time || '').substring(0, 5), salon.name, b.id
+          ));
+          /*
+            reminder_sent se postavi šele po uspešnem pošiljanju. Če je bilo
+            prej obratno, bi en zavrnjen opomnik pomenil, da stranka ne dobi
+            nobenega — niti naslednji dan, ko bi bil poskus smiseln.
+          */
           await db.updateBookingFields(b.id, { reminder_sent: true });
           console.log(`[reminder] Sent to ${b.customer_phone} for ${b.booking_date}`);
         } catch (e) {

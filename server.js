@@ -3796,11 +3796,32 @@ app.listen(PORT, () => {
   console.log(`FlowTek server running on port ${PORT}`);
   /*
     Uskladitev naročnin s Stripom. Zavestno ni v startScheduler(): tista
-    funkcija se v tem projektu nikoli ne kliče, poleg tega pa poganja tudi
-    pošiljanje pošte strankam (dnevni povzetki, opomniki, prošnje za ocene).
-    Plačila ne smejo biti odvisna od tega, ali se tisto vklopi.
+    opravila se dajo izklopiti, plačila pa ne smejo biti odvisna od tega.
   */
   stripeSync.zacniUskladitev();
+
+  /*
+    DNEVNA OPRAVILA
+
+    startScheduler() je bil mesece uvožen in nikjer klican. Zato ni delovalo
+    nič, kar je od njega odvisno — med drugim opomnik dan pred terminom in z
+    njim ves odgovor DA / NE, ker brez poslanega opomnika reminder_sent nikoli
+    ne postane true.
+
+    Stikalo in ne gol klic, ker ta ena vrstica prižge šest opravil, ki pišejo
+    strankam in lastnikom: opomnike, prošnje za oceno, reaktivacije po osmih
+    tednih, dnevni povzetek, opomnike za podaljšanje naročnine in obvestila ob
+    poteku. Vklop je zato zavestna poteza — sprememba spremenljivke v Railwayu,
+    brez nove gradnje in enako hitro nazaj.
+
+    Izpis ob zagonu je del rešitve: prav molk je bil razlog, da se "izklopljeno"
+    mesece ni ločilo od "pozabljeno".
+  */
+  if (process.env.SCHEDULER === '1') {
+    startScheduler();
+  } else {
+    console.log('[scheduler] izklopljen (SCHEDULER != 1) — opomniki, ocene, reaktivacije in povzetki ne tečejo');
+  }
 
   /*
     Predpomnilnik preklicanih master sej. Napolnimo ga takoj, da odjava velja

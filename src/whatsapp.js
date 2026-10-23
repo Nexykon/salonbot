@@ -251,6 +251,55 @@ function customerConfirmTemplate(to, date, time, salonName) {
   };
 }
 
+/*
+  Template za stranko — opomnik dan pred terminom, z gumboma DA / NE.
+  Zahteva odobren Meta template "salon_opomnik" (sl).
+
+  ZAKAJ PREDLOGA IN NE NAVADNO SPOROČILO
+
+    Opomnik gre tistim, ki so rezervirali vsaj dva dni prej. Kdor od takrat ni
+    pisal, je zunaj 24-urnega servisnega okna, kjer WhatsApp prepusti samo
+    odobrene predloge — tam pade tako interaktivno sporočilo kot navadno
+    besedilo. Rezerva "če gumbi ne gredo, pošlji besedilo" zato ne reši nič.
+
+  ZAKAJ GUMBOV NI TREBA POSEBEJ RAZBIRATI
+
+    Hitri odgovor na predlogo pride kot msgType 'button' s payloadom; handler
+    ga že bere (src/handler.js, iId = msgObj.button.payload). Payload je zato
+    isti niz kot pri interaktivnih gumbih, opomnik.razberi() pa ostane
+    nespremenjen.
+
+    Vrstni red gumbov tu mora ustrezati vrstnemu redu v odobreni predlogi:
+    index 0 je DA, index 1 je NE.
+*/
+function reminderTemplate(to, date, time, salonName, bookingId) {
+  return {
+    messaging_product: 'whatsapp', to, type: 'template',
+    template: {
+      name: 'salon_opomnik',
+      language: { code: 'sl' },
+      components: [
+        {
+          type: 'body',
+          parameters: [
+            { type: 'text', text: date },
+            { type: 'text', text: time },
+            { type: 'text', text: salonName || 'Salon' }
+          ]
+        },
+        {
+          type: 'button', sub_type: 'quick_reply', index: '0',
+          parameters: [{ type: 'payload', payload: 'opomnik_da_' + bookingId }]
+        },
+        {
+          type: 'button', sub_type: 'quick_reply', index: '1',
+          parameters: [{ type: 'payload', payload: 'opomnik_ne_' + bookingId }]
+        }
+      ]
+    }
+  };
+}
+
 
 function salesTypeList(to) {
   return {
@@ -565,4 +614,4 @@ function posAdminNotif(to, customerPhone, cartText, comment, total, ref6) {
   };
 }
 
-module.exports = { send, textMsg, gumbi, BTN_TELO, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryWelcome, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };
+module.exports = { send, textMsg, gumbi, BTN_TELO, serviceList, dateList, timeList, confirmButtons, finalConfirmButtons, adminBookingNotif, adminBookingNotifSession, adminPendingButtons, customerConfirmTemplate, reminderTemplate, salesTypeList, salesConfirmButtons, deliveryMenuList, deliveryMenuText, deliveryWelcome, deliveryCartButtons, deliveryConfirmButtons, deliveryAdminNotif, posAdminNotif };
