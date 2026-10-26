@@ -13,11 +13,24 @@ navadno besedilo in gumbi so zavrnjeni enako.
 Zato ne pomaga, da bi opomnik poslali »kar kot sporočilo«. Brez odobrene
 predloge opomnika ni.
 
+## Enkrat za vsako stranko, ne enkrat za FlowTek
+
+**Predloga je vezana na račun WhatsApp Business, ne na našo aplikacijo.** Vsaka
+stranka ima svojega, kar se vidi iz žetonov — `/me` vrne tri različne
+identitete: Botana `122110725591430859`, Test Picerija in FlowTek si delita
+`122106796623463475`, Trixy-Tatoo-Art `122110154349416908`.
+
+Odobrena predloga torej velja **samo pri tisti stranki**. Pri naslednji je
+treba ves spodnji postopek ponoviti na njenem računu, sicer pošiljanje vrne
+napako 132001 — predloge s tem imenom tam ni.
+
+To sodi v postopek priklopa nove stranke, ne v enkratno nastavitev.
+
 ## Kaj narediti
 
 **Kje:** Meta Business Manager → WhatsApp Manager → **Message templates** →
-*Create template*. Potrebuješ dostop do WhatsApp Business računa, ki poganja
-FlowTek.
+*Create template*. Potrebuješ dostop do WhatsApp Business računa **tiste
+stranke**, ki jo priklapljaš.
 
 ### 1 · Osnovno
 
@@ -85,6 +98,40 @@ mora ostati hiter odgovor, sicer koda odgovora ne prepozna.
 
 Odobritev običajno traja od nekaj ur do nekaj dni. Dokler stanje ni
 **Approved**, opomnikov ne vklapljaj.
+
+## Kako preveriti, da je res odobrena
+
+```
+node tools/preizkus-predloge.js --lokal "Test Picerija" --na 38641791370
+node tools/preizkus-predloge.js --lokal "Test Picerija" --na 38641791370 --zares
+```
+
+Brez `--zares` se nič ne pošlje — izpiše se le, kaj bi odšlo in komu.
+
+Seznama predlog od tu ni mogoče prebrati: za to je potreben id računa WhatsApp
+Business, ki ga nikjer ne hranimo (`sb_salons` ima le `whatsapp_phone_number_id`
+in `whatsapp_access_token`), v Railwayu ga ni, in iz sistemskega žetona se ga ne
+da izluščiti — `whatsapp_business_management` je podeljen brez omejitve na
+račune, zato v `debug_token` ni nobenega id-ja.
+
+Poskus pošiljanja je zato edina preverba, ki nam je na voljo — in hkrati
+močnejša od seznama, ker potrdi celo pot: ime predloge, jezik in število
+parametrov. Odgovori, ki nekaj povedo:
+
+| koda | pomen |
+|---|---|
+| sprejeto | predloga obstaja, je odobrena in parametri se ujemajo |
+| 132001 | predloge s tem imenom in jezikom na tem računu ni |
+| 132005 | predloga ni odobrena |
+| 132000 | število parametrov se ne ujema s predlogo |
+
+**Česar ta preverba ne pove, je vrstni red gumbov.** Tega je treba pogledati na
+telefonu: levi mora biti DA, desni NE. Gumba v preizkusnem sporočilu je varno
+tapniti — v tovoru je `preizkus-brez-termina` in ne pravi id, zato se ne more
+ničesar odpovedati; bot odgovori, da tega termina ni več med prihajajočimi.
+
+Stanje 26. 10. 2026: predloga je potrjena na računu Test Picerije in FlowTeka
+(`122106796623463475`). Pri Botani in Trixyju je ni.
 
 ## Ko je predloga odobrena
 
