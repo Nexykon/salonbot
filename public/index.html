@@ -268,6 +268,31 @@
           <div style="font-size:13px;color:var(--muted-2)">Naročanje prek WhatsAppa je vzpostavljeno</div>
         </div>
       </div>
+      <!--
+        Lokal, ki je v priklopu. NAMENOMA BREZ data-lokal: ko se naloži JS,
+        trak prepiše s podatki iz /api/public/restaurants in pri tem odstrani
+        vse kartice s tem atributom. Kartica z njim bi izginila takoj, ko
+        stran oživi, in bi jo videl samo obiskovalec brez JS.
+
+        Ločena je tudi po videzu — blede barve in oznaka "V pripravi" — ker
+        naročil prek WhatsAppa še ne sprejema. Trak nad njo trdi prav to, zato
+        mora biti razlika vidna brez branja drobnega tiska.
+      -->
+      <div class="card" style="padding:16px 20px;display:flex;align-items:center;gap:16px;min-width:260px;background:var(--cream-2);border-style:dashed">
+        <!--
+          Znak je kvadraten, Botanin napis pa širok, zato tu ni istega
+          razmerja. Izvirnik je bil 872×877 in 805 KB — za prikaz v velikosti
+          46 px je pomanjšan na 132 px in spravljen v paleto 128 barv
+          (9 KB). Ozadje je prozorno, zato na kremni kartici ni belega polja.
+        -->
+        <img src="/nejka-logo.png" alt="Restavracija Nejka" loading="lazy"
+             style="width:46px;height:46px;object-fit:contain;flex:0 0 auto">
+        <div>
+          <div style="font-weight:800;font-size:18px">Restavracija Nejka</div>
+          <div style="font-size:12px;font-weight:700;color:var(--rust);font-family:var(--mono);letter-spacing:.04em;margin-top:2px">V PRIPRAVI</div>
+          <div style="font-size:13px;color:var(--muted-2);margin-top:2px">Priklop je v teku</div>
+        </div>
+      </div>
       <div class="card card--dashed" style="padding:16px 20px;display:flex;flex-direction:column;justify-content:center;min-width:200px">
         <div style="font-size:14.5px;font-weight:600;color:var(--muted)">Tu je prostor za tvoj lokal.</div>
         <a href="/kontakt.html" style="font-size:14px;margin-top:5px">Odpri račun →</a>
