@@ -23,6 +23,32 @@
 /* Skupno besedilo — dobesedno, kot je naročeno. */
 const SKUPNO = {
   opombaPodGumbom: 'Odpre se WhatsApp pogovor s testno picerijo. Piši kot stranka – odgovori AI pomočnik.',
+
+  /*
+    Obrazec za povratni klic.
+
+    Podatki od 24. do 25. 10.: 176 obiskov iz plačanih oglasov, povprečen
+    obisk 4–7 sekund, dva klika na WhatsApp in nobene prijave. Kdor pride iz
+    oglasa za salon ali servis, dobi demonstracijo naročanja pice — in nobene
+    druge poti naprej razen gumba, ki ga odpelje v tujo aplikacijo.
+
+    Obrazec je zato druga, tišja pot: ime in telefon, brez e-naslova.
+    Namenoma ne obljublja, kdaj bo klic — tega podatka nimamo.
+  */
+  obrazecNaslov: 'Raje, da te pokličemo?',
+  obrazecVrstica: 'Pusti ime in telefon. Poklicali te bomo in povedali, kako bi pomočnik delal pri tebi.',
+  obrazecIme: 'Ime',
+  obrazecTelefon: 'Telefon',
+  obrazecImeNamig: 'Maja Novak',
+  obrazecTelefonNamig: '041 123 456',
+  obrazecSoglasje: 'Strinjam se, da me kontaktirate glede FlowTek. Podatke uporabljamo samo za to.',
+  obrazecZasebnost: 'Več o zasebnosti ↗',
+  obrazecGumb: 'Pokličite me',
+  obrazecPosiljam: 'Pošiljam…',
+  obrazecUspeh: 'Hvala! Poklicali te bomo.',
+  obrazecNapakaPolja: 'Vpiši prosim ime in telefon.',
+  obrazecNapakaSoglasje: 'Za klic potrebujemo tvoje soglasje.',
+  obrazecNapakaSplosna: 'Prijave ni bilo mogoče poslati. Poskusi še enkrat ali nam piši na WhatsApp: 069 323 846.',
   korakiNaslov: 'Kako deluje',
   koraki: [
     'Stranka piše na tvojo obstoječo WhatsApp številko. Ne rabi nove aplikacije.',
@@ -51,7 +77,8 @@ const STRANI = [
     podnaslov: 'AI pomočnik na tvoji WhatsApp številki sprejme naročilo namesto tebe – tudi v največji gneči.',
     gumb: 'Preizkusi testno picerijo na WhatsAppu',
     sporocilo: 'Živjo, lahko naročim eno capriccioso in dve koli?',
-    dodatnaVrstica: null,
+    zaKoga: 'Za picerije, gostilne in restavracije',
+    demo: 'To je testna picerija – piši ji kot gost in poglej, kako bi pomočnik odgovarjal tvojim gostom.',
     kotNaslov: 'Za picerije, gostilne in restavracije',
     kot: [
       'Razume prosto besedilo in pogleda kuhinjo',
@@ -70,11 +97,14 @@ const STRANI = [
     podnaslov: 'AI pomočnik na tvoji WhatsApp številki pogleda koledar, potrdi termin in dan prej pošlje opomnik.',
     gumb: 'Preizkusi kot stranka na WhatsAppu',
     sporocilo: 'Živjo, imate jutri ob 19.00 prosto mizo za štiri?',
+    zaKoga: 'Za frizerske in kozmetične salone',
     /*
-      Testni lokal je picerija, stran pa govori o salonih. Brez te vrstice
-      obiskovalec odpre pogovor in misli, da je kliknil napačen oglas.
+      Testni lokal je picerija, stran pa govori o salonih. Prej je to pisalo
+      pod gumbom, torej za odločitvijo; zdaj stoji pred njim, kjer obiskovalec
+      še gleda. Povprečen obisk je trajal štiri do sedem sekund — kar je pod
+      gumbom, tega ni prebral nihče.
     */
-    dodatnaVrstica: 'Testni lokal je picerija – rezerviraj mizo in vidiš, kako pomočnik dogovori termin.',
+    demo: 'Testni lokal je picerija: rezerviraj mizo. Pri tebi pomočnik na enak način dogovori termin – po tvojem koledarju.',
     kotNaslov: 'Za frizerske in kozmetične salone',
     kot: [
       'Pogleda tvoj koledar in potrdi termin v nekaj sekundah',
@@ -93,7 +123,8 @@ const STRANI = [
     podnaslov: 'AI pomočnik na tvoji WhatsApp številki se s stranko dogovori za termin – ti pa delaš naprej.',
     gumb: 'Preizkusi kot stranka na WhatsAppu',
     sporocilo: 'Živjo, lahko naročim dve margeriti za prevzem ob 18.30?',
-    dodatnaVrstica: 'Testni lokal je picerija – isti pomočnik enako sprejema termine.',
+    zaKoga: 'Za avtoservise in obrtnike',
+    demo: 'Testni lokal je picerija: naroči kot stranka. Pri tebi pomočnik namesto naročila dogovori termin za servis – po tvojem koledarju.',
     kotNaslov: 'Za avtoservise in obrtnike',
     kot: [
       'Odgovarja 24/7 in pogleda tvoj koledar',
@@ -112,7 +143,8 @@ const STRANI = [
     podnaslov: 'FlowTek je AI avtomatizacija na tvoji obstoječi WhatsApp številki – za lokale, salone, servise in obrtnike.',
     gumb: 'Preizkusi kot stranka na WhatsAppu',
     sporocilo: 'Živjo, kaj vse lahko naročim pri vas?',
-    dodatnaVrstica: null,
+    zaKoga: 'Za lokale, salone, servise in obrtnike',
+    demo: 'Testni lokal je picerija. Pri tebi pomočnik dela enako – za naročila, rezervacije ali termine.',
     kotNaslov: 'Kaj avtomatizira',
     kot: [
       'Naročila, rezervacije in termini 24/7',

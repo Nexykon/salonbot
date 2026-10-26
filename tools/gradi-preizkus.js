@@ -52,6 +52,39 @@ const gumb = (s, kje) => {
     + ' data-wa-location="' + esc(s.slug + '-' + kje) + '">' + esc(s.gumb) + '</a>';
 };
 
+/*
+  Obrazec za povratni klic — druga pot za tistega, ki ne želi odpreti
+  WhatsAppa. Gumb je namenoma tihi (btn--ghost), da glavni poziv ostane eden.
+
+  Polja so samo tri: ime, telefon, soglasje. E-naslova ne zahtevamo, ker
+  vsako polje več pomeni manj prijav, mi pa za klic potrebujemo le številko.
+*/
+const obrazec = (s) => `<section class="sec sec--cream sec--sm" id="poklici">
+  <div class="wrap">
+    <h2 class="h-4">${esc(SKUPNO.obrazecNaslov)}</h2>
+    <p class="pz-opomba" style="max-width:52ch">${esc(SKUPNO.obrazecVrstica)}</p>
+
+    <div class="pz-uspeh" id="pz-uspeh" style="display:none" role="status">${esc(SKUPNO.obrazecUspeh)}</div>
+
+    <form class="pz-obrazec" id="pz-obrazec" novalidate>
+      <div class="field">
+        <label for="pz-ime">${esc(SKUPNO.obrazecIme)}</label>
+        <input type="text" id="pz-ime" name="ime" placeholder="${esc(SKUPNO.obrazecImeNamig)}" autocomplete="name" required>
+      </div>
+      <div class="field">
+        <label for="pz-tel">${esc(SKUPNO.obrazecTelefon)}</label>
+        <input type="tel" id="pz-tel" name="telefon" placeholder="${esc(SKUPNO.obrazecTelefonNamig)}" autocomplete="tel" inputmode="tel" required>
+      </div>
+      <label class="check">
+        <input type="checkbox" id="pz-soglasje" name="soglasje" required>
+        <span>${esc(SKUPNO.obrazecSoglasje)} <a href="/varnost.html" target="_blank" rel="noopener">${esc(SKUPNO.obrazecZasebnost)}</a></span>
+      </label>
+      <div class="form-error" id="pz-napaka" style="display:none" role="alert"></div>
+      <button class="btn btn--ghost" type="submit" id="pz-poslji">${esc(SKUPNO.obrazecGumb)}</button>
+    </form>
+  </div>
+</section>`;
+
 const izracun = () => `      <div class="pz-izracun">
         <div>${esc(SKUPNO.izracun)}</div>
         <div class="pz-izracun-drobno">${esc(SKUPNO.izracunDrobno)}</div>
@@ -107,9 +140,25 @@ function stran(s) {
   .pz-junak { padding: 26px 0 30px; }
   .pz-junak h1 { font-size: clamp(27px, 7vw, 44px); line-height: 1.1; }
   .pz-junak .pz-pod { font-size: 17px; color: var(--ink-2); line-height: 1.5; margin-top: 12px; max-width: 46ch; }
+  /* Komu je stran namenjena — obiskovalec pride iz oglasa in ne ve, kam je prišel. */
+  .pz-za { font-size: 15px; color: var(--ink-2); margin-bottom: 8px; }
+  /*
+    Pojasnilo, da je demonstracija picerija, stoji PRED gumbom. Prej je bilo
+    pod njim, torej za odločitvijo, in v drobnem tisku — pri povprečnem
+    obisku štirih do sedmih sekund ga ni prebral nihče.
+  */
+  .pz-demo { font-size: 15.5px; color: var(--ink-2); line-height: 1.5; margin-top: 14px; max-width: 46ch; }
   .pz-gumb { margin-top: 20px; font-size: 17px; }
-  .pz-opomba { font-size: 13.5px; color: var(--muted-2); margin-top: 12px; max-width: 48ch; line-height: 1.5; }
+  .pz-opomba { font-size: 14.5px; color: var(--muted-2); margin-top: 12px; max-width: 48ch; line-height: 1.5; }
   .pz-opomba + .pz-opomba { margin-top: 6px; }
+  /*
+    Na teh štirih straneh je en sam glavni poziv — gumb na WhatsApp. Prijava
+    in "Odpri račun" v glavi sta tekmovala z njim; povezave v meniju ostanejo,
+    plavajoči gumb za podporo prav tako.
+  */
+  .pz-stran .head-actions { display: none; }
+  .pz-obrazec { display: grid; gap: 14px; margin-top: 20px; max-width: 420px; }
+  .pz-uspeh { border: 2px solid var(--ink); border-radius: var(--r); background: var(--green-tint); padding: 18px 20px; margin-top: 20px; font-size: 17px; font-weight: 600; max-width: 420px; }
   .pz-koraki { display: grid; gap: 14px; margin-top: 22px; counter-reset: pz; }
   .pz-korak { display: flex; gap: 14px; align-items: flex-start; font-size: 16px; line-height: 1.5; color: var(--ink-2); }
   .pz-st {
@@ -125,7 +174,7 @@ function stran(s) {
   .pz-cena span { display: block; font-size: 19px; font-weight: 800; margin-top: 6px; }
   .pz-izracun { border: 1.5px solid var(--line-2); border-radius: 14px; padding: 15px 17px; margin-top: 22px; background: var(--cream-2); max-width: 52ch; }
   .pz-izracun > div:first-child { font-size: 15.5px; color: var(--ink-2); line-height: 1.5; }
-  .pz-izracun-drobno { font-size: 13px; color: var(--muted-2); margin-top: 6px; }
+  .pz-izracun-drobno { font-size: 14px; color: var(--muted-2); margin-top: 6px; }
   @media (max-width: 520px) {
     .pz-cene { grid-template-columns: 1fr; gap: 10px; }
     .pz-cena { display: flex; align-items: baseline; justify-content: space-between; text-align: left; padding: 13px 16px; }
@@ -133,18 +182,22 @@ function stran(s) {
   }
 </style>
 </head>
-<body>
+<body class="pz-stran">
 
 ${GLAVA}
 
 <section class="sec sec--grad pz-junak">
   <div class="wrap">
+    <p class="pz-za">${esc(s.zaKoga)}</p>
     <h1 class="h-1">${esc(s.h1)}</h1>
     <p class="pz-pod">${esc(s.podnaslov)}</p>
+    <p class="pz-demo">${esc(s.demo)}</p>
     ${gumb(s, 'hero')}
     <p class="pz-opomba">${esc(SKUPNO.opombaPodGumbom)}</p>
-${s.dodatnaVrstica ? '    <p class="pz-opomba">' + esc(s.dodatnaVrstica) + '</p>\n' : ''}${s.izracunPodJunakom ? izracun() + '\n' : ''}  </div>
+${s.izracunPodJunakom ? izracun() + '\n' : ''}  </div>
 </section>
+
+${obrazec(s)}
 
 <section class="sec sec--sm">
   <div class="wrap">
@@ -184,6 +237,80 @@ ${s.izracunPodJunakom ? '' : izracun() + '\n'}  </div>
 </section>
 
 ${NOGA}
+
+<script>
+/*
+  Oddaja obrazca za povratni klic. Enak vzorec kot kontakt.html.
+
+  Dogodka generate_lead in Lead se sprožita SAMO za preverbo r.ok. Strežnik
+  vrne 502, kadar prijave ni uspel ne poslati ne zapisati; takrat obiskovalec
+  vidi napako in oglas ne dobi konverzije, ki se ni zgodila.
+*/
+(function () {
+  var form = document.getElementById('pz-obrazec');
+  if (!form) return;
+  var napaka = document.getElementById('pz-napaka');
+  var gumb = document.getElementById('pz-poslji');
+  var SLUG = ${JSON.stringify(s.slug)};
+
+  function pokaziNapako(t) {
+    napaka.textContent = t;
+    napaka.style.display = 'block';
+  }
+
+  /* Parametri kampanje gredo v obvestilo, sicer ne vemo, kateri oglas je prijavo prinesel. */
+  function utm() {
+    var ven = {};
+    try {
+      new URLSearchParams(location.search).forEach(function (v, k) {
+        if (k.indexOf('utm_') === 0) ven[k] = v;
+      });
+    } catch (e) { /* starejši brskalnik — prijava je pomembnejša od oznake */ }
+    return ven;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    napaka.style.display = 'none';
+
+    var ime = document.getElementById('pz-ime').value.trim();
+    var tel = document.getElementById('pz-tel').value.trim();
+    var soglasje = document.getElementById('pz-soglasje').checked;
+
+    if (!ime || !tel) return pokaziNapako(${JSON.stringify(SKUPNO.obrazecNapakaPolja)});
+    if (!soglasje) return pokaziNapako(${JSON.stringify(SKUPNO.obrazecNapakaSoglasje)});
+
+    gumb.disabled = true;
+    gumb.textContent = ${JSON.stringify(SKUPNO.obrazecPosiljam)};
+
+    fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: ime, phone: tel, email: '',
+        business_type: SLUG + ' · povratni klic',
+        source: SLUG, soglasje: true, utm: utm()
+      })
+    }).then(function (r) {
+      if (!r.ok) {
+        return r.json().catch(function () { return {}; }).then(function (d) {
+          throw new Error(d && d.error ? d.error : '');
+        });
+      }
+      form.style.display = 'none';
+      document.getElementById('pz-uspeh').style.display = 'block';
+      if (typeof gtag === 'function') gtag('event', 'generate_lead', {
+        method: 'preizkus-obrazec', page_path: location.pathname, link_location: SLUG + '-obrazec'
+      });
+      if (typeof ftSledi === 'function') ftSledi('Lead', { content_name: 'preizkus-obrazec-' + SLUG });
+    }).catch(function (e) {
+      gumb.disabled = false;
+      gumb.textContent = ${JSON.stringify(SKUPNO.obrazecGumb)};
+      pokaziNapako((e && e.message) || ${JSON.stringify(SKUPNO.obrazecNapakaSplosna)});
+    });
+  });
+})();
+</script>
 
 </body>
 </html>

@@ -80,7 +80,20 @@ function zazeni() {
     }
 
     trdi('    opomba pod gumbom', (t.match(new RegExp(SKUPNO.opombaPodGumbom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length === 2);
-    if (s.dodatnaVrstica) trdi('    dodatna vrstica o testnem lokalu', t.includes(s.dodatnaVrstica));
+
+    /*
+      Vrstni red v junaku je bistvo te spremembe: komu je stran namenjena,
+      nato naslov, nato pojasnilo o testni piceriji — in šele potem gumb.
+      Prej je pojasnilo stalo POD gumbom, torej za odločitvijo.
+    */
+    const junak = t.slice(t.indexOf('pz-junak'), t.indexOf('</section>', t.indexOf('pz-junak')));
+    const mesto = (igla) => junak.indexOf(igla);
+    trdi('    pove, komu je namenjena', junak.includes('<p class="pz-za">' + s.zaKoga + '</p>'));
+    trdi('    nagovor stoji nad naslovom', mesto('pz-za') < mesto('<h1'), '');
+    trdi('    pojasnilo o demonstraciji je v junaku', junak.includes('<p class="pz-demo">' + s.demo + '</p>'));
+    trdi('    pojasnilo stoji NAD gumbom', mesto('pz-demo') > -1 && mesto('pz-demo') < mesto('pz-gumb'), '');
+    trdi('    pod gumbom je ena sama opomba', (junak.match(/class="pz-opomba"/g) || []).length === 1,
+      'najdenih ' + (junak.match(/class="pz-opomba"/g) || []).length);
     trdi('    trije koraki', SKUPNO.koraki.every((k) => t.includes(k)));
     trdi('    pet kljukic', s.kot.every((v) => t.includes('✅ ' + v)), '');
     trdi('    cene vseh treh paketov', SKUPNO.paketi.every((p) => t.includes(p.cena)));
@@ -102,6 +115,35 @@ function zazeni() {
     const brezNaslovov = t.replace(/href="[^"]*"/g, 'href=""');
     for (const [ime, re] of PREPOVEDANE) trdi('    brez ' + ime, !re.test(brezNaslovov));
     for (const [ime, re] of PREPOVEDANE) trdi('    sporočilo brez ' + ime, !re.test(s.sporocilo));
+
+    /* ── Obrazec za povratni klic ── */
+    const obr = t.slice(t.indexOf('id="poklici"'), t.indexOf('</section>', t.indexOf('id="poklici"')));
+    /* Ne "Kako deluje" kot niz — tako piše tudi povezava v glavi, ki stoji prej. */
+    trdi('    obrazec stoji takoj za junakom',
+      t.indexOf('id="poklici"') > t.indexOf('pz-junak')
+      && t.indexOf('id="poklici"') < t.indexOf('<h2 class="h-4">' + SKUPNO.korakiNaslov + '</h2>'), '');
+    trdi('    naslov obrazca', obr.includes(SKUPNO.obrazecNaslov));
+    trdi('    polje za ime je obvezno', /id="pz-ime"[^>]*autocomplete="name"[^>]*required/.test(obr));
+    trdi('    polje za telefon je obvezno', /id="pz-tel"[^>]*inputmode="tel"[^>]*required/.test(obr));
+    trdi('    soglasje je obvezno', /id="pz-soglasje"[^>]*required/.test(obr));
+    trdi('    povezava na zasebnost se odpre v novem zavihku', /href="\/varnost\.html" target="_blank" rel="noopener"/.test(obr));
+    trdi('    sporočilo o napaki ima role=alert', /id="pz-napaka"[^>]*role="alert"/.test(obr));
+    trdi('    potrdilo je skrito do oddaje', /id="pz-uspeh"[^>]*display:none/.test(obr));
+    /* Gumb obrazca je tihi, da glavni poziv ostane eden — gumb na WhatsApp. */
+    trdi('    gumb obrazca ni glavni poziv', /id="pz-poslji"/.test(obr) && /btn btn--ghost[^>]*type="submit"|class="btn btn--ghost" type="submit"/.test(obr));
+
+    /* ── Skripta obrazca ── */
+    trdi('    dogodka se sprožita šele po r.ok', t.indexOf('if (!r.ok)') < t.indexOf("gtag('event', 'generate_lead'"), '');
+    trdi('    generate_lead nosi method in pot', /method: 'preizkus-obrazec', page_path: location\.pathname/.test(t));
+    trdi('    Lead nosi ime strani', t.includes("'preizkus-obrazec-' + SLUG"));
+    trdi('    ob napaki se gumb spet omogoči', /catch\(function \(e\) \{\s*gumb\.disabled = false;/.test(t));
+    trdi('    parametri kampanje gredo zraven', t.includes("k.indexOf('utm_') === 0"));
+    trdi('    strežnik dobi source', t.includes('source: SLUG'));
+
+    /* ── En sam glavni poziv ── */
+    trdi('    telo nosi razred strani', /<body class="pz-stran">/.test(t));
+    trdi('    Prijava in Odpri račun sta skrita', t.includes('.pz-stran .head-actions { display: none; }'));
+    trdi('    povezave v meniju ostanejo', t.includes('<nav class="head-nav">'));
   }
 
   console.log('\n2. Merjenje klika');

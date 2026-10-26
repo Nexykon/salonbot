@@ -35,9 +35,31 @@ je('nobena stran nima svoje kopije',
 console.log('\n2) PageView povsod, Lead samo ob oddaji');
 je('PageView je v skupni kodi', /fbq\('track', 'PageView'\)/.test(NAV), true);
 
-// Lead sme biti samo na teh dveh straneh in nikjer drugje.
+/*
+  Lead sme biti samo tam, kjer je človek res nekaj oddal: kontaktni obrazec,
+  stran za zahvalo po prenosu vodiča in obrazci za povratni klic na oglasnih
+  straneh. Nikjer drugje — klik na WhatsApp je izkazano zanimanje, ne
+  konverzija, in ogled strani sploh ne.
+*/
 const zLead = straniHtml.filter((f) => /ftSledi\(\s*'Lead'/.test(beri(f)));
-je('Lead je natanko na dveh mestih', zLead.sort(), ['kontakt.html', 'vodic-hvala.html']);
+je('Lead je samo na straneh z oddajo', zLead.sort(), [
+  'kontakt.html',
+  'preizkus-ai.html', 'preizkus-gostinstvo.html', 'preizkus-obrtniki.html', 'preizkus-storitve.html',
+  'vodic-hvala.html'
+]);
+
+/*
+  Pomembnejše od seznama strani je, KJE na strani dogodek stoji. Vsak Lead
+  mora biti za preverbo odgovora strežnika — sicer bi oglas dobil konverzijo
+  tudi takrat, ko prijava ni prišla nikamor. Na vodic-hvala.html preverbe ni,
+  ker je ta stran sama dokaz uspešne oddaje.
+*/
+const predčasni = zLead.filter((f) => {
+  if (f === 'vodic-hvala.html') return false;
+  const t = beri(f);
+  return !(t.indexOf('if (!r.ok)') > -1 && t.indexOf('if (!r.ok)') < t.indexOf("ftSledi('Lead'"));
+});
+je('Lead se sproži šele po uspešnem odgovoru strežnika', predčasni, []);
 
 const hvala = beri('vodic-hvala.html');
 const kontakt = beri('kontakt.html');

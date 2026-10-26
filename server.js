@@ -3061,8 +3061,31 @@ app.post('/api/orders/:id/reject', async (req, res) => {
 // ─── Public Contact Form (landing page) ──────────────────────────────────────
 app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
   try {
-    const { name, email, phone, business_type, lokal, panoga, zelja, soglasje } = req.body || {};
-    if (!name || !email || !business_type) {
+    const { name, email, phone, business_type, lokal, panoga, zelja, soglasje, source, utm } = req.body || {};
+
+    /*
+      Oglasne strani (preizkus-*) imajo obrazec s samo dvema poljema: ime in
+      telefon. Vsako polje več pomeni manj prijav, za povratni klic pa
+      e-naslova ne potrebujemo.
+
+      Zahteva se zato zrahlja SAMO zanje. Obrazec na /kontakt.html ostane, kot
+      je bil — tam je e-naslov del prijave in ga ne smemo izgubiti.
+    */
+    const izOglasa = typeof source === 'string' && source.indexOf('preizkus-') === 0;
+
+    if (izOglasa) {
+      if (!name || !phone) {
+        return res.status(400).json({ error: 'Manjkajo obvezna polja.' });
+      }
+      /*
+        Tu je soglasje obvezno izrecno. Pri starejšem obrazcu ga sprejmemo tudi,
+        kadar ga ni (predpomnjena stran), tega pa ta obrazec nikoli ni imel —
+        zato manjkajoče soglasje pomeni, da nekaj ni v redu.
+      */
+      if (soglasje !== true) {
+        return res.status(400).json({ error: 'Za kontakt potrebujemo vaše soglasje.' });
+      }
+    } else if (!name || !email || !business_type) {
       return res.status(400).json({ error: 'Manjkajo obvezna polja.' });
     }
     /*
@@ -3087,8 +3110,24 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
     */
     const esc = (v) => String(v == null ? '' : v)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    /*
+      Parametri kampanje gredo v obvestilo, sicer ne vemo, kateri oglas je
+      prijavo prinesel — in brez tega je merjenje oglasov slepo.
+    */
+    const utmVrstica = utm && typeof utm === 'object'
+      ? Object.keys(utm).sort().map((k) => k + '=' + utm[k]).join(' · ')
+      : '';
+
     const locenaPolja = !!(lokal || panoga);
-    const vrsticeObrazca = locenaPolja
+    const vrsticeObrazca = izOglasa
+      ? [
+          ['Ime', name],
+          ['Telefon', phone],
+          ['Stran', source],
+          ['Oglas (utm)', utmVrstica || '—'],
+          ['Soglasje za kontakt', 'da']
+        ]
+      : locenaPolja
       ? [
           ['Ime in priimek', name],
           ['Telefon (WhatsApp)', phone || '—'],
@@ -3113,7 +3152,9 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
     const waPhoneId = process.env.WA_PHONE_ID;
 
     // 1. Email notification to Tomaz
-    const ownerSubject = locenaPolja
+    const ownerSubject = izOglasa
+      ? `Povratni klic — ${source}`
+      : locenaPolja
       ? `Nova prijava FlowTek — ${lokal || name}${panoga ? ` (${panoga})` : ''}`
       : `Nova prijava FlowTek — ${business_type}`;
     const ownerHtml = `
@@ -3156,7 +3197,14 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         </div>
         <p style="color:#64748b;font-size:.9rem">— Ekipa FlowTek</p>
       </div>`;
-    mail.sendEmail(email, prospectSubject, prospectHtml).catch(e => console.error('[contact] prospect email:', e.message));
+    /*
+      Potrdilo prijavitelju odpade, kadar prijava pride z oglasne strani —
+      tam e-naslova ne vprašamo, zato ga ni kam poslati. Pošiljanje na prazen
+      naslov bi Resend zavrnil in v dnevnik zapisal napako, ki ni napaka.
+    */
+    if (!izOglasa) {
+      mail.sendEmail(email, prospectSubject, prospectHtml).catch(e => console.error('[contact] prospect email:', e.message));
+    }
 
     // 4. Zapis v sb_contacts (tabela morda še ne obstaja — glej migracijo 009)
     const sbUrl = process.env.SUPABASE_URL;
@@ -3166,8 +3214,10 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
     if (sbUrl && sbKey) {
       try {
         await axios.post(`${sbUrl}/rest/v1/sb_contacts`, {
-          name, email, phone: phone || null, business_type,
-          created_at: new Date().toISOString(), source: 'landing_form'
+          name, email: email || null, phone: phone || null,
+          business_type: business_type || (izOglasa ? source + ' · povratni klic' : null),
+          created_at: new Date().toISOString(),
+          source: izOglasa ? source : 'landing_form'
         }, { headers: sbGlave });
         zapisana = true;
       } catch (e) {
@@ -3186,7 +3236,7 @@ app.post('/api/contact', rateLimit(10, 10 * 60 * 1000), async (req, res) => {
         await axios.post(`${sbUrl}/rest/v1/sb_errors`, {
           salon_id: null,
           type: 'kontakt-nedostavljen',
-          message: `Prijava z obrazca ni bila dostavljena: ${name} <${email}>`,
+          message: `Prijava z obrazca ni bila dostavljena: ${name} <${email || phone || '?'}>`,
           details: vrsticeObrazca.map(([o, v]) => o + ': ' + v).join('\n').substring(0, 1000)
         }, { headers: sbGlave });
         zapisana = true;
