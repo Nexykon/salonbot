@@ -26,3 +26,6 @@ preview.ps1
 # Sestavljena pisma za nagovarjanje. Vsebujejo ime konkretnega lokala in
 # vlozeno sliko; nastanejo z "node tools/pismo.js" in v repozitorij ne sodijo.
 out/
+
+# Zapis o zadnjem obvestilu IndexNow (lokalno stanje, ne sodi v repozitorij)
+tools/.indexnow-zadnjic.json

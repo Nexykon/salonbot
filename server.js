@@ -70,6 +70,37 @@ app.get('/dashboard.html', (req, res) => { const qs = req.originalUrl.split('?')
 app.get('/settings.html', (req, res) => { const qs = req.originalUrl.split('?')[1]; res.redirect(302, '/salon.html' + (qs ? '?' + qs : '')); });
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+/*
+  ─── IndexNow: dokazilo o lastništvu domene ──────────────────────────────────
+
+  Bing in Yandex sprejmeta obvestilo o spremenjenih naslovih samo, če isti
+  ključ stoji na https://flowtek.si/<ključ>.txt. S tem je dokazano, da obvestilo
+  pošilja nekdo, ki domeno res upravlja.
+
+  ZAKAJ IZ OKOLJA IN NE IZ DATOTEKE V public/
+
+    Datoteka v repozitoriju bi ključ vpisala v zgodovino gita in v vsako
+    kopijo projekta. Ko bi ga bilo treba zamenjati, bi ostal tam za vedno.
+    Tako ga zamenjaš s spremenljivko v Railwayu, brez nove objave.
+
+  ZAKAJ NE app.get('/:kljuc.txt') Z WILDCARDOM BREZ PRIMERJAVE
+
+    Ta pot stoji ZA express.static, zato robots.txt, llms.txt in druge prave
+    datoteke dobijo prednost. Vse, kar pride sem, pa mora biti natanko ključ —
+    sicer gre naprej in konča s 404. Brez te primerjave bi vsak .txt na svetu
+    vračal ključ in dokazilo ne bi dokazovalo ničesar.
+
+  Brez INDEXNOW_KEY se pot ne registrira; ob zagonu je to zapisano, da se
+  "izklopljeno" loči od "pozabljeno".
+*/
+if (process.env.INDEXNOW_KEY) {
+  app.get('/:kljuc.txt', (req, res, next) => {
+    if (req.params.kljuc !== process.env.INDEXNOW_KEY) return next();
+    res.type('text/plain; charset=utf-8').send(process.env.INDEXNOW_KEY);
+  });
+}
+
 app.get('/restavracije', (req, res) => res.sendFile(path.join(__dirname, 'public', 'restavracije.html')));
 /*
   Oglasne pristajalne strani za Meta kampanjo (ft-meta-2026-10).
@@ -3872,6 +3903,10 @@ app.listen(PORT, () => {
   } else {
     console.log('[scheduler] izklopljen (SCHEDULER != 1) — opomniki, ocene, reaktivacije in povzetki ne tečejo');
   }
+
+  console.log(process.env.INDEXNOW_KEY
+    ? '[indexnow] ključ je nastavljen; dokazilo je na /<ključ>.txt'
+    : '[indexnow] izklopljen (INDEXNOW_KEY ni nastavljen)');
 
   /*
     Predpomnilnik preklicanih master sej. Napolnimo ga takoj, da odjava velja

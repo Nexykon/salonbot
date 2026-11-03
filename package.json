@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "indexnow": "node tools/indexnow.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
